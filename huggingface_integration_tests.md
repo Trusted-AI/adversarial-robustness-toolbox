@@ -19,5 +19,5 @@ Attacks
 + attacks/poison/test_clean_label_backdoor_attack
 + attacks/poison/test_hidden_trigger_backdoor
 + attacks/poison/test_backdoor_attack_dgm_red
-+ 
++ attacks/poison/test_backdoor_attack_dgm_trail
 + attacks/evasion/test_projected_gradient_descent

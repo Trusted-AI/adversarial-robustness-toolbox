@@ -39,21 +39,22 @@ HF_MODEL_SIZE = "SMALL"
 
 @pytest.fixture()
 def get_data(framework):
-    if framework == 'huggingface' and HF_MODEL_SIZE == 'LARGE':
+    if framework == "huggingface" and HF_MODEL_SIZE == "LARGE":
         import torch
+
         (x_train, y_train), (x_test, y_test), min_, max_ = load_cifar10()
         x_train, y_train = x_train[:NB_TRAIN], y_train[:NB_TRAIN]
-        upsampler = torch.nn.Upsample(scale_factor=7, mode='nearest')
+        upsampler = torch.nn.Upsample(scale_factor=7, mode="nearest")
         x_train = np.float32(np.moveaxis(x_train, -1, 1))
         x_test = np.float32(np.moveaxis(x_test, -1, 1))
         x_train = upsampler(torch.from_numpy(x_train)).cpu().numpy()
         x_test = upsampler(torch.from_numpy(x_test)).cpu().numpy()
-    elif framework == 'huggingface' and HF_MODEL_SIZE == 'SMALL':
+    elif framework == "huggingface" and HF_MODEL_SIZE == "SMALL":
         (x_train, y_train), (x_test, y_test), min_, max_ = load_mnist()
         x_train, y_train = x_train[:NB_TRAIN], y_train[:NB_TRAIN]
         x_train = np.float32(np.moveaxis(x_train, -1, 1))
         x_test = np.float32(np.moveaxis(x_test, -1, 1))
-    elif framework == 'pytorch':
+    elif framework == "pytorch":
         (x_train, y_train), (x_test, y_test), min_, max_ = load_mnist()
         x_train, y_train = x_train[:NB_TRAIN], y_train[:NB_TRAIN]
         x_train = np.float32(np.moveaxis(x_train, -1, 1))
@@ -64,15 +65,18 @@ def get_data(framework):
 
     return (x_train, y_train), (x_test, y_test), min_, max_
 
+
 @pytest.fixture()
 def get_data_gen(framework, get_data):
     (x_train, y_train), (x_test, y_test), min_, max_ = get_data
 
-    if framework == 'tensorflow2':
+    if framework == "tensorflow2":
         datagen = ImageDataGenerator()
         datagen.fit(x_train)
-        data_gen = KerasDataGenerator(datagen.flow(x_train, y_train, batch_size=NB_TRAIN), size=NB_TRAIN, batch_size=NB_TRAIN)
-    elif framework in ['pytorch', 'huggingface']:
+        data_gen = KerasDataGenerator(
+            datagen.flow(x_train, y_train, batch_size=NB_TRAIN), size=NB_TRAIN, batch_size=NB_TRAIN
+        )
+    elif framework in ["pytorch", "huggingface"]:
         from torch.utils.data import Dataset
 
         class CustomImageDataset(Dataset):
@@ -87,6 +91,7 @@ def get_data_gen(framework, get_data):
                 return self.x[idx], self.y[idx]
 
         from torch.utils.data import DataLoader
+
         train_dataloader = DataLoader(CustomImageDataset(x_train, y_train), batch_size=NB_TRAIN, shuffle=True)
         data_gen = PyTorchDataGenerator(train_dataloader, size=NB_TRAIN, batch_size=NB_TRAIN)
 
@@ -95,44 +100,44 @@ def get_data_gen(framework, get_data):
 
 @pytest.fixture()
 def get_mnist_classifier(framework, image_dl_estimator, get_data):
-
     def _get_classifier():
-        if framework == 'huggingface':
-            if HF_MODEL_SIZE == 'LARGE':
+        if framework == "huggingface":
+            if HF_MODEL_SIZE == "LARGE":
                 import torch
                 import transformers
                 import torch
                 from art.estimators.hugging_face import HuggingFaceClassifier
 
-                model = transformers.AutoModelForImageClassification.from_pretrained('facebook/deit-tiny-patch16-224',
-                                                                                     # takes 3 min
-                                                                                     ignore_mismatched_sizes=True,
-                                                                                     num_labels=10)
+                model = transformers.AutoModelForImageClassification.from_pretrained(
+                    "facebook/deit-tiny-patch16-224",
+                    # takes 3 min
+                    ignore_mismatched_sizes=True,
+                    num_labels=10,
+                )
 
-                print('num of parameters is ', sum(p.numel() for p in model.parameters() if p.requires_grad))
+                print("num of parameters is ", sum(p.numel() for p in model.parameters() if p.requires_grad))
                 optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
 
-                classifier = HuggingFaceClassifier(model,
-                                                   loss=torch.nn.CrossEntropyLoss(),
-                                                   input_shape=(3, 224, 224),
-                                                   nb_classes=10,
-                                                   optimizer=optimizer,
-                                                   processor=None)
-            if HF_MODEL_SIZE == 'SMALL':
+                classifier = HuggingFaceClassifier(
+                    model,
+                    loss=torch.nn.CrossEntropyLoss(),
+                    input_shape=(3, 224, 224),
+                    nb_classes=10,
+                    optimizer=optimizer,
+                    processor=None,
+                )
+            if HF_MODEL_SIZE == "SMALL":
                 classifier = get_image_classifier_hf()
         elif framework == "pytorch":
             import torch
 
             class Model(torch.nn.Module):
-
                 def __init__(self, number_of_classes: int):
                     super(Model, self).__init__()
 
                     self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-                    self.conv_1 = torch.nn.Conv2d(in_channels=1,
-                                                  out_channels=32,
-                                                  kernel_size=3)
+                    self.conv_1 = torch.nn.Conv2d(in_channels=1, out_channels=32, kernel_size=3)
                     self.relu = torch.nn.ReLU()
 
                     self.mpool = torch.nn.MaxPool2d(kernel_size=(3, 3))
@@ -198,11 +203,12 @@ def get_mnist_classifier(framework, image_dl_estimator, get_data):
 
     return classifier
 
+
 # Pytorch can be added in but needs a refactor to the core estimator first
 @pytest.mark.only_with_platform("tensorflow2", "huggingface")
 class TestActivationDefence:
-
     pytest.classifier = None
+
     def test_get_classifiers(self, get_mnist_classifier):
         if pytest.classifier is None:
             pytest.classifier = get_mnist_classifier
@@ -211,12 +217,10 @@ class TestActivationDefence:
         (x_train, y_train), (x_test, y_test), min_, max_ = get_data
 
         layer_names = pytest.classifier.layer_names
-        print('the layer names are ', layer_names)
+        print("the layer names are ", layer_names)
         for layer_num in range(len(layer_names)):
-            activations = pytest.classifier.get_activations(
-                x_train, layer=layer_num, batch_size=64
-            )
-            print(f'At layer num {layer_num} the shape is {activations.shape}')
+            activations = pytest.classifier.get_activations(x_train, layer=layer_num, batch_size=64)
+            print(f"At layer num {layer_num} the shape is {activations.shape}")
 
     def setUp(self):
         # Set master seed
@@ -432,7 +436,6 @@ class TestActivationDefence:
 
     @pytest.mark.only_with_platform("tensorflow2")
     def test_pickle(self):
-
         # Test pickle and unpickle:
         filename = "test_pickle.h5"
         ActivationDefence._pickle_classifier(pytest.classifier, filename)
@@ -447,7 +450,7 @@ class TestActivationDefence:
 
     @pytest.mark.only_with_platform("tensorflow2")
     def test_fix_relabel_poison(self, get_data):
-        (x_train, y_train), (x_test, y_test), min_, max_ = get_data
+        (x_train, y_train), (_, _), min_, max_ = get_data
         x_poison = x_train[:100]
         y_fix = y_train[:100]
 
@@ -491,4 +494,3 @@ class TestActivationDefence:
 
         x_train_rgb = convert_to_rgb(x_train)
         defence.visualize_clusters(x_train_rgb)
-

@@ -91,7 +91,7 @@ class HuggingFaceClassifier(PyTorchClassifier):
                 return outputs
             return outputs.logits
 
-        self.model.forward = prefix_function(self.model.forward, get_logits)
+        self.model.forward = prefix_function(self.model.forward, get_logits)  # type: ignore
 
     def __call__(self, image):
         if self.processor is not None:

@@ -21,7 +21,6 @@ import logging
 import pytest
 
 import numpy as np
-import tensorflow as tf
 
 from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent import ProjectedGradientDescent
 from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent_numpy import (
@@ -43,17 +42,19 @@ from tests.utils import (
     get_tabular_classifier_pt,
     get_tabular_classifier_tf,
     get_tabular_classifier_hf,
-    master_seed,)
+    master_seed,
+)
 
 logger = logging.getLogger(__name__)
-HF_MODEL_SIZE = 'SMALL'
+HF_MODEL_SIZE = "SMALL"
+
 
 @pytest.fixture()
 def get_mnist_classifier(framework, image_dl_estimator):
-
     def _get_classifier():
         if framework == "pytorch":
             import torch
+
             # NB, uses CROSSENTROPYLOSS thus should use logits in output
             classifier = get_image_classifier_pt(from_logits=True)
 
@@ -62,28 +63,30 @@ def get_mnist_classifier(framework, image_dl_estimator):
         elif framework in ("keras", "kerastf"):
             classifier = get_image_classifier_kr()
         elif framework == "huggingface":
-            if HF_MODEL_SIZE == 'LARGE':
+            if HF_MODEL_SIZE == "LARGE":
                 import transformers
                 import torch
                 from art.estimators.hugging_face import HuggingFaceClassifier
 
-                model = transformers.AutoModelForImageClassification.from_pretrained('facebook/deit-tiny-patch16-224',
-                                                                                     ignore_mismatched_sizes=True,
-                                                                                     num_labels=10)
+                model = transformers.AutoModelForImageClassification.from_pretrained(
+                    "facebook/deit-tiny-patch16-224", ignore_mismatched_sizes=True, num_labels=10
+                )
 
-                print('num of parameters is ', sum(p.numel() for p in model.parameters() if p.requires_grad))
+                print("num of parameters is ", sum(p.numel() for p in model.parameters() if p.requires_grad))
                 optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
 
-                classifier = HuggingFaceClassifier(model,
-                                                   loss=torch.nn.CrossEntropyLoss(),
-                                                   input_shape=(3, 224, 224),
-                                                   nb_classes=10,
-                                                   optimizer=optimizer,
-                                                   processor=None)
-            elif HF_MODEL_SIZE == 'SMALL':
+                classifier = HuggingFaceClassifier(
+                    model,
+                    loss=torch.nn.CrossEntropyLoss(),
+                    input_shape=(3, 224, 224),
+                    nb_classes=10,
+                    optimizer=optimizer,
+                    processor=None,
+                )
+            elif HF_MODEL_SIZE == "SMALL":
                 classifier = get_image_classifier_hf(from_logits=True)
             else:
-                raise ValueError('HF_MODEL_SIZE must be either SMALL or LARGE')
+                raise ValueError("HF_MODEL_SIZE must be either SMALL or LARGE")
         else:
             classifier = None
 
@@ -91,12 +94,13 @@ def get_mnist_classifier(framework, image_dl_estimator):
 
     return _get_classifier
 
+
 @pytest.fixture()
 def get_tabular_classifier(framework, image_dl_estimator):
-
     def _get_classifier():
         if framework == "pytorch":
             import torch
+
             # NB, uses CROSSENTROPYLOSS thus should use logits in output
             classifier = get_tabular_classifier_pt()
 
@@ -105,28 +109,30 @@ def get_tabular_classifier(framework, image_dl_estimator):
         elif framework in ("keras", "kerastf"):
             classifier = get_tabular_classifier_kr()
         elif framework == "huggingface":
-            if HF_MODEL_SIZE == 'LARGE':
+            if HF_MODEL_SIZE == "LARGE":
                 import transformers
                 import torch
                 from art.estimators.hugging_face import HuggingFaceClassifier
 
-                model = transformers.AutoModelForImageClassification.from_pretrained('facebook/deit-tiny-patch16-224', # takes 3 min
-                                                                                     ignore_mismatched_sizes=True,
-                                                                                     num_labels=10)
+                model = transformers.AutoModelForImageClassification.from_pretrained(
+                    "facebook/deit-tiny-patch16-224", ignore_mismatched_sizes=True, num_labels=10  # takes 3 min
+                )
 
-                print('num of parameters is ', sum(p.numel() for p in model.parameters() if p.requires_grad))
+                print("num of parameters is ", sum(p.numel() for p in model.parameters() if p.requires_grad))
                 optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
 
-                classifier = HuggingFaceClassifier(model,
-                                                   loss=torch.nn.CrossEntropyLoss(),
-                                                   input_shape=(3, 224, 224),
-                                                   nb_classes=10,
-                                                   optimizer=optimizer,
-                                                   processor=None)
-            elif HF_MODEL_SIZE == 'SMALL':
+                classifier = HuggingFaceClassifier(
+                    model,
+                    loss=torch.nn.CrossEntropyLoss(),
+                    input_shape=(3, 224, 224),
+                    nb_classes=10,
+                    optimizer=optimizer,
+                    processor=None,
+                )
+            elif HF_MODEL_SIZE == "SMALL":
                 classifier = get_tabular_classifier_hf()
             else:
-                raise ValueError('HF_MODEL_SIZE must be either SMALL or LARGE')
+                raise ValueError("HF_MODEL_SIZE must be either SMALL or LARGE")
         else:
             classifier = None
 
@@ -136,14 +142,12 @@ def get_tabular_classifier(framework, image_dl_estimator):
 
 
 class TestPGD:
-
     @pytest.mark.only_with_platform("pytorch", "tensorflow2", "keras", "kerastf", "scikitlearn", "huggingface")
     def test_classifier_type_check_fail(self):
         backend_test_classifier_type_check_fail(ProjectedGradientDescent, [BaseEstimator, LossGradientsMixin])
 
     @pytest.mark.only_with_platform("pytorch", "tensorflow2", "keras", "kerastf", "huggingface")
     def test_check_params(self, get_mnist_classifier):
-
         classifier = get_mnist_classifier()
 
         with pytest.raises(ValueError):
@@ -185,7 +189,7 @@ class TestPGD:
         with pytest.raises(ValueError):
             _ = ProjectedGradientDescentCommon(classifier, verbose="False")
 
-    @pytest.mark.only_with_platform("pytorch", "tensorflow2", "keras", "kerastf")
+    @pytest.mark.only_with_platform("pytorch", "tensorflow2")
     def test_mnist(self, get_default_mnist_subset, get_mnist_classifier, framework):
         classifier = get_mnist_classifier()
         (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
@@ -209,8 +213,32 @@ class TestPGD:
             classifier.set_params(clip_values=(np.zeros_like(x_test_mnist[0][0]), np.ones_like(x_test_mnist[0][0])))
             self._test_backend_mnist(classifier, x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist)
 
-            classifier.set_params(clip_values=(np.zeros_like(x_test_mnist[0][0][0]), np.ones_like(x_test_mnist[0][0][0])))
+            classifier.set_params(
+                clip_values=(np.zeros_like(x_test_mnist[0][0][0]), np.ones_like(x_test_mnist[0][0][0]))
+            )
             self._test_backend_mnist(classifier, x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist)
+
+    # Original tests ran keras tests in this pattern
+    @pytest.mark.only_with_platform("keras", "kerastf")
+    def test_9a_keras_mnist(self, get_default_mnist_subset, get_mnist_classifier, framework):
+        # TODO: Raise bugreport. Keras tests fail if using a larger batch.
+
+        classifier = get_mnist_classifier()
+        (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
+        n_train = 10
+        n_test = 10
+
+        x_train_mnist = x_train_mnist[0:n_train]
+        y_train_mnist = y_train_mnist[0:n_train]
+        x_test_mnist = x_test_mnist[0:n_test]
+        y_test_mnist = y_test_mnist[0:n_test]
+
+        scores = classifier._model.evaluate(x_train_mnist, y_train_mnist)
+        logger.info("[Keras, MNIST] Accuracy on training set: %.2f%%", scores[1] * 100)
+        scores = classifier._model.evaluate(x_test_mnist, y_test_mnist)
+        logger.info("[Keras, MNIST] Accuracy on test set: %.2f%%", scores[1] * 100)
+
+        self._test_backend_mnist(classifier, x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist)
 
     def _test_backend_mnist(self, classifier, x_train, y_train, x_test, y_test):
         x_test_original = x_test.copy()
@@ -360,12 +388,8 @@ class TestPGD:
         x_test_adv_fw = attack_fw.generate(x_test_mnist)
 
         # Test
-        assert np.allclose(
-            np.mean(x_train_adv_np - x_train_mnist), np.mean(x_train_adv_fw - x_train_mnist), atol=1e-06
-        )
-        np.allclose(
-            np.mean(x_test_adv_np - x_test_mnist), np.mean(x_test_adv_fw - x_test_mnist), atol=1e-06
-        )
+        assert np.allclose(np.mean(x_train_adv_np - x_train_mnist), np.mean(x_train_adv_fw - x_train_mnist), atol=1e-06)
+        np.allclose(np.mean(x_test_adv_np - x_test_mnist), np.mean(x_test_adv_fw - x_test_mnist), atol=1e-06)
 
         # Test PGD with L1 norm
         attack_np = ProjectedGradientDescentNumpy(
@@ -399,12 +423,8 @@ class TestPGD:
         x_test_adv_fw = attack_fw.generate(x_test_mnist)
 
         # Test
-        np.allclose(
-            np.mean(x_train_adv_np - x_train_mnist), np.mean(x_train_adv_fw - x_train_mnist), atol=1e-06
-        )
-        np.allclose(
-            np.mean(x_test_adv_np - x_test_mnist), np.mean(x_test_adv_fw - x_test_mnist), atol=1e-06
-        )
+        np.allclose(np.mean(x_train_adv_np - x_train_mnist), np.mean(x_train_adv_fw - x_train_mnist), atol=1e-06)
+        np.allclose(np.mean(x_test_adv_np - x_test_mnist), np.mean(x_test_adv_fw - x_test_mnist), atol=1e-06)
 
         # Test PGD with L2 norm
         attack_np = ProjectedGradientDescentNumpy(
@@ -438,12 +458,8 @@ class TestPGD:
         x_test_adv_fw = attack_fw.generate(x_test_mnist)
 
         # Test
-        np.allclose(
-            np.mean(x_train_adv_np - x_train_mnist), np.mean(x_train_adv_fw - x_train_mnist), atol=1e-06
-        )
-        np.allclose(
-            np.mean(x_test_adv_np - x_test_mnist), np.mean(x_test_adv_fw - x_test_mnist), atol=1e-06
-        )
+        np.allclose(np.mean(x_train_adv_np - x_train_mnist), np.mean(x_train_adv_fw - x_train_mnist), atol=1e-06)
+        np.allclose(np.mean(x_test_adv_np - x_test_mnist), np.mean(x_test_adv_fw - x_test_mnist), atol=1e-06)
 
         # Test PGD with True targeted
         attack_np = ProjectedGradientDescentNumpy(
@@ -477,12 +493,8 @@ class TestPGD:
         x_test_adv_fw = attack_fw.generate(x_test_mnist, y_test_mnist)
 
         # Test
-        np.allclose(
-            np.mean(x_train_adv_np - x_train_mnist), np.mean(x_train_adv_fw - x_train_mnist), atol=1e-06
-        )
-        np.allclose(
-            np.mean(x_test_adv_np - x_test_mnist), np.mean(x_test_adv_fw - x_test_mnist), atol=1e-06
-        )
+        np.allclose(np.mean(x_train_adv_np - x_train_mnist), np.mean(x_train_adv_fw - x_train_mnist), atol=1e-06)
+        np.allclose(np.mean(x_test_adv_np - x_test_mnist), np.mean(x_test_adv_fw - x_test_mnist), atol=1e-06)
 
         # Test PGD with num_random_init=2
         master_seed(1234)
@@ -518,12 +530,8 @@ class TestPGD:
         x_test_adv_fw = attack_fw.generate(x_test_mnist)
 
         # Test
-        np.allclose(
-            np.mean(x_train_adv_np - x_train_mnist), np.mean(x_train_adv_fw - x_train_mnist), atol=1e-06
-        )
-        np.allclose(
-            np.mean(x_test_adv_np - x_test_mnist), np.mean(x_test_adv_fw - x_test_mnist), atol=1e-06
-        )
+        np.allclose(np.mean(x_train_adv_np - x_train_mnist), np.mean(x_train_adv_fw - x_train_mnist), atol=1e-06)
+        np.allclose(np.mean(x_test_adv_np - x_test_mnist), np.mean(x_test_adv_fw - x_test_mnist), atol=1e-06)
 
         # Test PGD with random_eps=True
         master_seed(1234)
@@ -559,12 +567,8 @@ class TestPGD:
         x_test_adv_fw = attack_fw.generate(x_test_mnist)
 
         # Test
-        np.allclose(
-            np.mean(x_train_adv_np - x_train_mnist), np.mean(x_train_adv_fw - x_train_mnist), atol=1e-06
-        )
-        np.allclose(
-            np.mean(x_test_adv_np - x_test_mnist), np.mean(x_test_adv_fw - x_test_mnist), atol=1e-06
-        )
+        np.allclose(np.mean(x_train_adv_np - x_train_mnist), np.mean(x_train_adv_fw - x_train_mnist), atol=1e-06)
+        np.allclose(np.mean(x_test_adv_np - x_test_mnist), np.mean(x_test_adv_fw - x_test_mnist), atol=1e-06)
 
         # Test the masking 1
         master_seed(1234)
@@ -612,12 +616,8 @@ class TestPGD:
         x_test_adv_fw = attack_fw.generate(x_test_mnist, mask=mask)
 
         # Test
-        np.allclose(
-            np.mean(x_train_adv_np - x_train_mnist), np.mean(x_train_adv_fw - x_train_mnist), atol=1e-06
-        )
-        np.allclose(
-            np.mean(x_test_adv_np - x_test_mnist), np.mean(x_test_adv_fw - x_test_mnist), atol=1e-06
-        )
+        np.allclose(np.mean(x_train_adv_np - x_train_mnist), np.mean(x_train_adv_fw - x_train_mnist), atol=1e-06)
+        np.allclose(np.mean(x_test_adv_np - x_test_mnist), np.mean(x_test_adv_fw - x_test_mnist), atol=1e-06)
 
         # Test the masking 2
         master_seed(1234)
@@ -665,12 +665,8 @@ class TestPGD:
         x_test_adv_fw = attack_fw.generate(x_test_mnist, mask=mask)
 
         # Test
-        np.allclose(
-            np.mean(x_train_adv_np - x_train_mnist), np.mean(x_train_adv_fw - x_train_mnist), atol=1e-06
-        )
-        np.allclose(
-            np.mean(x_test_adv_np - x_test_mnist), np.mean(x_test_adv_fw - x_test_mnist), atol=1e-06
-        )
+        np.allclose(np.mean(x_train_adv_np - x_train_mnist), np.mean(x_train_adv_fw - x_train_mnist), atol=1e-06)
+        np.allclose(np.mean(x_test_adv_np - x_test_mnist), np.mean(x_test_adv_fw - x_test_mnist), atol=1e-06)
 
     @pytest.mark.only_with_platform("pytorch", "huggingface", "tensorflow2", "keras", "kerastf")
     def test_iris_pt(self, get_iris_dataset, get_tabular_classifier):
@@ -711,22 +707,28 @@ class TestPGD:
         if framework in ["keras", "kerastf"]:
             classifier = KerasClassifier(model=classifier._model, use_logits=False, channels_first=True)
         elif framework == "pytorch":
-            classifier = PyTorchClassifier(model=classifier.model,
-                                           nb_classes=classifier.nb_classes,
-                                           input_shape=classifier._input_shape,
-                                           loss=classifier._loss,
-                                           channels_first=True)
+            classifier = PyTorchClassifier(
+                model=classifier.model,
+                nb_classes=classifier.nb_classes,
+                input_shape=classifier._input_shape,
+                loss=classifier._loss,
+                channels_first=True,
+            )
         elif framework == "tensorflow2":
-            classifier = TensorFlowV2Classifier(model=classifier._model,
-                                                nb_classes=classifier.nb_classes,
-                                                input_shape=classifier.input_shape,
-                                                loss_object=classifier.loss_object,
-                                                channels_first=True)
+            classifier = TensorFlowV2Classifier(
+                model=classifier._model,
+                nb_classes=classifier.nb_classes,
+                input_shape=classifier.input_shape,
+                loss_object=classifier.loss_object,
+                channels_first=True,
+            )
         elif framework == "huggingface":
-            classifier = HuggingFaceClassifier(model=classifier.model,
-                                               nb_classes=classifier.nb_classes,
-                                               loss=classifier.loss,
-                                               input_shape=classifier._input_shape)
+            classifier = HuggingFaceClassifier(
+                model=classifier.model,
+                nb_classes=classifier.nb_classes,
+                loss=classifier.loss,
+                input_shape=classifier._input_shape,
+            )
 
         attack = ProjectedGradientDescent(classifier, eps=1.0, eps_step=0.2, max_iter=5, verbose=False)
         x_test_adv = attack.generate(x_test_iris)
@@ -765,8 +767,8 @@ class TestPGD:
             attack = ProjectedGradientDescent(classifier, eps=1.0, eps_step=0.1, max_iter=5, verbose=False)
             x_test_adv = attack.generate(x_test_iris)
             assert not ((x_test_iris == x_test_adv).all())
-            assert ((x_test_adv <= 1).all())
-            assert ((x_test_adv >= 0).all())
+            assert (x_test_adv <= 1).all()
+            assert (x_test_adv >= 0).all()
 
             preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
             assert not (np.argmax(y_test_iris, axis=1) == preds_adv).all()
@@ -783,11 +785,11 @@ class TestPGD:
             )
             x_test_adv = attack.generate(x_test_iris, **{"y": targets})
             assert not ((x_test_iris == x_test_adv).all())
-            assert ((x_test_adv <= 1).all())
-            assert ((x_test_adv >= 0).all())
+            assert (x_test_adv <= 1).all()
+            assert (x_test_adv >= 0).all()
 
             preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
-            assert ((np.argmax(targets, axis=1) == preds_adv).any())
+            assert (np.argmax(targets, axis=1) == preds_adv).any()
             acc = np.sum(preds_adv == np.argmax(targets, axis=1)) / y_test_iris.shape[0]
             logger.info(
                 "Success rate of " + classifier.__class__.__name__ + " on targeted PGD on Iris: %.2f%%", (acc * 100)
@@ -797,7 +799,7 @@ class TestPGD:
             assert np.allclose(float(np.max(np.abs(x_test_original - x_test_iris))), 0.0, atol=1e-06)
 
 
-'''
+"""
 class TestPGD(TestBase):
     @classmethod
     def setUpClass(cls):
@@ -851,4 +853,4 @@ class TestPGD(TestBase):
 
 if __name__ == "__main__":
     unittest.main()
-'''
+"""

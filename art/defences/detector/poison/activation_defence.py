@@ -682,6 +682,7 @@ class ActivationDefence(PoisonFilteringDefence):
 
         if self.classifier.layer_names is not None:
             nb_layers = len(self.classifier.layer_names)
+            print('the layer names are ', self.classifier.layer_names)
         else:
             raise ValueError("No layer names identified.")
         protected_layer = nb_layers - 1
@@ -704,6 +705,7 @@ class ActivationDefence(PoisonFilteringDefence):
                 "Number of activations in last hidden layer is too small. Method may not work properly. " "Size: %s",
                 str(nodes_last_layer),
             )
+        print(f'activations are in _get_activations of type {type(activations)} with shape {activations.shape} fetching from layer {protected_layer}')
         return activations
 
     def _segment_by_class(self, data: np.ndarray, features: np.ndarray) -> List[np.ndarray]:
@@ -811,6 +813,8 @@ def cluster_activations(
         nb_activations = np.shape(activation)[1]
         if nb_activations > nb_dims:
             # TODO: address issue where if fewer samples than nb_dims this fails
+            print('activations ', activation.shape)
+            # exit()
             reduced_activations = reduce_dimensionality(activation, nb_dims=nb_dims, reduce=reduce)
         else:
             logger.info(
