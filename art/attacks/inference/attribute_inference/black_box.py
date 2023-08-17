@@ -24,7 +24,6 @@ import logging
 from typing import Optional, Union, Tuple, List, TYPE_CHECKING
 
 import numpy as np
-from sklearn.neural_network import MLPClassifier, MLPRegressor
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.preprocessing import minmax_scale, OneHotEncoder, OrdinalEncoder
 from sklearn.compose import ColumnTransformer
@@ -108,10 +107,13 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
 
         self._values: Optional[list] = None
         self._attack_model_type = attack_model_type
-        self._attack_model = attack_model
         self._encoder = encoder
         self._non_numerical_features = non_numerical_features
         self._is_continuous = is_continuous
+        self.prediction_normal_factor = prediction_normal_factor
+        self.scale_range = scale_range
+
+        self._check_params()
 
         if attack_model:
             if self._is_continuous:
@@ -120,59 +122,78 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
             elif ClassifierMixin not in type(attack_model).__mro__:
                 raise ValueError("When attacking a categorical feature the attack model must be of type Classifier.")
             self.attack_model = attack_model
+            self._attack_model_type = None
         elif attack_model_type == "nn":
+            import torch
+            from torch import nn
+
+            self.epochs = 100
+            self.batch_size = 100
+            self.learning_rate = 0.0001
+
             if self._is_continuous:
-                self.attack_model = MLPRegressor(
-                    hidden_layer_sizes=(100,),
-                    activation="relu",
-                    solver="adam",
-                    alpha=0.0001,
-                    batch_size="auto",
-                    learning_rate="constant",
-                    learning_rate_init=0.001,
-                    power_t=0.5,
-                    max_iter=200,
-                    shuffle=True,
-                    random_state=None,
-                    tol=0.0001,
-                    verbose=False,
-                    warm_start=False,
-                    momentum=0.9,
-                    nesterovs_momentum=True,
-                    early_stopping=False,
-                    validation_fraction=0.1,
-                    beta_1=0.9,
-                    beta_2=0.999,
-                    epsilon=1e-08,
-                    n_iter_no_change=10,
-                    max_fun=15000,
-                )
+                class MembershipInferenceAttackModel(nn.Module):
+                    """
+                    Implementation of a pytorch model for learning a membership inference attack.
+
+                    The features used are probabilities/logits or losses for the attack training data along with
+                    its true labels.
+                    """
+
+                    def __init__(self, num_features):
+
+                        self.num_features = num_features
+
+                        super().__init__()
+
+                        self.features = nn.Sequential(
+                            nn.Linear(self.num_features, 100),
+                            nn.ReLU(),
+                            nn.Linear(100, 64),
+                            nn.ReLU(),
+                            nn.Linear(64, 1),
+                        )
+
+                    def forward(self, x):
+                        """Forward the model."""
+                        return self.features(x)
+                self._attack_class = MembershipInferenceAttackModel
             else:
-                self.attack_model = MLPClassifier(
-                    hidden_layer_sizes=(100,),
-                    activation="relu",
-                    solver="adam",
-                    alpha=0.0001,
-                    batch_size="auto",
-                    learning_rate="constant",
-                    learning_rate_init=0.001,
-                    power_t=0.5,
-                    max_iter=2000,
-                    shuffle=True,
-                    random_state=None,
-                    tol=0.0001,
-                    verbose=False,
-                    warm_start=False,
-                    momentum=0.9,
-                    nesterovs_momentum=True,
-                    early_stopping=False,
-                    validation_fraction=0.1,
-                    beta_1=0.9,
-                    beta_2=0.999,
-                    epsilon=1e-08,
-                    n_iter_no_change=10,
-                    max_fun=15000,
-                )
+                class MembershipInferenceAttackModel(nn.Module):
+                    """
+                    Implementation of a pytorch model for learning an attribute inference attack.
+
+                    The features used are the remaining n-1 features of the attack training data along with
+                    the model's predictions.
+                    """
+
+                    def __init__(self, num_classes, num_features=None):
+
+                        self.num_classes = num_classes
+                        if num_features:
+                            self.num_features = num_features
+                        else:
+                            self.num_features = num_classes
+
+                        super().__init__()
+
+                        self.features = nn.Sequential(
+                            nn.Linear(self.num_features, 512),
+                            nn.ReLU(),
+                            nn.Linear(512, 100),
+                            nn.ReLU(),
+                            nn.Linear(100, 64),
+                            nn.ReLU(),
+                            nn.Linear(64, num_classes),
+                        )
+
+                        self.output = nn.Softmax()
+
+                    def forward(self, x):
+                        """Forward the model."""
+                        out = self.features(x)
+                        return self.output(out)
+            self._attack_class = MembershipInferenceAttackModel
         elif attack_model_type == "rf":
             if self._is_continuous:
                 self.attack_model = RandomForestRegressor()
@@ -181,10 +202,6 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
         else:
             raise ValueError("Illegal value for parameter `attack_model_type`.")
 
-        self.prediction_normal_factor = prediction_normal_factor
-        self.scale_range = scale_range
-
-        self._check_params()
         remove_attacked_feature(self.attack_feature, self._non_numerical_features)
 
     def fit(self, x: np.ndarray, y: Optional[np.ndarray] = None) -> None:
@@ -259,7 +276,43 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
             x_train = np.concatenate((x_train, y), axis=1)
 
         # train attack model
-        self.attack_model.fit(x_train, y_attack_ready)
+        if self._attack_model_type == 'nn':
+            if not self._is_continuous:
+                self.attack_model = self._attack_class(len(self._values), x_train.shape[1])
+            else:
+                self.attack_model = self._attack_class(x_train.shape[1])
+
+            import torch
+            from torch import nn
+            from torch import optim
+            from torch.utils.data import DataLoader
+            from art.utils import to_cuda
+
+            if self._is_continuous:
+                loss_fn = nn.MSELoss()
+            else:
+                loss_fn = nn.CrossEntropyLoss()
+            optimizer = optim.Adam(self.attack_model.parameters(), lr=self.learning_rate)  # type: ignore
+
+            attack_train_set = self._get_attack_dataset(f=x_train, label=y_attack_ready)
+            train_loader = DataLoader(attack_train_set, batch_size=self.batch_size, shuffle=True, num_workers=0)
+
+            self.attack_model = to_cuda(self.attack_model)  # type: ignore
+            self.attack_model.train()  # type: ignore
+
+            for _ in range(self.epochs):
+                for (input1, targets) in train_loader:
+                    input1, targets = to_cuda(input1), to_cuda(targets)
+                    _, targets = torch.autograd.Variable(input1), torch.autograd.Variable(targets)
+
+                    optimizer.zero_grad()
+                    outputs = self.attack_model(input1)  # type: ignore
+                    loss = loss_fn(outputs, targets)
+                    print('MSE loss: ', loss)
+                    loss.backward()
+                    optimizer.step()
+        else:
+            self.attack_model.fit(x_train, y_attack_ready)
 
     def infer(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
@@ -320,7 +373,32 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
         if y is not None:
             x_test = np.concatenate((x_test, y), axis=1)
 
-        predictions = self.attack_model.predict(x_test).astype(np.float32)
+        if self._attack_model_type == "nn":
+            import torch
+            from torch.utils.data import DataLoader
+            from art.utils import to_cuda, from_cuda
+
+            self.attack_model.eval()  # type: ignore
+            predictions: Optional[np.ndarray] = None
+            test_set = self._get_attack_dataset(f=x_test)
+            test_loader = DataLoader(test_set, batch_size=self.batch_size, shuffle=False, num_workers=0)
+            for input1, _ in test_loader:
+                input1 = to_cuda(input1)
+                outputs = self.attack_model(input1)  # type: ignore
+                predicted = from_cuda(outputs)
+
+                if predictions is None:
+                    predictions = predicted.detach().numpy()
+                else:
+                    predictions = np.vstack((predictions, predicted.detach().numpy()))
+                if not self._is_continuous:
+                    idx = np.argmax(predictions, axis=-1)
+                    predictions = np.zeros(predictions.shape)
+                    predictions[np.arange(predictions.shape[0]), idx] = 1
+
+        else:
+            predictions = self.attack_model.predict(x_test)
+        predictions = predictions.astype(np.float32)
 
         if not self._is_continuous and self._values is not None:
             if isinstance(self.attack_feature, int):
@@ -332,6 +410,38 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
                         np.place(column, [column == index], self._values[i][index])
                     i += 1
         return np.array(predictions)
+
+    def _get_attack_dataset(self, f, label=None):
+        from torch.utils.data.dataset import Dataset
+
+        class AttackDataset(Dataset):
+            """
+            Implementation of a pytorch dataset for membership inference attack.
+
+            The features are probabilities/logits or losses for the attack training data (`x_1`) along with
+            its true labels (`x_2`). The labels (`y`) are a boolean representing whether this is a member.
+            """
+
+            def __init__(self, x, y=None):
+                import torch
+
+                self.x = torch.from_numpy(x.astype(np.float64)).type(torch.FloatTensor)
+
+                if y is not None:
+                    self.y = torch.from_numpy(y.astype(np.float32)).type(torch.FloatTensor)
+                else:
+                    self.y = torch.zeros(x.shape[0])
+
+            def __len__(self):
+                return len(self.x)
+
+            def __getitem__(self, idx):
+                if idx >= len(self.x):  # pragma: no cover
+                    raise IndexError("Invalid Index")
+
+                return self.x[idx], self.y[idx]
+
+        return AttackDataset(x=f, y=label)
 
     def _check_params(self) -> None:
 

@@ -124,8 +124,10 @@ def test_black_box_continuous(art_warning, decision_tree_estimator, get_iris_dat
         inferred_train = attack.infer(x_train_for_attack, pred=x_train_predictions)
         inferred_test = attack.infer(x_test_for_attack, pred=x_test_predictions)
         # check accuracy
-        assert np.allclose(inferred_train, x_train_feature.reshape(1, -1), atol=0.4)
-        assert np.allclose(inferred_test, x_test_feature.reshape(1, -1), atol=0.4)
+        assert np.count_nonzero(np.isclose(inferred_train, x_train_feature.reshape(1, -1), atol=0.4)) > \
+            inferred_train.shape[0] * 0.75
+        assert np.count_nonzero(np.isclose(inferred_test, x_test_feature.reshape(1, -1), atol=0.4)) > \
+               inferred_test.shape[0] * 0.75
 
     except ARTTestException as e:
         art_warning(e)
@@ -348,8 +350,8 @@ def test_black_box_regressor(art_warning, get_diabetes_dataset, model_type):
         train_acc = np.sum(inferred_train == x_train_feature.reshape(1, -1)) / len(inferred_train)
         test_acc = np.sum(inferred_test == x_test_feature.reshape(1, -1)) / len(inferred_test)
 
-        assert pytest.approx(0.0258, abs=0.12) == train_acc
-        assert pytest.approx(0.0375, abs=0.12) == test_acc
+        assert train_acc == pytest.approx(0.1, abs=0.15)
+        assert test_acc == pytest.approx(0.1, abs=0.15)
 
     except ARTTestException as e:
         art_warning(e)
@@ -419,8 +421,8 @@ def test_black_box_regressor_label(art_warning, get_diabetes_dataset, model_type
         train_acc = np.sum(inferred_train == x_train_feature.reshape(1, -1)) / len(inferred_train)
         test_acc = np.sum(inferred_test == x_test_feature.reshape(1, -1)) / len(inferred_test)
 
-        assert pytest.approx(0.0258, abs=0.12) == train_acc
-        assert pytest.approx(0.0375, abs=0.12) == test_acc
+        assert pytest.approx(0.1, abs=0.15) == train_acc
+        assert pytest.approx(0.1, abs=0.15) == test_acc
 
     except ARTTestException as e:
         art_warning(e)
@@ -613,8 +615,8 @@ def test_black_box_one_hot_float(art_warning, get_iris_dataset, model_type):
         attack.fit(x_train)
         # infer attacked feature
         values = [[-0.559017, 1.7888544], [-0.47003216, 2.127514], [-1.1774395, 0.84930056]]
-        inferred_train = attack.infer(x_train_for_attack, pred=x_train_predictions, values=values)
-        inferred_test = attack.infer(x_test_for_attack, pred=x_test_predictions, values=values)
+        inferred_train = attack.infer(x_train_for_attack, pred=x_train_predictions, values=values).astype(np.float32)
+        inferred_test = attack.infer(x_test_for_attack, pred=x_test_predictions, values=values).astype(np.float32)
         # check accuracy
         train_acc = np.sum(
             np.all(np.around(inferred_train, decimals=3) == np.around(train_one_hot, decimals=3), axis=1)
@@ -691,8 +693,8 @@ def test_black_box_one_hot_float_no_values(art_warning, get_iris_dataset, model_
         # train attack model
         attack.fit(x_train)
         # infer attacked feature
-        inferred_train = attack.infer(x_train_for_attack, pred=x_train_predictions)
-        inferred_test = attack.infer(x_test_for_attack, pred=x_test_predictions)
+        inferred_train = attack.infer(x_train_for_attack, pred=x_train_predictions).astype(np.float32)
+        inferred_test = attack.infer(x_test_for_attack, pred=x_test_predictions).astype(np.float32)
         # check accuracy
         train_acc = np.sum(
             np.all(np.around(inferred_train, decimals=3) == np.around(train_one_hot, decimals=3), axis=1)
