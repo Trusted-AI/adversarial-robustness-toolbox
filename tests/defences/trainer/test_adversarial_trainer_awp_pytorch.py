@@ -72,8 +72,8 @@ def get_adv_trainer_awptrades(framework, image_dl_estimator):
             attack = ProjectedGradientDescent(
                 classifier,
                 norm=np.inf,
-                eps=0.3,
-                eps_step=0.03,
+                eps=0.2,
+                eps_step=0.02,
                 max_iter=20,
                 targeted=False,
                 num_random_init=1,

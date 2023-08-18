@@ -73,6 +73,14 @@ class AdversarialTrainerAWPPyTorch(AdversarialTrainerAWP):
         :param warmup: The number of epochs after which weight perturbation is applied
         """
         super().__init__(classifier, proxy_classifier, attack, mode, gamma, beta, warmup)
+        self._classifier: PyTorchClassifier
+        self._proxy_classifier: PyTorchClassifier
+        self._attack: EvasionAttack
+        self._mode: str
+        self.gamma: float
+        self._beta: float
+        self._warmup: int
+        self._apply_wp: bool
 
     def fit(
         self,
@@ -100,10 +108,10 @@ class AdversarialTrainerAWPPyTorch(AdversarialTrainerAWP):
         import torch
 
         logger.info("Performing adversarial training with AWP with %s protocol", self._mode)
-        # pylint: disable=W0212
+
         if (scheduler is not None) and (
-            not isinstance(scheduler, torch.optim.lr_scheduler._LRScheduler)
-        ):  # pylint: enable=W0212
+            not isinstance(scheduler, torch.optim.lr_scheduler._LRScheduler)  # pylint: disable=W0212
+        ):
             raise ValueError("Invalid Pytorch scheduler is provided for adversarial training.")
 
         best_acc_adv_test = 0
@@ -144,12 +152,13 @@ class AdversarialTrainerAWPPyTorch(AdversarialTrainerAWP):
             if validation_data is not None:
                 (x_test, y_test) = validation_data
                 y_test = check_and_transform_label_format(y_test, nb_classes=self.classifier.nb_classes)
+                # pylint: disable=W0212
                 x_preprocessed_test, y_preprocessed_test = self._classifier._apply_preprocessing(
-                    # pylint: disable=W0212
                     x_test,
                     y_test,
                     fit=True,
                 )
+                # pylint: enable=W0212
                 output_clean = np.argmax(self.predict(x_preprocessed_test), axis=1)
                 nb_correct_clean = np.sum(output_clean == np.argmax(y_preprocessed_test, axis=1))
                 x_test_adv = self._attack.generate(x_preprocessed_test, y=y_preprocessed_test)
@@ -207,10 +216,9 @@ class AdversarialTrainerAWPPyTorch(AdversarialTrainerAWP):
 
         logger.info("Performing adversarial training with AWP with %s protocol", self._mode)
 
-        # pylint: disable=W0212
         if (scheduler is not None) and (
-            not isinstance(scheduler, torch.optim.lr_scheduler._LRScheduler)
-        ):  # pylint: enable=W0212
+            not isinstance(scheduler, torch.optim.lr_scheduler._LRScheduler)  # pylint: disable=W0212
+        ):
             raise ValueError("Invalid Pytorch scheduler is provided for adversarial training.")
 
         size = generator.size
@@ -253,12 +261,13 @@ class AdversarialTrainerAWPPyTorch(AdversarialTrainerAWP):
             if validation_data is not None:
                 (x_test, y_test) = validation_data
                 y_test = check_and_transform_label_format(y_test, nb_classes=self.classifier.nb_classes)
+                # pylint: disable=W0212
                 x_preprocessed_test, y_preprocessed_test = self._classifier._apply_preprocessing(
-                    # pylint: disable=W0212
                     x_test,
                     y_test,
                     fit=True,
                 )
+                # pylint: enable=W0212
                 output_clean = np.argmax(self.predict(x_preprocessed_test), axis=1)
                 nb_correct_clean = np.sum(output_clean == np.argmax(y_preprocessed_test, axis=1))
                 x_test_adv = self._attack.generate(x_preprocessed_test, y=y_preprocessed_test)
@@ -432,7 +441,7 @@ class AdversarialTrainerAWPPyTorch(AdversarialTrainerAWP):
 
         for name in list_keys:
             perturbation = params_dict_proxy[name]["param"] - params_dict[name]["param"]
-            perturbation = torch.reshape(perturbation, params_dict[name]["size"])
+            perturbation = torch.reshape(perturbation, list(params_dict[name]["size"]))
             scale = params_dict[name]["norm"] / (perturbation.norm() + EPS)
             w_perturb[name] = scale * perturbation
 
@@ -452,7 +461,7 @@ class AdversarialTrainerAWPPyTorch(AdversarialTrainerAWP):
         """
         import torch
 
-        params_dict = OrderedDict()
+        params_dict: Dict[str, Dict[str, "torch.Tensor"]] = OrderedDict()
         list_params = []
         for name, param in p_classifier.model.state_dict().items():
             if len(param.size()) <= 1:
