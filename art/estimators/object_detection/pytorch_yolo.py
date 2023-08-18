@@ -358,6 +358,12 @@ class PyTorchYolo(ObjectDetectorMixin, PyTorchEstimator):
         x_preprocessed = x_preprocessed.to(self.device)
         y_preprocessed_yolo = y_preprocessed_yolo.to(self.device)
 
+        # Set gradients again after inputs are moved to another device
+        if x_preprocessed.is_leaf:
+            x_preprocessed.requires_grad = True
+        else:
+            x_preprocessed.retain_grad()
+
         # Calculate loss components
         loss_components = self._model(x_preprocessed, y_preprocessed_yolo)
 
