@@ -38,6 +38,7 @@ num_classes_iris = 3
 num_classes_mnist = 10
 
 
+@pytest.mark.skip_framework("scikitlearn")
 def test_black_box_image(art_warning, get_default_mnist_subset, image_dl_estimator_for_attack):
     try:
         classifier = image_dl_estimator_for_attack(MembershipInferenceBlackBox)
@@ -47,7 +48,7 @@ def test_black_box_image(art_warning, get_default_mnist_subset, image_dl_estimat
         art_warning(e)
 
 
-@pytest.mark.parametrize("model_type", ["nn", "rf", "gb"])
+@pytest.mark.parametrize("model_type", ["nn", "rf", "gb", "lr", "dt", "knn", "svm"])
 def test_black_box_tabular(art_warning, model_type, tabular_dl_estimator_for_attack, get_iris_dataset):
     try:
         classifier = tabular_dl_estimator_for_attack(MembershipInferenceBlackBox)
@@ -57,7 +58,7 @@ def test_black_box_tabular(art_warning, model_type, tabular_dl_estimator_for_att
         art_warning(e)
 
 
-@pytest.mark.parametrize("model_type", ["nn", "rf", "gb"])
+@pytest.mark.parametrize("model_type", ["nn", "rf", "gb", "lr", "dt", "knn", "svm"])
 def test_black_box_loss_tabular(art_warning, model_type, tabular_dl_estimator_for_attack, get_iris_dataset):
     try:
         classifier = tabular_dl_estimator_for_attack(MembershipInferenceBlackBox)
@@ -68,7 +69,7 @@ def test_black_box_loss_tabular(art_warning, model_type, tabular_dl_estimator_fo
         art_warning(e)
 
 
-@pytest.mark.parametrize("model_type", ["nn", "rf", "gb"])
+@pytest.mark.parametrize("model_type", ["nn", "rf", "gb", "lr", "dt", "knn", "svm"])
 def test_black_box_loss_regression(art_warning, model_type, get_diabetes_dataset):
     try:
         from sklearn import linear_model
@@ -175,7 +176,7 @@ def test_black_box_with_model_prob(
         art_warning(e)
 
 
-@pytest.mark.parametrize("model_type", ["nn", "rf", "gb"])
+@pytest.mark.parametrize("model_type", ["nn", "rf", "gb", "lr", "dt", "knn", "svm"])
 def test_black_box_pred(art_warning, model_type, tabular_dl_estimator_for_attack, get_iris_dataset):
     try:
         (x_train, _), (x_test, _) = get_iris_dataset
@@ -189,7 +190,7 @@ def test_black_box_pred(art_warning, model_type, tabular_dl_estimator_for_attack
         art_warning(e)
 
 
-@pytest.mark.parametrize("model_type", ["nn", "rf", "gb"])
+@pytest.mark.parametrize("model_type", ["nn", "rf", "gb", "lr", "dt", "knn", "svm"])
 def test_black_box_loss_regression_pred(art_warning, model_type, get_diabetes_dataset):
     try:
         from sklearn import linear_model
