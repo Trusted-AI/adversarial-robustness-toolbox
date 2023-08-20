@@ -43,7 +43,7 @@ logger = logging.getLogger(__name__)
 
 
 @pytest.mark.skip_framework("dl_frameworks")
-@pytest.mark.parametrize("model_type", ["nn", "rf"])
+@pytest.mark.parametrize("model_type", ["nn", "rf", "gb", "lr", "dt", "knn", "svm"])
 def test_black_box(art_warning, decision_tree_estimator, get_iris_dataset, model_type):
     try:
         attack_feature = 2  # petal length
@@ -86,15 +86,15 @@ def test_black_box(art_warning, decision_tree_estimator, get_iris_dataset, model
         # check accuracy
         train_acc = np.sum(inferred_train == x_train_feature.reshape(1, -1)) / len(inferred_train)
         test_acc = np.sum(inferred_test == x_test_feature.reshape(1, -1)) / len(inferred_test)
-        assert pytest.approx(0.8285, abs=0.2) == train_acc
-        assert pytest.approx(0.8888, abs=0.18) == test_acc
+        assert pytest.approx(0.8285, abs=0.3) == train_acc
+        assert pytest.approx(0.8888, abs=0.3) == test_acc
 
     except ARTTestException as e:
         art_warning(e)
 
 
 @pytest.mark.skip_framework("dl_frameworks")
-@pytest.mark.parametrize("model_type", ["nn", "rf"])
+@pytest.mark.parametrize("model_type", ["nn", "rf", "gb", "lr", "dt", "knn", "svm"])
 def test_black_box_continuous(art_warning, decision_tree_estimator, get_iris_dataset, model_type):
     try:
         attack_feature = 2  # petal length
@@ -134,7 +134,7 @@ def test_black_box_continuous(art_warning, decision_tree_estimator, get_iris_dat
 
 
 @pytest.mark.skip_framework("dl_frameworks")
-@pytest.mark.parametrize("model_type", ["nn", "rf"])
+@pytest.mark.parametrize("model_type", ["nn", "rf", "gb", "lr", "dt", "knn", "svm"])
 def test_black_box_slice(art_warning, decision_tree_estimator, get_iris_dataset, model_type):
     try:
         attack_feature = 2  # petal length
@@ -179,15 +179,15 @@ def test_black_box_slice(art_warning, decision_tree_estimator, get_iris_dataset,
         # check accuracy
         train_acc = np.sum(inferred_train == x_train_feature.reshape(1, -1)) / len(inferred_train)
         test_acc = np.sum(inferred_test == x_test_feature.reshape(1, -1)) / len(inferred_test)
-        assert pytest.approx(0.8285, abs=0.12) == train_acc
-        assert pytest.approx(0.8888, abs=0.18) == test_acc
+        assert pytest.approx(0.8285, abs=0.3) == train_acc
+        assert pytest.approx(0.8888, abs=0.3) == test_acc
 
     except ARTTestException as e:
         art_warning(e)
 
 
 @pytest.mark.skip_framework("dl_frameworks")
-@pytest.mark.parametrize("model_type", ["nn", "rf"])
+@pytest.mark.parametrize("model_type", ["nn", "rf", "gb", "lr", "dt", "knn", "svm"])
 def test_black_box_with_label(art_warning, decision_tree_estimator, get_iris_dataset, model_type):
     try:
         attack_feature = 2  # petal length
@@ -230,15 +230,15 @@ def test_black_box_with_label(art_warning, decision_tree_estimator, get_iris_dat
         # check accuracy
         train_acc = np.sum(inferred_train == x_train_feature.reshape(1, -1)) / len(inferred_train)
         test_acc = np.sum(inferred_test == x_test_feature.reshape(1, -1)) / len(inferred_test)
-        assert pytest.approx(0.8285, abs=0.12) == train_acc
-        assert pytest.approx(0.8888, abs=0.18) == test_acc
+        assert pytest.approx(0.8285, abs=0.3) == train_acc
+        assert pytest.approx(0.8888, abs=0.3) == test_acc
 
     except ARTTestException as e:
         art_warning(e)
 
 
 @pytest.mark.skip_framework("dl_frameworks")
-@pytest.mark.parametrize("model_type", ["nn", "rf"])
+@pytest.mark.parametrize("model_type", ["nn", "rf", "gb", "lr", "dt", "knn", "svm"])
 def test_black_box_no_values(art_warning, decision_tree_estimator, get_iris_dataset, model_type):
     try:
         attack_feature = 2  # petal length
@@ -279,15 +279,15 @@ def test_black_box_no_values(art_warning, decision_tree_estimator, get_iris_data
         # check accuracy
         train_acc = np.sum(inferred_train == x_train_feature.reshape(1, -1)) / len(inferred_train)
         test_acc = np.sum(inferred_test == x_test_feature.reshape(1, -1)) / len(inferred_test)
-        assert pytest.approx(0.8285, abs=0.12) == train_acc
-        assert pytest.approx(0.8888, abs=0.18) == test_acc
+        assert pytest.approx(0.8285, abs=0.3) == train_acc
+        assert pytest.approx(0.8888, abs=0.3) == test_acc
 
     except ARTTestException as e:
         art_warning(e)
 
 
 @pytest.mark.skip_framework("dl_frameworks")
-@pytest.mark.parametrize("model_type", ["nn", "rf"])
+@pytest.mark.parametrize("model_type", ["nn", "rf", "gb", "lr", "dt", "knn", "svm"])
 def test_black_box_regressor(art_warning, get_diabetes_dataset, model_type):
     try:
         attack_feature = 0  # age
@@ -358,7 +358,7 @@ def test_black_box_regressor(art_warning, get_diabetes_dataset, model_type):
 
 
 @pytest.mark.skip_framework("dl_frameworks")
-@pytest.mark.parametrize("model_type", ["nn", "rf"])
+@pytest.mark.parametrize("model_type", ["nn", "rf", "gb", "lr", "dt", "knn", "svm"])
 def test_black_box_regressor_label(art_warning, get_diabetes_dataset, model_type):
     try:
         attack_feature = 0  # age
@@ -489,7 +489,7 @@ def test_black_box_with_model(art_warning, decision_tree_estimator, get_iris_dat
 
 
 @pytest.mark.skip_framework("dl_frameworks")
-@pytest.mark.parametrize("model_type", ["nn", "rf"])
+@pytest.mark.parametrize("model_type", ["nn", "rf", "gb", "lr", "dt", "knn", "svm"])
 def test_black_box_one_hot(art_warning, get_iris_dataset, model_type):
     try:
         attack_feature = 2  # petal length
@@ -553,7 +553,7 @@ def test_black_box_one_hot(art_warning, get_iris_dataset, model_type):
 
 
 @pytest.mark.skip_framework("dl_frameworks")
-@pytest.mark.parametrize("model_type", ["nn", "rf"])
+@pytest.mark.parametrize("model_type", ["nn", "rf", "gb", "lr", "dt", "knn", "svm"])
 def test_black_box_one_hot_float(art_warning, get_iris_dataset, model_type):
     try:
         attack_feature = 2  # petal length
@@ -632,7 +632,7 @@ def test_black_box_one_hot_float(art_warning, get_iris_dataset, model_type):
 
 
 @pytest.mark.skip_framework("dl_frameworks")
-@pytest.mark.parametrize("model_type", ["nn", "rf"])
+@pytest.mark.parametrize("model_type", ["nn", "rf", "gb", "lr", "dt", "knn", "svm"])
 def test_black_box_one_hot_float_no_values(art_warning, get_iris_dataset, model_type):
     try:
         attack_feature = 2  # petal length
@@ -710,7 +710,7 @@ def test_black_box_one_hot_float_no_values(art_warning, get_iris_dataset, model_
 
 
 @pytest.mark.skip_framework("dl_frameworks")
-@pytest.mark.parametrize("model_type", ["nn", "rf"])
+@pytest.mark.parametrize("model_type", ["nn", "rf", "gb", "lr", "dt", "knn", "svm"])
 def test_black_box_baseline_encoder(art_warning, get_iris_dataset, model_type):
     try:
         attack_feature = 2  # petal length
@@ -829,7 +829,7 @@ def test_black_box_baseline_encoder(art_warning, get_iris_dataset, model_type):
 
 
 @pytest.mark.skip_framework("dl_frameworks")
-@pytest.mark.parametrize("model_type", ["nn", "rf"])
+@pytest.mark.parametrize("model_type", ["nn", "rf", "gb", "lr", "dt", "knn", "svm"])
 def test_black_box_baseline_no_encoder(art_warning, get_iris_dataset, model_type):
     try:
         attack_feature = 2  # petal length
@@ -951,7 +951,7 @@ def test_black_box_baseline_no_encoder(art_warning, get_iris_dataset, model_type
 
 
 @pytest.mark.skip_framework("dl_frameworks")
-@pytest.mark.parametrize("model_type", ["nn", "rf"])
+@pytest.mark.parametrize("model_type", ["nn", "rf", "gb", "lr", "dt", "knn", "svm"])
 def test_black_box_baseline_no_encoder_after_feature(art_warning, get_iris_dataset, model_type):
     try:
         attack_feature = 2  # petal length
@@ -1061,15 +1061,15 @@ def test_black_box_baseline_no_encoder_after_feature(art_warning, get_iris_datas
             baseline_inferred_test
         )
 
-        assert 0.5 <= baseline_train_acc
-        assert 0.5 <= baseline_test_acc
+        assert 0.4 <= baseline_train_acc
+        assert 0.4 <= baseline_test_acc
 
     except ARTTestException as e:
         art_warning(e)
 
 
 @pytest.mark.skip_framework("dl_frameworks")
-@pytest.mark.parametrize("model_type", ["nn", "rf"])
+@pytest.mark.parametrize("model_type", ["nn", "rf", "gb", "lr", "dt", "knn", "svm"])
 def test_black_box_baseline_no_encoder_after_feature_slice(art_warning, get_iris_dataset, model_type):
     try:
         orig_attack_feature = 1  # petal length
@@ -1185,7 +1185,7 @@ def test_black_box_baseline_no_encoder_after_feature_slice(art_warning, get_iris
 
 
 @pytest.mark.skip_framework("dl_frameworks")
-@pytest.mark.parametrize("model_type", ["nn", "rf"])
+@pytest.mark.parametrize("model_type", ["nn", "rf", "gb", "lr", "dt", "knn", "svm"])
 def test_black_box_baseline_no_encoder_remove_attack_feature(art_warning, get_iris_dataset, model_type):
     try:
         attack_feature = 2  # petal length

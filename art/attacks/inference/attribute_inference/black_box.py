@@ -25,6 +25,11 @@ from typing import Optional, Union, Tuple, List, TYPE_CHECKING
 
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
+from sklearn.ensemble import GradientBoostingClassifier, GradientBoostingRegressor
+from sklearn.linear_model import LogisticRegression, LinearRegression
+from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
+from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
+from sklearn.svm import SVC, SVR
 from sklearn.preprocessing import minmax_scale, OneHotEncoder, OrdinalEncoder
 from sklearn.compose import ColumnTransformer
 
@@ -82,9 +87,15 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
         Create an AttributeInferenceBlackBox attack instance.
 
         :param estimator: Target estimator.
-        :param attack_model_type: the type of default attack model to train, optional. Should be one of `nn` (for neural
-                                  network, default) or `rf` (for random forest). If `attack_model` is supplied, this
-                                  option will be ignored.
+        :param attack_model_type: the type of default attack model to train, optional. Should be one of:
+                                 `nn` (neural network, default),
+                                 `rf` (random forest),
+                                 `gb` (gradient boosting),
+                                 `lr` (logistic/linear regression),
+                                 `dt` (decision tree),
+                                 `knn` (k nearest neighbors),
+                                 `svm` (support vector machine).
+                                  If `attack_model` is supplied, this option will be ignored.
         :param attack_model: The attack model to train, optional. If the attacked feature is continuous, this should
                              be a regression model, and if the attacked feature is categorical it should be a
                              classifier.If none is provided, a default model will be created.
@@ -199,6 +210,31 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
                 self.attack_model = RandomForestRegressor()
             else:
                 self.attack_model = RandomForestClassifier()
+        elif attack_model_type == "gb":
+            if self._is_continuous:
+                self.attack_model = GradientBoostingRegressor()
+            else:
+                self.attack_model = GradientBoostingClassifier()
+        elif attack_model_type == "lr":
+            if self._is_continuous:
+                self.attack_model = LinearRegression()
+            else:
+                self.attack_model = LogisticRegression()
+        elif attack_model_type == "dt":
+            if self._is_continuous:
+                self.attack_model = DecisionTreeRegressor()
+            else:
+                self.attack_model = DecisionTreeClassifier()
+        elif attack_model_type == "knn":
+            if self._is_continuous:
+                self.attack_model = KNeighborsRegressor()
+            else:
+                self.attack_model = KNeighborsClassifier()
+        elif attack_model_type == "svm":
+            if self._is_continuous:
+                self.attack_model = SVR()
+            else:
+                self.attack_model = SVC(probability=True)
         else:
             raise ValueError("Illegal value for parameter `attack_model_type`.")
 
@@ -247,6 +283,8 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
             else:
                 y_one_hot = floats_to_one_hot(y_attack)
             y_attack_ready = check_and_transform_label_format(y_one_hot, nb_classes=nb_classes, return_one_hot=True)
+            if self._attack_model_type == 'gb' or self._attack_model_type == 'lr' or self._attack_model_type == 'svm':
+                y_attack_ready = np.argmax(y_attack_ready, axis=1)
 
         # create training set for attack model
         x_train = np.delete(x, self.attack_feature, 1)
@@ -402,8 +440,17 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
 
         if not self._is_continuous and self._values is not None:
             if isinstance(self.attack_feature, int):
-                predictions = np.array([self._values[np.argmax(arr)] for arr in predictions])
+                if self._attack_model_type == 'gb' or self._attack_model_type == 'lr' \
+                        or self._attack_model_type == 'svm':
+                    indexes = predictions
+                else:
+                    indexes = np.argmax(predictions, axis=1)
+                predictions = np.array([self._values[int(index)] for index in indexes])
             else:
+                if self._attack_model_type == 'gb' or self._attack_model_type == 'lr' \
+                        or self._attack_model_type == 'svm':
+                    predictions = check_and_transform_label_format(predictions, nb_classes=len(self._values),
+                                                                   return_one_hot=True)
                 i = 0
                 for column in predictions.T:
                     for index in range(len(self._values[i])):
@@ -450,7 +497,7 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
         if not isinstance(self._is_continuous, bool):
             raise ValueError("is_continuous must be a boolean.")
 
-        if self._attack_model_type not in ["nn", "rf"]:
+        if self._attack_model_type not in ["nn", "rf", "gb", "lr", "dt", "knn", "svm"]:
             raise ValueError("Illegal value for parameter `attack_model_type`.")
 
         if RegressorMixin not in type(self.estimator).__mro__:
