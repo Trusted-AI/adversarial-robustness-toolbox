@@ -219,7 +219,10 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
 
             # Set gradients
             if not no_grad:
-                x_tensor.requires_grad = True
+                if x_tensor.is_leaf:
+                    x_tensor.requires_grad = True
+                else:
+                    x_tensor.retain_grad()
 
             # Apply framework-specific preprocessing
             x_preprocessed, y_preprocessed = self._apply_preprocessing(x=x_tensor, y=y_tensor, fit=fit, no_grad=no_grad)
@@ -266,6 +269,12 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
         # Move inputs to device
         x_preprocessed = x_preprocessed.to(self.device)
         y_preprocessed = [{k: v.to(self.device) for k, v in y_i.items()} for y_i in y_preprocessed]
+
+        # Set gradients again after inputs are moved to another device
+        if x_preprocessed.is_leaf:
+            x_preprocessed.requires_grad = True
+        else:
+            x_preprocessed.retain_grad()
 
         loss_components = self._model(x_preprocessed, y_preprocessed)
 
