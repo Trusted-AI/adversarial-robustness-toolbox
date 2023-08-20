@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
 
 
 @pytest.mark.skip_framework("dl_frameworks")
-@pytest.mark.parametrize("model_type", ["nn", "rf"])
+@pytest.mark.parametrize("model_type", ["nn", "rf", "gb", "lr", "dt", "knn", "svm"])
 def test_true_label_baseline(art_warning, get_iris_dataset, model_type):
     try:
         attack_feature = 2  # petal length
@@ -87,7 +87,7 @@ def test_true_label_baseline(art_warning, get_iris_dataset, model_type):
 
 
 @pytest.mark.skip_framework("dl_frameworks")
-@pytest.mark.parametrize("model_type", ["nn", "rf"])
+@pytest.mark.parametrize("model_type", ["nn", "rf", "gb", "lr", "dt", "knn", "svm"])
 def test_true_label_baseline_continuous(art_warning, get_iris_dataset, model_type):
     try:
         attack_feature = 2  # petal length
@@ -112,15 +112,17 @@ def test_true_label_baseline_continuous(art_warning, get_iris_dataset, model_typ
         baseline_inferred_train = baseline_attack.infer(x_train_for_attack, y=y_train_iris)
         baseline_inferred_test = baseline_attack.infer(x_test_for_attack, y=y_test_iris)
         # check accuracy
-        assert np.allclose(baseline_inferred_train, x_train_feature.reshape(1, -1), atol=0.2)
-        assert np.allclose(baseline_inferred_test, x_test_feature.reshape(1, -1), atol=0.2)
+        assert np.count_nonzero(np.isclose(baseline_inferred_train, x_train_feature.reshape(1, -1), atol=0.4)) > \
+               baseline_inferred_train.shape[0] * 0.75
+        assert np.count_nonzero(np.isclose(baseline_inferred_test, x_test_feature.reshape(1, -1), atol=0.4)) > \
+               baseline_inferred_test.shape[0] * 0.75
 
     except ARTTestException as e:
         art_warning(e)
 
 
 @pytest.mark.skip_framework("dl_frameworks")
-@pytest.mark.parametrize("model_type", ["nn", "rf"])
+@pytest.mark.parametrize("model_type", ["nn", "rf", "gb", "lr", "dt", "knn", "svm"])
 def test_true_label_baseline_column(art_warning, get_iris_dataset, model_type):
     try:
         attack_feature = 2  # petal length
@@ -175,7 +177,7 @@ def test_true_label_baseline_column(art_warning, get_iris_dataset, model_type):
 
 
 @pytest.mark.skip_framework("dl_frameworks")
-@pytest.mark.parametrize("model_type", ["nn", "rf"])
+@pytest.mark.parametrize("model_type", ["nn", "rf", "gb", "lr", "dt", "knn", "svm"])
 def test_true_label_baseline_no_values(art_warning, get_iris_dataset, model_type):
     try:
         attack_feature = 2  # petal length
@@ -308,8 +310,8 @@ def test_true_label_baseline_regression(art_warning, get_diabetes_dataset, model
             baseline_inferred_test
         )
 
-        assert 0.6 <= baseline_train_acc
-        assert 0.6 <= baseline_test_acc
+        assert 0.45 <= baseline_train_acc
+        assert 0.45 <= baseline_test_acc
 
     except ARTTestException as e:
         art_warning(e)

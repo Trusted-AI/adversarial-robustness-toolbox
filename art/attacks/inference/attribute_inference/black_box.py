@@ -346,7 +346,6 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
                     optimizer.zero_grad()
                     outputs = self.attack_model(input1)  # type: ignore
                     loss = loss_fn(outputs, targets)
-                    print('MSE loss: ', loss)
                     loss.backward()
                     optimizer.step()
         else:
@@ -433,7 +432,6 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
                     idx = np.argmax(predictions, axis=-1)
                     predictions = np.zeros(predictions.shape)
                     predictions[np.arange(predictions.shape[0]), idx] = 1
-
         else:
             predictions = self.attack_model.predict(x_test)
         predictions = predictions.astype(np.float32)

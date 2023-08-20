@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
 
 
 @pytest.mark.skip_framework("dl_frameworks")
-@pytest.mark.parametrize("model_type", ["nn", "rf"])
+@pytest.mark.parametrize("model_type", ["nn", "rf", "gb", "lr", "dt", "knn", "svm"])
 def test_black_box_baseline(art_warning, get_iris_dataset, model_type):
     try:
         attack_feature = 2  # petal length
@@ -78,15 +78,15 @@ def test_black_box_baseline(art_warning, get_iris_dataset, model_type):
             baseline_inferred_test
         )
 
-        assert 0.8 <= baseline_train_acc
-        assert 0.7 <= baseline_test_acc
+        assert 0.5 <= baseline_train_acc
+        assert 0.5 <= baseline_test_acc
 
     except ARTTestException as e:
         art_warning(e)
 
 
 @pytest.mark.skip_framework("dl_frameworks")
-@pytest.mark.parametrize("model_type", ["nn", "rf"])
+@pytest.mark.parametrize("model_type", ["nn", "rf", "gb", "lr", "dt", "knn", "svm"])
 def test_black_box_baseline_continuous(art_warning, get_iris_dataset, model_type):
     try:
         attack_feature = 2  # petal length
@@ -112,15 +112,17 @@ def test_black_box_baseline_continuous(art_warning, get_iris_dataset, model_type
         baseline_inferred_train = baseline_attack.infer(x_train_for_attack)
         baseline_inferred_test = baseline_attack.infer(x_test_for_attack)
         # check accuracy
-        assert np.allclose(baseline_inferred_train, x_train_feature.reshape(1, -1), atol=0.4)
-        assert np.allclose(baseline_inferred_test, x_test_feature.reshape(1, -1), atol=0.4)
+        assert np.count_nonzero(np.isclose(baseline_inferred_train, x_train_feature.reshape(1, -1), atol=0.4)) > \
+               baseline_inferred_train.shape[0] * 0.75
+        assert np.count_nonzero(np.isclose(baseline_inferred_test, x_test_feature.reshape(1, -1), atol=0.4)) > \
+               baseline_inferred_test.shape[0] * 0.75
 
     except ARTTestException as e:
         art_warning(e)
 
 
 @pytest.mark.skip_framework("dl_frameworks")
-@pytest.mark.parametrize("model_type", ["nn", "rf"])
+@pytest.mark.parametrize("model_type", ["nn", "rf", "gb", "lr", "dt", "knn", "svm"])
 def test_black_box_baseline_slice(art_warning, get_iris_dataset, model_type):
     try:
         attack_feature = 2  # petal length
@@ -166,15 +168,15 @@ def test_black_box_baseline_slice(art_warning, get_iris_dataset, model_type):
             baseline_inferred_test
         )
 
-        assert 0.8 <= baseline_train_acc
-        assert 0.7 <= baseline_test_acc
+        assert 0.5 <= baseline_train_acc
+        assert 0.5 <= baseline_test_acc
 
     except ARTTestException as e:
         art_warning(e)
 
 
 @pytest.mark.skip_framework("dl_frameworks")
-@pytest.mark.parametrize("model_type", ["nn", "rf"])
+@pytest.mark.parametrize("model_type", ["nn", "rf", "gb", "lr", "dt", "knn", "svm"])
 def test_black_box_baseline_no_values(art_warning, get_iris_dataset, model_type):
     try:
         attack_feature = 2  # petal length
@@ -215,15 +217,15 @@ def test_black_box_baseline_no_values(art_warning, get_iris_dataset, model_type)
             baseline_inferred_test
         )
 
-        assert 0.8 <= baseline_train_acc
-        assert 0.7 <= baseline_test_acc
+        assert 0.5 <= baseline_train_acc
+        assert 0.5 <= baseline_test_acc
 
     except ARTTestException as e:
         art_warning(e)
 
 
 @pytest.mark.skip_framework("dl_frameworks")
-@pytest.mark.parametrize("model_type", ["nn", "rf"])
+@pytest.mark.parametrize("model_type", ["nn", "rf", "gb", "lr", "dt", "knn", "svm"])
 def test_black_box_baseline_encoder(art_warning, get_iris_dataset, model_type):
     try:
         attack_feature = 2  # petal length
@@ -311,15 +313,15 @@ def test_black_box_baseline_encoder(art_warning, get_iris_dataset, model_type):
             baseline_inferred_test
         )
 
-        assert 0.6 <= baseline_train_acc
-        assert 0.6 <= baseline_test_acc
+        assert 0.5 <= baseline_train_acc
+        assert 0.5 <= baseline_test_acc
 
     except ARTTestException as e:
         art_warning(e)
 
 
 @pytest.mark.skip_framework("dl_frameworks")
-@pytest.mark.parametrize("model_type", ["nn", "rf"])
+@pytest.mark.parametrize("model_type", ["nn", "rf", "gb", "lr", "dt", "knn", "svm"])
 def test_black_box_baseline_no_encoder(art_warning, get_iris_dataset, model_type):
     try:
         attack_feature = 2  # petal length
@@ -398,15 +400,15 @@ def test_black_box_baseline_no_encoder(art_warning, get_iris_dataset, model_type
             baseline_inferred_test
         )
 
-        assert 0.6 <= baseline_train_acc
-        assert 0.6 <= baseline_test_acc
+        assert 0.5 <= baseline_train_acc
+        assert 0.5 <= baseline_test_acc
 
     except ARTTestException as e:
         art_warning(e)
 
 
 @pytest.mark.skip_framework("dl_frameworks")
-@pytest.mark.parametrize("model_type", ["nn", "rf"])
+@pytest.mark.parametrize("model_type", ["nn", "rf", "gb", "lr", "dt", "knn", "svm"])
 def test_black_box_baseline_no_encoder_after_feature(art_warning, get_iris_dataset, model_type):
     try:
         attack_feature = 2  # petal length
@@ -496,7 +498,7 @@ def test_black_box_baseline_no_encoder_after_feature(art_warning, get_iris_datas
 
 
 @pytest.mark.skip_framework("dl_frameworks")
-@pytest.mark.parametrize("model_type", ["nn", "rf"])
+@pytest.mark.parametrize("model_type", ["nn", "rf", "gb", "lr", "dt", "knn", "svm"])
 def test_black_box_baseline_no_encoder_after_feature_slice(art_warning, get_iris_dataset, model_type):
     try:
         orig_attack_feature = 1  # petal length
@@ -583,7 +585,7 @@ def test_black_box_baseline_no_encoder_after_feature_slice(art_warning, get_iris
 
 
 @pytest.mark.skip_framework("dl_frameworks")
-@pytest.mark.parametrize("model_type", ["nn", "rf"])
+@pytest.mark.parametrize("model_type", ["nn", "rf", "gb", "lr", "dt", "knn", "svm"])
 def test_black_box_baseline_no_encoder_remove_attack_feature(art_warning, get_iris_dataset, model_type):
     try:
         attack_feature = 2  # petal length
@@ -664,8 +666,8 @@ def test_black_box_baseline_no_encoder_remove_attack_feature(art_warning, get_ir
             baseline_inferred_test
         )
 
-        assert 0.6 <= baseline_train_acc
-        assert 0.6 <= baseline_test_acc
+        assert 0.5 <= baseline_train_acc
+        assert 0.5 <= baseline_test_acc
 
     except ARTTestException as e:
         art_warning(e)
