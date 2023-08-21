@@ -205,9 +205,9 @@ class AdversarialTrainer(Trainer):
         nb_batches = int(np.ceil(len(x) / batch_size))
         ind = np.arange(len(x))
         attack_id = 0
-        display_batch_info = False
-        if 'display_batch_info' in kwargs:
-            display_batch_info = kwargs['display_batch_info']
+        display_progress_bar = False
+        if "display_progress_bar" in kwargs:
+            display_progress_bar = kwargs["display_progress_bar"]
 
         # Precompute adversarial samples for transferred attacks
         logged = False
@@ -229,7 +229,7 @@ class AdversarialTrainer(Trainer):
             # Shuffle the examples
             np.random.shuffle(ind)
 
-            for batch_id in tqdm(range(nb_batches), disable=not display_batch_info):
+            for batch_id in tqdm(range(nb_batches), disable=not display_progress_bar):
                 # Create batch data
                 x_batch = x[ind[batch_id * batch_size : min((batch_id + 1) * batch_size, x.shape[0])]].copy()
                 y_batch = y[ind[batch_id * batch_size : min((batch_id + 1) * batch_size, x.shape[0])]]
@@ -258,6 +258,10 @@ class AdversarialTrainer(Trainer):
                     x_batch[adv_ids] = x_adv
 
                 # Fit batch
+                # Do not make a new tqdm bar for one batch, just dispplay overall progress.
+                if "display_progress_bar" in kwargs:
+                    kwargs["display_progress_bar"] = False
+
                 self._classifier.fit(x_batch, y_batch, nb_epochs=1, batch_size=x_batch.shape[0], verbose=0, **kwargs)
                 attack_id = (attack_id + 1) % len(self.attacks)
 

@@ -178,7 +178,7 @@ class HuggingFaceClassifier(PyTorchClassifier):
 
                         if isinstance(self._model, torch.nn.Module):
                             if processor is not None:
-                                    x = processor(x)
+                                x = processor(x)
                             x = self._model.forward(x)
                             result.append(x)
 
