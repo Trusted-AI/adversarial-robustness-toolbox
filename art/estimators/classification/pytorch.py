@@ -376,7 +376,6 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         training_mode: bool = True,
         drop_last: bool = False,
         scheduler: Optional["torch.optim.lr_scheduler._LRScheduler"] = None,
-        verbose: bool =False,
         **kwargs,
     ) -> None:
         """
@@ -397,6 +396,10 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         """
         import torch
         from torch.utils.data import TensorDataset, DataLoader
+
+        display_progress_bar = False
+        if "display_progress_bar" in kwargs:
+            display_progress_bar = kwargs["display_progress_bar"]
 
         # Set model mode
         self._model.train(mode=training_mode)
@@ -425,11 +428,10 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         dataloader = DataLoader(dataset=dataset, batch_size=batch_size, shuffle=True, drop_last=drop_last)
 
         # Start training
-        for epoch in tqdm(range(nb_epochs), disable=not verbose):
-            pbar = tqdm(dataloader, total=num_batches, disable=not verbose)
+        for _ in tqdm(range(nb_epochs), disable=not display_progress_bar):
+            pbar = tqdm(dataloader, total=num_batches, disable=not display_progress_bar)
 
             for x_batch, y_batch in pbar:
-            # for x_batch, y_batch in dataloader:
                 # Move inputs to device
                 x_batch = x_batch.to(self._device)
                 y_batch = y_batch.to(self._device)
@@ -461,10 +463,8 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                     loss.backward()
 
                 self._optimizer.step()
-                if verbose:
-                    pbar.set_description(
-                        f"Loss {loss:.2f} "
-                    )
+                if display_progress_bar:
+                    pbar.set_description(f"Loss {loss:.2f} ")
             if scheduler is not None:
                 scheduler.step()
 
