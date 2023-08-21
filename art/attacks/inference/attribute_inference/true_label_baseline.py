@@ -44,9 +44,6 @@ from art.utils import (
     remove_attacked_feature,
 )
 
-if TYPE_CHECKING:
-    from art.utils import CLASSIFIER_TYPE
-
 logger = logging.getLogger(__name__)
 
 

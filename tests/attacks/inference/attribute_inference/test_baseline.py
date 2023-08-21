@@ -112,10 +112,14 @@ def test_black_box_baseline_continuous(art_warning, get_iris_dataset, model_type
         baseline_inferred_train = baseline_attack.infer(x_train_for_attack)
         baseline_inferred_test = baseline_attack.infer(x_test_for_attack)
         # check accuracy
-        assert np.count_nonzero(np.isclose(baseline_inferred_train, x_train_feature.reshape(1, -1), atol=0.4)) > \
-               baseline_inferred_train.shape[0] * 0.75
-        assert np.count_nonzero(np.isclose(baseline_inferred_test, x_test_feature.reshape(1, -1), atol=0.4)) > \
-               baseline_inferred_test.shape[0] * 0.75
+        assert (
+            np.count_nonzero(np.isclose(baseline_inferred_train, x_train_feature.reshape(1, -1), atol=0.4))
+            > baseline_inferred_train.shape[0] * 0.75
+        )
+        assert (
+            np.count_nonzero(np.isclose(baseline_inferred_test, x_test_feature.reshape(1, -1), atol=0.4))
+            > baseline_inferred_test.shape[0] * 0.75
+        )
 
     except ARTTestException as e:
         art_warning(e)
