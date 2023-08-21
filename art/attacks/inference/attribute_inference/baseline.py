@@ -21,7 +21,7 @@ This module implements attribute inference attacks.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional, Union, List, Any, TYPE_CHECKING
+from typing import Optional, Union, List, Any
 
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
