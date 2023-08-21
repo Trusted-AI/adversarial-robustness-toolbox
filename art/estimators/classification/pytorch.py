@@ -397,9 +397,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         import torch
         from torch.utils.data import TensorDataset, DataLoader
 
-        display_progress_bar = False
-        if "display_progress_bar" in kwargs:
-            display_progress_bar = kwargs["display_progress_bar"]
+        display_progress_bar = kwargs.get("display_progress_bar", False)
 
         # Set model mode
         self._model.train(mode=training_mode)

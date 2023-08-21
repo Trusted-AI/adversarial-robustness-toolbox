@@ -20,7 +20,7 @@ This module implements the abstract estimator `HuggingFaceClassifier` using the 
 to interface with ART.
 """
 import logging
-from typing import List, Optional, Tuple, Union, Dict, TYPE_CHECKING
+from typing import List, Optional, Tuple, Union, Dict, Callable, TYPE_CHECKING
 
 import torch
 import numpy as np
@@ -48,8 +48,41 @@ class HuggingFaceClassifier(PyTorchClassifier):
         optimizer: Optional["torch.optim.Optimizer"] = None,  # type: ignore
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
-        processor=None,
+        processor: Optional[Callable] = None,
     ):
+        """
+        Initialization of HuggingFaceClassifier specifically for the PyTorch-based backend.
+
+        :param model: Huggingface model model which returns outputs of type ImageClassifierOutput from the transformers library.
+                      Must have the logits attribute set as output.
+        :param loss: The loss function for which to compute gradients for training. The target label must be raw
+                categorical, i.e. not converted to one-hot encoding.
+        :param input_shape: The shape of one input instance.
+        :param optimizer: The optimizer used to train the classifier.
+        :param use_amp: Whether to use the automatic mixed precision tool to enable mixed precision training or
+                        gradient computation, e.g. with loss gradient computation. When set to True, this option is
+                        only triggered if there are GPUs available.
+        :param opt_level: Specify a pure or mixed precision optimization level. Used when use_amp is True. Accepted
+                            values are `O0`, `O1`, `O2`, and `O3`.
+        :param loss_scale: Loss scaling. Used when use_amp is True. If passed as a string, must be a string
+                            representing a number, e.g., “1.0”, or the string “dynamic”.
+        :param nb_classes: The number of classes of the model.
+        :param optimizer: The optimizer used to train the classifier.
+        :param channels_first: Set channels first or last.
+        :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
+                maximum values allowed for features. If floats are provided, these will be used as the range of all
+                features. If arrays are provided, each value will be considered the bound for a feature, thus
+                the shape of clip values needs to match the total number of features.
+        :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
+        :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
+        :param preprocessing: Tuple of the form `(subtrahend, divisor)` of floats or `np.ndarray` of values to be
+                used for data preprocessing. The first value will be subtracted from the input. The input will then
+                be divided by the second one.
+        :param device_type: Type of device on which the classifier is run, either `gpu` or `cpu`.
+        :param processor: Optional argument. Function which takes in a batch of data and performs
+                        the preprocessing relevant to a given foundation model. Must be differentiable for grandient based
+                        defences and attacks.
+        """
         import transformers
 
         assert isinstance(model, transformers.PreTrainedModel)
@@ -95,6 +128,12 @@ class HuggingFaceClassifier(PyTorchClassifier):
         self.model.__call__ = prefix_function(self.model.__call__, get_logits)  # type: ignore
 
     def __call__(self, image):
+        """
+        Forward pass of the model
+        :param image: input data to the model
+
+        :return: model predictions
+        """
         if not isinstance(image, torch.Tensor):
             image = torch.from_numpy(image).to(self._device)
 

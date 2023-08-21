@@ -205,9 +205,7 @@ class AdversarialTrainer(Trainer):
         nb_batches = int(np.ceil(len(x) / batch_size))
         ind = np.arange(len(x))
         attack_id = 0
-        display_progress_bar = False
-        if "display_progress_bar" in kwargs:
-            display_progress_bar = kwargs["display_progress_bar"]
+        display_progress_bar = kwargs.get("display_progress_bar", False)
 
         # Precompute adversarial samples for transferred attacks
         logged = False
