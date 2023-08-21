@@ -92,15 +92,21 @@ class HuggingFaceClassifier(PyTorchClassifier):
             return outputs.logits
 
         self.model.forward = prefix_function(self.model.forward, get_logits)  # type: ignore
+        self.model.__call__ = prefix_function(self.model.__call__, get_logits)  # type: ignore
 
     def __call__(self, image):
+        if not isinstance(image, torch.Tensor):
+            image = torch.from_numpy(image).to(self._device)
+
         if self.processor is not None:
+            image = self.processor(image)
+            outputs = self.model(image)
+            """
             image = self.processor(images=image, return_tensors="pt")
             image.to(self._device)
             outputs = self.model(**image)
+            """
         else:
-            if not isinstance(image, torch.Tensor):
-                image = torch.from_numpy(image).to(self._device)
             outputs = self.model(image)
         return outputs
 
@@ -111,19 +117,31 @@ class HuggingFaceClassifier(PyTorchClassifier):
 
         :return: model predictions
         """
+        if not isinstance(image, torch.Tensor):
+            image = torch.from_numpy(image).to(self._device)
+
         if self.processor is not None:
+            image = self.processor(image)
+            outputs = self.model(image)
+            """
             image = self.processor(images=image, return_tensors="pt")
             image.to(self._device)
             outputs = self.model(**image)
+            """
         else:
-            if not isinstance(image, torch.Tensor):
-                image = torch.from_numpy(image).to(self._device)
             outputs = self.model(image)
         return outputs
 
     def _make_model_wrapper(self, model: "torch.nn.Module") -> "torch.nn.Module":
         # Try to import PyTorch and create an internal class that acts like a model wrapper extending torch.nn.Module
         input_shape = self._input_shape
+        input_for_hook = torch.rand(input_shape)
+        input_for_hook = torch.unsqueeze(input_for_hook, dim=0)
+
+        if self.processor is not None:
+            input_for_hook = self.processor(input_for_hook)
+
+        processor = self.processor
         try:
             # Define model wrapping class only if not defined before
             if not hasattr(self, "_model_wrapper"):
@@ -157,13 +175,11 @@ class HuggingFaceClassifier(PyTorchClassifier):
                         # disable pylint because access to _model required
 
                         result = []
-                        if isinstance(self._model, torch.nn.Sequential):
-                            for _, module_ in self._model._modules.items():
-                                x = module_(x)
-                                result.append(x)
 
-                        elif isinstance(self._model, torch.nn.Module):
-                            x = self._model(x)
+                        if isinstance(self._model, torch.nn.Module):
+                            if processor is not None:
+                                    x = processor(x)
+                            x = self._model.forward(x)
                             result.append(x)
 
                         else:  # pragma: no cover
@@ -210,9 +226,10 @@ class HuggingFaceClassifier(PyTorchClassifier):
                         print("mapping from id to name is ", result_dict)
 
                         print("------ Finished Registering Hooks------")
-                        input_for_hook = torch.rand(input_shape)
-                        print(input_for_hook.shape)
-                        input_for_hook = torch.unsqueeze(input_for_hook, dim=0)
+                        # input_for_hook = torch.rand(input_shape)
+                        # if self.processor is not None:
+                        #    input_for_hook = self.processor(input_for_hook)
+                        # print(input_for_hook.shape)
                         model(input_for_hook)  # hooks are fired sequentially from model input to the output
 
                         print("------ Finished Fire Hooks------")

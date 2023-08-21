@@ -205,6 +205,9 @@ class AdversarialTrainer(Trainer):
         nb_batches = int(np.ceil(len(x) / batch_size))
         ind = np.arange(len(x))
         attack_id = 0
+        display_batch_info = False
+        if 'display_batch_info' in kwargs:
+            display_batch_info = kwargs['display_batch_info']
 
         # Precompute adversarial samples for transferred attacks
         logged = False
@@ -226,7 +229,7 @@ class AdversarialTrainer(Trainer):
             # Shuffle the examples
             np.random.shuffle(ind)
 
-            for batch_id in range(nb_batches):
+            for batch_id in tqdm(range(nb_batches), disable=not display_batch_info):
                 # Create batch data
                 x_batch = x[ind[batch_id * batch_size : min((batch_id + 1) * batch_size, x.shape[0])]].copy()
                 y_batch = y[ind[batch_id * batch_size : min((batch_id + 1) * batch_size, x.shape[0])]]

@@ -23,12 +23,14 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import copy
 import logging
+import math
 import os
 import time
 from typing import Any, Dict, List, Optional, Tuple, Union, TYPE_CHECKING
 
 import numpy as np
 import six
+from tqdm import tqdm
 
 from art import config
 from art.estimators.classification.classifier import (
@@ -374,6 +376,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         training_mode: bool = True,
         drop_last: bool = False,
         scheduler: Optional["torch.optim.lr_scheduler._LRScheduler"] = None,
+        verbose: bool =False,
         **kwargs,
     ) -> None:
         """
@@ -410,14 +413,23 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         y_preprocessed = self.reduce_labels(y_preprocessed)
 
         # Create dataloader
+        num_batches = len(x_preprocessed) / batch_size
+        if drop_last:
+            num_batches = int(num_batches)
+        else:
+            num_batches = math.ceil(num_batches)
+
         x_tensor = torch.from_numpy(x_preprocessed)
         y_tensor = torch.from_numpy(y_preprocessed)
         dataset = TensorDataset(x_tensor, y_tensor)
         dataloader = DataLoader(dataset=dataset, batch_size=batch_size, shuffle=True, drop_last=drop_last)
 
         # Start training
-        for _ in range(nb_epochs):
-            for x_batch, y_batch in dataloader:
+        for epoch in tqdm(range(nb_epochs), disable=not verbose):
+            pbar = tqdm(dataloader, total=num_batches, disable=not verbose)
+
+            for x_batch, y_batch in pbar:
+            # for x_batch, y_batch in dataloader:
                 # Move inputs to device
                 x_batch = x_batch.to(self._device)
                 y_batch = y_batch.to(self._device)
@@ -449,7 +461,10 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                     loss.backward()
 
                 self._optimizer.step()
-
+                if verbose:
+                    pbar.set_description(
+                        f"Loss {loss:.2f} "
+                    )
             if scheduler is not None:
                 scheduler.step()
 
