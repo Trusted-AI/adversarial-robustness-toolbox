@@ -33,6 +33,8 @@ from art.attacks.evasion.square_attack import SquareAttack
 from art.estimators.estimator import BaseEstimator
 from art.estimators.classification.classifier import ClassifierMixin
 from art.utils import get_labels_np_array, check_and_transform_label_format
+from copy import deepcopy
+from multiprocess import get_context
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_TYPE
@@ -69,6 +71,7 @@ class AutoAttack(EvasionAttack):
         batch_size: int = 32,
         estimator_orig: Optional["CLASSIFIER_TYPE"] = None,
         targeted: bool = False,
+        in_parallel: bool = False,
     ):
         """
         Create a :class:`.AutoAttack` instance.
@@ -83,6 +86,7 @@ class AutoAttack(EvasionAttack):
         :param estimator_orig: Original estimator to be attacked by adversarial examples.
         :param targeted: If False run only untargeted attacks, if True also run targeted attacks against each possible
                          target.
+        :param parallel: If True run attacks in parallel.
         """
         super().__init__(estimator=estimator)
 
@@ -140,6 +144,7 @@ class AutoAttack(EvasionAttack):
             self.estimator_orig = estimator
 
         self._targeted = targeted
+        self.in_parallel = in_parallel
         self._check_params()
 
     def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
@@ -168,6 +173,7 @@ class AutoAttack(EvasionAttack):
         y_pred = self.estimator_orig.predict(x.astype(ART_NUMPY_DTYPE))
         sample_is_robust = np.argmax(y_pred, axis=1) == np.argmax(y, axis=1)
 
+        args = []
         # Untargeted attacks
         for attack in self.attacks:
 
@@ -178,13 +184,20 @@ class AutoAttack(EvasionAttack):
             if attack.targeted:
                 attack.set_params(targeted=False)
 
-            x_adv, sample_is_robust = self._run_attack(
-                x=x_adv,
-                y=y,
-                sample_is_robust=sample_is_robust,
-                attack=attack,
-                **kwargs,
-            )
+            if self.in_parallel:
+                args.append((deepcopy(x_adv), deepcopy(y), deepcopy(sample_is_robust),
+                          deepcopy(attack), self.estimator_orig, self.norm, self.eps))
+            else:
+                x_adv, sample_is_robust = run_attack(
+                    x=x_adv,
+                    y=y,
+                    sample_is_robust=sample_is_robust,
+                    attack=attack,
+                    estimator_orig=self.estimator,
+                    norm=self.norm,
+                    eps=self.eps,
+                    **kwargs,
+                )
 
         # Targeted attacks
         if self.targeted:
@@ -211,22 +224,58 @@ class AutoAttack(EvasionAttack):
                             targeted_labels[:, i], nb_classes=self.estimator.nb_classes
                         )
 
-                        x_adv, sample_is_robust = self._run_attack(
-                            x=x_adv,
-                            y=target,
-                            sample_is_robust=sample_is_robust,
-                            attack=attack,
-                            **kwargs,
-                        )
+                        if self.in_parallel:
+                            args.append((deepcopy(x_adv), deepcopy(target), deepcopy(sample_is_robust),
+                                         deepcopy(attack), self.estimator_orig, self.norm, self.eps))
+                        else:
+                            x_adv, sample_is_robust = run_attack(
+                                x=x_adv,
+                                y=target,
+                                sample_is_robust=sample_is_robust,
+                                attack=attack,
+                                estimator_orig=self.estimator,
+                                norm=self.norm,
+                                eps=self.eps,
+                                **kwargs,
+                            )
+        if self.in_parallel:
+            with get_context('spawn').Pool() as pool:
+                # Results come back in the order that they were issued
+                results =  pool.starmap(run_attack, args) 
+            perturbations = []
+            is_robust = []
+            for img_idx in range(len(x)):
+                perturbations.append(np.array([ np.linalg.norm( x[img_idx] - i[0][img_idx]) for i in results]))
+                is_robust.append([ i[1][img_idx] for i in results])
+            perturbations = np.array(perturbations)
+            is_robust = np.array(is_robust)
+            best_attacks = np.argmin(np.where(np.invert(is_robust), perturbations, np.inf),axis=1)
+            x_adv = np.concatenate([results[best_attacks[img]][0][[img]] for img in range(len(x))])
 
         return x_adv
 
-    def _run_attack(
-        self,
+
+    def _check_params(self) -> None:
+        if self.norm not in [1, 2, np.inf, "inf"]:
+            raise ValueError('The argument norm has to be either 1, 2, np.inf, "inf".')
+
+        if not isinstance(self.eps, (int, float)) or self.eps <= 0.0:
+            raise ValueError("The argument eps has to be either of type int or float and larger than zero.")
+
+        if not isinstance(self.eps_step, (int, float)) or self.eps_step <= 0.0:
+            raise ValueError("The argument eps_step has to be either of type int or float and larger than zero.")
+
+        if not isinstance(self.batch_size, int) or self.batch_size <= 0:
+            raise ValueError("The argument batch_size has to be of type int and larger than zero.")
+
+def run_attack(
         x: np.ndarray,
         y: np.ndarray,
         sample_is_robust: np.ndarray,
         attack: EvasionAttack,
+        estimator_orig: "CLASSIFIER_TYPE",
+        norm: Union[int, float, str] = np.inf,
+        eps: float = 0.3,
         **kwargs,
     ) -> Tuple[np.ndarray, np.ndarray]:
         """
@@ -244,14 +293,14 @@ class AutoAttack(EvasionAttack):
 
         # Generate adversarial examples
         x_robust_adv = attack.generate(x=x_robust, y=y_robust, **kwargs)
-        y_pred_robust_adv = self.estimator_orig.predict(x_robust_adv)
+        y_pred_robust_adv = estimator_orig.predict(x_robust_adv)
 
         # Check and update successful examples
         rel_acc = 1e-4
-        order = np.inf if self.norm == "inf" else self.norm
+        order = np.inf if norm == "inf" else norm
         norm_is_smaller_eps = (1 - rel_acc) * np.linalg.norm(
             (x_robust_adv - x_robust).reshape((x_robust_adv.shape[0], -1)), axis=1, ord=order
-        ) <= self.eps
+        ) <= eps
 
         if attack.targeted:
             samples_misclassified = np.argmax(y_pred_robust_adv, axis=1) == np.argmax(y_robust, axis=1)
@@ -268,16 +317,3 @@ class AutoAttack(EvasionAttack):
         sample_is_robust[sample_is_robust] = np.invert(sample_is_not_robust)
 
         return x, sample_is_robust
-
-    def _check_params(self) -> None:
-        if self.norm not in [1, 2, np.inf, "inf"]:
-            raise ValueError('The argument norm has to be either 1, 2, np.inf, "inf".')
-
-        if not isinstance(self.eps, (int, float)) or self.eps <= 0.0:
-            raise ValueError("The argument eps has to be either of type int or float and larger than zero.")
-
-        if not isinstance(self.eps_step, (int, float)) or self.eps_step <= 0.0:
-            raise ValueError("The argument eps_step has to be either of type int or float and larger than zero.")
-
-        if not isinstance(self.batch_size, int) or self.batch_size <= 0:
-            raise ValueError("The argument batch_size has to be of type int and larger than zero.")
