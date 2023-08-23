@@ -68,10 +68,9 @@ class ClusteringAnalyzer:
         all_assigned_clean = []
         nb_classes = len(separated_clusters)
         nb_clusters = len(np.unique(separated_clusters[0]))
-        summary_poison_clusters: np.ndarray = np.zeros((nb_classes, nb_clusters))
+        summary_poison_clusters: np.ndarray = np.zeros((nb_classes, nb_clusters), dtype=object)
 
         for i, clusters in enumerate(separated_clusters):
-
             # assume that smallest cluster is poisonous and all others are clean
             sizes = np.bincount(clusters)
             total_dp_in_class = np.sum(sizes)
@@ -98,8 +97,8 @@ class ClusteringAnalyzer:
 
             report["Class_" + str(i)] = report_class
 
-        report["suspicious_clusters"] = report["suspicious_clusters"] + np.sum(summary_poison_clusters).item()
-        return np.asarray(all_assigned_clean), summary_poison_clusters, report
+        report["suspicious_clusters"] = report["suspicious_clusters"] + np.sum(summary_poison_clusters)
+        return np.asarray(all_assigned_clean, dtype=object), summary_poison_clusters, report
 
     def analyze_by_distance(
         self,
@@ -187,7 +186,7 @@ class ClusteringAnalyzer:
             assigned_clean = self.assign_class(clusters, clean_clusters, np.array(poison_clusters))
             all_assigned_clean.append(assigned_clean)
 
-        all_assigned_clean_array = np.asarray(all_assigned_clean)
+        all_assigned_clean_array = np.asarray(all_assigned_clean, dtype=object)
         return all_assigned_clean_array, summary_poison_clusters, report
 
     def analyze_by_relative_size(

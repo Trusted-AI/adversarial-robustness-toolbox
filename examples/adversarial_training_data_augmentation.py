@@ -1,6 +1,10 @@
 """
 This is an example of how to use ART and Keras to perform adversarial training using data generators for CIFAR10
 """
+import tensorflow as tf
+
+tf.compat.v1.disable_eager_execution()
+
 import keras
 import numpy as np
 from keras.layers import Conv2D, Dense, Flatten, MaxPooling2D, Input, BatchNormalization
