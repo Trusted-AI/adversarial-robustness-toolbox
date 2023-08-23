@@ -30,7 +30,7 @@ import logging
 from typing import Optional, Tuple
 
 import numpy as np
-from scipy.ndimage.filters import median_filter
+from scipy.ndimage import median_filter
 
 from art.utils import CLIP_VALUES_TYPE
 from art.defences.preprocessor.preprocessor import Preprocessor

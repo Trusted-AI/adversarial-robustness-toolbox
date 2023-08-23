@@ -33,6 +33,7 @@ from art.defences.trainer.adversarial_trainer_trades import AdversarialTrainerTR
 from art.estimators.classification.pytorch import PyTorchClassifier
 from art.data_generators import DataGenerator
 from art.attacks.attack import EvasionAttack
+from art.utils import check_and_transform_label_format
 
 if TYPE_CHECKING:
     import torch
@@ -97,6 +98,15 @@ class AdversarialTrainerTRADESPyTorch(AdversarialTrainerTRADES):
         ind = np.arange(len(x))
 
         logger.info("Adversarial Training TRADES")
+        y = check_and_transform_label_format(y, nb_classes=self.classifier.nb_classes)
+
+        if validation_data is not None:
+            (x_test, y_test) = validation_data
+            y_test = check_and_transform_label_format(y_test, nb_classes=self.classifier.nb_classes)
+
+            x_preprocessed_test, y_preprocessed_test = self._classifier._apply_preprocessing(  # pylint: disable=W0212
+                x_test, y_test, fit=True
+            )
 
         for i_epoch in trange(nb_epochs, desc="Adversarial Training TRADES - Epochs"):
             # Shuffle the examples
@@ -107,7 +117,6 @@ class AdversarialTrainerTRADESPyTorch(AdversarialTrainerTRADES):
             train_n = 0.0
 
             for batch_id in range(nb_batches):
-
                 # Create batch data
                 x_batch = x[ind[batch_id * batch_size : min((batch_id + 1) * batch_size, x.shape[0])]].copy()
                 y_batch = y[ind[batch_id * batch_size : min((batch_id + 1) * batch_size, x.shape[0])]]
@@ -125,9 +134,9 @@ class AdversarialTrainerTRADESPyTorch(AdversarialTrainerTRADES):
 
             # compute accuracy
             if validation_data is not None:
-                (x_test, y_test) = validation_data
-                output = np.argmax(self.predict(x_test), axis=1)
-                nb_correct_pred = np.sum(output == np.argmax(y_test, axis=1))
+                output = np.argmax(self.predict(x_preprocessed_test), axis=1)
+                nb_correct_pred = np.sum(output == np.argmax(y_preprocessed_test, axis=1))
+
                 logger.info(
                     "epoch: %s time(s): %.1f loss: %.4f acc(tr): %.4f acc(val): %.4f",
                     i_epoch,
@@ -188,7 +197,6 @@ class AdversarialTrainerTRADESPyTorch(AdversarialTrainerTRADES):
             train_n = 0.0
 
             for batch_id in range(nb_batches):  # pylint: disable=W0612
-
                 # Create batch data
                 x_batch, y_batch = generator.get_batch()
                 x_batch = x_batch.copy()
@@ -232,6 +240,8 @@ class AdversarialTrainerTRADESPyTorch(AdversarialTrainerTRADES):
         x_batch_pert = self._attack.generate(x_batch, y=y_batch)
 
         # Apply preprocessing
+        y_batch = check_and_transform_label_format(y_batch, nb_classes=self.classifier.nb_classes)
+
         x_preprocessed, y_preprocessed = self._classifier._apply_preprocessing(  # pylint: disable=W0212
             x_batch, y_batch, fit=True
         )
