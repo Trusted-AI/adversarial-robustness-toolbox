@@ -30,7 +30,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union, TYPE_CHECKING
 
 import numpy as np
 import six
-from tqdm import tqdm
+from tqdm.auto import tqdm
 
 from art import config
 from art.estimators.classification.classifier import (
@@ -137,6 +137,8 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         self._learning_phase: Optional[bool] = None
         self._opt_level = opt_level
         self._loss_scale = loss_scale
+        # Attribute to store the training loss for better monitoring.
+        self.training_loss: Optional[List[np.ndarray]] = None
 
         # Check if model is RNN-like to decide if freezing batch-norm and dropout layers might be required for loss and
         # class gradient calculation
@@ -428,7 +430,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         # Start training
         for _ in tqdm(range(nb_epochs), disable=not display_progress_bar):
             pbar = tqdm(dataloader, total=num_batches, disable=not display_progress_bar)
-
+            epoch_loss = []
             for x_batch, y_batch in pbar:
                 # Move inputs to device
                 x_batch = x_batch.to(self._device)
@@ -459,10 +461,12 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                         scaled_loss.backward()
                 else:
                     loss.backward()
-
                 self._optimizer.step()
+
+                epoch_loss.append(loss.cpu().detach().numpy())
+                self.training_loss = epoch_loss
                 if display_progress_bar:
-                    pbar.set_description(f"Loss {loss:.2f} ")
+                    pbar.set_description(f"Loss {np.mean(epoch_loss):.2f} ")
             if scheduler is not None:
                 scheduler.step()
 

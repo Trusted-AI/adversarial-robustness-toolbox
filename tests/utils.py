@@ -1117,7 +1117,6 @@ def get_image_classifier_hf(from_logits=False, load_init=True, use_maxpool=True)
                 # attentions=outputs.attentions
             )
 
-    # labels = ds['train'].features['labels'].names
     config = ModelConfig()
     pt_model = Model(config=config)
     optimizer = torch.optim.Adam(pt_model.parameters(), lr=0.01)

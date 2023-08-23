@@ -20,7 +20,8 @@ This module implements the abstract estimator `HuggingFaceClassifier` using the 
 to interface with ART.
 """
 import logging
-from typing import List, Optional, Tuple, Union, Dict, Callable, TYPE_CHECKING
+
+from typing import List, Optional, Tuple, Union, Dict, Callable, Any, TYPE_CHECKING
 
 import torch
 import numpy as np
@@ -29,7 +30,9 @@ import six
 from art.estimators.classification.pytorch import PyTorchClassifier
 
 if TYPE_CHECKING:
+    import transformers
     from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
+    from transformers.modeling_outputs import ImageClassifierOutput
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +44,7 @@ class HuggingFaceClassifier(PyTorchClassifier):
 
     def __init__(
         self,
-        model,
+        model: "transformers.PreTrainedModel",
         loss: "torch.nn.modules.loss._Loss",
         input_shape: Tuple[int, ...],
         nb_classes: int,
@@ -53,7 +56,8 @@ class HuggingFaceClassifier(PyTorchClassifier):
         """
         Initialization of HuggingFaceClassifier specifically for the PyTorch-based backend.
 
-        :param model: Huggingface model model which returns outputs of type ImageClassifierOutput from the transformers library.
+        :param model: Huggingface model model which returns outputs of type
+                      ImageClassifierOutput from the transformers library.
                       Must have the logits attribute set as output.
         :param loss: The loss function for which to compute gradients for training. The target label must be raw
                 categorical, i.e. not converted to one-hot encoding.
@@ -80,12 +84,24 @@ class HuggingFaceClassifier(PyTorchClassifier):
                 be divided by the second one.
         :param device_type: Type of device on which the classifier is run, either `gpu` or `cpu`.
         :param processor: Optional argument. Function which takes in a batch of data and performs
-                        the preprocessing relevant to a given foundation model. Must be differentiable for grandient based
-                        defences and attacks.
+                          the preprocessing relevant to a given foundation model.
+                          Must be differentiable for grandient based defences and attacks.
         """
+
+        logging.warning(
+            "\033[91m"
+            + "\n-----------------------------------------------------------------------------------------------\n"
+            "This estimator is currently in development and does not support all ART functionality.\n"
+            "Currently supports evasion attacks and defences for classification tasks using a Pytorch backend.\n"
+            "If your use case is not supported or you encounter bugs please raise an issue with ART at: \n"
+            "https://github.com/Trusted-AI/adversarial-robustness-toolbox \n"
+            "-----------------------------------------------------------------------------------------------\n"
+            + "\033[0m"
+        )
+
         import transformers
 
-        assert isinstance(model, transformers.PreTrainedModel)
+        # assert isinstance(model, transformers.PreTrainedModel)
 
         self.processor = processor
 
@@ -105,51 +121,48 @@ class HuggingFaceClassifier(PyTorchClassifier):
 
         import functools
 
-        def prefix_function(function, postfunction):
+        def prefix_function(function: Callable, postfunction: Callable) -> Callable[[Any, Any], torch.Tensor]:
             """
             Huggingface returns logit under outputs.logits.
             To make this compatible with ART we wrap the forward pass function
             of a HF model here, which automatically extracts the logits.
+
+            :param function: The first function to run, in our case the forward pass of the model.
+            :param postfunction: Second function to run, in this case simply extracts the logits.
+            :return: model outputs.
             """
 
             @functools.wraps(function)
-            def run(*args, **kwargs):
+            def run(*args, **kwargs) -> torch.Tensor:
                 outputs = function(*args, **kwargs)
                 return postfunction(outputs)
 
             return run
 
-        def get_logits(outputs):
+        def get_logits(outputs: "ImageClassifierOutput") -> torch.Tensor:
+            """
+            Gets the logits attribute from ImageClassifierOutput
+            :param outputs: outputs of type ImageClassifierOutput from a Huggingface
+            :return: model's logit predictions.
+            """
             if isinstance(outputs, torch.Tensor):
                 return outputs
             return outputs.logits
 
         self.model.forward = prefix_function(self.model.forward, get_logits)  # type: ignore
-        self.model.__call__ = prefix_function(self.model.__call__, get_logits)  # type: ignore
+        # self.model.__call__ = prefix_function(self.model.__call__, get_logits)  # type: ignore
 
-    def __call__(self, image):
+    def __call__(self, image: Union[np.ndarray, torch.Tensor]) -> torch.Tensor:
         """
         Forward pass of the model
         :param image: input data to the model
 
         :return: model predictions
         """
-        if not isinstance(image, torch.Tensor):
-            image = torch.from_numpy(image).to(self._device)
-
-        if self.processor is not None:
-            image = self.processor(image)
-            outputs = self.model(image)
-            """
-            image = self.processor(images=image, return_tensors="pt")
-            image.to(self._device)
-            outputs = self.model(**image)
-            """
-        else:
-            outputs = self.model(image)
+        outputs = self.forward(image)
         return outputs
 
-    def forward(self, image):
+    def forward(self, image: Union[np.ndarray, torch.Tensor]) -> torch.Tensor:
         """
         Forward pass though the HF model
         :param image: input data to the model
@@ -161,15 +174,8 @@ class HuggingFaceClassifier(PyTorchClassifier):
 
         if self.processor is not None:
             image = self.processor(image)
-            outputs = self.model(image)
-            """
-            image = self.processor(images=image, return_tensors="pt")
-            image.to(self._device)
-            outputs = self.model(**image)
-            """
-        else:
-            outputs = self.model(image)
-        return outputs
+
+        return self.model(image)
 
     def _make_model_wrapper(self, model: "torch.nn.Module") -> "torch.nn.Module":
         # Try to import PyTorch and create an internal class that acts like a model wrapper extending torch.nn.Module
@@ -236,9 +242,7 @@ class HuggingFaceClassifier(PyTorchClassifier):
                         .. warning:: `get_layers` tries to infer the internal structure of the model.
                                      This feature comes with no guarantees on the correctness of the result.
                                      The intended order of the layers tries to match their order in the model, but this
-                                     is not guaranteed either. In addition, the function can only infer the internal
-                                     layers if the input model is of type `nn.Sequential`, otherwise, it will only
-                                     return the logit layer.
+                                     is not guaranteed either.
                         """
 
                         result_dict = {}
@@ -247,42 +251,38 @@ class HuggingFaceClassifier(PyTorchClassifier):
 
                         # pylint: disable=W0613
                         def forward_hook(input_module, hook_input, hook_output):
-                            print(f"input_module is {input_module} with id {id(input_module)}")
+                            logger.info("input_module is %s with id %i", input_module, id(input_module))
                             modules.append(id(input_module))
 
                         handles = []
 
                         for name, module in self._model.named_modules():
-                            print(
-                                f"found {module} with type {type(module)} and id {id(module)} "
-                                f"and name {name} with submods {len(list(module.named_modules()))}"
+                            logger.info(
+                                "found %s with type %s and id %i and name %s with submods %i "
+                                % (module, type(module), id(module), name, len(list(module.named_modules())))
                             )
+
                             if name != "" and len(list(module.named_modules())) == 1:
                                 handles.append(module.register_forward_hook(forward_hook))
                                 result_dict[id(module)] = name
 
-                        print("\n")
-                        print("mapping from id to name is ", result_dict)
+                        logger.info("mapping from id to name is ", result_dict)
 
-                        print("------ Finished Registering Hooks------")
-                        # input_for_hook = torch.rand(input_shape)
-                        # if self.processor is not None:
-                        #    input_for_hook = self.processor(input_for_hook)
-                        # print(input_for_hook.shape)
+                        logger.info("------ Finished Registering Hooks------")
                         model(input_for_hook)  # hooks are fired sequentially from model input to the output
 
-                        print("------ Finished Fire Hooks------")
+                        logger.info("------ Finished Fire Hooks------")
 
                         # Remove the hooks
                         for hook in handles:
                             hook.remove()
 
-                        print("new result is ")
+                        logger.info("new result is: ")
                         name_order = []
                         for module in modules:
                             name_order.append(result_dict[module])
 
-                        print(name_order)
+                        logger.info(name_order)
 
                         return name_order
 
@@ -388,163 +388,6 @@ class HuggingFaceClassifier(PyTorchClassifier):
 
         results_array = np.concatenate(results)
         return results_array
-
-    def get_grad(self, image, labels, loss_fn):
-        """
-        Get gradient wrt input image.
-        Testing function. To be removed in final PR
-
-        :param image:
-        :param labels:
-        :return:
-        """
-
-        if not isinstance(image, torch.Tensor):
-            labels = torch.from_numpy(labels)
-        if not isinstance(image, torch.Tensor):
-            image = torch.from_numpy(image)
-        image.requires_grad = True
-        self.model.eval()
-        self.model.zero_grad()
-
-        if self.processor is not None:
-            image = self.processor(images=image, return_tensors="pt")
-            image.to(self._device)
-            image["pixel_values"].requires_grad = True
-            loss = self.model(**image, labels=labels)[0]
-        else:
-            out = self.model(image)
-            loss = loss_fn(out, labels)
-        loss.backward()
-        self.model.eval()
-
-        return image.grad
-
-    def make_adv_example(self, x, y):
-        """
-        Testing function: to be removed in final PR
-        """
-        self.epsilon = 8 / 255
-        self.attack_lr = 1 / 255
-        upsampler = torch.nn.Upsample(scale_factor=7, mode="nearest")
-
-        x = x.to(self._device)
-        y = y.to(self._device)
-
-        x = upsampler(x)  # hard code resize for now
-        model_outputs = self.model(x)
-        acc = self.get_accuracy(model_outputs, y)
-        print("clean acc is ", acc)
-
-        x_adv = x.detach().clone()
-        x_adv.requires_grad = True
-
-        for _ in range(30):
-            self.model.zero_grad()
-            # x_adv.zero_grad()
-            grad = self.get_grad(x_adv, y, loss_fn=torch.nn.CrossEntropyLoss())
-            with torch.no_grad():
-                grad = grad.sign()
-                x_adv = x_adv + self.attack_lr * grad
-
-                # Projection
-                noise = torch.clamp(x_adv - x, min=-self.epsilon, max=self.epsilon)
-                x_adv = torch.clamp(x + noise, min=0, max=1)
-
-        model_outputs = self.model(x_adv)
-        acc = self.get_accuracy(model_outputs, y)
-        print("adv acc is ", acc)
-
-    # pylint: disable=W0105
-    """
-    def train(
-        self,
-        x,
-        y,
-        batch_size: int = 128,
-        nb_epochs: int = 10,
-        training_mode: bool = True,
-        drop_last: bool = False,
-        scheduler: Optional[Any] = None,
-        verbose=True,
-        **kwargs,
-    ):
-        import random
-        from tqdm import tqdm
-        from art.utils import check_and_transform_label_format
-
-        # Set model mode
-        self.model.train()
-
-        if self._optimizer is None:  # pragma: no cover
-            raise ValueError("An optimizer is needed to train the model, but none for provided.")
-
-        y = check_and_transform_label_format(y, nb_classes=self.nb_classes)
-
-        # Apply preprocessing
-        x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=True)
-
-        # Check label shape
-        y_preprocessed = self.reduce_labels(y_preprocessed)
-
-        num_batch = len(x_preprocessed) / float(batch_size)
-        if drop_last:
-            num_batch = int(np.floor(num_batch))
-        else:
-            num_batch = int(np.ceil(num_batch))
-        ind = np.arange(len(x_preprocessed))
-
-        # Start training
-        for _ in tqdm(range(nb_epochs)):
-            # Shuffle the examples
-            random.shuffle(ind)
-            pbar = tqdm(range(num_batch), disable=not verbose)
-
-            epoch_loss = []
-            epoch_acc = []
-
-            # Train for one epoch
-            for m in pbar:
-                i_batch = np.copy(x_preprocessed[ind[m * batch_size: (m + 1) * batch_size]])
-                i_batch = torch.from_numpy(i_batch).to(self._device)
-                # i_batch = upsampler(i_batch)  # hard code resize for now
-                i_batch = self.processor(i_batch)
-                o_batch = torch.from_numpy(y_preprocessed[ind[m * batch_size : (m + 1) * batch_size]]).to(self._device)
-
-                # Zero the parameter gradients
-                self._optimizer.zero_grad()
-
-                # Perform prediction
-                model_outputs = self.model(i_batch)
-                acc = self.get_accuracy(model_outputs.logits, o_batch)
-
-                # Form the loss function
-                loss = self._loss(model_outputs.logits, o_batch)
-
-                # Do training
-                if self._use_amp:  # pragma: no cover
-                    from apex import amp  # pylint: disable=E0611
-
-                    with amp.scale_loss(loss, self._optimizer) as scaled_loss:
-                        scaled_loss.backward()
-
-                else:
-                    loss.backward()
-
-                self._optimizer.step()
-                epoch_loss.append(loss)
-                epoch_acc.append(acc)
-
-                if verbose:
-                    pbar.set_description(
-                        f"Loss {torch.mean(torch.stack(epoch_loss)):.2f} " f"Acc {np.mean(epoch_acc):.2f}"
-                    )
-
-            if scheduler is not None:
-                scheduler.step()
-
-            torch.save(self.model.state_dict(), "hf_model.pt")
-    """
 
     @staticmethod
     def get_accuracy(preds: Union[np.ndarray, "torch.Tensor"], labels: Union[np.ndarray, "torch.Tensor"]) -> np.ndarray:
