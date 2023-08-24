@@ -33,7 +33,6 @@ from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from art.utils import get_labels_np_array, random_targets
 from tests.attacks.utils import backend_test_classifier_type_check_fail
 from tests.utils import (
-    TestBase,
     get_image_classifier_kr,
     get_image_classifier_pt,
     get_image_classifier_tf,

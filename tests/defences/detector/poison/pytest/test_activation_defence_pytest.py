@@ -27,9 +27,7 @@ from art.data_generators import KerasDataGenerator, PyTorchDataGenerator
 from art.defences.detector.poison import ActivationDefence
 from art.utils import load_mnist, load_cifar10
 from art.visualization import convert_to_rgb
-from tests.utils import master_seed, get_image_classifier_tf, get_image_classifier_pt, get_image_classifier_hf
-
-from tests.utils import master_seed
+from tests.utils import master_seed, get_image_classifier_hf
 
 logger = logging.getLogger(__name__)
 
@@ -108,7 +106,6 @@ def get_mnist_classifier(framework, image_dl_estimator, get_data):
             if HF_MODEL_SIZE == "LARGE":
                 import torch
                 import transformers
-                import torch
                 from art.estimators.hugging_face import HuggingFaceClassifier
 
                 model = transformers.AutoModelForImageClassification.from_pretrained(

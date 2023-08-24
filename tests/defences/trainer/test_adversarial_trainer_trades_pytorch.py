@@ -24,7 +24,7 @@ import numpy as np
 from art.utils import load_dataset
 from art.defences.trainer import AdversarialTrainerTRADESPyTorch
 from art.attacks.evasion import ProjectedGradientDescent
-from tests.utils import get_image_classifier_pt, get_image_classifier_hf
+from tests.utils import get_image_classifier_hf
 
 HF_MODEL_SIZE = "SMALL"
 

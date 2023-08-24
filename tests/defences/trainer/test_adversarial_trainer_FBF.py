@@ -125,7 +125,8 @@ def test_adversarial_trainer_fbf_huggingface_fit_and_predict(
     if HF_MODEL_SIZE == "SMALL":
         # NB, differs from pytorch due to issiue number #2227. Here we use logits for Huggingface.
         assert accuracy == 0.32
-        assert accuracy_new == 0.66
+        # Different platforms gave marginally different results
+        assert 0.65 <= accuracy_new <= 0.67
 
 
 @pytest.mark.skip_framework("tensorflow", "keras", "scikitlearn", "mxnet", "kerastf", "huggingface")

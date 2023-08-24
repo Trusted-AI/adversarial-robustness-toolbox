@@ -21,7 +21,6 @@ import logging
 import pytest
 
 import numpy as np
-import pickle
 
 import torch
 from art.attacks.evasion.fast_gradient import FastGradientMethod
@@ -35,7 +34,6 @@ from tests.utils import (
     get_image_classifier_tf,
     get_image_classifier_pt,
     get_image_classifier_hf,
-    get_image_classifier_kr,
 )
 
 logger = logging.getLogger(__name__)
@@ -144,7 +142,6 @@ class TestClass:
         predictions = np.argmax(pytest.classifier.predict(x_test_adv), axis=1)
         accuracy = np.sum(predictions == np.argmax(y_test, axis=1)) / NB_TEST
 
-        # if framework in ['pytorch', 'tensorflow']:
         assert accuracy == 0.13
 
         adv_trainer = AdversarialTrainer(pytest.classifier, attack)
@@ -165,8 +162,7 @@ class TestClass:
         predictions_new = np.argmax(adv_trainer.predict(x_test_adv), axis=1)
         accuracy_new = np.sum(predictions_new == np.argmax(y_test, axis=1)) / NB_TEST
 
-        if framework in ["tensorflow2", "pytorch", "huggingface"]:
-            assert accuracy_new == 0.13
+        assert accuracy_new == 0.13
 
         pytest.final_acc_of_prior = accuracy_new
         # Check that x_test has not been modified by attack and classifier
@@ -211,8 +207,7 @@ class TestClass:
         predictions = np.argmax(pytest.classifier.predict(x_test_adv), axis=1)
         accuracy = np.sum(predictions == np.argmax(y_test, axis=1)) / NB_TEST
 
-        if framework in ["tensorflow2", "pytorch", "huggingface"]:
-            assert accuracy == 0.13
+        assert accuracy == 0.13
 
         assert accuracy == pytest.final_acc_of_prior
 
@@ -222,8 +217,7 @@ class TestClass:
         predictions_new = np.argmax(adv_trainer.predict(x_test_adv), axis=1)
         accuracy_new = np.sum(predictions_new == np.argmax(y_test, axis=1)) / NB_TEST
 
-        if framework in ["tensorflow2", "pytorch", "huggingface"]:
-            assert accuracy_new == 0.32
+        assert accuracy_new == 0.32
 
         # Check that x_test has not been modified by attack and classifier
         np.allclose(float(np.max(np.abs(x_test_original - x_test))), 0.0)
@@ -290,9 +284,8 @@ class TestClass:
         predictions_new = np.argmax(adv_trainer.predict(x_test_adv), axis=1)
         accuracy_new = np.sum(predictions_new == np.argmax(y_test, axis=1)) / NB_TEST
 
-        if framework in ["tensorflow2", "pytorch", "huggingface"]:
-            assert accuracy_new == 0.14
-            assert accuracy == 0.13  # Untrained acc?
+        assert accuracy_new == 0.14
+        assert accuracy == 0.13
 
         # Check that x_test has not been modified by attack and classifier
         assert np.allclose(float(np.max(np.abs(x_test_original - x_test))), 0.0)
@@ -353,10 +346,8 @@ class TestClass:
         predictions_new = np.argmax(adv_trainer.predict(x_test_adv), axis=1)
         accuracy_new = np.sum(predictions_new == np.argmax(y_test, axis=1)) / NB_TEST
 
-        if framework in ["tensorflow2", "pytorch", "huggingface"]:
-            # self.assertAlmostEqual(accuracy_new, 0.38, delta=0.02)
-            assert 0.36 <= accuracy_new <= 0.40
-            assert accuracy == 0.1
+        assert 0.36 <= accuracy_new <= 0.40
+        assert accuracy == 0.1
 
         # Check that x_train and x_test has not been modified by attack and classifier
         assert np.allclose(float(np.max(np.abs(x_train_original - x_train))), 0.0)
