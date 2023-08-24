@@ -25,7 +25,6 @@ import os.path
 from typing import List, Optional, TYPE_CHECKING
 
 import numpy as np
-from PIL import Image
 
 from art import config
 
@@ -97,6 +96,8 @@ def save_image(image_array: np.ndarray, f_name: str) -> None:
     :param image_array: Image to be saved.
     :param f_name: File name containing extension e.g., my_img.jpg, my_img.png, my_images/my_img.png.
     """
+    from PIL import Image
+
     file_name = os.path.join(config.ART_DATA_PATH, f_name)
     folder = os.path.split(file_name)[0]
     if not os.path.exists(folder):

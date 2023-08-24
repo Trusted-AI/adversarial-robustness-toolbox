@@ -38,7 +38,7 @@ def get_adv_trainer(framework, image_dl_estimator):
         if framework in ["tensorflow", "tensorflow2v1"]:
             trainer = None
         if framework == "pytorch":
-            classifier, _ = image_dl_estimator()
+            classifier, _ = image_dl_estimator(from_logits=True)
             attack = ProjectedGradientDescent(
                 classifier,
                 norm=np.inf,
@@ -249,7 +249,6 @@ def test_adversarial_trainer_trades_pytorch_fit_generator_and_predict(
         assert y_test_mnist.shape[-1] == 10
     if label_format == "numerical":
         y_test_mnist = np.argmax(y_test_mnist, axis=1)
-        y_train_mnist = np.argmax(y_train_mnist, axis=1)
 
     generator = image_data_generator()
 

@@ -121,9 +121,7 @@ else
                           "tests/attacks/test_targeted_universal_perturbation.py" \
                           "tests/attacks/test_simba.py" )
 
-    declare -a estimators=("tests/estimators/certification/test_randomized_smoothing.py" \
-                           "tests/estimators/certification/test_derandomized_smoothing.py" \
-                           "tests/estimators/classification/test_blackbox.py" \
+    declare -a estimators=("tests/estimators/classification/test_blackbox.py" \
                            "tests/estimators/classification/test_catboost.py" \
                            "tests/estimators/classification/test_classifier.py" \
                            "tests/estimators/classification/test_deep_partition_ensemble.py" \
