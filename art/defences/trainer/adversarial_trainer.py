@@ -266,7 +266,7 @@ class AdversarialTrainer(Trainer):
 
                 # check if the estimator logs the training loss as an attribute.
                 if hasattr(self._classifier, "training_loss"):
-                    epoch_loss.append(np.mean(self._classifier.training_loss))
+                    epoch_loss.append(np.mean(self._classifier.training_loss))  # type: ignore
                     pbar.set_description(f"Loss {np.mean(epoch_loss):.2f} ")
 
     def predict(self, x: np.ndarray, **kwargs) -> np.ndarray:

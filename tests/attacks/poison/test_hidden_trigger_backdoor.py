@@ -31,23 +31,27 @@ from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)
 
+
 @pytest.mark.skip_framework("non_dl_frameworks", "tensorflow1", "tensorflow2v1", "mxnet")
 def test_poison(art_warning, get_default_mnist_subset, image_dl_estimator, framework):
     try:
         (x_train, y_train), (_, _) = get_default_mnist_subset
         functional = True
-        if framework == 'huggigngface':
+        if framework == "huggigngface":
             functional = False
         classifier, _ = image_dl_estimator(functional=functional)
 
         if isinstance(classifier, PyTorchClassifier) or isinstance(classifier, HuggingFaceClassifier):
+
             def mod(x):
                 original_dtype = x.dtype
                 x = np.transpose(x, (0, 2, 3, 1)).astype(np.float32)
                 x = add_pattern_bd(x)
                 x = np.transpose(x, (0, 3, 1, 2)).astype(np.float32)
                 return x.astype(original_dtype)
+
         else:
+
             def mod(x):
                 original_dtype = x.dtype
                 x = add_pattern_bd(x)
@@ -83,7 +87,7 @@ def test_check_params(art_warning, get_default_mnist_subset, image_dl_estimator,
     try:
         (x_train, y_train), (_, _) = get_default_mnist_subset
         functional = True
-        if framework == 'huggigngface':
+        if framework == "huggigngface":
             functional = False
         classifier, _ = image_dl_estimator(functional=functional)
 

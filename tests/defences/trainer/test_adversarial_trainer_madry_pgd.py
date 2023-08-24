@@ -36,7 +36,6 @@ NB_TEST = 100
 
 @pytest.fixture()
 def get_mnist_classifier(framework, image_dl_estimator):
-
     def _get_classifier():
         if framework == "pytorch":
             classifier = get_image_classifier_pt()
@@ -68,13 +67,13 @@ def test_fit_predict(art_warning, get_mnist_classifier, framework):
         x_test[:NB_TEST],
         y_test[:NB_TEST],
     )
-    if framework in ['pytorch', 'huggingface']:
+    if framework in ["pytorch", "huggingface"]:
         x_train = np.float32(np.rollaxis(x_train, 3, 1))
         x_test = np.float32(np.rollaxis(x_test, 3, 1))
 
     x_test_original = x_test.copy()
 
-    if framework in ['pytorch', 'huggingface']:
+    if framework in ["pytorch", "huggingface"]:
         pt_classifier = get_image_classifier_pt()
         pt_predictions_new = np.argmax(pt_classifier.predict(x_test), axis=1)
         hf_preds = np.argmax(classifier.predict(x_test), axis=1)
@@ -88,7 +87,7 @@ def test_fit_predict(art_warning, get_mnist_classifier, framework):
     accuracy_new = np.sum(predictions_new == np.argmax(y_test, axis=1)) / NB_TEST
 
     # TODO: pytorch was not checked in unittest, but has 1% lower performance than tf.
-    if framework in ['pytorch', 'huggingface']:
+    if framework in ["pytorch", "huggingface"]:
         assert accuracy_new == 0.37
     else:
         assert accuracy_new == 0.38
@@ -103,4 +102,3 @@ def test_get_classifier(art_warning, get_mnist_classifier):
 
     adv_trainer = AdversarialTrainerMadryPGD(classifier, nb_epochs=1, batch_size=128)
     _ = adv_trainer.get_classifier()
-

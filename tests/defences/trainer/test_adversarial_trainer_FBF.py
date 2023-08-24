@@ -42,19 +42,21 @@ def get_adv_trainer(framework, image_dl_estimator):
             import torch
             from art.estimators.hugging_face import HuggingFaceClassifier
 
-            model = transformers.AutoModelForImageClassification.from_pretrained('facebook/deit-tiny-patch16-224',
-                                                                                 ignore_mismatched_sizes=True,
-                                                                                 num_labels=10)
+            model = transformers.AutoModelForImageClassification.from_pretrained(
+                "facebook/deit-tiny-patch16-224", ignore_mismatched_sizes=True, num_labels=10
+            )
 
-            print('num of parameters is ', sum(p.numel() for p in model.parameters() if p.requires_grad))
+            print("num of parameters is ", sum(p.numel() for p in model.parameters() if p.requires_grad))
             optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
 
-            hf_model = HuggingFaceClassifier(model,
-                                             loss=torch.nn.CrossEntropyLoss(),
-                                             optimizer=optimizer,
-                                             input_shape=(3, 224, 224),
-                                             nb_classes=10,
-                                             processor=None)
+            hf_model = HuggingFaceClassifier(
+                model,
+                loss=torch.nn.CrossEntropyLoss(),
+                optimizer=optimizer,
+                input_shape=(3, 224, 224),
+                nb_classes=10,
+                processor=None,
+            )
             trainer = AdversarialTrainerFBFPyTorch(hf_model, eps=0.05)
 
         return trainer
@@ -80,7 +82,8 @@ def test_adversarial_trainer_fbf_huggingface_fit_and_predict(get_adv_trainer, ge
     x_test = np.rollaxis(x_test, 3, 1)
 
     import torch
-    upsampler = torch.nn.Upsample(scale_factor=7, mode='nearest')
+
+    upsampler = torch.nn.Upsample(scale_factor=7, mode="nearest")
 
     x_train = np.float32(upsampler(torch.from_numpy(x_train)).cpu().numpy())
     x_test = np.float32(upsampler(torch.from_numpy(x_test)).cpu().numpy())
@@ -94,7 +97,7 @@ def test_adversarial_trainer_fbf_huggingface_fit_and_predict(get_adv_trainer, ge
     predictions = np.argmax(trainer.predict(x_test), axis=1)
     accuracy = np.sum(predictions == np.argmax(y_test, axis=1)) / x_test.shape[0]
 
-    trainer.fit(x_train, y_train, nb_epochs=1,  validation_data=(x_test, y_test))
+    trainer.fit(x_train, y_train, nb_epochs=1, validation_data=(x_test, y_test))
     predictions_new = np.argmax(trainer.predict(x_test), axis=1)
     accuracy_new = np.sum(predictions_new == np.argmax(y_test, axis=1)) / x_test.shape[0]
 
@@ -106,6 +109,7 @@ def test_adversarial_trainer_fbf_huggingface_fit_and_predict(get_adv_trainer, ge
 
     # assert accuracy == 0.32
     # assert accuracy_new == 0.63
+
 
 @pytest.mark.skip_framework("tensorflow", "keras", "scikitlearn", "mxnet", "kerastf", "huggingface")
 def test_adversarial_trainer_fbf_pytorch_fit_and_predict(get_adv_trainer, fix_get_mnist_subset):

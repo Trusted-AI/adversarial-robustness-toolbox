@@ -1046,8 +1046,8 @@ def get_image_classifier_hf(from_logits=False, load_init=True, use_maxpool=True)
 
     class ModelConfig(PretrainedConfig):
         def __init__(
-                self,
-                **kwargs,
+            self,
+            **kwargs,
         ):
             super().__init__(**kwargs)
             self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -1121,15 +1121,18 @@ def get_image_classifier_hf(from_logits=False, load_init=True, use_maxpool=True)
     pt_model = Model(config=config)
     optimizer = torch.optim.Adam(pt_model.parameters(), lr=0.01)
 
-    hf_classifier = HuggingFaceClassifier(pt_model,
-                                          loss=torch.nn.CrossEntropyLoss(reduction="sum"),
-                                          optimizer=optimizer,
-                                          input_shape=(1, 28, 28),
-                                          nb_classes=10,
-                                          clip_values=(0, 1),
-                                          processor=None)
+    hf_classifier = HuggingFaceClassifier(
+        pt_model,
+        loss=torch.nn.CrossEntropyLoss(reduction="sum"),
+        optimizer=optimizer,
+        input_shape=(1, 28, 28),
+        nb_classes=10,
+        clip_values=(0, 1),
+        processor=None,
+    )
 
     return hf_classifier
+
 
 def get_image_classifier_pt(from_logits=False, load_init=True, use_maxpool=True):
     """
@@ -1985,6 +1988,7 @@ class ARTTestFixtureNotImplemented(ARTTestException):
             "{2}' for the following parameters: {3}".format(framework, fixture_name, message, parameters_dict)
         )
 
+
 def get_tabular_classifier_hf(load_init=True):
     import torch
     from transformers.modeling_utils import PreTrainedModel
@@ -1994,8 +1998,8 @@ def get_tabular_classifier_hf(load_init=True):
 
     class ModelConfig(PretrainedConfig):
         def __init__(
-                self,
-                **kwargs,
+            self,
+            **kwargs,
         ):
             super().__init__(**kwargs)
             self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -2065,13 +2069,15 @@ def get_tabular_classifier_hf(load_init=True):
     pt_model = Model(config=config)
     optimizer = torch.optim.Adam(pt_model.parameters(), lr=0.01)
 
-    hf_classifier = HuggingFaceClassifier(pt_model,
-                                          loss=torch.nn.CrossEntropyLoss(),
-                                          optimizer=optimizer,
-                                          input_shape=(4,),
-                                          nb_classes=3,
-                                          clip_values=(0, 1),
-                                          processor=None)
+    hf_classifier = HuggingFaceClassifier(
+        pt_model,
+        loss=torch.nn.CrossEntropyLoss(),
+        optimizer=optimizer,
+        input_shape=(4,),
+        nb_classes=3,
+        clip_values=(0, 1),
+        processor=None,
+    )
 
     return hf_classifier
 

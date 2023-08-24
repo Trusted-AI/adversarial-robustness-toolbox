@@ -37,7 +37,7 @@ def test_poison(art_warning, get_default_mnist_subset, image_dl_estimator, frame
         classifier, _ = image_dl_estimator()
         target = to_categorical([9], 10)[0]
 
-        if framework in ['pytorch', 'huggingface']:
+        if framework in ["pytorch", "huggingface"]:
             backdoor = PoisoningAttackBackdoor(add_pattern_bd_pytorch)
         else:
             backdoor = PoisoningAttackBackdoor(add_pattern_bd)

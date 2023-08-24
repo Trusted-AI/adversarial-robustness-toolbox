@@ -30,7 +30,13 @@ from art.data_generators import DataGenerator
 from art.defences.trainer.adversarial_trainer import AdversarialTrainer
 from art.utils import load_mnist, load_cifar10
 
-from tests.utils import master_seed, get_image_classifier_tf, get_image_classifier_pt, get_image_classifier_hf, get_image_classifier_kr
+from tests.utils import (
+    master_seed,
+    get_image_classifier_tf,
+    get_image_classifier_pt,
+    get_image_classifier_hf,
+    get_image_classifier_kr,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -42,10 +48,10 @@ HF_MODEL_SIZE = "SMALL"
 
 @pytest.fixture()
 def get_mnist_classifier(framework, image_dl_estimator):
-
     def _get_classifier():
         if framework == "pytorch":
             import torch
+
             # NB, uses CROSSENTROPYLOSS thus requires logits in output
             classifier = get_image_classifier_pt(from_logits=True)
 
@@ -54,28 +60,30 @@ def get_mnist_classifier(framework, image_dl_estimator):
         elif framework in ("keras", "kerastf"):
             classifier = None
         elif framework == "huggingface":
-            if HF_MODEL_SIZE == 'LARGE':
+            if HF_MODEL_SIZE == "LARGE":
                 import transformers
                 import torch
                 from art.estimators.hugging_face import HuggingFaceClassifier
 
-                model = transformers.AutoModelForImageClassification.from_pretrained('facebook/deit-tiny-patch16-224', # takes 3 min
-                                                                                     ignore_mismatched_sizes=True,
-                                                                                     num_labels=10)
+                model = transformers.AutoModelForImageClassification.from_pretrained(
+                    "facebook/deit-tiny-patch16-224", ignore_mismatched_sizes=True, num_labels=10  # takes 3 min
+                )
 
-                print('num of parameters is ', sum(p.numel() for p in model.parameters() if p.requires_grad))
+                print("num of parameters is ", sum(p.numel() for p in model.parameters() if p.requires_grad))
                 optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
 
-                classifier = HuggingFaceClassifier(model,
-                                                   loss=torch.nn.CrossEntropyLoss(),
-                                                   input_shape=(3, 224, 224),
-                                                   nb_classes=10,
-                                                   optimizer=optimizer,
-                                                   processor=None)
-            elif HF_MODEL_SIZE == 'SMALL':
+                classifier = HuggingFaceClassifier(
+                    model,
+                    loss=torch.nn.CrossEntropyLoss(),
+                    input_shape=(3, 224, 224),
+                    nb_classes=10,
+                    optimizer=optimizer,
+                    processor=None,
+                )
+            elif HF_MODEL_SIZE == "SMALL":
                 classifier = get_image_classifier_hf(from_logits=True)
             else:
-                raise ValueError('HF_MODEL_SIZE must be either SMALL or LARGE')
+                raise ValueError("HF_MODEL_SIZE must be either SMALL or LARGE")
         else:
             classifier = None
 
@@ -104,7 +112,7 @@ class TestClass:
     def test_fit_predict(self, art_warning, get_mnist_classifier, get_default_mnist_subset, framework):
 
         master_seed(seed=1234)
-        if framework == 'huggingface' and HF_MODEL_SIZE == 'LARGE':
+        if framework == "huggingface" and HF_MODEL_SIZE == "LARGE":
             (x_train, y_train), (x_test, y_test), _, _ = load_cifar10()
             x_train, y_train, x_test, y_test = (
                 x_train[:NB_TRAIN],
@@ -121,11 +129,11 @@ class TestClass:
                 y_test[:NB_TEST],
             )
 
-        if framework in ['pytorch', 'huggingface']:
+        if framework in ["pytorch", "huggingface"]:
             x_train = np.float32(np.moveaxis(x_train, -1, 1))
             x_test = np.float32(np.moveaxis(x_test, -1, 1))
-        if framework == 'huggingface' and HF_MODEL_SIZE == 'LARGE':
-            upsampler = torch.nn.Upsample(scale_factor=7, mode='nearest')
+        if framework == "huggingface" and HF_MODEL_SIZE == "LARGE":
+            upsampler = torch.nn.Upsample(scale_factor=7, mode="nearest")
             x_train = np.float32(upsampler(torch.from_numpy(x_train)).cpu().numpy())
             x_test = np.float32(upsampler(torch.from_numpy(x_test)).cpu().numpy())
 
@@ -146,7 +154,7 @@ class TestClass:
         predictions_new = np.argmax(adv_trainer.predict(x_test_adv), axis=1)
         accuracy_new = np.sum(predictions_new == np.argmax(y_test, axis=1)) / NB_TEST
 
-        if framework == ['pytorch', 'huggingface']:
+        if framework == ["pytorch", "huggingface"]:
             assert accuracy_new == 0.13
         if framework in ["tensorflow2"]:
             assert accuracy_new == 0.12
@@ -157,7 +165,7 @@ class TestClass:
         predictions_new = np.argmax(adv_trainer.predict(x_test_adv), axis=1)
         accuracy_new = np.sum(predictions_new == np.argmax(y_test, axis=1)) / NB_TEST
 
-        if framework in ["tensorflow2", 'pytorch', 'huggingface']:
+        if framework in ["tensorflow2", "pytorch", "huggingface"]:
             assert accuracy_new == 0.13
 
         pytest.final_acc_of_prior = accuracy_new
@@ -165,11 +173,13 @@ class TestClass:
         assert np.allclose(float(np.max(np.abs(x_test_original - x_test))), 0.0)
 
     @pytest.mark.only_with_platform("pytorch", "tensorflow2", "huggingface")
-    def test_fit_predict_different_classifiers(self, art_warning, get_mnist_classifier, get_default_mnist_subset, framework):
+    def test_fit_predict_different_classifiers(
+        self, art_warning, get_mnist_classifier, get_default_mnist_subset, framework
+    ):
 
         master_seed(seed=1234)
 
-        if framework == 'huggingface' and HF_MODEL_SIZE == 'LARGE':
+        if framework == "huggingface" and HF_MODEL_SIZE == "LARGE":
             (x_train, y_train), (x_test, y_test), _, _ = load_cifar10()
             x_train, y_train, x_test, y_test = (
                 x_train[:NB_TRAIN],
@@ -186,11 +196,11 @@ class TestClass:
                 y_test[:NB_TEST],
             )
 
-        if framework in ['pytorch', 'huggingface']:
+        if framework in ["pytorch", "huggingface"]:
             x_train = np.float32(np.moveaxis(x_train, -1, 1))
             x_test = np.float32(np.moveaxis(x_test, -1, 1))
-        if framework == 'huggingface' and HF_MODEL_SIZE == 'LARGE':
-            upsampler = torch.nn.Upsample(scale_factor=7, mode='nearest')
+        if framework == "huggingface" and HF_MODEL_SIZE == "LARGE":
+            upsampler = torch.nn.Upsample(scale_factor=7, mode="nearest")
             x_train = np.float32(upsampler(torch.from_numpy(x_train)).cpu().numpy())
             x_test = np.float32(upsampler(torch.from_numpy(x_test)).cpu().numpy())
 
@@ -201,7 +211,7 @@ class TestClass:
         predictions = np.argmax(pytest.classifier.predict(x_test_adv), axis=1)
         accuracy = np.sum(predictions == np.argmax(y_test, axis=1)) / NB_TEST
 
-        if framework in ["tensorflow2", 'pytorch', 'huggingface']:
+        if framework in ["tensorflow2", "pytorch", "huggingface"]:
             assert accuracy == 0.13
 
         assert accuracy == pytest.final_acc_of_prior
@@ -212,7 +222,7 @@ class TestClass:
         predictions_new = np.argmax(adv_trainer.predict(x_test_adv), axis=1)
         accuracy_new = np.sum(predictions_new == np.argmax(y_test, axis=1)) / NB_TEST
 
-        if framework in ["tensorflow2", 'pytorch', 'huggingface']:
+        if framework in ["tensorflow2", "pytorch", "huggingface"]:
             assert accuracy_new == 0.32
 
         # Check that x_test has not been modified by attack and classifier
@@ -241,7 +251,7 @@ class TestClass:
 
         master_seed(seed=1234)
 
-        if framework == 'huggingface' and HF_MODEL_SIZE == 'LARGE':
+        if framework == "huggingface" and HF_MODEL_SIZE == "LARGE":
             (x_train, y_train), (x_test, y_test), _, _ = load_cifar10()
             x_train, y_train, x_test, y_test = (
                 x_train[:NB_TRAIN],
@@ -258,11 +268,11 @@ class TestClass:
                 y_test[:NB_TEST],
             )
 
-        if framework in ['pytorch', 'huggingface']:
+        if framework in ["pytorch", "huggingface"]:
             x_train = np.float32(np.moveaxis(x_train, -1, 1))
             x_test = np.float32(np.moveaxis(x_test, -1, 1))
-        if framework == 'huggingface' and HF_MODEL_SIZE == 'LARGE':
-            upsampler = torch.nn.Upsample(scale_factor=7, mode='nearest')
+        if framework == "huggingface" and HF_MODEL_SIZE == "LARGE":
+            upsampler = torch.nn.Upsample(scale_factor=7, mode="nearest")
             x_train = np.float32(upsampler(torch.from_numpy(x_train)).cpu().numpy())
             x_test = np.float32(upsampler(torch.from_numpy(x_test)).cpu().numpy())
 
@@ -280,7 +290,7 @@ class TestClass:
         predictions_new = np.argmax(adv_trainer.predict(x_test_adv), axis=1)
         accuracy_new = np.sum(predictions_new == np.argmax(y_test, axis=1)) / NB_TEST
 
-        if framework in ["tensorflow2", 'pytorch', 'huggingface']:
+        if framework in ["tensorflow2", "pytorch", "huggingface"]:
             assert accuracy_new == 0.14
             assert accuracy == 0.13  # Untrained acc?
 
@@ -289,7 +299,7 @@ class TestClass:
 
     @pytest.mark.only_with_platform("pytorch", "tensorflow2", "huggingface")
     def test_two_attacks_with_generator(self, art_warning, get_mnist_classifier, get_default_mnist_subset, framework):
-        if framework == 'huggingface' and HF_MODEL_SIZE == 'LARGE':
+        if framework == "huggingface" and HF_MODEL_SIZE == "LARGE":
             (x_train, y_train), (x_test, y_test), _, _ = load_cifar10()
             x_train, y_train, x_test, y_test = (
                 x_train[:NB_TRAIN],
@@ -306,11 +316,11 @@ class TestClass:
                 y_test[:NB_TEST],
             )
 
-        if framework in ['pytorch', 'huggingface']:
+        if framework in ["pytorch", "huggingface"]:
             x_train = np.float32(np.moveaxis(x_train, -1, 1))
             x_test = np.float32(np.moveaxis(x_test, -1, 1))
-        if framework == 'huggingface' and HF_MODEL_SIZE == 'LARGE':
-            upsampler = torch.nn.Upsample(scale_factor=7, mode='nearest')
+        if framework == "huggingface" and HF_MODEL_SIZE == "LARGE":
+            upsampler = torch.nn.Upsample(scale_factor=7, mode="nearest")
             x_train = np.float32(upsampler(torch.from_numpy(x_train)).cpu().numpy())
             x_test = np.float32(upsampler(torch.from_numpy(x_test)).cpu().numpy())
 
@@ -343,7 +353,7 @@ class TestClass:
         predictions_new = np.argmax(adv_trainer.predict(x_test_adv), axis=1)
         accuracy_new = np.sum(predictions_new == np.argmax(y_test, axis=1)) / NB_TEST
 
-        if framework in ["tensorflow2", "pytorch", 'huggingface']:
+        if framework in ["tensorflow2", "pytorch", "huggingface"]:
             # self.assertAlmostEqual(accuracy_new, 0.38, delta=0.02)
             assert 0.36 <= accuracy_new <= 0.40
             assert accuracy == 0.1
@@ -359,7 +369,7 @@ class TestClass:
 
         :return: None
         """
-        if framework == 'huggingface' and HF_MODEL_SIZE == 'LARGE':
+        if framework == "huggingface" and HF_MODEL_SIZE == "LARGE":
             (x_train, y_train), (x_test, y_test), _, _ = load_cifar10()
             x_train, y_train, x_test, y_test = (
                 x_train[:NB_TRAIN],
@@ -376,11 +386,11 @@ class TestClass:
                 y_test[:NB_TEST],
             )
 
-        if framework in ['pytorch', 'huggingface']:
+        if framework in ["pytorch", "huggingface"]:
             x_train = np.float32(np.moveaxis(x_train, -1, 1))
             x_test = np.float32(np.moveaxis(x_test, -1, 1))
-        if framework == 'huggingface' and HF_MODEL_SIZE == 'LARGE':
-            upsampler = torch.nn.Upsample(scale_factor=7, mode='nearest')
+        if framework == "huggingface" and HF_MODEL_SIZE == "LARGE":
+            upsampler = torch.nn.Upsample(scale_factor=7, mode="nearest")
             x_train = np.float32(upsampler(torch.from_numpy(x_train)).cpu().numpy())
             x_test = np.float32(upsampler(torch.from_numpy(x_test)).cpu().numpy())
 

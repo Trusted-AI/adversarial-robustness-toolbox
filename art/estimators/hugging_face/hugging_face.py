@@ -99,10 +99,6 @@ class HuggingFaceClassifier(PyTorchClassifier):
             + "\033[0m"
         )
 
-        import transformers
-
-        # assert isinstance(model, transformers.PreTrainedModel)
-
         self.processor = processor
 
         super().__init__(
@@ -150,7 +146,6 @@ class HuggingFaceClassifier(PyTorchClassifier):
             return outputs.logits
 
         self.model.forward = prefix_function(self.model.forward, get_logits)  # type: ignore
-        # self.model.__call__ = prefix_function(self.model.__call__, get_logits)  # type: ignore
 
     def __call__(self, image: Union[np.ndarray, torch.Tensor]) -> torch.Tensor:
         """
@@ -258,15 +253,15 @@ class HuggingFaceClassifier(PyTorchClassifier):
 
                         for name, module in self._model.named_modules():
                             logger.info(
-                                "found %s with type %s and id %i and name %s with submods %i "
-                                % (module, type(module), id(module), name, len(list(module.named_modules())))
+                                "found %s with type %s and id %i and name %s with submods %i ",
+                                 module, type(module), id(module), name, len(list(module.named_modules()))
                             )
 
                             if name != "" and len(list(module.named_modules())) == 1:
                                 handles.append(module.register_forward_hook(forward_hook))
                                 result_dict[id(module)] = name
 
-                        logger.info("mapping from id to name is ", result_dict)
+                        logger.info("mapping from id to name is %s", result_dict)
 
                         logger.info("------ Finished Registering Hooks------")
                         model(input_for_hook)  # hooks are fired sequentially from model input to the output

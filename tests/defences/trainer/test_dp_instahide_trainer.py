@@ -26,7 +26,7 @@ from art.estimators.classification import PyTorchClassifier, TensorFlowV2Classif
 from tests.utils import ARTTestException
 from tests.utils import get_image_classifier_hf
 
-HF_MODEL_SIZE = 'SMALL'
+HF_MODEL_SIZE = "SMALL"
 
 logger = logging.getLogger(__name__)
 
@@ -87,23 +87,25 @@ def get_mnist_classifier(framework):
             classifier = KerasClassifier(model, clip_values=(0, 1), use_logits=True)
 
         elif framework == "huggingface":
-            if HF_MODEL_SIZE == 'LARGE':  # NB: is killed on CI github actions.
+            if HF_MODEL_SIZE == "LARGE":  # NB: is killed on CI github actions.
                 import transformers
                 import torch
                 from art.estimators.hugging_face import HuggingFaceClassifier
 
-                model = transformers.AutoModelForImageClassification.from_pretrained('facebook/deit-tiny-patch16-224', # takes 3 min
-                                                                                     ignore_mismatched_sizes=True,
-                                                                                     num_labels=10)
+                model = transformers.AutoModelForImageClassification.from_pretrained(
+                    "facebook/deit-tiny-patch16-224", ignore_mismatched_sizes=True, num_labels=10  # takes 3 min
+                )
 
-                print('num of parameters is ', sum(p.numel() for p in model.parameters() if p.requires_grad))
+                print("num of parameters is ", sum(p.numel() for p in model.parameters() if p.requires_grad))
                 optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
-                classifier = HuggingFaceClassifier(model,
-                                                   loss=torch.nn.CrossEntropyLoss(),
-                                                   optimizer=optimizer,
-                                                   input_shape=(3, 224, 224),
-                                                   nb_classes=10,
-                                                   processor=None)
+                classifier = HuggingFaceClassifier(
+                    model,
+                    loss=torch.nn.CrossEntropyLoss(),
+                    optimizer=optimizer,
+                    input_shape=(3, 224, 224),
+                    nb_classes=10,
+                    processor=None,
+                )
             else:
                 classifier = get_image_classifier_hf(from_logits=True)
 
@@ -117,13 +119,16 @@ def get_mnist_classifier(framework):
 
 @pytest.mark.only_with_platform("pytorch", "tensorflow2", "keras", "kerastf", "huggingface")
 @pytest.mark.parametrize("noise", ["gaussian", "laplacian", "exponential"])
-def test_dp_instahide_single_aug(art_warning, get_mnist_classifier, get_default_mnist_subset, get_default_cifar10_subset, noise, framework):
+def test_dp_instahide_single_aug(
+    art_warning, get_mnist_classifier, get_default_mnist_subset, get_default_cifar10_subset, noise, framework
+):
     classifier = get_mnist_classifier()
 
     if framework == "huggingface" and HF_MODEL_SIZE == "LARGE":
         import numpy as np
         import torch
-        upsampler = torch.nn.Upsample(scale_factor=7, mode='nearest')
+
+        upsampler = torch.nn.Upsample(scale_factor=7, mode="nearest")
 
         (x_train, y_train), (_, _) = get_default_cifar10_subset
         x_train = np.rollaxis(x_train, 3, 1)
@@ -145,13 +150,16 @@ def test_dp_instahide_single_aug(art_warning, get_mnist_classifier, get_default_
 
 @pytest.mark.only_with_platform("pytorch", "tensorflow2", "keras", "kerastf", "huggingface")
 @pytest.mark.parametrize("noise", ["gaussian", "laplacian", "exponential"])
-def test_dp_instahide_multiple_aug(art_warning, get_mnist_classifier, get_default_mnist_subset, get_default_cifar10_subset, noise, framework):
+def test_dp_instahide_multiple_aug(
+    art_warning, get_mnist_classifier, get_default_mnist_subset, get_default_cifar10_subset, noise, framework
+):
     classifier = get_mnist_classifier()
 
     if framework == "huggingface" and HF_MODEL_SIZE == "LARGE":
         import numpy as np
         import torch
-        upsampler = torch.nn.Upsample(scale_factor=7, mode='nearest')
+
+        upsampler = torch.nn.Upsample(scale_factor=7, mode="nearest")
 
         (x_train, y_train), (_, _) = get_default_cifar10_subset
         x_train = np.rollaxis(x_train, 3, 1)
@@ -174,13 +182,16 @@ def test_dp_instahide_multiple_aug(art_warning, get_mnist_classifier, get_defaul
 
 @pytest.mark.only_with_platform("pytorch", "tensorflow2", "keras", "kerastf", "huggingface")
 @pytest.mark.parametrize("noise", ["gaussian", "laplacian", "exponential"])
-def test_dp_instahide_validation_data(art_warning, get_mnist_classifier, get_default_mnist_subset, get_default_cifar10_subset, noise, framework):
+def test_dp_instahide_validation_data(
+    art_warning, get_mnist_classifier, get_default_mnist_subset, get_default_cifar10_subset, noise, framework
+):
     classifier = get_mnist_classifier()
 
     if framework == "huggingface" and HF_MODEL_SIZE == "LARGE":
         import numpy as np
         import torch
-        upsampler = torch.nn.Upsample(scale_factor=7, mode='nearest')
+
+        upsampler = torch.nn.Upsample(scale_factor=7, mode="nearest")
 
         (x_train, y_train), (x_test, y_test) = get_default_cifar10_subset
 
@@ -208,7 +219,9 @@ def test_dp_instahide_validation_data(art_warning, get_mnist_classifier, get_def
 
 @pytest.mark.only_with_platform("pytorch", "tensorflow2", "keras", "kerastf", "huggingface")
 @pytest.mark.parametrize("noise", ["gaussian", "laplacian", "exponential"])
-def test_dp_instahide_generator(art_warning, get_mnist_classifier, get_default_mnist_subset, get_default_cifar10_subset, noise, framework):
+def test_dp_instahide_generator(
+    art_warning, get_mnist_classifier, get_default_mnist_subset, get_default_cifar10_subset, noise, framework
+):
     from art.data_generators import NumpyDataGenerator
 
     classifier = get_mnist_classifier()
@@ -216,12 +229,13 @@ def test_dp_instahide_generator(art_warning, get_mnist_classifier, get_default_m
     if framework == "huggingface" and HF_MODEL_SIZE == "LARGE":
         import numpy as np
         import torch
-        upsampler = torch.nn.Upsample(scale_factor=7, mode='nearest')
+
+        upsampler = torch.nn.Upsample(scale_factor=7, mode="nearest")
 
         (x_train, y_train), (_, _) = get_default_cifar10_subset
         x_train = np.rollaxis(x_train, 3, 1)
         x_train = np.float32(upsampler(torch.from_numpy(x_train)).cpu().numpy())
-        x_train = x_train[0:64] # large model so select only a small portion
+        x_train = x_train[0:64]  # large model so select only a small portion
         y_train = y_train[0:64]
     else:
         (x_train, y_train), (_, _) = get_default_mnist_subset

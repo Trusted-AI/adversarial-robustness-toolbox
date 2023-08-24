@@ -26,7 +26,7 @@ from art.defences.trainer import AdversarialTrainerTRADESPyTorch
 from art.attacks.evasion import ProjectedGradientDescent
 from tests.utils import get_image_classifier_pt, get_image_classifier_hf
 
-HF_MODEL_SIZE = 'SMALL'
+HF_MODEL_SIZE = "SMALL"
 
 
 @pytest.fixture()
@@ -54,25 +54,27 @@ def get_adv_trainer(framework, image_dl_estimator):
 
         if framework == "huggingface":
 
-            if HF_MODEL_SIZE == 'LARGE':
+            if HF_MODEL_SIZE == "LARGE":
                 import transformers
                 import torch
                 from art.estimators.hugging_face import HuggingFaceClassifier
 
-                model = transformers.AutoModelForImageClassification.from_pretrained('facebook/deit-tiny-patch16-224', # takes 3 min
-                                                                                     ignore_mismatched_sizes=True,
-                                                                                     num_labels=10)
+                model = transformers.AutoModelForImageClassification.from_pretrained(
+                    "facebook/deit-tiny-patch16-224", ignore_mismatched_sizes=True, num_labels=10  # takes 3 min
+                )
 
-                print('num of parameters is ', sum(p.numel() for p in model.parameters() if p.requires_grad))
+                print("num of parameters is ", sum(p.numel() for p in model.parameters() if p.requires_grad))
                 optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
 
-                classifier = HuggingFaceClassifier(model,
-                                                   loss=torch.nn.CrossEntropyLoss(),
-                                                   input_shape=(3, 224, 224),
-                                                   nb_classes=10,
-                                                   optimizer=optimizer,
-                                                   processor=None)
-            elif HF_MODEL_SIZE == 'SMALL':
+                classifier = HuggingFaceClassifier(
+                    model,
+                    loss=torch.nn.CrossEntropyLoss(),
+                    input_shape=(3, 224, 224),
+                    nb_classes=10,
+                    optimizer=optimizer,
+                    processor=None,
+                )
+            elif HF_MODEL_SIZE == "SMALL":
                 classifier = get_image_classifier_hf()
 
             attack = ProjectedGradientDescent(
@@ -104,6 +106,7 @@ def fix_get_mnist_subset(get_mnist_dataset):
     n_test = 100
     yield x_train_mnist[:n_train], y_train_mnist[:n_train], x_test_mnist[:n_test], y_test_mnist[:n_test]
 
+
 @pytest.fixture()
 def fix_get_cifar10_data():
     """
@@ -126,11 +129,14 @@ def fix_get_cifar10_data():
 
 @pytest.mark.only_with_platform("huggingface")
 @pytest.mark.parametrize("label_format", ["one_hot", "numerical"])
-def test_adversarial_trainer_trades_huggingface_fit_and_predict(get_adv_trainer, fix_get_cifar10_data, fix_get_mnist_subset, label_format):
+def test_adversarial_trainer_trades_huggingface_fit_and_predict(
+    get_adv_trainer, fix_get_cifar10_data, fix_get_mnist_subset, label_format
+):
 
     import torch
-    upsampler = torch.nn.Upsample(scale_factor=7, mode='nearest')
-    if HF_MODEL_SIZE == 'LARGE':
+
+    upsampler = torch.nn.Upsample(scale_factor=7, mode="nearest")
+    if HF_MODEL_SIZE == "LARGE":
         (x_train, y_train, x_test, y_test) = fix_get_cifar10_data
         x_test_original = x_test.copy()
 
@@ -160,7 +166,7 @@ def test_adversarial_trainer_trades_huggingface_fit_and_predict(get_adv_trainer,
     else:
         accuracy = np.sum(predictions == y_test) / x_test.shape[0]
 
-    if HF_MODEL_SIZE == 'SMALL':
+    if HF_MODEL_SIZE == "SMALL":
         nb_epochs = 20
     else:
         nb_epochs = 2
@@ -179,7 +185,7 @@ def test_adversarial_trainer_trades_huggingface_fit_and_predict(get_adv_trainer,
         decimal=4,
     )
 
-    if HF_MODEL_SIZE == 'SMALL':
+    if HF_MODEL_SIZE == "SMALL":
         assert accuracy == 0.32
         assert accuracy_new > 0.32
     trainer.fit(x_train, y_train, nb_epochs=nb_epochs, validation_data=(x_train, y_train))
@@ -223,7 +229,7 @@ def test_adversarial_trainer_trades_pytorch_fit_and_predict(get_adv_trainer, fix
         0.0,
         decimal=4,
     )
-    print('accuracy ', accuracy)
+    print("accuracy ", accuracy)
     assert accuracy == 0.32
     assert accuracy_new > 0.32
 
