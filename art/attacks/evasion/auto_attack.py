@@ -196,11 +196,8 @@ class AutoAttack(EvasionAttack):
             targeted_labels = np.reshape(y_t, (y.shape[0], -1))
 
             for attack in self.attacks:
-
-                if attack.targeted is not None:
-
-                    if not attack.targeted:
-                        attack.set_params(targeted=True)
+                try:
+                    attack.set_params(targeted=True)
 
                     for i in range(self.estimator.nb_classes - 1):
                         # Stop if all samples are misclassified
@@ -218,7 +215,8 @@ class AutoAttack(EvasionAttack):
                             attack=attack,
                             **kwargs,
                         )
-
+                except ValueError:
+                    logger.info(f'Skipping {attack} for targeted case as it is not supported.')
         return x_adv
 
     def _run_attack(
