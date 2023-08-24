@@ -186,7 +186,7 @@ class AutoAttack(EvasionAttack):
 
             if self.in_parallel:
                 args.append((deepcopy(x_adv), deepcopy(y), deepcopy(sample_is_robust),
-                          deepcopy(attack), self.estimator_orig, self.norm, self.eps))
+                          deepcopy(attack), deepcopy(self.estimator), deepcopy(self.norm), deepcopy(self.eps)))
             else:
                 x_adv, sample_is_robust = run_attack(
                     x=x_adv,
@@ -210,11 +210,9 @@ class AutoAttack(EvasionAttack):
 
             for attack in self.attacks:
 
-                if attack.targeted is not None:
-
-                    if not attack.targeted:
-                        attack.set_params(targeted=True)
-
+                try:
+                    attack.set_params(targeted=True)
+                    
                     for i in range(self.estimator.nb_classes - 1):
                         # Stop if all samples are misclassified
                         if np.sum(sample_is_robust) == 0:
@@ -226,7 +224,7 @@ class AutoAttack(EvasionAttack):
 
                         if self.in_parallel:
                             args.append((deepcopy(x_adv), deepcopy(target), deepcopy(sample_is_robust),
-                                         deepcopy(attack), self.estimator_orig, self.norm, self.eps))
+                                            deepcopy(attack), deepcopy(self.estimator), deepcopy(self.norm), deepcopy(self.eps)))
                         else:
                             x_adv, sample_is_robust = run_attack(
                                 x=x_adv,
@@ -238,6 +236,9 @@ class AutoAttack(EvasionAttack):
                                 eps=self.eps,
                                 **kwargs,
                             )
+                except Exception as e:
+                    logger.warning(f'Skipping {attack} for targeted case as not supported.')
+
         if self.in_parallel:
             with get_context('spawn').Pool() as pool:
                 # Results come back in the order that they were issued

@@ -159,6 +159,8 @@ class Attack(abc.ABC):
         for key, value in kwargs.items():
             if key in self.attack_params:
                 setattr(self, key, value)
+            else:
+                raise ValueError(f'The attribute "{key}" cannot be set for this attack.')
         self._check_params()
 
     def _check_params(self) -> None:
