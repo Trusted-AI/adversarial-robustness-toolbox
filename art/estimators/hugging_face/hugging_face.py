@@ -89,14 +89,14 @@ class HuggingFaceClassifier(PyTorchClassifier):
         """
 
         logging.warning(
-            "\033[91m"
-            + "\n-----------------------------------------------------------------------------------------------\n"
+            "%s \n-----------------------------------------------------------------------------------------------\n"
             "This estimator is currently in development and does not support all ART functionality.\n"
             "Currently supports evasion attacks and defences for classification tasks using a Pytorch backend.\n"
             "If your use case is not supported or you encounter bugs please raise an issue with ART at: \n"
             "https://github.com/Trusted-AI/adversarial-robustness-toolbox \n"
-            "-----------------------------------------------------------------------------------------------\n"
-            + "\033[0m"
+            "-----------------------------------------------------------------------------------------------\n %s",
+            "\033[91m",
+            "\033[0m",
         )
 
         self.processor = processor
@@ -254,7 +254,11 @@ class HuggingFaceClassifier(PyTorchClassifier):
                         for name, module in self._model.named_modules():
                             logger.info(
                                 "found %s with type %s and id %i and name %s with submods %i ",
-                                 module, type(module), id(module), name, len(list(module.named_modules()))
+                                module,
+                                type(module),
+                                id(module),
+                                name,
+                                len(list(module.named_modules())),
                             )
 
                             if name != "" and len(list(module.named_modules())) == 1:

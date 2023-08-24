@@ -22,6 +22,9 @@ import logging
 import numpy as np
 
 from art.defences.trainer import AdversarialTrainerFBFPyTorch
+from tests.utils import get_image_classifier_hf
+
+HF_MODEL_SIZE = "SMALL"
 
 
 @pytest.fixture()
@@ -38,26 +41,32 @@ def get_adv_trainer(framework, image_dl_estimator):
         if framework == "scikitlearn":
             trainer = None
         if framework == "huggingface":
-            import transformers
-            import torch
-            from art.estimators.hugging_face import HuggingFaceClassifier
+            if HF_MODEL_SIZE == "LARGE":
+                import transformers
+                import torch
+                from art.estimators.hugging_face import HuggingFaceClassifier
 
-            model = transformers.AutoModelForImageClassification.from_pretrained(
-                "facebook/deit-tiny-patch16-224", ignore_mismatched_sizes=True, num_labels=10
-            )
+                model = transformers.AutoModelForImageClassification.from_pretrained(
+                    "facebook/deit-tiny-patch16-224", ignore_mismatched_sizes=True, num_labels=10
+                )
 
-            print("num of parameters is ", sum(p.numel() for p in model.parameters() if p.requires_grad))
-            optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
+                print("num of parameters is ", sum(p.numel() for p in model.parameters() if p.requires_grad))
+                optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
 
-            hf_model = HuggingFaceClassifier(
-                model,
-                loss=torch.nn.CrossEntropyLoss(),
-                optimizer=optimizer,
-                input_shape=(3, 224, 224),
-                nb_classes=10,
-                processor=None,
-            )
-            trainer = AdversarialTrainerFBFPyTorch(hf_model, eps=0.05)
+                classifier = HuggingFaceClassifier(
+                    model,
+                    loss=torch.nn.CrossEntropyLoss(),
+                    optimizer=optimizer,
+                    input_shape=(3, 224, 224),
+                    nb_classes=10,
+                    processor=None,
+                )
+            elif HF_MODEL_SIZE == "SMALL":
+                classifier = get_image_classifier_hf(from_logits=True)
+            else:
+                raise ValueError("HF_MODEL_SIZE must be either SMALL or LARGE")
+
+            trainer = AdversarialTrainerFBFPyTorch(classifier, eps=0.05)
 
         return trainer
 
@@ -72,21 +81,27 @@ def fix_get_mnist_subset(get_mnist_dataset):
     yield x_train_mnist[:n_train], y_train_mnist[:n_train], x_test_mnist[:n_test], y_test_mnist[:n_test]
 
 
-@pytest.mark.skip_framework("tensorflow", "keras", "scikitlearn", "mxnet", "kerastf", "pytorch")
-def test_adversarial_trainer_fbf_huggingface_fit_and_predict(get_adv_trainer, get_default_cifar10_subset):
-    (x_train, y_train), (x_test, y_test) = get_default_cifar10_subset
-    x_train = x_train[0:100]
-    y_train = y_train[0:100]
+@pytest.mark.only_with_platform("huggingface")
+def test_adversarial_trainer_fbf_huggingface_fit_and_predict(
+    get_adv_trainer, get_default_cifar10_subset, fix_get_mnist_subset
+):
 
-    x_train = np.rollaxis(x_train, 3, 1)
-    x_test = np.rollaxis(x_test, 3, 1)
+    if HF_MODEL_SIZE == "LARGE":
+        (x_train, y_train), (x_test, y_test) = get_default_cifar10_subset
+        import torch
 
-    import torch
+        x_train = x_train[0:100]
+        y_train = y_train[0:100]
+        upsampler = torch.nn.Upsample(scale_factor=7, mode="nearest")
+        x_train = np.rollaxis(x_train, 3, 1)
+        x_test = np.rollaxis(x_test, 3, 1)
+    else:
+        (x_train, y_train, x_test, y_test) = fix_get_mnist_subset
 
-    upsampler = torch.nn.Upsample(scale_factor=7, mode="nearest")
+    if HF_MODEL_SIZE == "LARGE":
+        x_train = np.float32(upsampler(torch.from_numpy(x_train)).cpu().numpy())
+        x_test = np.float32(upsampler(torch.from_numpy(x_test)).cpu().numpy())
 
-    x_train = np.float32(upsampler(torch.from_numpy(x_train)).cpu().numpy())
-    x_test = np.float32(upsampler(torch.from_numpy(x_test)).cpu().numpy())
     x_test_original = x_test.copy()
 
     trainer = get_adv_trainer()
@@ -97,7 +112,7 @@ def test_adversarial_trainer_fbf_huggingface_fit_and_predict(get_adv_trainer, ge
     predictions = np.argmax(trainer.predict(x_test), axis=1)
     accuracy = np.sum(predictions == np.argmax(y_test, axis=1)) / x_test.shape[0]
 
-    trainer.fit(x_train, y_train, nb_epochs=1, validation_data=(x_test, y_test))
+    trainer.fit(x_train, y_train, nb_epochs=20, validation_data=(x_test, y_test))
     predictions_new = np.argmax(trainer.predict(x_test), axis=1)
     accuracy_new = np.sum(predictions_new == np.argmax(y_test, axis=1)) / x_test.shape[0]
 
@@ -107,8 +122,10 @@ def test_adversarial_trainer_fbf_huggingface_fit_and_predict(get_adv_trainer, ge
         decimal=4,
     )
 
-    # assert accuracy == 0.32
-    # assert accuracy_new == 0.63
+    if HF_MODEL_SIZE == "SMALL":
+        # NB, differs from pytorch due to issiue number #2227. Here we use logits for Huggingface.
+        assert accuracy == 0.32
+        assert accuracy_new == 0.66
 
 
 @pytest.mark.skip_framework("tensorflow", "keras", "scikitlearn", "mxnet", "kerastf", "huggingface")
