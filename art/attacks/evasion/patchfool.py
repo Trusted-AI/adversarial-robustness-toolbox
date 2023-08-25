@@ -24,6 +24,7 @@ This module implements the Patch-Fool attack in PyTorch.
 from typing import Optional, Union
 
 import numpy as np
+from tqdm import tqdm
 
 from art.attacks.attack import EvasionAttack
 from art.estimators.classification.pytorch import PyTorchClassifierDeiT
@@ -137,7 +138,7 @@ class PatchFool(EvasionAttack):
         optim = torch.optim.Adam([perturbation], lr=self.learning_rate)
         scheduler = torch.optim.lr_scheduler.StepLR(optim, step_size=self.step_size, gamma=self.step_size_decay)
 
-        for i_max_iter in range(self.max_iter):
+        for i_max_iter in tqdm(range(self.max_iter)):
 
             self.estimator.model.zero_grad()
             optim.zero_grad()
