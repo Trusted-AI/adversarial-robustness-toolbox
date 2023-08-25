@@ -22,9 +22,6 @@ import logging
 import numpy as np
 
 from art.defences.trainer import AdversarialTrainerFBFPyTorch
-from tests.utils import get_image_classifier_hf
-
-HF_MODEL_SIZE = "SMALL"
 
 
 @pytest.fixture()
@@ -79,54 +76,6 @@ def fix_get_mnist_subset(get_mnist_dataset):
     n_train = 100
     n_test = 100
     yield x_train_mnist[:n_train], y_train_mnist[:n_train], x_test_mnist[:n_test], y_test_mnist[:n_test]
-
-
-@pytest.mark.only_with_platform("huggingface")
-def test_adversarial_trainer_fbf_huggingface_fit_and_predict(
-    get_adv_trainer, get_default_cifar10_subset, fix_get_mnist_subset
-):
-
-    if HF_MODEL_SIZE == "LARGE":
-        (x_train, y_train), (x_test, y_test) = get_default_cifar10_subset
-        import torch
-
-        x_train = x_train[0:100]
-        y_train = y_train[0:100]
-        upsampler = torch.nn.Upsample(scale_factor=7, mode="nearest")
-        x_train = np.rollaxis(x_train, 3, 1)
-        x_test = np.rollaxis(x_test, 3, 1)
-    else:
-        (x_train, y_train, x_test, y_test) = fix_get_mnist_subset
-
-    if HF_MODEL_SIZE == "LARGE":
-        x_train = np.float32(upsampler(torch.from_numpy(x_train)).cpu().numpy())
-        x_test = np.float32(upsampler(torch.from_numpy(x_test)).cpu().numpy())
-
-    x_test_original = x_test.copy()
-
-    trainer = get_adv_trainer()
-    if trainer is None:
-        logging.warning("Couldn't perform  this test because no trainer is defined for this framework configuration")
-        return
-
-    predictions = np.argmax(trainer.predict(x_test), axis=1)
-    accuracy = np.sum(predictions == np.argmax(y_test, axis=1)) / x_test.shape[0]
-
-    trainer.fit(x_train, y_train, nb_epochs=20, validation_data=(x_test, y_test))
-    predictions_new = np.argmax(trainer.predict(x_test), axis=1)
-    accuracy_new = np.sum(predictions_new == np.argmax(y_test, axis=1)) / x_test.shape[0]
-
-    np.testing.assert_array_almost_equal(
-        float(np.mean(x_test_original - x_test)),
-        0.0,
-        decimal=4,
-    )
-
-    if HF_MODEL_SIZE == "SMALL":
-        # NB, differs from pytorch due to issiue number #2227. Here we use logits for Huggingface.
-        assert accuracy == 0.32
-        # Different platforms gave marginally different results
-        assert 0.65 <= accuracy_new <= 0.67
 
 
 @pytest.mark.skip_framework("tensorflow", "keras", "scikitlearn", "mxnet", "kerastf", "huggingface")

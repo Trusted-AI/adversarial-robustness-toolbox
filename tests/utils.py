@@ -1111,10 +1111,8 @@ def get_image_classifier_hf(from_logits=False, load_init=True, use_maxpool=True)
             x = self.fullyconnected(x)
             if not from_logits:
                 x = torch.nn.functional.softmax(x, dim=1)
-            return ImageClassifierOutput(  # loss=loss,
+            return ImageClassifierOutput(
                 logits=x,
-                # hidden_states=outputs.hidden_states,
-                # attentions=outputs.attentions
             )
 
     config = ModelConfig()

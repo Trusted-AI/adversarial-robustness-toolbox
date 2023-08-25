@@ -48,7 +48,7 @@ class HuggingFaceClassifier(PyTorchClassifier):
         loss: "torch.nn.modules.loss._Loss",
         input_shape: Tuple[int, ...],
         nb_classes: int,
-        optimizer: Optional["torch.optim.Optimizer"] = None,  # type: ignore
+        optimizer: Optional["torch.optim.Optimizer"] = None,
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
         processor: Optional[Callable] = None,
@@ -88,16 +88,6 @@ class HuggingFaceClassifier(PyTorchClassifier):
                           Must be differentiable for grandient based defences and attacks.
         """
 
-        logging.warning(
-            "%s \n-----------------------------------------------------------------------------------------------\n"
-            "This estimator is currently in development and does not support all ART functionality.\n"
-            "Currently supports evasion attacks and defences for classification tasks using a Pytorch backend.\n"
-            "If your use case is not supported or you encounter bugs please raise an issue with ART at: \n"
-            "https://github.com/Trusted-AI/adversarial-robustness-toolbox \n"
-            "-----------------------------------------------------------------------------------------------\n %s",
-            "\033[91m",
-            "\033[0m",
-        )
 
         self.processor = processor
 
@@ -138,6 +128,7 @@ class HuggingFaceClassifier(PyTorchClassifier):
         def get_logits(outputs: "ImageClassifierOutput") -> torch.Tensor:
             """
             Gets the logits attribute from ImageClassifierOutput
+
             :param outputs: outputs of type ImageClassifierOutput from a Huggingface
             :return: model's logit predictions.
             """
@@ -150,8 +141,8 @@ class HuggingFaceClassifier(PyTorchClassifier):
     def __call__(self, image: Union[np.ndarray, torch.Tensor]) -> torch.Tensor:
         """
         Forward pass of the model
-        :param image: input data to the model
 
+        :param image: input data to the model
         :return: model predictions
         """
         outputs = self.forward(image)
@@ -160,8 +151,8 @@ class HuggingFaceClassifier(PyTorchClassifier):
     def forward(self, image: Union[np.ndarray, torch.Tensor]) -> torch.Tensor:
         """
         Forward pass though the HF model
-        :param image: input data to the model
 
+        :param image: input data to the model
         :return: model predictions
         """
         if not isinstance(image, torch.Tensor):

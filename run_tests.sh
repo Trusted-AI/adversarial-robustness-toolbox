@@ -25,9 +25,6 @@ then
     pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/defences/detector/poison/test_spectral_signature_defense.py --framework=$framework --durations=0
     if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed defences/detector/poison/test_spectral_signature_defense.py tests"; fi
 
-    pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/defences/detector/poison/pytest --framework=$framework --durations=0
-    if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed defences/detector/poison/pytest tests"; fi
-
     pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/defences/preprocessor --framework=$framework --durations=0
     if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed defences/preprocessor tests"; fi
 

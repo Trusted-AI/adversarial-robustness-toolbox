@@ -237,7 +237,7 @@ def image_iterator(framework, get_default_mnist_subset, default_batch_size):
             dataset = tf.data.Dataset.from_tensor_slices((x_train_mnist, y_train_mnist)).batch(default_batch_size)
             return dataset
 
-        if framework == "pytorch" or framework == "huggingface":
+        if framework ["pytorch", "huggingface"]:
             import torch
 
             # Create tensors from data
@@ -289,7 +289,7 @@ def image_data_generator(framework, get_default_mnist_subset, image_iterator, de
                 batch_size=default_batch_size,
             )
 
-        if framework == "pytorch" or framework == "huggingface":
+        if framework in ["pytorch", "huggingface"]:
             data_generator = PyTorchDataGenerator(
                 iterator=image_it, size=x_train_mnist.shape[0], batch_size=default_batch_size
             )
@@ -699,7 +699,6 @@ def create_test_image(create_test_dir):
 
 @pytest.fixture(scope="session")
 def framework(request):
-    print('art_supported_frameworks are ', art_supported_frameworks)
     ml_framework = request.config.getoption("--framework")
     if ml_framework == "tensorflow":
         import tensorflow as tf
@@ -785,7 +784,7 @@ def default_dataset_subset_sizes():
 
 @pytest.fixture()
 def mnist_shape(framework):
-    if framework == "pytorch" or framework == "mxnet" or framework == 'huggingface':
+    if framework in ["pytorch", "mxnet", "huggingface"]:
         return (1, 28, 28)
     else:
         return (28, 28, 1)

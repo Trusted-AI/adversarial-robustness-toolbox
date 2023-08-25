@@ -22,7 +22,7 @@ import numpy as np
 import pytest
 
 from art.attacks.poisoning import PoisoningAttackCleanLabelBackdoor, PoisoningAttackBackdoor
-from art.attacks.poisoning.perturbations import add_pattern_bd, add_pattern_bd_pytorch
+from art.attacks.poisoning.perturbations import add_pattern_bd
 from art.utils import to_categorical
 
 from tests.utils import ARTTestException
