@@ -1042,7 +1042,7 @@ def get_image_classifier_hf(from_logits=False, load_init=True, use_maxpool=True)
     from transformers.modeling_utils import PreTrainedModel
     from transformers.configuration_utils import PretrainedConfig
     from transformers.modeling_outputs import ImageClassifierOutput
-    from art.estimators.hugging_face import HuggingFaceClassifier
+    from art.estimators.hugging_face import HuggingFaceClassifierPyTorch
 
     class ModelConfig(PretrainedConfig):
         def __init__(
@@ -1119,7 +1119,7 @@ def get_image_classifier_hf(from_logits=False, load_init=True, use_maxpool=True)
     pt_model = Model(config=config)
     optimizer = torch.optim.Adam(pt_model.parameters(), lr=0.01)
 
-    hf_classifier = HuggingFaceClassifier(
+    hf_classifier = HuggingFaceClassifierPyTorch(
         pt_model,
         loss=torch.nn.CrossEntropyLoss(reduction="sum"),
         optimizer=optimizer,

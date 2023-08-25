@@ -205,6 +205,7 @@ class HiddenTriggerBackdoorPyTorch(PoisoningAttackWhiteBox):
         original_images = torch.from_numpy(np.copy(data[poison_indices])).to(self.estimator.device)
 
         for batch_id in trange(batches, desc="Hidden Trigger", disable=not self.verbose):
+
             cur_index = self.batch_size * batch_id
             offset = min(self.batch_size, num_poison - cur_index)
             poison_batch_indices = poison_indices[cur_index : cur_index + offset]

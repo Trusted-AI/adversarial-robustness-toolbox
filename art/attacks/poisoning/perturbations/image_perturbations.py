@@ -49,7 +49,7 @@ def add_single_bd(x: np.ndarray, distance: int = 2, pixel_value: int = 1) -> np.
     return x
 
 
-def add_pattern_bd(x: np.ndarray, distance: int = 2, pixel_value: int = 1) -> np.ndarray:
+def add_pattern_bd(x: np.ndarray, distance: int = 2, pixel_value: int = 1, channels_first: bool = False) -> np.ndarray:
     """
     Augments a matrix by setting a checkerboard-like pattern of values some `distance` away from the bottom-right
     edge to 1. Works for single images or a batch of images.
@@ -61,6 +61,11 @@ def add_pattern_bd(x: np.ndarray, distance: int = 2, pixel_value: int = 1) -> np
     """
     x = np.copy(x)
     shape = x.shape
+    if len(shape) == 3 or len(shape) == 4:
+        # Transpose the image putting channels last
+        if channels_first:
+            x = np.transpose(x, (0, 2, 3, 1))
+
     if len(shape) == 4:
         height, width = x.shape[1:3]
         x[:, height - distance, width - distance, :] = pixel_value
@@ -81,41 +86,12 @@ def add_pattern_bd(x: np.ndarray, distance: int = 2, pixel_value: int = 1) -> np
         x[height - distance - 2, width - distance] = pixel_value
     else:
         raise ValueError(f"Invalid array shape: {shape}")
-    return x
-
-
-def add_pattern_bd_pytorch(x: np.ndarray, distance: int = 2, pixel_value: int = 1) -> np.ndarray:
-    """
-    Augments a matrix by setting a checkerboard-like pattern of values some `distance` away from the bottom-right
-    edge to 1. Works for single images or a batch of images.
-
-    :param x: A single image or batch of images of shape NWHC, NHW, or HC. Pixels will be added to all channels.
-    :param distance: Distance from bottom-right walls.
-    :param pixel_value: Value used to replace the entries of the image matrix.
-    :return: Backdoored image.
-    """
-    x = np.copy(x)
-    shape = x.shape
-    if len(shape) == 4:
-        height, width = x.shape[1:3]
-        x[:, :, height - distance, width - distance] = pixel_value
-        x[:, :, height - distance - 1, width - distance - 1] = pixel_value
-        x[:, :, height - distance, width - distance - 2] = pixel_value
-        x[:, :, height - distance - 2, width - distance] = pixel_value
-    elif len(shape) == 3:
-        height, width = x.shape[1:]
-        x[height - distance, width - distance, :] = pixel_value
-        x[height - distance - 1, width - distance - 1, :] = pixel_value
-        x[height - distance, width - distance - 2, :] = pixel_value
-        x[height - distance - 2, width - distance, :] = pixel_value
-    elif len(shape) == 2:
-        height, width = x.shape
-        x[height - distance, width - distance] = pixel_value
-        x[height - distance - 1, width - distance - 1] = pixel_value
-        x[height - distance, width - distance - 2] = pixel_value
-        x[height - distance - 2, width - distance] = pixel_value
-    else:
-        raise ValueError(f"Invalid array shape: {shape}")
+    
+    if len(shape) == 3 or len(shape) == 4:
+        # Putting channels first again 
+        if channels_first:
+            x = np.transpose(x, (0, 3, 1, 2))
+    
     return x
 
 

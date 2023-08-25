@@ -198,6 +198,7 @@ class HiddenTriggerBackdoor(PoisoningAttackWhiteBox):
         return self._attack.poison(x, y, **kwargs)
 
     def _check_params(self) -> None:
+
         if not isinstance(self.target, np.ndarray) or not isinstance(self.source, np.ndarray):
             raise ValueError("Target and source must be arrays")
 

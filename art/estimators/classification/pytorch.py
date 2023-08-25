@@ -461,6 +461,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                         scaled_loss.backward()
                 else:
                     loss.backward()
+
                 self._optimizer.step()
 
                 epoch_loss.append(loss.cpu().detach().numpy())

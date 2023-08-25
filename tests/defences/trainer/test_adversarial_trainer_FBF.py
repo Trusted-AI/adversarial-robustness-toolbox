@@ -38,31 +38,7 @@ def get_adv_trainer(framework, image_dl_estimator):
         if framework == "scikitlearn":
             trainer = None
         if framework == "huggingface":
-            if HF_MODEL_SIZE == "LARGE":
-                import transformers
-                import torch
-                from art.estimators.hugging_face import HuggingFaceClassifier
-
-                model = transformers.AutoModelForImageClassification.from_pretrained(
-                    "facebook/deit-tiny-patch16-224", ignore_mismatched_sizes=True, num_labels=10
-                )
-
-                print("num of parameters is ", sum(p.numel() for p in model.parameters() if p.requires_grad))
-                optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
-
-                classifier = HuggingFaceClassifier(
-                    model,
-                    loss=torch.nn.CrossEntropyLoss(),
-                    optimizer=optimizer,
-                    input_shape=(3, 224, 224),
-                    nb_classes=10,
-                    processor=None,
-                )
-            elif HF_MODEL_SIZE == "SMALL":
-                classifier = get_image_classifier_hf(from_logits=True)
-            else:
-                raise ValueError("HF_MODEL_SIZE must be either SMALL or LARGE")
-
+            classifier, _ = image_dl_estimator()
             trainer = AdversarialTrainerFBFPyTorch(classifier, eps=0.05)
 
         return trainer

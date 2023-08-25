@@ -37,7 +37,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class HuggingFaceClassifier(PyTorchClassifier):
+class HuggingFaceClassifierPyTorch(PyTorchClassifier):
     """
     This class implements a classifier with the HuggingFace framework.
     """
@@ -54,7 +54,7 @@ class HuggingFaceClassifier(PyTorchClassifier):
         processor: Optional[Callable] = None,
     ):
         """
-        Initialization of HuggingFaceClassifier specifically for the PyTorch-based backend.
+        Initialization of HuggingFaceClassifierPyTorch specifically for the PyTorch-based backend.
 
         :param model: Huggingface model model which returns outputs of type
                       ImageClassifierOutput from the transformers library.
@@ -109,9 +109,8 @@ class HuggingFaceClassifier(PyTorchClassifier):
 
         def prefix_function(function: Callable, postfunction: Callable) -> Callable[[Any, Any], torch.Tensor]:
             """
-            Huggingface returns logit under outputs.logits.
-            To make this compatible with ART we wrap the forward pass function
-            of a HF model here, which automatically extracts the logits.
+            Huggingface returns logit under outputs.logits. To make this compatible with ART we wrap the forward pass 
+            function of a HF model here, which automatically extracts the logits.
 
             :param function: The first function to run, in our case the forward pass of the model.
             :param postfunction: Second function to run, in this case simply extracts the logits.

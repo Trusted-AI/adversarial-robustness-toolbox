@@ -226,7 +226,7 @@ def test_adversarial_trainer_trades_pytorch_fit_and_predict(get_adv_trainer, fix
         0.0,
         decimal=4,
     )
-    print("accuracy ", accuracy)
+
     assert accuracy == 0.32
     assert accuracy_new > 0.32
 

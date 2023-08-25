@@ -237,7 +237,7 @@ def image_iterator(framework, get_default_mnist_subset, default_batch_size):
             dataset = tf.data.Dataset.from_tensor_slices((x_train_mnist, y_train_mnist)).batch(default_batch_size)
             return dataset
 
-        if framework ["pytorch", "huggingface"]:
+        if framework in ["pytorch", "huggingface"]:
             import torch
 
             # Create tensors from data
@@ -550,7 +550,7 @@ def image_dl_gan(framework):
 
 
 @pytest.fixture
-def image_dl_estimator(framework, get_image_classifier_mx_instance):
+def image_dl_estimator(framework):
     def _image_dl_estimator(functional=False, **kwargs):
         sess = None
         wildcard = False
