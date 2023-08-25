@@ -29,21 +29,19 @@ import numpy as np
 from tqdm import tqdm
 
 from art.estimators.classification.tensorflow import TensorFlowV2Classifier
-from art.estimators.certification.derandomized_smoothing.derandomized_smoothing import DeRandomizedSmoothingMixin
 from art.utils import check_and_transform_label_format
 
 if TYPE_CHECKING:
     # pylint: disable=C0412
     import tensorflow as tf
-
-    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
+    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE, ABLATOR_TYPE
     from art.defences.preprocessor import Preprocessor
     from art.defences.postprocessor import Postprocessor
 
 logger = logging.getLogger(__name__)
 
 
-class TensorFlowV2DeRandomizedSmoothing(DeRandomizedSmoothingMixin, TensorFlowV2Classifier):
+class TensorFlowV2DeRandomizedSmoothing(TensorFlowV2Classifier):
     """
     Implementation of (De)Randomized Smoothing applied to classifier predictions as introduced
     in Levine et al. (2020).
@@ -120,11 +118,30 @@ class TensorFlowV2DeRandomizedSmoothing(DeRandomizedSmoothingMixin, TensorFlowV2
             preprocessing_defences=preprocessing_defences,
             postprocessing_defences=postprocessing_defences,
             preprocessing=preprocessing,
-            ablation_type=ablation_type,
-            ablation_size=ablation_size,
-            threshold=threshold,
-            logits=logits,
         )
+
+        self.ablation_type = ablation_type
+        self.logits = logits
+        self.threshold = threshold
+        self._channels_first = channels_first
+
+        from art.estimators.certification.derandomized_smoothing.derandomized_smoothing import (
+            ColumnAblator,
+            BlockAblator,
+        )
+
+        if TYPE_CHECKING:
+            self.ablator: ABLATOR_TYPE  # pylint: disable=used-before-assignment
+
+        if self.ablation_type in {"column", "row"}:
+            row_ablation_mode = self.ablation_type == "row"
+            self.ablator = ColumnAblator(
+                ablation_size=ablation_size, channels_first=self._channels_first, row_ablation_mode=row_ablation_mode
+            )
+        elif self.ablation_type == "block":
+            self.ablator = BlockAblator(ablation_size=ablation_size, channels_first=self._channels_first)
+        else:
+            raise ValueError("Ablation type not supported. Must be either column or block")
 
     def _predict_classifier(self, x: np.ndarray, batch_size: int, training_mode: bool, **kwargs) -> np.ndarray:
         import tensorflow as tf
@@ -135,9 +152,6 @@ class TensorFlowV2DeRandomizedSmoothing(DeRandomizedSmoothingMixin, TensorFlowV2
         if self.logits:
             outputs = tf.nn.softmax(outputs)
         return np.asarray(outputs >= self.threshold).astype(int)
-
-    def _fit_classifier(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: int, **kwargs) -> None:
-        return TensorFlowV2Classifier.fit(self, x, y, batch_size=batch_size, nb_epochs=nb_epochs, **kwargs)
 
     def fit(self, x: np.ndarray, y: np.ndarray, batch_size: int = 128, nb_epochs: int = 10, **kwargs) -> None:
         """
@@ -200,15 +214,124 @@ class TensorFlowV2DeRandomizedSmoothing(DeRandomizedSmoothingMixin, TensorFlowV2
             if scheduler is not None:
                 scheduler(epoch)
 
-    def predict(
-        self, x: np.ndarray, batch_size: int = 128, training_mode: bool = False, **kwargs
-    ) -> np.ndarray:  # type: ignore
+    def predict(self, x: np.ndarray, batch_size: int = 128, training_mode: bool = False, **kwargs) -> np.ndarray:
         """
-        Perform prediction of the given classifier for a batch of inputs
+        Performs cumulative predictions over every ablation location
 
-        :param x: Input samples.
-        :param batch_size: Batch size.
+        :param x: Unablated image
+        :param batch_size: the batch size for the prediction
         :param training_mode: if to run the classifier in training mode
-        :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
+        :return: cumulative predictions after sweeping over all the ablation configurations.
         """
-        return DeRandomizedSmoothingMixin.predict(self, x, batch_size=batch_size, training_mode=training_mode, **kwargs)
+        if self._channels_first:
+            columns_in_data = x.shape[-1]
+            rows_in_data = x.shape[-2]
+        else:
+            columns_in_data = x.shape[-2]
+            rows_in_data = x.shape[-3]
+
+        if self.ablation_type in {"column", "row"}:
+            if self.ablation_type == "column":
+                ablate_over_range = columns_in_data
+            else:
+                # image will be transposed, so loop over the number of rows
+                ablate_over_range = rows_in_data
+
+            for ablation_start in range(ablate_over_range):
+                ablated_x = self.ablator.forward(np.copy(x), column_pos=ablation_start)
+                if ablation_start == 0:
+                    preds = self._predict_classifier(
+                        ablated_x, batch_size=batch_size, training_mode=training_mode, **kwargs
+                    )
+                else:
+                    preds += self._predict_classifier(
+                        ablated_x, batch_size=batch_size, training_mode=training_mode, **kwargs
+                    )
+        elif self.ablation_type == "block":
+            for xcorner in range(rows_in_data):
+                for ycorner in range(columns_in_data):
+                    ablated_x = self.ablator.forward(np.copy(x), row_pos=xcorner, column_pos=ycorner)
+                    if ycorner == 0 and xcorner == 0:
+                        preds = self._predict_classifier(
+                            ablated_x, batch_size=batch_size, training_mode=training_mode, **kwargs
+                        )
+                    else:
+                        preds += self._predict_classifier(
+                            ablated_x, batch_size=batch_size, training_mode=training_mode, **kwargs
+                        )
+        return preds
+
+    def eval_and_certify(
+        self,
+        x: np.ndarray,
+        y: np.ndarray,
+        size_to_certify: int,
+        batch_size: int = 128,
+        verbose: bool = True,
+    ) -> Tuple["tf.Tensor", "tf.Tensor"]:
+        """
+        Evaluates the normal and certified performance over the supplied data.
+
+        :param x: Evaluation data.
+        :param y: Evaluation labels.
+        :param size_to_certify: The size of the patch to certify against.
+                                If not provided will default to the ablation size.
+        :param batch_size: batch size when evaluating.
+        :param verbose: If to display the progress bar
+        :return: The accuracy and certified accuracy over the dataset
+        """
+        import tensorflow as tf
+
+        # self.model.eval() what is the tf equivalent?
+        y = check_and_transform_label_format(y, nb_classes=self.nb_classes)
+
+        # Apply preprocessing
+        x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=True)
+
+        num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
+        pbar = tqdm(range(num_batch), disable=not verbose)
+        accuracy = tf.constant(np.array(0.0), dtype=tf.dtypes.int32)
+        cert_sum = tf.constant(np.array(0.0), dtype=tf.dtypes.int32)
+        n_samples = 0
+
+        for m in pbar:
+            if m == (num_batch - 1):
+                i_batch = np.copy(x_preprocessed[m * batch_size :])
+                o_batch = y_preprocessed[m * batch_size :]
+            else:
+                i_batch = np.copy(x_preprocessed[m * batch_size : (m + 1) * batch_size])
+                o_batch = y_preprocessed[m * batch_size : (m + 1) * batch_size]
+
+            pred_counts = tf.zeros((len(i_batch), self.nb_classes), dtype=tf.dtypes.int32)
+            if self.ablation_type in {"column", "row"}:
+                for pos in range(i_batch.shape[-1]):
+                    ablated_batch = self.ablator.forward(i_batch, column_pos=pos)
+                    # Perform prediction
+                    model_outputs = self.model(ablated_batch)
+
+                    if self.logits:
+                        model_outputs = tf.nn.softmax(model_outputs)
+                    model_outputs = model_outputs >= self.threshold
+                    pred_counts += tf.where(model_outputs, 1, 0)
+
+            else:
+                for column_pos in range(i_batch.shape[-1]):
+                    for row_pos in range(i_batch.shape[-2]):
+                        ablated_batch = self.ablator.forward(i_batch, column_pos=column_pos, row_pos=row_pos)
+                        model_outputs = self.model(ablated_batch)
+
+                        if self.logits:
+                            model_outputs = tf.nn.softmax(model_outputs)
+                        model_outputs = model_outputs >= self.threshold
+                        pred_counts += tf.where(model_outputs, 1, 0)
+
+            _, cert_and_correct, top_predicted_class = self.ablator.certify(
+                pred_counts, size_to_certify=size_to_certify, label=o_batch
+            )
+            cert_sum += tf.math.reduce_sum(tf.where(cert_and_correct, 1, 0))
+            accuracy += tf.math.reduce_sum(tf.where(top_predicted_class == o_batch, 1, 0))
+            n_samples += len(cert_and_correct)
+
+            pbar.set_description(f"Normal Acc {accuracy / n_samples:.3f} " f"Cert Acc {cert_sum / n_samples:.3f}")
+
+        return (accuracy / n_samples), (cert_sum / n_samples)

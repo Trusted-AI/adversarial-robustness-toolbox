@@ -207,13 +207,14 @@ class ColumnAblator(torch.nn.Module):
 
         cert = (top_class_counts - second_class_counts) > 2 * (size_to_certify + self.ablation_size - 1)
 
-        cert_and_correct = cert & (label == top_predicted_class)
-
         if self.algorithm == "levine2020":
             tie_break_certs = (
                 (top_class_counts - second_class_counts) == 2 * (size_to_certify + self.ablation_size - 1)
             ) & (top_predicted_class < second_predicted_class)
             cert = torch.logical_or(cert, tie_break_certs)
+
+        cert_and_correct = cert & (label == top_predicted_class)
+
         return cert, cert_and_correct, top_predicted_class_argmax
 
 

@@ -583,6 +583,14 @@ class PyTorchDeRandomizedSmoothing(PyTorchSmoothedViT, PyTorchClassifier):
         return outputs
 
     def predict(self, x: np.ndarray, batch_size: int = 128, training_mode: bool = False, **kwargs) -> np.ndarray:
+        """
+        Performs cumulative predictions over every ablation location
+
+        :param x: Unablated image
+        :param batch_size: the batch size for the prediction
+        :param training_mode: if to run the classifier in training mode
+        :return: cumulative predictions after sweeping over all the ablation configurations.
+        """
         if self._channels_first:
             columns_in_data = x.shape[-1]
             rows_in_data = x.shape[-2]
