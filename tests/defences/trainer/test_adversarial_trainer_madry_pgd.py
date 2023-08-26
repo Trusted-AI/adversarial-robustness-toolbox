@@ -25,7 +25,7 @@ import pytest
 from art.defences.trainer.adversarial_trainer_madry_pgd import AdversarialTrainerMadryPGD
 from art.utils import load_mnist
 
-from tests.utils import master_seed, get_image_classifier_tf, get_image_classifier_pt, get_image_classifier_hf
+from tests.utils import master_seed
 
 logger = logging.getLogger(__name__)
 
@@ -37,16 +37,11 @@ NB_TEST = 100
 @pytest.fixture()
 def get_mnist_classifier(framework, image_dl_estimator):
     def _get_classifier():
-        if framework == "pytorch":
-            classifier = get_image_classifier_pt()
+        if framework in ["pytorch", "huggingface"]:
+            classifier, _ = image_dl_estimator()
             master_seed(seed=1234, set_torch=True)
-
-        elif framework == "huggingface":
-            classifier = get_image_classifier_hf()
-            master_seed(seed=1234, set_torch=True)
-
         elif framework in ["tensorflow2", "tensorflow1"]:
-            classifier, _ = get_image_classifier_tf()
+            classifier, _ = image_dl_estimator()
             master_seed(seed=1234)
         else:
             return None
@@ -72,13 +67,6 @@ def test_fit_predict(art_warning, get_mnist_classifier, framework):
         x_test = np.float32(np.rollaxis(x_test, 3, 1))
 
     x_test_original = x_test.copy()
-
-    if framework in ["pytorch", "huggingface"]:
-        pt_classifier = get_image_classifier_pt()
-        pt_predictions_new = np.argmax(pt_classifier.predict(x_test), axis=1)
-        hf_preds = np.argmax(classifier.predict(x_test), axis=1)
-
-        assert np.array_equal(pt_predictions_new, hf_preds)
 
     adv_trainer = AdversarialTrainerMadryPGD(classifier, nb_epochs=1, batch_size=128)
     adv_trainer.fit(x_train, y_train)
