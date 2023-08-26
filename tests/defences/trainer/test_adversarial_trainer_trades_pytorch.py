@@ -108,19 +108,8 @@ def test_adversarial_trainer_trades_huggingface_fit_and_predict(
     get_adv_trainer, fix_get_cifar10_data, fix_get_mnist_subset, label_format
 ):
 
-    import torch
-
-    upsampler = torch.nn.Upsample(scale_factor=7, mode="nearest")
-    if HF_MODEL_SIZE == "LARGE":
-        (x_train, y_train, x_test, y_test) = fix_get_cifar10_data
-        x_test_original = x_test.copy()
-
-        x_test = np.float32(upsampler(torch.from_numpy(x_test)).cpu().numpy())
-        x_train = np.float32(upsampler(torch.from_numpy(x_train)).cpu().numpy())
-        x_test_original = np.float32(upsampler(torch.from_numpy(x_test_original)).cpu().numpy())
-    else:
-        (x_train, y_train, x_test, y_test) = fix_get_mnist_subset
-        x_test_original = x_test.copy()
+    (x_train, y_train, x_test, y_test) = fix_get_mnist_subset
+    x_test_original = x_test.copy()
 
     if label_format == "one_hot":
         assert y_train.shape[-1] == 10
@@ -141,10 +130,7 @@ def test_adversarial_trainer_trades_huggingface_fit_and_predict(
     else:
         accuracy = np.sum(predictions == y_test) / x_test.shape[0]
 
-    if HF_MODEL_SIZE == "SMALL":
-        nb_epochs = 20
-    else:
-        nb_epochs = 2
+    nb_epochs = 20
 
     trainer.fit(x_train, y_train, nb_epochs=nb_epochs)
     predictions_new = np.argmax(trainer.predict(x_test), axis=1)
@@ -160,9 +146,8 @@ def test_adversarial_trainer_trades_huggingface_fit_and_predict(
         decimal=4,
     )
 
-    if HF_MODEL_SIZE == "SMALL":
-        assert accuracy == 0.32
-        assert accuracy_new > 0.32
+    assert accuracy == 0.32
+    assert accuracy_new > 0.32
     trainer.fit(x_train, y_train, nb_epochs=nb_epochs, validation_data=(x_train, y_train))
 
 
