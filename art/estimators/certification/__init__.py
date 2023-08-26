@@ -6,7 +6,6 @@ from art.estimators.certification.randomized_smoothing.randomized_smoothing impo
 from art.estimators.certification.randomized_smoothing.numpy import NumpyRandomizedSmoothing
 from art.estimators.certification.randomized_smoothing.tensorflow import TensorFlowV2RandomizedSmoothing
 from art.estimators.certification.randomized_smoothing.pytorch import PyTorchRandomizedSmoothing
-from art.estimators.certification.derandomized_smoothing.derandomized_smoothing import DeRandomizedSmoothingMixin
 from art.estimators.certification.derandomized_smoothing.pytorch import PyTorchDeRandomizedSmoothing
 from art.estimators.certification.derandomized_smoothing.tensorflow import TensorFlowV2DeRandomizedSmoothing
 
