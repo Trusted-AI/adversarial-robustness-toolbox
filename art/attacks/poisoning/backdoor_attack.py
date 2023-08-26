@@ -79,7 +79,7 @@ class PoisoningAttackBackdoor(PoisoningAttackBlackBox):
         poisoned = np.copy(x)
 
         if callable(self.perturbation):
-            return self.perturbation(poisoned, channels_first=channels_first), y_attack
+            return self.perturbation(poisoned), y_attack
 
         for perturb in self.perturbation:
             poisoned = perturb(poisoned)

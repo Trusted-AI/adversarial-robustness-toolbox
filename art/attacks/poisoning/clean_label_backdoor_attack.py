@@ -142,9 +142,7 @@ class PoisoningAttackCleanLabelBackdoor(PoisoningAttackBlackBox):
             logger.warning("%d indices without change: %s", len(idx_no_change), idx_no_change)
 
         # Add backdoor and poison with the same label
-        poisoned_input, _ = self.backdoor.poison(
-            perturbed_input, self.target, broadcast=broadcast, channels_first=channels_first
-        )
+        poisoned_input, _ = self.backdoor.poison(perturbed_input, self.target, broadcast=broadcast)
         data[selected_indices] = poisoned_input
 
         return data, estimated_labels

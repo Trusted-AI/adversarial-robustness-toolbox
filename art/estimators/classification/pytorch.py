@@ -23,14 +23,12 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import copy
 import logging
-import math
 import os
 import time
 from typing import Any, Dict, List, Optional, Tuple, Union, TYPE_CHECKING
 
 import numpy as np
 import six
-from tqdm.auto import tqdm
 
 from art import config
 from art.estimators.classification.classifier import (
@@ -396,8 +394,6 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         """
         import torch
         from torch.utils.data import TensorDataset, DataLoader
-
-        display_progress_bar = kwargs.get("display_progress_bar", False)
 
         # Set model mode
         self._model.train(mode=training_mode)

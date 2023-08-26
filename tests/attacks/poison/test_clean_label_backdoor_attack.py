@@ -36,15 +36,20 @@ def test_poison(art_warning, get_default_mnist_subset, image_dl_estimator, frame
         (x_train, y_train), (_, _) = get_default_mnist_subset
         classifier, _ = image_dl_estimator()
         target = to_categorical([9], 10)[0]
+        if framework in ["pytorch", "huggingface"]:
+            def mod(x):
+                original_dtype = x.dtype
+                x = add_pattern_bd(x, channels_first=True)
+                return x.astype(original_dtype)
+        else:
+            def mod(x):
+                original_dtype = x.dtype
+                x = add_pattern_bd(x)
+                return x.astype(original_dtype)
 
         backdoor = PoisoningAttackBackdoor(add_pattern_bd)
-
         attack = PoisoningAttackCleanLabelBackdoor(backdoor, classifier, target)
-        if framework in ["pytorch", "huggingface"]:
-            print('HERE!!')
-            poison_data, poison_labels = attack.poison(x_train, y_train, channels_first=True)
-        else:
-            poison_data, poison_labels = attack.poison(x_train, y_train)
+        poison_data, poison_labels = attack.poison(x_train, y_train)
 
         np.testing.assert_equal(poison_data.shape, x_train.shape)
         np.testing.assert_equal(poison_labels.shape, y_train.shape)
