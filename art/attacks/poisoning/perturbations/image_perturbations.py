@@ -86,12 +86,12 @@ def add_pattern_bd(x: np.ndarray, distance: int = 2, pixel_value: int = 1, chann
         x[height - distance - 2, width - distance] = pixel_value
     else:
         raise ValueError(f"Invalid array shape: {shape}")
-    
+
     if len(shape) == 3 or len(shape) == 4:
-        # Putting channels first again 
+        # Putting channels first again
         if channels_first:
             x = np.transpose(x, (0, 3, 1, 2))
-    
+
     return x
 
 

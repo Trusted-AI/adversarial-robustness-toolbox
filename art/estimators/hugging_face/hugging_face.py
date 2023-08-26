@@ -88,7 +88,6 @@ class HuggingFaceClassifierPyTorch(PyTorchClassifier):
                           Must be differentiable for grandient based defences and attacks.
         """
 
-
         self.processor = processor
 
         super().__init__(
@@ -109,7 +108,7 @@ class HuggingFaceClassifierPyTorch(PyTorchClassifier):
 
         def prefix_function(function: Callable, postfunction: Callable) -> Callable[[Any, Any], torch.Tensor]:
             """
-            Huggingface returns logit under outputs.logits. To make this compatible with ART we wrap the forward pass 
+            Huggingface returns logit under outputs.logits. To make this compatible with ART we wrap the forward pass
             function of a HF model here, which automatically extracts the logits.
 
             :param function: The first function to run, in our case the forward pass of the model.
@@ -135,25 +134,16 @@ class HuggingFaceClassifierPyTorch(PyTorchClassifier):
                 return outputs
             return outputs.logits
 
-        self.model.forward = prefix_function(self.model.forward, get_logits)  # type: ignore
+        self.model.forward = prefix_function(self.model.forward, get_logits)
 
+    """
     def __call__(self, image: Union[np.ndarray, torch.Tensor]) -> torch.Tensor:
-        """
-        Forward pass of the model
 
-        :param image: input data to the model
-        :return: model predictions
-        """
         outputs = self.forward(image)
         return outputs
 
     def forward(self, image: Union[np.ndarray, torch.Tensor]) -> torch.Tensor:
-        """
-        Forward pass though the HF model
 
-        :param image: input data to the model
-        :return: model predictions
-        """
         if not isinstance(image, torch.Tensor):
             image = torch.from_numpy(image).to(self._device)
 
@@ -161,6 +151,7 @@ class HuggingFaceClassifierPyTorch(PyTorchClassifier):
             image = self.processor(image)
 
         return self.model(image)
+    """
 
     def _make_model_wrapper(self, model: "torch.nn.Module") -> "torch.nn.Module":
         # Try to import PyTorch and create an internal class that acts like a model wrapper extending torch.nn.Module
@@ -276,7 +267,7 @@ class HuggingFaceClassifierPyTorch(PyTorchClassifier):
                         return name_order
 
                 # Set newly created class as private attribute
-                self._model_wrapper = ModelWrapper  # type: ignore
+                self._model_wrapper = ModelWrapper
 
             # Use model wrapping class to wrap the PyTorch model received as argument
             return self._model_wrapper(model)
@@ -284,7 +275,7 @@ class HuggingFaceClassifierPyTorch(PyTorchClassifier):
         except ImportError:  # pragma: no cover
             raise ImportError("Could not find PyTorch (`torch`) installation.") from ImportError
 
-    def get_activations(  # type: ignore
+    def get_activations(
         self,
         x: Union[np.ndarray, "torch.Tensor"],
         layer: Optional[Union[int, str]] = None,
