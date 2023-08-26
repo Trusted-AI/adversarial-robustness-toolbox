@@ -125,7 +125,7 @@ class TensorFlowV2DeRandomizedSmoothing(TensorFlowV2Classifier):
         self.threshold = threshold
         self._channels_first = channels_first
 
-        from art.estimators.certification.derandomized_smoothing.derandomized_smoothing import (
+        from art.estimators.certification.derandomized_smoothing.derandomized_smoothing_tensorflow import (
             ColumnAblator,
             BlockAblator,
         )
@@ -307,7 +307,7 @@ class TensorFlowV2DeRandomizedSmoothing(TensorFlowV2Classifier):
                 for pos in range(i_batch.shape[-1]):
                     ablated_batch = self.ablator.forward(i_batch, column_pos=pos)
                     # Perform prediction
-                    model_outputs = self.model(ablated_batch)
+                    model_outputs = self.model(ablated_batch, training=False)
 
                     if self.logits:
                         model_outputs = tf.nn.softmax(model_outputs)
@@ -318,12 +318,15 @@ class TensorFlowV2DeRandomizedSmoothing(TensorFlowV2Classifier):
                 for column_pos in range(i_batch.shape[-1]):
                     for row_pos in range(i_batch.shape[-2]):
                         ablated_batch = self.ablator.forward(i_batch, column_pos=column_pos, row_pos=row_pos)
-                        model_outputs = self.model(ablated_batch)
+                        model_outputs = self.model(ablated_batch, training=False)
 
                         if self.logits:
                             model_outputs = tf.nn.softmax(model_outputs)
                         model_outputs = model_outputs >= self.threshold
                         pred_counts += tf.where(model_outputs, 1, 0)
+
+            print("o_batch ", o_batch.dtype)
+            print("pred_counts ", pred_counts.dtype)
 
             _, cert_and_correct, top_predicted_class = self.ablator.certify(
                 pred_counts, size_to_certify=size_to_certify, label=o_batch

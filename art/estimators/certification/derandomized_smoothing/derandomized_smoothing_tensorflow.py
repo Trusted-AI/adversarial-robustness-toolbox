@@ -26,9 +26,9 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 from abc import ABC, abstractmethod
 from typing import Optional, Union, Tuple
 import random
-import tensorflow as tf
 
 import numpy as np
+import tensorflow as tf
 
 
 class BaseAblator(ABC):
@@ -51,7 +51,9 @@ class BaseAblator(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def certify(self, preds: np.ndarray, size_to_certify: int, label: Optional[np.ndarray] = None):
+    def certify(
+        self, preds: "tf.Tensor", size_to_certify: int, label: Union[np.ndarray, "tf.Tensor"]
+    ) -> Tuple["tf.Tensor", "tf.Tensor", "tf.Tensor"]:
         """
         Checks if based on the predictions supplied the classifications over the ablated datapoints result in a
         certified prediction against a patch attack of size size_to_certify.
@@ -124,7 +126,7 @@ class ColumnAblator(BaseAblator):
         return self.forward(x=x, column_pos=column_pos)
 
     def certify(
-        self, preds: tf.Tensor, size_to_certify: int, label: Optional[np.ndarray] = None
+        self, preds: tf.Tensor, size_to_certify: int, label: Union[np.ndarray, tf.Tensor]
     ) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
         """
         Checks if based on the predictions supplied the classifications over the ablated datapoints result in a
@@ -146,7 +148,19 @@ class ColumnAblator(BaseAblator):
             (top_class_counts - second_class_counts) == 2 * (size_to_certify + self.ablation_size - 1)
         ) & (top_predicted_class < second_predicted_class)
         cert = tf.math.logical_or(certs, tie_break_certs)
-        cert_and_correct = cert & (label == top_predicted_class)
+
+        # NB, newer versions of pylint do not require the disable.
+        if label.ndim > 1:
+            cert_and_correct = cert & (
+                tf.math.argmax(label, axis=1)
+                == tf.cast(
+                    top_predicted_class, dtype=tf.math.argmax(label, axis=1).dtype
+                )  # pylint: disable=E1120, E1123
+            )
+        else:
+            cert_and_correct = cert & (
+                label == tf.cast(top_predicted_class, dtype=label.dtype)
+            )  # pylint: disable=E1120, E1123
 
         return cert, cert_and_correct, top_predicted_class
 
@@ -249,7 +263,7 @@ class BlockAblator(BaseAblator):
         return self.forward(x=x, row_pos=row_pos, column_pos=column_pos)
 
     def certify(
-        self, preds: np.ndarray, size_to_certify: int, label: Optional[np.ndarray] = None
+        self, preds: np.ndarray, size_to_certify: int, label: Union[np.ndarray, tf.Tensor]
     ) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
         """
         Checks if based on the predictions supplied the classifications over the ablated datapoints result in a
@@ -270,7 +284,19 @@ class BlockAblator(BaseAblator):
             (top_class_counts - second_class_counts) == 2 * (size_to_certify + self.ablation_size - 1) ** 2
         ) & (top_predicted_class < second_predicted_class)
         cert = tf.math.logical_or(certs, tie_break_certs)
-        cert_and_correct = cert & (label == top_predicted_class)
+
+        # NB, newer versions of pylint do not require the disable.
+        if label.ndim > 1:
+            cert_and_correct = cert & (
+                tf.math.argmax(label, axis=1)
+                == tf.cast(
+                    top_predicted_class, dtype=tf.math.argmax(label, axis=1).dtype
+                )  # pylint: disable=E1120, E1123
+            )
+        else:
+            cert_and_correct = cert & (
+                label == tf.cast(top_predicted_class, dtype=label.dtype)
+            )  # pylint: disable=E1120, E1123
 
         return cert, cert_and_correct, top_predicted_class
 
