@@ -25,7 +25,7 @@ from art.attacks.poisoning import HiddenTriggerBackdoor
 from art.attacks.poisoning import PoisoningAttackBackdoor
 from art.attacks.poisoning.perturbations import add_pattern_bd
 from art.estimators.classification.pytorch import PyTorchClassifier
-from art.estimators.hugging_face import HuggingFaceClassifierPyTorch
+from art.estimators.classification.hugging_face import HuggingFaceClassifierPyTorch
 
 from tests.utils import ARTTestException
 

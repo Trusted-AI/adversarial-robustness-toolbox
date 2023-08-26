@@ -137,8 +137,6 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         self._learning_phase: Optional[bool] = None
         self._opt_level = opt_level
         self._loss_scale = loss_scale
-        # Attribute to store the training loss for better monitoring.
-        self.training_loss: Optional[List[np.ndarray]] = None
 
         # Check if model is RNN-like to decide if freezing batch-norm and dropout layers might be required for loss and
         # class gradient calculation
@@ -416,22 +414,14 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         y_preprocessed = self.reduce_labels(y_preprocessed)
 
         # Create dataloader
-        num_batches = len(x_preprocessed) / batch_size
-        if drop_last:
-            num_batches = int(num_batches)
-        else:
-            num_batches = math.ceil(num_batches)
-
         x_tensor = torch.from_numpy(x_preprocessed)
         y_tensor = torch.from_numpy(y_preprocessed)
         dataset = TensorDataset(x_tensor, y_tensor)
         dataloader = DataLoader(dataset=dataset, batch_size=batch_size, shuffle=True, drop_last=drop_last)
 
         # Start training
-        for _ in tqdm(range(nb_epochs), disable=not display_progress_bar):
-            pbar = tqdm(dataloader, total=num_batches, disable=not display_progress_bar)
-            epoch_loss = []
-            for x_batch, y_batch in pbar:
+        for _ in range(nb_epochs):
+            for x_batch, y_batch in dataloader:
                 # Move inputs to device
                 x_batch = x_batch.to(self._device)
                 y_batch = y_batch.to(self._device)
@@ -464,10 +454,6 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
                 self._optimizer.step()
 
-                epoch_loss.append(loss.cpu().detach().numpy())
-                self.training_loss = epoch_loss
-                if display_progress_bar:
-                    pbar.set_description(f"Loss {np.mean(epoch_loss):.2f} ")
             if scheduler is not None:
                 scheduler.step()
 
