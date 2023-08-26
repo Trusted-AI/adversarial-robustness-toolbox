@@ -426,7 +426,7 @@
         "preprocessing_defences=None, postprocessing_defences=None, preprocessing=StandardisationMeanStdPyTorch(mean=0.0, std=1.0, apply_fit=True, apply_predict=True, device=cpu)"
     ],
     "test_repr_huggingface": [
-        "art.estimators.hugging_face.hugging_face.HuggingFaceClassifier",
+        "art.estimators.classification.hugging_face.HuggingFaceClassifierPyTorch",
         "(conv): Conv2d(1, 1, kernel_size=(7, 7), stride=(1, 1))",
         "(pool): MaxPool2d(kernel_size=4, stride=4, padding=0, dilation=1, ceil_mode=False)",
         "(fullyconnected): Linear(in_features=25, out_features=10, bias=True)",

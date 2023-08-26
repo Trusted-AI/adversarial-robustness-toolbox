@@ -23,13 +23,13 @@ import logging
 
 from typing import List, Optional, Tuple, Union, Dict, Callable, Any, TYPE_CHECKING
 
-import torch
 import numpy as np
 import six
 
 from art.estimators.classification.pytorch import PyTorchClassifier
 
 if TYPE_CHECKING:
+    import torch
     import transformers
     from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
     from transformers.modeling_outputs import ImageClassifierOutput
@@ -87,6 +87,7 @@ class HuggingFaceClassifierPyTorch(PyTorchClassifier):
                           the preprocessing relevant to a given foundation model.
                           Must be differentiable for grandient based defences and attacks.
         """
+        import torch
 
         self.processor = processor
 
@@ -134,27 +135,12 @@ class HuggingFaceClassifierPyTorch(PyTorchClassifier):
                 return outputs
             return outputs.logits
 
-        self.model.forward = prefix_function(self.model.forward, get_logits)
-
-    """
-    def __call__(self, image: Union[np.ndarray, torch.Tensor]) -> torch.Tensor:
-
-        outputs = self.forward(image)
-        return outputs
-
-    def forward(self, image: Union[np.ndarray, torch.Tensor]) -> torch.Tensor:
-
-        if not isinstance(image, torch.Tensor):
-            image = torch.from_numpy(image).to(self._device)
-
-        if self.processor is not None:
-            image = self.processor(image)
-
-        return self.model(image)
-    """
+        self.model.forward = prefix_function(self.model.forward, get_logits)  # type: ignore
 
     def _make_model_wrapper(self, model: "torch.nn.Module") -> "torch.nn.Module":
         # Try to import PyTorch and create an internal class that acts like a model wrapper extending torch.nn.Module
+        import torch
+
         input_shape = self._input_shape
         input_for_hook = torch.rand(input_shape)
         input_for_hook = torch.unsqueeze(input_for_hook, dim=0)
@@ -267,7 +253,7 @@ class HuggingFaceClassifierPyTorch(PyTorchClassifier):
                         return name_order
 
                 # Set newly created class as private attribute
-                self._model_wrapper = ModelWrapper
+                self._model_wrapper = ModelWrapper  # type: ignore
 
             # Use model wrapping class to wrap the PyTorch model received as argument
             return self._model_wrapper(model)
@@ -275,7 +261,7 @@ class HuggingFaceClassifierPyTorch(PyTorchClassifier):
         except ImportError:  # pragma: no cover
             raise ImportError("Could not find PyTorch (`torch`) installation.") from ImportError
 
-    def get_activations(
+    def get_activations(  # type: ignore
         self,
         x: Union[np.ndarray, "torch.Tensor"],
         layer: Optional[Union[int, str]] = None,
@@ -293,6 +279,7 @@ class HuggingFaceClassifierPyTorch(PyTorchClassifier):
         :param framework: If true, return the intermediate tensor representation of the activation.
         :return: The output of `layer`, where the first dimension is the batch size corresponding to `x`.
         """
+        import torch
 
         self._model.eval()
 
@@ -378,6 +365,8 @@ class HuggingFaceClassifierPyTorch(PyTorchClassifier):
         :param labels: ground truth labels (not one hot)
         :return: prediction accuracy
         """
+        import torch
+
         if isinstance(preds, torch.Tensor):
             preds = preds.detach().cpu().numpy()
 

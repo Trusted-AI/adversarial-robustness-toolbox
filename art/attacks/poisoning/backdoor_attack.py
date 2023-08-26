@@ -54,7 +54,7 @@ class PoisoningAttackBackdoor(PoisoningAttackBlackBox):
         self._check_params()
 
     def poison(  # pylint: disable=W0221
-        self, x: np.ndarray, y: Optional[np.ndarray] = None, broadcast=False, **kwargs
+        self, x: np.ndarray, y: Optional[np.ndarray] = None, broadcast=False, channels_first: bool = False, **kwargs
     ) -> Tuple[np.ndarray, np.ndarray]:
         """
         Calls perturbation function on input x and returns the perturbed input and poison labels for the data.
@@ -62,6 +62,7 @@ class PoisoningAttackBackdoor(PoisoningAttackBlackBox):
         :param x: An array with the points that initialize attack points.
         :param y: The target labels for the attack.
         :param broadcast: whether or not to broadcast single target label
+        :param channels_first: it the data is fed in channels_first foramt
         :return: An tuple holding the `(poisoning_examples, poisoning_labels)`.
         """
         if y is None:  # pragma: no cover
@@ -78,7 +79,7 @@ class PoisoningAttackBackdoor(PoisoningAttackBlackBox):
         poisoned = np.copy(x)
 
         if callable(self.perturbation):
-            return self.perturbation(poisoned), y_attack
+            return self.perturbation(poisoned, channels_first=channels_first), y_attack
 
         for perturb in self.perturbation:
             poisoned = perturb(poisoned)
