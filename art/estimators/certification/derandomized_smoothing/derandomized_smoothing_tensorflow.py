@@ -153,14 +153,14 @@ class ColumnAblator(BaseAblator):
         if label.ndim > 1:
             cert_and_correct = cert & (
                 tf.math.argmax(label, axis=1)
-                == tf.cast(
+                == tf.cast(  # pylint: disable=E1120, E1123
                     top_predicted_class, dtype=tf.math.argmax(label, axis=1).dtype
-                )  # pylint: disable=E1120, E1123
+                )
             )
         else:
             cert_and_correct = cert & (
-                label == tf.cast(top_predicted_class, dtype=label.dtype)
-            )  # pylint: disable=E1120, E1123
+                label == tf.cast(top_predicted_class, dtype=label.dtype)  # pylint: disable=E1120, E1123
+            )
 
         return cert, cert_and_correct, top_predicted_class
 
@@ -289,14 +289,14 @@ class BlockAblator(BaseAblator):
         if label.ndim > 1:
             cert_and_correct = cert & (
                 tf.math.argmax(label, axis=1)
-                == tf.cast(
+                == tf.cast(  # pylint: disable=E1120, E1123
                     top_predicted_class, dtype=tf.math.argmax(label, axis=1).dtype
-                )  # pylint: disable=E1120, E1123
+                )
             )
         else:
             cert_and_correct = cert & (
-                label == tf.cast(top_predicted_class, dtype=label.dtype)
-            )  # pylint: disable=E1120, E1123
+                label == tf.cast(top_predicted_class, dtype=label.dtype)  # pylint: disable=E1120, E1123
+            )
 
         return cert, cert_and_correct, top_predicted_class
 

@@ -153,7 +153,9 @@ class TensorFlowV2DeRandomizedSmoothing(TensorFlowV2Classifier):
             outputs = tf.nn.softmax(outputs)
         return np.asarray(outputs >= self.threshold).astype(int)
 
-    def fit(self, x: np.ndarray, y: np.ndarray, batch_size: int = 128, nb_epochs: int = 10, **kwargs) -> None:
+    def fit(
+        self, x: np.ndarray, y: np.ndarray, batch_size: int = 128, nb_epochs: int = 10, verbose: bool = True, **kwargs
+    ) -> None:
         """
         Fit the classifier on the training set `(x, y)`.
 
@@ -162,6 +164,7 @@ class TensorFlowV2DeRandomizedSmoothing(TensorFlowV2Classifier):
                   shape (nb_samples,).
         :param batch_size: Size of batches.
         :param nb_epochs: Number of epochs to use for training.
+        :param verbose: if to display training progress bars
         :param kwargs: Dictionary of framework-specific arguments. This parameter currently only supports
                        "scheduler" which is an optional function that will be called at the end of every
                        epoch to adjust the learning rate.
@@ -187,6 +190,7 @@ class TensorFlowV2DeRandomizedSmoothing(TensorFlowV2Classifier):
                     loss = self.loss_object(labels, predictions)
                 gradients = tape.gradient(loss, model.trainable_variables)
                 self.optimizer.apply_gradients(zip(gradients, model.trainable_variables))
+                return loss
 
         else:
             train_step = self._train_step
@@ -204,12 +208,24 @@ class TensorFlowV2DeRandomizedSmoothing(TensorFlowV2Classifier):
 
         for epoch in tqdm(range(nb_epochs)):
             num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
+
+            epoch_loss = []
+            epoch_batch_sizes = []
+
+            pbar = tqdm(range(num_batch), disable=not verbose)
+
             ind = np.arange(len(x_preprocessed))
             for m in range(num_batch):
                 i_batch = np.copy(x_preprocessed[ind[m * batch_size : (m + 1) * batch_size]])
                 labels = y_preprocessed[ind[m * batch_size : (m + 1) * batch_size]]
                 images = self.ablator.forward(i_batch)
-                train_step(self.model, images, labels)
+                loss = train_step(self.model, images, labels)
+
+                epoch_loss.append(loss.numpy())
+                epoch_batch_sizes.append(len(i_batch))
+
+                if verbose:
+                    pbar.set_description(f"Loss {np.average(epoch_loss, weights=epoch_batch_sizes):.3f} ")
 
             if scheduler is not None:
                 scheduler(epoch)
@@ -324,9 +340,6 @@ class TensorFlowV2DeRandomizedSmoothing(TensorFlowV2Classifier):
                             model_outputs = tf.nn.softmax(model_outputs)
                         model_outputs = model_outputs >= self.threshold
                         pred_counts += tf.where(model_outputs, 1, 0)
-
-            print("o_batch ", o_batch.dtype)
-            print("pred_counts ", pred_counts.dtype)
 
             _, cert_and_correct, top_predicted_class = self.ablator.certify(
                 pred_counts, size_to_certify=size_to_certify, label=o_batch
