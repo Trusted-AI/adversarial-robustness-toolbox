@@ -37,17 +37,20 @@ def test_poison(art_warning, get_default_mnist_subset, image_dl_estimator, frame
         classifier, _ = image_dl_estimator()
         target = to_categorical([9], 10)[0]
         if framework in ["pytorch", "huggingface"]:
+
             def mod(x):
                 original_dtype = x.dtype
                 x = add_pattern_bd(x, channels_first=True)
                 return x.astype(original_dtype)
+
         else:
+
             def mod(x):
                 original_dtype = x.dtype
                 x = add_pattern_bd(x)
                 return x.astype(original_dtype)
 
-        backdoor = PoisoningAttackBackdoor(add_pattern_bd)
+        backdoor = PoisoningAttackBackdoor(mod)
         attack = PoisoningAttackCleanLabelBackdoor(backdoor, classifier, target)
         poison_data, poison_labels = attack.poison(x_train, y_train)
 

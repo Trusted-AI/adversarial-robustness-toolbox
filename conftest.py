@@ -550,7 +550,7 @@ def image_dl_gan(framework):
 
 
 @pytest.fixture
-def image_dl_estimator(framework):
+def image_dl_estimator(framework, get_image_classifier_mx_instance):
     def _image_dl_estimator(functional=False, **kwargs):
         sess = None
         wildcard = False
