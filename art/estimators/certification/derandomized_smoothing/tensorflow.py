@@ -153,7 +153,7 @@ class TensorFlowV2DeRandomizedSmoothing(TensorFlowV2Classifier):
             outputs = tf.nn.softmax(outputs)
         return np.asarray(outputs >= self.threshold).astype(int)
 
-    def fit(
+    def fit(  # pylint: disable=W0221
         self, x: np.ndarray, y: np.ndarray, batch_size: int = 128, nb_epochs: int = 10, verbose: bool = True, **kwargs
     ) -> None:
         """
@@ -190,7 +190,7 @@ class TensorFlowV2DeRandomizedSmoothing(TensorFlowV2Classifier):
                     loss = self.loss_object(labels, predictions)
                 gradients = tape.gradient(loss, model.trainable_variables)
                 self.optimizer.apply_gradients(zip(gradients, model.trainable_variables))
-                return loss
+                return loss, predictions
 
         else:
             train_step = self._train_step
@@ -206,26 +206,38 @@ class TensorFlowV2DeRandomizedSmoothing(TensorFlowV2Classifier):
         if self._reduce_labels:
             y_preprocessed = np.argmax(y_preprocessed, axis=1)
 
-        for epoch in tqdm(range(nb_epochs)):
+        for epoch in tqdm(range(nb_epochs), desc="Epochs"):
             num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
 
+            epoch_acc = []
             epoch_loss = []
             epoch_batch_sizes = []
 
             pbar = tqdm(range(num_batch), disable=not verbose)
 
             ind = np.arange(len(x_preprocessed))
-            for m in range(num_batch):
+            for m in pbar:
                 i_batch = np.copy(x_preprocessed[ind[m * batch_size : (m + 1) * batch_size]])
                 labels = y_preprocessed[ind[m * batch_size : (m + 1) * batch_size]]
                 images = self.ablator.forward(i_batch)
-                loss = train_step(self.model, images, labels)
 
-                epoch_loss.append(loss.numpy())
-                epoch_batch_sizes.append(len(i_batch))
+                if self._train_step is None:
+                    loss, predictions = train_step(self.model, images, labels)
+                    acc = np.sum(np.argmax(predictions.numpy(), axis=1) == np.argmax(labels, axis=1)) / len(labels)
+                    epoch_acc.append(acc)
+                    epoch_loss.append(loss.numpy())
+                    epoch_batch_sizes.append(len(i_batch))
+                else:
+                    train_step(self.model, images, labels)
 
                 if verbose:
-                    pbar.set_description(f"Loss {np.average(epoch_loss, weights=epoch_batch_sizes):.3f} ")
+                    if self._train_step is None:
+                        pbar.set_description(
+                            f"Loss {np.average(epoch_loss, weights=epoch_batch_sizes):.3f} "
+                            f"Acc {np.average(epoch_acc, weights=epoch_batch_sizes):.3f} "
+                        )
+                    else:
+                        pbar.set_description("Batches")
 
             if scheduler is not None:
                 scheduler(epoch)
@@ -298,7 +310,6 @@ class TensorFlowV2DeRandomizedSmoothing(TensorFlowV2Classifier):
         """
         import tensorflow as tf
 
-        # self.model.eval() what is the tf equivalent?
         y = check_and_transform_label_format(y, nb_classes=self.nb_classes)
 
         # Apply preprocessing
@@ -318,36 +329,14 @@ class TensorFlowV2DeRandomizedSmoothing(TensorFlowV2Classifier):
                 i_batch = np.copy(x_preprocessed[m * batch_size : (m + 1) * batch_size])
                 o_batch = y_preprocessed[m * batch_size : (m + 1) * batch_size]
 
-            pred_counts = tf.zeros((len(i_batch), self.nb_classes), dtype=tf.dtypes.int32)
-            if self.ablation_type in {"column", "row"}:
-                for pos in range(i_batch.shape[-1]):
-                    ablated_batch = self.ablator.forward(i_batch, column_pos=pos)
-                    # Perform prediction
-                    model_outputs = self.model(ablated_batch, training=False)
-
-                    if self.logits:
-                        model_outputs = tf.nn.softmax(model_outputs)
-                    model_outputs = model_outputs >= self.threshold
-                    pred_counts += tf.where(model_outputs, 1, 0)
-
-            else:
-                for column_pos in range(i_batch.shape[-1]):
-                    for row_pos in range(i_batch.shape[-2]):
-                        ablated_batch = self.ablator.forward(i_batch, column_pos=column_pos, row_pos=row_pos)
-                        model_outputs = self.model(ablated_batch, training=False)
-
-                        if self.logits:
-                            model_outputs = tf.nn.softmax(model_outputs)
-                        model_outputs = model_outputs >= self.threshold
-                        pred_counts += tf.where(model_outputs, 1, 0)
+            pred_counts = self.predict(i_batch)
 
             _, cert_and_correct, top_predicted_class = self.ablator.certify(
                 pred_counts, size_to_certify=size_to_certify, label=o_batch
             )
             cert_sum += tf.math.reduce_sum(tf.where(cert_and_correct, 1, 0))
-            accuracy += tf.math.reduce_sum(tf.where(top_predicted_class == o_batch, 1, 0))
+            accuracy += tf.math.reduce_sum(tf.where(top_predicted_class == np.argmax(o_batch, axis=-1), 1, 0))
             n_samples += len(cert_and_correct)
 
             pbar.set_description(f"Normal Acc {accuracy / n_samples:.3f} " f"Cert Acc {cert_sum / n_samples:.3f}")
-
         return (accuracy / n_samples), (cert_sum / n_samples)
