@@ -21,7 +21,7 @@ This module implements attribute inference attacks.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional, Union, Tuple, List, Any
+from typing import Optional, Union, Tuple, List, Any, TYPE_CHECKING
 
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
@@ -43,6 +43,9 @@ from art.utils import (
     get_feature_values,
     remove_attacked_feature,
 )
+
+if TYPE_CHECKING:
+    from art.utils import CLASSIFIER_TYPE, REGRESSOR_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -69,7 +72,7 @@ class AttributeInferenceBaselineTrueLabel(AttributeInferenceAttack):
     def __init__(
         self,
         attack_model_type: str = "nn",
-        attack_model: Optional[Any] = None,
+        attack_model: Optional[Union["CLASSIFIER_TYPE", "REGRESSOR_TYPE"]] = None,
         attack_feature: Union[int, slice] = 0,
         is_continuous: Optional[bool] = False,
         is_regression: Optional[bool] = False,

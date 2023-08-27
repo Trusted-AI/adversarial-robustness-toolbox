@@ -75,7 +75,7 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
         self,
         estimator: Union["CLASSIFIER_TYPE", "REGRESSOR_TYPE"],
         attack_model_type: str = "nn",
-        attack_model: Optional[Any] = None,
+        attack_model: Optional[Union["CLASSIFIER_TYPE", "REGRESSOR_TYPE"]] = None,
         attack_feature: Union[int, slice] = 0,
         is_continuous: Optional[bool] = False,
         scale_range: Optional[Tuple[float, float]] = None,
