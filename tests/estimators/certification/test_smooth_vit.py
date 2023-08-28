@@ -271,9 +271,6 @@ def test_end_to_end_equivalence(art_warning, fix_get_mnist_data, fix_get_cifar10
 
     from art.estimators.certification.derandomized_smoothing import PyTorchDeRandomizedSmoothing
 
-    # import shutil
-    # if os.path.exists('smoothed-vit'):
-    #    shutil.rmtree('smoothed-vit')
 
     os.system("git clone https://github.com/MadryLab/smoothed-vit")
     sys.path.append("smoothed-vit/src/utils/")

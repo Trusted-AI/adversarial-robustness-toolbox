@@ -31,7 +31,7 @@ import numpy as np
 import torch
 
 
-class UpSampler(torch.nn.Module):
+class UpSamplerPyTorch(torch.nn.Module):
     """
     Resizes datasets to the specified size.
     Usually for upscaling datasets like CIFAR to Imagenet format
@@ -57,7 +57,7 @@ class UpSampler(torch.nn.Module):
         return self.upsample(x)
 
 
-class ColumnAblator(torch.nn.Module):
+class ColumnAblatorPyTorch(torch.nn.Module):
     """
     Pure Pytorch implementation of stripe/column ablation.
     """
@@ -218,7 +218,7 @@ class ColumnAblator(torch.nn.Module):
         return cert, cert_and_correct, top_predicted_class_argmax
 
 
-class BlockAblator(torch.nn.Module):
+class BlockAblatorPyTorch(torch.nn.Module):
     """
     Pure Pytorch implementation of block ablation.
     """

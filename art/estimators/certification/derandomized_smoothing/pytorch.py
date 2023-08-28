@@ -16,7 +16,7 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements the two De-randomized smoothing approaches supported by ART for pytorch.
+This module implements De-Randomized smoothing approaches PyTorch.
 
 (De)Randomized Smoothing for Certifiable Defense against Patch Attacks
 

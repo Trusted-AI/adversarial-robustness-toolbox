@@ -112,7 +112,7 @@ class PatchEmbed(torch.nn.Module):
 
 class PyTorchViT(VisionTransformer):
     """
-    Art class inheriting from VisionTransformer to control the forward pass of the ViT.
+    Class to control the forward pass of the ViT.
     """
 
     # Make as a class attribute to avoid being included in the
@@ -121,7 +121,8 @@ class PyTorchViT(VisionTransformer):
 
     def __init__(self, **kwargs):
         """
-        Create a ArtViT instance
+        Create a PyTorchViT instance
+
         :param kwargs: keyword arguments required to create the mask embedder and the vision transformer class
         """
         self.to_drop_tokens = kwargs["drop_tokens"]
