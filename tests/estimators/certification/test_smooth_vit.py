@@ -66,12 +66,12 @@ def test_ablation(art_warning, fix_get_mnist_data, fix_get_cifar10_data):
     import torch
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    from art.estimators.certification.derandomized_smoothing.derandomized_smoothing_pytorch import ColumnAblator
+    from art.estimators.certification.derandomized_smoothing.ablators.pytorch import ColumnAblatorPyTorch
 
     try:
         cifar_data = fix_get_cifar10_data[0]
 
-        col_ablator = ColumnAblator(
+        col_ablator = ColumnAblatorPyTorch(
             ablation_size=4,
             channels_first=True,
             to_reshape=False,  # do not upsample initially
@@ -98,7 +98,7 @@ def test_ablation(art_warning, fix_get_mnist_data, fix_get_cifar10_data):
         assert torch.sum(ablated[:, :, :, :2]) > 0
 
         # check that upsampling works as expected
-        col_ablator = ColumnAblator(
+        col_ablator = ColumnAblatorPyTorch(
             ablation_size=4,
             channels_first=True,
             to_reshape=True,
@@ -134,12 +134,12 @@ def test_ablation_row(art_warning, fix_get_mnist_data, fix_get_cifar10_data):
     import torch
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    from art.estimators.certification.derandomized_smoothing.derandomized_smoothing_pytorch import ColumnAblator
+    from art.estimators.certification.derandomized_smoothing.ablators.pytorch import ColumnAblatorPyTorch
 
     try:
         cifar_data = fix_get_cifar10_data[0]
 
-        col_ablator = ColumnAblator(
+        col_ablator = ColumnAblatorPyTorch(
             ablation_size=4,
             channels_first=True,
             to_reshape=False,  # do not upsample initially
@@ -167,7 +167,7 @@ def test_ablation_row(art_warning, fix_get_mnist_data, fix_get_cifar10_data):
         assert torch.sum(ablated[:, :, :2, :]) > 0
 
         # check that upsampling works as expected
-        col_ablator = ColumnAblator(
+        col_ablator = ColumnAblatorPyTorch(
             ablation_size=4,
             channels_first=True,
             to_reshape=True,
@@ -233,11 +233,11 @@ def test_certification_function(art_warning, fix_get_mnist_data, fix_get_cifar10
     """
     Check that based on a given set of synthetic class predictions the certification gives the expected results.
     """
-    from art.estimators.certification.derandomized_smoothing.derandomized_smoothing_pytorch import ColumnAblator
+    from art.estimators.certification.derandomized_smoothing.ablators.pytorch import ColumnAblatorPyTorch
     import torch
 
     try:
-        col_ablator = ColumnAblator(
+        col_ablator = ColumnAblatorPyTorch(
             ablation_size=4,
             channels_first=True,
             mode="ViT",
@@ -262,121 +262,20 @@ def test_certification_function(art_warning, fix_get_mnist_data, fix_get_cifar10
 def test_end_to_end_equivalence(art_warning, fix_get_mnist_data, fix_get_cifar10_data, ablation):
     """
     Assert implementations matches original with a forward pass through the same model architecture.
-    Note, there are some differences in architecture between the same model names.
+    Note, there are some differences in architecture between the same model names in timm vs the original implementation.
     We use vit_base_patch16_224 which matches.
     """
     import torch
-    import os
-    import sys
 
     from art.estimators.certification.derandomized_smoothing import PyTorchDeRandomizedSmoothing
 
-
-    os.system("git clone https://github.com/MadryLab/smoothed-vit")
-    sys.path.append("smoothed-vit/src/utils/")
-
-    # Original MaskProcessor used ones_mask = torch.cat([torch.cuda.IntTensor(1).fill_(0), ones_mask]).unsqueeze(0)
-    # which is not compatible with non-cuda torch as is found when running tests on github.
-    # Hence, replace the class with the same code, but having changed to
-    # ones_mask = torch.cat([torch.IntTensor(1).fill_(0), ones_mask]).unsqueeze(0)
-    # Original licence:
-    """
-    MIT License
-
-    Copyright (c) 2021 Madry Lab
-
-    Permission is hereby granted, free of charge, to any person obtaining a copy
-    of this software and associated documentation files (the "Software"), to deal
-    in the Software without restriction, including without limitation the rights
-    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-    copies of the Software, and to permit persons to whom the Software is
-    furnished to do so, subject to the following conditions:
-
-    The above copyright notice and this permission notice shall be included in all
-    copies or substantial portions of the Software.
-
-    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-    SOFTWARE.
-    """
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-    class MaskProcessor(torch.nn.Module):
-        def __init__(self, patch_size=16):
-            super().__init__()
-            self.avg_pool = torch.nn.AvgPool2d(patch_size)
-
-        def forward(self, ones_mask):
-            B = ones_mask.shape[0]
-            ones_mask = ones_mask[0].unsqueeze(0)  # take the first mask
-            ones_mask = self.avg_pool(ones_mask)[0]
-            ones_mask = torch.where(ones_mask.view(-1) > 0)[0] + 1
-            ones_mask = torch.cat([torch.IntTensor(1).fill_(0).to(device), ones_mask]).unsqueeze(0)
-            ones_mask = ones_mask.expand(B, -1)
-            return ones_mask
-
-    from custom_models import preprocess
-
-    preprocess.MaskProcessor = MaskProcessor
-
-    from art.estimators.certification.derandomized_smoothing.derandomized_smoothing_pytorch import (
-        ColumnAblator,
-        BlockAblator,
+    from art.estimators.certification.derandomized_smoothing.ablators import (
+        ColumnAblatorPyTorch,
+        BlockAblatorPyTorch,
     )
-    from custom_models.vision_transformer import vit_base_patch16_224
 
     cifar_data = fix_get_cifar10_data[0][:50]
-
-    '''
-    timm config for:
-        def vit_base_patch16_224(pretrained=False, **kwargs) -> VisionTransformer:
-            """ ViT-Base (ViT-B/16) from original paper (https://arxiv.org/abs/2010.11929).
-            ImageNet-1k weights fine-tuned from in21k @ 224x224,
-            source https://github.com/google-research/vision_transformer.
-            """
-            model_args = dict(patch_size=16, embed_dim=768, depth=12, num_heads=12)
-            model = _create_vision_transformer('vit_base_patch16_224',
-            pretrained=pretrained, **dict(model_args, **kwargs))
-            return model
-
-
-        def vit_small_patch16_224(pretrained=False, **kwargs) -> VisionTransformer:
-            """ ViT-Small (ViT-S/16)
-            """
-            model_args = dict(patch_size=16, embed_dim=384, depth=12, num_heads=6)
-            model = _create_vision_transformer('vit_small_patch16_224',
-            pretrained=pretrained, **dict(model_args, **kwargs))
-            return model
-
-    smooth repo config for:
-        def vit_small_patch16_224(pretrained=False, **kwargs):
-            if pretrained:
-                # NOTE my scale was wrong for original weights, leaving this here
-                # until I have better ones for this model
-                kwargs.setdefault('qk_scale', 768 ** -0.5)
-            model = VisionTransformer(patch_size=16, embed_dim=768, depth=8, num_heads=8, mlp_ratio=3., **kwargs)
-            model.default_cfg = default_cfgs['vit_small_patch16_224']
-            if pretrained:
-                load_pretrained(
-                    model, num_classes=model.num_classes, in_chans=kwargs.get('in_chans', 3), filter_fn=_conv_filter)
-            return model
-
-
-        def vit_base_patch16_224(pretrained=False, **kwargs) -> VisionTransformer:
-            """ ViT-Base (ViT-B/16) from original paper (https://arxiv.org/abs/2010.11929).
-            ImageNet-1k weights fine-tuned from in21k @ 224x224,
-            source https://github.com/google-research/vision_transformer.
-            """
-            model_args = dict(patch_size=16, embed_dim=768, depth=12, num_heads=12)
-            model = _create_vision_transformer('vit_base_patch16_224',
-                                                pretrained=pretrained, **dict(model_args, **kwargs))
-            return model
-
-    '''
+    torch.manual_seed(1234)
 
     art_model = PyTorchDeRandomizedSmoothing(
         model="vit_base_patch16_224",
@@ -390,14 +289,9 @@ def test_end_to_end_equivalence(art_warning, fix_get_mnist_data, fix_get_cifar10
         replace_last_layer=True,
         verbose=False,
     )
-    art_sd = art_model.model.state_dict()
-    madry_vit = vit_base_patch16_224(pretrained=False)
-    madry_vit.head = torch.nn.Linear(madry_vit.head.in_features, 10)
 
-    madry_vit.load_state_dict(art_sd)
-    madry_vit = madry_vit.to(device)
     if ablation == "column":
-        ablator = ColumnAblator(
+        ablator = ColumnAblatorPyTorch(
             ablation_size=4,
             channels_first=True,
             to_reshape=True,
@@ -406,12 +300,12 @@ def test_end_to_end_equivalence(art_warning, fix_get_mnist_data, fix_get_cifar10
             output_shape=(3, 224, 224),
         )
         ablated = ablator.forward(cifar_data, column_pos=10)
-        madry_preds = madry_vit(ablated)
+        madry_preds = torch.load('smooth_vit_results/madry_preds_column.pt')
         art_preds = art_model.model(ablated)
         assert torch.allclose(madry_preds, art_preds, rtol=1e-04, atol=1e-04)
 
     elif ablation == "block":
-        ablator = BlockAblator(
+        ablator = BlockAblatorPyTorch(
             ablation_size=4,
             channels_first=True,
             to_reshape=True,
@@ -420,11 +314,9 @@ def test_end_to_end_equivalence(art_warning, fix_get_mnist_data, fix_get_cifar10
             mode="ViT",
         )
         ablated = ablator.forward(cifar_data, column_pos=10, row_pos=28)
-        madry_preds = madry_vit(ablated)
+        madry_preds = torch.load('smooth_vit_results/madry_preds_block.pt')
         art_preds = art_model.model(ablated)
         assert torch.allclose(madry_preds, art_preds, rtol=1e-04, atol=1e-04)
-
-    sys.path.remove("smoothed-vit/src/utils/")
 
 
 @pytest.mark.only_with_platform("pytorch")
@@ -739,4 +631,4 @@ def test_equivalence(fix_get_cifar10_data):
     cifar_labels = fix_get_cifar10_data[1][:50]
 
     scheduler = torch.optim.lr_scheduler.MultiStepLR(art_model.optimizer, milestones=[1], gamma=0.1)
-    art_model.fit(cifar_data, cifar_labels, nb_epochs=2, update_batchnorm=True, scheduler=scheduler)
+    art_model.fit(cifar_data, cifar_labels, nb_epochs=1, update_batchnorm=True, scheduler=scheduler, batch_size=128)

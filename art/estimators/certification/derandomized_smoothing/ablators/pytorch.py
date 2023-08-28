@@ -30,6 +30,8 @@ import random
 import numpy as np
 import torch
 
+from art.estimators.certification.derandomized_smoothing.ablators.ablate import BaseAblator
+
 
 class UpSamplerPyTorch(torch.nn.Module):
     """
@@ -57,7 +59,7 @@ class UpSamplerPyTorch(torch.nn.Module):
         return self.upsample(x)
 
 
-class ColumnAblatorPyTorch(torch.nn.Module):
+class ColumnAblatorPyTorch(torch.nn.Module, BaseAblator):
     """
     Pure Pytorch implementation of stripe/column ablation.
     """
@@ -66,7 +68,7 @@ class ColumnAblatorPyTorch(torch.nn.Module):
         self,
         ablation_size: int,
         channels_first: bool,
-        mode,
+        mode: str,
         to_reshape: bool,
         ablation_mode: str = "column",
         original_shape: Optional[Tuple] = None,
@@ -79,6 +81,7 @@ class ColumnAblatorPyTorch(torch.nn.Module):
 
         :param ablation_size: The size of the column we will retain.
         :param channels_first: If the input is in channels first format. Currently required to be True.
+        :param mode: If we are running the algorithm using a CNN or VIT.
         :param to_reshape: If the input requires reshaping.
         :param original_shape: Original shape of the input.
         :param output_shape: Input shape expected by the ViT. Usually means upscaling the input to 224 x 224.
@@ -106,14 +109,16 @@ class ColumnAblatorPyTorch(torch.nn.Module):
             self.device = torch.device(f"cuda:{cuda_idx}")
 
         if original_shape is not None and output_shape is not None:
-            self.upsample = UpSampler(input_size=original_shape[1], final_size=output_shape[1])
+            self.upsample = UpSamplerPyTorch(input_size=original_shape[1], final_size=output_shape[1])
 
-    def ablate(self, x: torch.Tensor, column_pos: int) -> torch.Tensor:
+    def ablate(self, x: torch.Tensor, column_pos: int, row_pos=None) -> torch.Tensor:
         """
         Ablates the input column wise
 
         :param x: Input data
-        :param column_pos: The start position of the albation
+        :param column_pos: location to start the retained column. NB, if row_ablation_mode is true then this will
+                           be used to act on the rows through transposing the image in ColumnAblatorPyTorch.forward
+        :param row_pos: Unused.
         :return: The ablated input with 0s where the ablation occurred
         """
         k = self.ablation_size
@@ -152,7 +157,9 @@ class ColumnAblatorPyTorch(torch.nn.Module):
             x = torch.cat([x, 1.0 - x], dim=1)
 
         if self.original_shape is not None and x.shape[1] != self.original_shape[0] and self.additional_channels:
-            raise ValueError(f"Ablator expected {self.original_shape[0]} input channels. Recived shape of {x.shape[1]}")
+            raise ValueError(
+                f"Ablator expected {self.original_shape[0]} input channels. Received shape of {x.shape[1]}"
+            )
 
         if self.ablation_mode == "row":
             x = torch.transpose(x, 3, 2)
@@ -218,7 +225,7 @@ class ColumnAblatorPyTorch(torch.nn.Module):
         return cert, cert_and_correct, top_predicted_class_argmax
 
 
-class BlockAblatorPyTorch(torch.nn.Module):
+class BlockAblatorPyTorch(torch.nn.Module, BaseAblator):
     """
     Pure Pytorch implementation of block ablation.
     """
@@ -227,7 +234,7 @@ class BlockAblatorPyTorch(torch.nn.Module):
         self,
         ablation_size: int,
         channels_first: bool,
-        mode,
+        mode: str,
         to_reshape: bool,
         original_shape: Optional[Tuple] = None,
         output_shape: Optional[Tuple] = None,
@@ -239,6 +246,7 @@ class BlockAblatorPyTorch(torch.nn.Module):
 
         :param ablation_size: The size of the block we will retain.
         :param channels_first: If the input is in channels first format. Currently required to be True.
+        :param mode: If we are running the algorithm using a CNN or VIT.
         :param to_reshape: If the input requires reshaping.
         :param original_shape: Original shape of the input.
         :param output_shape: Input shape expected by the ViT. Usually means upscaling the input to 224 x 224.
@@ -265,7 +273,7 @@ class BlockAblatorPyTorch(torch.nn.Module):
             self.device = torch.device(f"cuda:{cuda_idx}")
 
         if original_shape is not None and output_shape is not None:
-            self.upsample = UpSampler(input_size=original_shape[1], final_size=output_shape[1])
+            self.upsample = UpSamplerPyTorch(input_size=original_shape[1], final_size=output_shape[1])
 
     def ablate(self, x: torch.Tensor, column_pos: int, row_pos: int) -> torch.Tensor:
         """

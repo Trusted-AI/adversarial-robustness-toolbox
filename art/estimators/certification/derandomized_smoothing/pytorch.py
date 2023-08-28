@@ -42,6 +42,7 @@ import numpy as np
 from tqdm import tqdm
 
 from art.estimators.classification.pytorch import PyTorchClassifier
+from art.estimators.certification.derandomized_smoothing.derandomized import DeRandomizedSmoothingMixin
 from art.estimators.certification.derandomized_smoothing.vision_transformers.pytorch import PyTorchSmoothedViT
 from art.utils import check_and_transform_label_format
 
@@ -57,7 +58,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class PyTorchDeRandomizedSmoothing(PyTorchSmoothedViT, PyTorchClassifier):
+class PyTorchDeRandomizedSmoothing(PyTorchSmoothedViT, DeRandomizedSmoothingMixin, PyTorchClassifier):
     """
     Interface class for the two De-randomized smoothing approaches supported by ART for pytorch.
 
@@ -271,16 +272,19 @@ class PyTorchDeRandomizedSmoothing(PyTorchSmoothedViT, PyTorchClassifier):
         if verbose:
             logger.info(self.model)
 
-        from art.estimators.certification.derandomized_smoothing.derandomized_smoothing_pytorch import (
-            ColumnAblator,
-            BlockAblator,
+        from art.estimators.certification.derandomized_smoothing.ablators.pytorch import (
+            ColumnAblatorPyTorch,
+            BlockAblatorPyTorch,
         )
 
         if TYPE_CHECKING:
-            self.ablator: Union[ColumnAblator, BlockAblator]
+            self.ablator: Union[ColumnAblatorPyTorch, BlockAblatorPyTorch]
+
+        if self.mode is None:
+            raise ValueError("Model type not recognized.")
 
         if ablation_type in {"column", "row"}:
-            self.ablator = ColumnAblator(
+            self.ablator = ColumnAblatorPyTorch(
                 ablation_size=ablation_size,
                 channels_first=True,
                 ablation_mode=ablation_type,
@@ -292,7 +296,7 @@ class PyTorchDeRandomizedSmoothing(PyTorchSmoothedViT, PyTorchClassifier):
                 mode=self.mode,
             )
         elif ablation_type == "block":
-            self.ablator = BlockAblator(
+            self.ablator = BlockAblatorPyTorch(
                 ablation_size=ablation_size,
                 channels_first=True,
                 to_reshape=self.to_reshape,
@@ -304,9 +308,6 @@ class PyTorchDeRandomizedSmoothing(PyTorchSmoothedViT, PyTorchClassifier):
             )
         else:
             raise ValueError(f"ablation_type of {ablation_type} not recognized. Must be either column or block")
-
-        if self.mode is None:
-            raise ValueError("Model type not recognized.")
 
     def fit(  # pylint: disable=W0221
         self,

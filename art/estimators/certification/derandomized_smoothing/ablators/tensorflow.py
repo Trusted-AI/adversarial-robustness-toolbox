@@ -23,71 +23,12 @@ This module implements (De)Randomized Smoothing for Certifiable Defense against 
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-from abc import ABC, abstractmethod
+from art.estimators.certification.derandomized_smoothing.ablators.ablate import BaseAblator
 from typing import Optional, Union, Tuple
 import random
 
 import numpy as np
 import tensorflow as tf
-
-
-class BaseAblator(ABC):
-    """
-    Base class defining the methods used for the ablators.
-    """
-
-    @abstractmethod
-    def __call__(
-        self, x: np.ndarray, column_pos: Optional[Union[int, list]] = None, row_pos: Optional[Union[int, list]] = None
-    ) -> np.ndarray:
-        """
-        Ablate the image x at location specified by "column_pos" for the case of column ablation or at the location
-        specified by "column_pos" and "row_pos" in the case of block ablation.
-
-        :param x: input image.
-        :param column_pos: column position to specify where to retain the image
-        :param row_pos: row position to specify where to retain the image. Not used for ablation type "column".
-        """
-        raise NotImplementedError
-
-    @abstractmethod
-    def certify(
-        self, preds: "tf.Tensor", size_to_certify: int, label: Union[np.ndarray, "tf.Tensor"]
-    ) -> Tuple["tf.Tensor", "tf.Tensor", "tf.Tensor"]:
-        """
-        Checks if based on the predictions supplied the classifications over the ablated datapoints result in a
-        certified prediction against a patch attack of size size_to_certify.
-
-        :param preds: The cumulative predictions of the classifier over the ablation locations.
-        :param size_to_certify: The size of the patch to check against.
-        :param label: ground truth labels
-        """
-        raise NotImplementedError
-
-    @abstractmethod
-    def ablate(self, x: np.ndarray, column_pos: int, row_pos: int) -> np.ndarray:
-        """
-        Ablate the image x at location specified by "column_pos" for the case of column ablation or at the location
-        specified by "column_pos" and "row_pos" in the case of block ablation.
-
-        :param x: input image.
-        :param column_pos: column position to specify where to retain the image
-        :param row_pos: row position to specify where to retain the image. Not used for ablation type "column".
-        """
-        raise NotImplementedError
-
-    @abstractmethod
-    def forward(
-        self, x: np.ndarray, column_pos: Optional[Union[int, list]] = None, row_pos: Optional[Union[int, list]] = None
-    ) -> np.ndarray:
-        """
-        Ablate batch of data at locations specified by column_pos and row_pos
-
-        :param x: input image.
-        :param column_pos: column position to specify where to retain the image
-        :param row_pos: row position to specify where to retain the image. Not used for ablation type "column".
-        """
-        raise NotImplementedError
 
 
 class ColumnAblator(BaseAblator):
@@ -135,7 +76,9 @@ class ColumnAblator(BaseAblator):
         :param preds: The cumulative predictions of the classifier over the ablation locations.
         :param size_to_certify: The size of the patch to check against.
         :param label: Ground truth labels
-        :return: Array of bools indicating if a point is certified against the given patch dimensions.
+        :return: A tuple consisting of: the certified predictions,
+                 the predictions which were certified and also correct,
+                 and the most predicted class across the different ablations on the input.
         """
         result = tf.math.top_k(preds, k=2)
 
@@ -272,7 +215,9 @@ class BlockAblator(BaseAblator):
         :param preds: The cumulative predictions of the classifier over the ablation locations.
         :param size_to_certify: The size of the patch to check against.
         :param label: Ground truth labels
-        :return: Array of bools indicating if a point is certified against the given patch dimensions.
+        :return: A tuple consisting of: the certified predictions,
+                 the predictions which were certified and also correct,
+                 and the most predicted class across the different ablations on the input.
         """
         result = tf.math.top_k(preds, k=2)
 

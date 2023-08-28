@@ -28,6 +28,7 @@ from typing import Callable, List, Optional, Tuple, Union, TYPE_CHECKING
 import numpy as np
 from tqdm import tqdm
 
+from art.estimators.certification.derandomized_smoothing.derandomized import DeRandomizedSmoothingMixin
 from art.estimators.classification.tensorflow import TensorFlowV2Classifier
 from art.utils import check_and_transform_label_format
 
@@ -41,7 +42,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class TensorFlowV2DeRandomizedSmoothing(TensorFlowV2Classifier):
+class TensorFlowV2DeRandomizedSmoothing(TensorFlowV2Classifier, DeRandomizedSmoothingMixin):
     """
     Implementation of (De)Randomized Smoothing applied to classifier predictions as introduced
     in Levine et al. (2020).
