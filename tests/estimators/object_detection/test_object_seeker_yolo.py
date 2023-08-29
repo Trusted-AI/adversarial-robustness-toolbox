@@ -28,76 +28,6 @@ from tests.utils import ARTTestException
 logger = logging.getLogger(__name__)
 
 
-@pytest.fixture()
-def get_pytorch_yolo(get_default_cifar10_subset):
-    import cv2
-    import torch
-
-    from pytorchyolo import models
-    from pytorchyolo.utils.loss import compute_loss
-
-    from art.estimators.object_detection.pytorch_yolo import PyTorchYolo
-
-    model_path = "/tmp/PyTorch-YOLOv3/config/yolov3.cfg"
-    weights_path = "/tmp/PyTorch-YOLOv3/weights/yolov3.weights"
-    model = models.load_model(model_path=model_path, weights_path=weights_path)
-
-    class YoloV3(torch.nn.Module):
-        def __init__(self, model):
-            super().__init__()
-            self.model = model
-
-        def forward(self, x, targets=None):
-            if self.training:
-                outputs = self.model(x)
-                loss, _ = compute_loss(outputs, targets, self.model)
-                loss_components = {"loss_total": loss}
-                return loss_components
-            else:
-                return self.model(x)
-
-    model = YoloV3(model)
-
-    params = [p for p in model.parameters() if p.requires_grad]
-    optimizer = torch.optim.SGD(params, lr=0.01)
-
-    object_detector = PyTorchYolo(
-        model=model,
-        input_shape=(3, 416, 416),
-        optimizer=optimizer,
-        clip_values=(0, 1),
-        channels_first=True,
-        attack_losses=("loss_total",),
-    )
-
-    (_, _), (x_test_cifar10, _) = get_default_cifar10_subset
-
-    x_test = cv2.resize(
-        x_test_cifar10[0].transpose((1, 2, 0)), dsize=(416, 416), interpolation=cv2.INTER_CUBIC
-    ).transpose((2, 0, 1))
-    x_test = np.expand_dims(x_test, axis=0)
-    x_test = np.repeat(x_test, repeats=2, axis=0)
-
-    # Create labels
-
-    result = object_detector.predict(x=x_test)
-
-    y_test = [
-        {
-            "boxes": result[0]["boxes"],
-            "labels": result[0]["labels"],
-            "scores": np.ones_like(result[0]["labels"]),
-        },
-        {
-            "boxes": result[1]["boxes"],
-            "labels": result[1]["labels"],
-            "scores": np.ones_like(result[1]["labels"]),
-        },
-    ]
-
-    yield object_detector, x_test, y_test
-
-
 @pytest.mark.only_with_platform("pytorch")
 def test_pytorch_train(art_warning, get_pytorch_yolo):
     object_detector, x_test, y_test = get_pytorch_yolo
@@ -108,6 +38,7 @@ def test_pytorch_train(art_warning, get_pytorch_yolo):
         optimizer=object_detector.optimizer,
         clip_values=object_detector.clip_values,
         attack_losses=object_detector.attack_losses,
+        detector_type="YOLO",
         num_lines=3,
         confidence_threshold=0.3,
         iou_threshold=0.4,
@@ -141,6 +72,7 @@ def test_pytorch_predict(art_warning, get_pytorch_yolo):
         optimizer=object_detector.optimizer,
         clip_values=object_detector.clip_values,
         attack_losses=object_detector.attack_losses,
+        detector_type="YOLO",
         num_lines=3,
         confidence_threshold=0.3,
         iou_threshold=0.4,
@@ -169,6 +101,7 @@ def test_pytorch_certify(art_warning, get_pytorch_yolo):
         optimizer=object_detector.optimizer,
         clip_values=object_detector.clip_values,
         attack_losses=object_detector.attack_losses,
+        detector_type="YOLO",
         num_lines=3,
         confidence_threshold=0.3,
         iou_threshold=0.4,
