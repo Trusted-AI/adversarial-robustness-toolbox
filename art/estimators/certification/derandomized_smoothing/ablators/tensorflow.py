@@ -23,12 +23,16 @@ This module implements (De)Randomized Smoothing for Certifiable Defense against 
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-from art.estimators.certification.derandomized_smoothing.ablators.ablate import BaseAblator
-from typing import Optional, Union, Tuple
+from typing import Optional, Union, Tuple, TYPE_CHECKING
 import random
 
 import numpy as np
-import tensorflow as tf
+
+from art.estimators.certification.derandomized_smoothing.ablators.ablate import BaseAblator
+
+if TYPE_CHECKING:
+    # pylint: disable=C0412
+    import tensorflow as tf
 
 
 class ColumnAblator(BaseAblator):
@@ -67,8 +71,8 @@ class ColumnAblator(BaseAblator):
         return self.forward(x=x, column_pos=column_pos)
 
     def certify(
-        self, preds: tf.Tensor, size_to_certify: int, label: Union[np.ndarray, tf.Tensor]
-    ) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
+        self, pred_counts: "tf.Tensor", size_to_certify: int, label: Union[np.ndarray, "tf.Tensor"]
+    ) -> Tuple["tf.Tensor", "tf.Tensor", "tf.Tensor"]:
         """
         Checks if based on the predictions supplied the classifications over the ablated datapoints result in a
         certified prediction against a patch attack of size size_to_certify.
@@ -80,7 +84,9 @@ class ColumnAblator(BaseAblator):
                  the predictions which were certified and also correct,
                  and the most predicted class across the different ablations on the input.
         """
-        result = tf.math.top_k(preds, k=2)
+        import tensorflow as tf
+
+        result = tf.math.top_k(pred_counts, k=2)
 
         top_predicted_class, second_predicted_class = result.indices[:, 0], result.indices[:, 1]
         top_class_counts, second_class_counts = result.values[:, 0], result.values[:, 1]
@@ -107,7 +113,7 @@ class ColumnAblator(BaseAblator):
 
         return cert, cert_and_correct, top_predicted_class
 
-    def ablate(self, x: np.ndarray, column_pos: int, row_pos=None) -> np.ndarray:
+    def ablate(self, x: np.ndarray, column_pos: int, row_pos: Optional[int] = None) -> np.ndarray:
         """
         Ablates the image only retaining a column starting at "pos" of width "self.ablation_size"
 
@@ -206,20 +212,22 @@ class BlockAblator(BaseAblator):
         return self.forward(x=x, row_pos=row_pos, column_pos=column_pos)
 
     def certify(
-        self, preds: np.ndarray, size_to_certify: int, label: Union[np.ndarray, tf.Tensor]
-    ) -> Tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
+        self, pred_counts: Union["tf.Tensor", np.ndarray], size_to_certify: int, label: Union[np.ndarray, "tf.Tensor"]
+    ) -> Tuple["tf.Tensor", "tf.Tensor", "tf.Tensor"]:
         """
         Checks if based on the predictions supplied the classifications over the ablated datapoints result in a
         certified prediction against a patch attack of size size_to_certify.
 
-        :param preds: The cumulative predictions of the classifier over the ablation locations.
+        :param pred_counts: The cumulative predictions of the classifier over the ablation locations.
         :param size_to_certify: The size of the patch to check against.
         :param label: Ground truth labels
         :return: A tuple consisting of: the certified predictions,
                  the predictions which were certified and also correct,
                  and the most predicted class across the different ablations on the input.
         """
-        result = tf.math.top_k(preds, k=2)
+        import tensorflow as tf
+
+        result = tf.math.top_k(pred_counts, k=2)
 
         top_predicted_class, second_predicted_class = result.indices[:, 0], result.indices[:, 1]
         top_class_counts, second_class_counts = result.values[:, 0], result.values[:, 1]

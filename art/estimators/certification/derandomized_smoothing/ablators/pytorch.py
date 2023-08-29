@@ -111,7 +111,9 @@ class ColumnAblatorPyTorch(torch.nn.Module, BaseAblator):
         if original_shape is not None and output_shape is not None:
             self.upsample = UpSamplerPyTorch(input_size=original_shape[1], final_size=output_shape[1])
 
-    def ablate(self, x: torch.Tensor, column_pos: int, row_pos=None) -> torch.Tensor:
+    def ablate(
+        self, x: Union[torch.Tensor, np.ndarray], column_pos: int, row_pos: Optional[int] = None
+    ) -> torch.Tensor:
         """
         Ablates the input column wise
 
@@ -122,6 +124,10 @@ class ColumnAblatorPyTorch(torch.nn.Module, BaseAblator):
         :return: The ablated input with 0s where the ablation occurred
         """
         k = self.ablation_size
+
+        if isinstance(x, np.ndarray):
+            x = torch.from_numpy(x).to(self.device)
+
         if column_pos + k > x.shape[-1]:
             x[:, :, :, (column_pos + k) % x.shape[-1] : column_pos] = 0.0
         else:
@@ -275,7 +281,7 @@ class BlockAblatorPyTorch(torch.nn.Module, BaseAblator):
         if original_shape is not None and output_shape is not None:
             self.upsample = UpSamplerPyTorch(input_size=original_shape[1], final_size=output_shape[1])
 
-    def ablate(self, x: torch.Tensor, column_pos: int, row_pos: int) -> torch.Tensor:
+    def ablate(self, x: Union[torch.Tensor, np.ndarray], column_pos: int, row_pos: int) -> torch.Tensor:
         """
         Ablates the input block wise
 
@@ -284,6 +290,10 @@ class BlockAblatorPyTorch(torch.nn.Module, BaseAblator):
         :param row_pos: The row start position of the albation
         :return: The ablated input with 0s where the ablation occurred
         """
+
+        if isinstance(x, np.ndarray):
+            x = torch.from_numpy(x).to(self.device)
+
         k = self.ablation_size
         # Column ablations
         if column_pos + k > x.shape[-1]:

@@ -16,6 +16,7 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 import pytest
+import os
 
 import numpy as np
 
@@ -300,7 +301,11 @@ def test_end_to_end_equivalence(art_warning, fix_get_mnist_data, fix_get_cifar10
             output_shape=(3, 224, 224),
         )
         ablated = ablator.forward(cifar_data, column_pos=10)
-        madry_preds = torch.load('smooth_vit_results/madry_preds_column.pt')
+        madry_preds = torch.load(
+            os.path.join(
+                os.path.dirname(os.path.dirname(__file__)), "certification/smooth_vit_results/madry_preds_column.pt"
+            )
+        )
         art_preds = art_model.model(ablated)
         assert torch.allclose(madry_preds, art_preds, rtol=1e-04, atol=1e-04)
 
@@ -314,7 +319,11 @@ def test_end_to_end_equivalence(art_warning, fix_get_mnist_data, fix_get_cifar10
             mode="ViT",
         )
         ablated = ablator.forward(cifar_data, column_pos=10, row_pos=28)
-        madry_preds = torch.load('smooth_vit_results/madry_preds_block.pt')
+        madry_preds = torch.load(
+            os.path.join(
+                os.path.dirname(os.path.dirname(__file__)), "certification/smooth_vit_results/madry_preds_block.pt"
+            )
+        )
         art_preds = art_model.model(ablated)
         assert torch.allclose(madry_preds, art_preds, rtol=1e-04, atol=1e-04)
 
@@ -327,7 +336,6 @@ def test_certification_equivalence(art_warning, fix_get_mnist_data, fix_get_cifa
     way by doing a full end to end prediction and certification test over the data.
     """
     import torch
-    import os
     import sys
     import types
 
