@@ -215,7 +215,7 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
 
             if not self.channels_first:
                 x_tensor = torch.permute(x_tensor, (0, 3, 1, 2))
-            x_tensor /= norm_factor
+            x_tensor = x_tensor / norm_factor
 
             # Set gradients
             if not no_grad:
@@ -236,7 +236,7 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
 
             if not self.channels_first:
                 x_preprocessed = torch.permute(x_preprocessed, (0, 3, 1, 2))
-            x_preprocessed /= norm_factor
+            x_preprocessed = x_preprocessed / norm_factor
 
             # Set gradients
             if not no_grad:
