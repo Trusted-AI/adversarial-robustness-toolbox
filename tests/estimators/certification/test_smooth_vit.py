@@ -204,6 +204,8 @@ def test_pytorch_training(art_warning, fix_get_mnist_data, fix_get_cifar10_data)
     import torch
     from art.estimators.certification.derandomized_smoothing import PyTorchDeRandomizedSmoothing
 
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
     try:
         cifar_data = fix_get_cifar10_data[0][:50]
         cifar_labels = fix_get_cifar10_data[1][:50]
@@ -222,7 +224,38 @@ def test_pytorch_training(art_warning, fix_get_mnist_data, fix_get_cifar10_data)
         )
 
         scheduler = torch.optim.lr_scheduler.MultiStepLR(art_model.optimizer, milestones=[1], gamma=0.1)
+
+        head = {
+            "weight": torch.tensor(
+                np.load(
+                    os.path.join(
+                        os.path.dirname(os.path.dirname(__file__)),
+                        "certification/smooth_vit/smooth_vit_weights/head_weight.npy",
+                    )
+                )
+            ).to(device),
+            "bias": torch.tensor(
+                np.load(
+                    os.path.join(
+                        os.path.dirname(os.path.dirname(__file__)),
+                        "certification/smooth_vit/smooth_vit_weights/head_bias.npy",
+                    )
+                )
+            ).to(device),
+        }
+        art_model.model.head.load_state_dict(head)
+
         art_model.fit(cifar_data, cifar_labels, nb_epochs=2, update_batchnorm=True, scheduler=scheduler)
+        preds = art_model.predict(cifar_data)
+
+        gt_preds = np.load(
+            os.path.join(
+                os.path.dirname(os.path.dirname(__file__)),
+                "certification/smooth_vit/smooth_vit_results/cumulative_predictions.npy",
+            )
+        )
+
+        np.array_equal(preds, gt_preds)
 
     except ARTTestException as e:
         art_warning(e)
@@ -359,8 +392,22 @@ def test_certification_equivalence(art_warning, fix_get_mnist_data, fix_get_cifa
     )
 
     head = {
-        "weight": torch.tensor(np.load("smooth_vit/smooth_vit_weights/head_weight.npy")).to(device),
-        "bias": torch.tensor(np.load("smooth_vit/smooth_vit_weights/head_bias.npy")).to(device),
+        "weight": torch.tensor(
+            np.load(
+                os.path.join(
+                    os.path.dirname(os.path.dirname(__file__)),
+                    "certification/smooth_vit/smooth_vit_weights/head_weight.npy",
+                )
+            )
+        ).to(device),
+        "bias": torch.tensor(
+            np.load(
+                os.path.join(
+                    os.path.dirname(os.path.dirname(__file__)),
+                    "certification/smooth_vit/smooth_vit_weights/head_bias.npy",
+                )
+            )
+        ).to(device),
     }
     art_model.model.head.load_state_dict(head)
 
