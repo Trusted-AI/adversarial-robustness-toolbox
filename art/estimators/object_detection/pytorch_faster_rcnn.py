@@ -38,17 +38,17 @@ logger = logging.getLogger(__name__)
 
 class PyTorchFasterRCNN(PyTorchObjectDetector):
     """
-    This class implements a model-specific object detector using Faster-RCNN and PyTorch following the input and output
+    This class implements a model-specific object detector using Faster R-CNN and PyTorch following the input and output
     formats of torchvision.
     """
 
     def __init__(
         self,
-        model: Optional["torchvision.models.detection.fasterrcnn_resnet50_fpn"] = None,
-        input_shape: Tuple[int, ...] = (-1, -1, -1),
+        model: Optional["torchvision.models.detection.FasterRCNN"] = None,
+        input_shape: Tuple[int, ...] = (3, 416, 416),
         optimizer: Optional["torch.optim.Optimizer"] = None,
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
-        channels_first: Optional[bool] = False,
+        channels_first: Optional[bool] = True,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
         preprocessing: "PREPROCESSING_TYPE" = None,
@@ -63,13 +63,13 @@ class PyTorchFasterRCNN(PyTorchObjectDetector):
         """
         Initialization.
 
-        :param model: Faster-RCNN model. The output of the model is `List[Dict[Tensor]]`, one for each input image. The
-                      fields of the Dict are as follows:
+        :param model: Faster R-CNN model. The output of the model is `List[Dict[str, torch.Tensor]]`, one for
+                      each input image. The fields of the Dict are as follows:
 
-                      - boxes (FloatTensor[N, 4]): the predicted boxes in [x1, y1, x2, y2] format, with values \
-                        between 0 and H and 0 and W
-                      - labels (Int64Tensor[N]): the predicted labels for each image
-                      - scores (Tensor[N]): the scores or each prediction
+                      - boxes [N, 4]: the boxes in [x1, y1, x2, y2] format, with 0 <= x1 < x2 <= W and
+                        0 <= y1 < y2 <= H.
+                      - labels [N]: the labels for each image.
+                      - scores [N]: the scores of each prediction.
         :param input_shape: The shape of one input sample.
         :param optimizer: The optimizer for training the classifier.
         :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
