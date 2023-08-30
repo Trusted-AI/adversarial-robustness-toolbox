@@ -21,7 +21,6 @@ import os
 import numpy as np
 
 from art.utils import load_dataset
-
 from tests.utils import ARTTestException
 
 
@@ -263,10 +262,12 @@ def test_certification_function(art_warning, fix_get_mnist_data, fix_get_cifar10
 def test_end_to_end_equivalence(art_warning, fix_get_mnist_data, fix_get_cifar10_data, ablation):
     """
     Assert implementations matches original with a forward pass through the same model architecture.
-    Note, there are some differences in architecture between the same model names in timm vs the original implementation.
+    There are some differences in architecture between the same model names in timm vs the original implementation.
     We use vit_base_patch16_224 which matches.
     """
     import torch
+
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     from art.estimators.certification.derandomized_smoothing import PyTorchDeRandomizedSmoothing
 
@@ -303,11 +304,12 @@ def test_end_to_end_equivalence(art_warning, fix_get_mnist_data, fix_get_cifar10
         ablated = ablator.forward(cifar_data, column_pos=10)
         madry_preds = torch.load(
             os.path.join(
-                os.path.dirname(os.path.dirname(__file__)), "certification/smooth_vit_results/madry_preds_column.pt"
+                os.path.dirname(os.path.dirname(__file__)),
+                "certification/smooth_vit/smooth_vit_results/madry_preds_column.pt",
             )
         )
         art_preds = art_model.model(ablated)
-        assert torch.allclose(madry_preds, art_preds, rtol=1e-04, atol=1e-04)
+        assert torch.allclose(madry_preds.to(device), art_preds, rtol=1e-04, atol=1e-04)
 
     elif ablation == "block":
         ablator = BlockAblatorPyTorch(
@@ -321,11 +323,12 @@ def test_end_to_end_equivalence(art_warning, fix_get_mnist_data, fix_get_cifar10
         ablated = ablator.forward(cifar_data, column_pos=10, row_pos=28)
         madry_preds = torch.load(
             os.path.join(
-                os.path.dirname(os.path.dirname(__file__)), "certification/smooth_vit_results/madry_preds_block.pt"
+                os.path.dirname(os.path.dirname(__file__)),
+                "certification/smooth_vit/smooth_vit_results/madry_preds_block.pt",
             )
         )
         art_preds = art_model.model(ablated)
-        assert torch.allclose(madry_preds, art_preds, rtol=1e-04, atol=1e-04)
+        assert torch.allclose(madry_preds.to(device), art_preds, rtol=1e-04, atol=1e-04)
 
 
 @pytest.mark.only_with_platform("pytorch")
@@ -336,49 +339,10 @@ def test_certification_equivalence(art_warning, fix_get_mnist_data, fix_get_cifa
     way by doing a full end to end prediction and certification test over the data.
     """
     import torch
-    import sys
-    import types
-
-    from torch.utils.data import Dataset
-
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    experiment_file_directory = "smooth_vit_tests"
-
-    class ArgClass:
-        def __init__(self):
-            self.certify_patch_size = 4
-            self.certify_ablation_size = 4
-            self.certify_stride = 1
-            self.dataset = "cifar10"
-            self.certify_out_dir = "./"
-            self.exp_name = experiment_file_directory
-            if ablation == "column":
-                self.certify_mode = "col"
-            if ablation == "block":
-                self.certify_mode = "block"
-            self.batch_id = None
-
-    class DataSet(Dataset):
-        def __init__(self, x, y):
-            self.x = x
-            self.y = y
-
-        def __len__(self):
-            return len(self.y)
-
-        def __getitem__(self, idx):
-            return self.x[idx], self.y[idx]
 
     from art.estimators.certification.derandomized_smoothing import PyTorchDeRandomizedSmoothing
-    import shutil
-    from torch.utils.data import DataLoader
 
-    if os.path.exists(experiment_file_directory):
-        shutil.rmtree(experiment_file_directory)
-
-    os.system("git clone https://github.com/MadryLab/smoothed-vit")
-    sys.path.append("smoothed-vit/src/utils/")
-    from smoothing import certify
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     art_model = PyTorchDeRandomizedSmoothing(
         model="vit_small_patch16_224",
@@ -394,90 +358,45 @@ def test_certification_equivalence(art_warning, fix_get_mnist_data, fix_get_cifa
         verbose=False,
     )
 
-    # TODO: Look into incorporating this model into the CI runs rather than just local testing.
-    if os.path.isfile("vit_small_patch16_224_block.pt"):
-        art_model.model.load_state_dict(torch.load("vit_small_patch16_224_block.pt"))
-
-    class WrappedModel(torch.nn.Module):
-        """
-        Original implementation requires to return a tuple. We add a dummy return to satisfy this.
-        """
-
-        def __init__(self, my_model):
-            super().__init__()
-            self.model = my_model
-            self.upsample = torch.nn.Upsample(scale_factor=224 / 32)
-
-        def forward(self, x):
-            if x.shape[-1] != 224:
-                x = self.upsample(x)
-            x = self.model(x)
-            return x, "filler_arg"
-
-    # Replacement function for .cuda() to enable original code to run without gpu.
-    def _cuda(self):
-        return self
-
-    class MyDataloader(Dataset):
-        """
-        Original implementation made use of .cuda() without device checks. Thus, for cpu only machines
-        (such as those run for ART CI checks) the test will fail. Here we override .cuda() for the
-        instances to just return self.
-        """
-
-        def __init__(self, x, y):
-            self.x = x
-            self.y = y
-            self.bsize = 2
-
-        def __len__(self):
-            return 2
-
-        def __getitem__(self, idx):
-            if idx >= 2:
-                raise IndexError
-            else:
-                x = self.x[idx * self.bsize : idx * self.bsize + self.bsize]
-                y = self.y[idx * self.bsize : idx * self.bsize + self.bsize]
-
-                x.cuda = types.MethodType(_cuda, x)
-                y.cuda = types.MethodType(_cuda, y)
-                return x, y
+    head = {
+        "weight": torch.tensor(np.load("smooth_vit/smooth_vit_weights/head_weight.npy")).to(device),
+        "bias": torch.tensor(np.load("smooth_vit/smooth_vit_weights/head_bias.npy")).to(device),
+    }
+    art_model.model.head.load_state_dict(head)
 
     if torch.cuda.is_available():
         num_to_fetch = 100
     else:
-        num_to_fetch = 4
+        num_to_fetch = 10
 
     cifar_data = torch.from_numpy(fix_get_cifar10_data[0][:num_to_fetch]).to(device)
     cifar_labels = torch.from_numpy(fix_get_cifar10_data[1][:num_to_fetch]).to(device)
 
-    if torch.cuda.is_available():
-        dataset = DataSet(cifar_data, cifar_labels)
-        validation_loader = DataLoader(dataset, batch_size=num_to_fetch)
-    else:
-        validation_loader = MyDataloader(cifar_data, cifar_labels)
-
-    args = ArgClass()
-
-    model = WrappedModel(my_model=art_model.model)
-    certify(args=args, model=model, validation_loader=validation_loader, store=None)
-    summary = torch.load(experiment_file_directory + "/m4_s4_summary.pth")
-
     acc, cert_acc = art_model.eval_and_certify(
         x=cifar_data.cpu().numpy(), y=cifar_labels.cpu().numpy(), batch_size=num_to_fetch, size_to_certify=4
     )
-
-    assert torch.allclose(torch.tensor(cert_acc), torch.tensor(summary["cert_acc"]))
-    assert torch.tensor(acc) == torch.tensor(summary["smooth_acc"])
 
     upsample = torch.nn.Upsample(scale_factor=224 / 32)
     cifar_data = upsample(cifar_data)
     acc_non_ablation = art_model.model(cifar_data)
     acc_non_ablation = art_model.get_accuracy(acc_non_ablation, cifar_labels)
 
-    assert np.allclose(acc_non_ablation.astype(float), summary["acc"])
-    sys.path.remove("smoothed-vit/src/utils/")
+    if torch.cuda.is_available():
+        if ablation == "column":
+            assert np.allclose(cert_acc.cpu().numpy(), 0.29)
+            assert np.allclose(acc.cpu().numpy(), 0.57)
+        else:
+            assert np.allclose(cert_acc.cpu().numpy(), 0.16)
+            assert np.allclose(acc.cpu().numpy(), 0.24)
+        assert np.allclose(acc_non_ablation, 0.52)
+    else:
+        if ablation == "column":
+            assert np.allclose(cert_acc.cpu().numpy(), 0.30)
+            assert np.allclose(acc.cpu().numpy(), 0.70)
+        else:
+            assert np.allclose(cert_acc.cpu().numpy(), 0.20)
+            assert np.allclose(acc.cpu().numpy(), 0.20)
+        assert np.allclose(acc_non_ablation, 0.60)
 
 
 @pytest.mark.only_with_platform("pytorch")

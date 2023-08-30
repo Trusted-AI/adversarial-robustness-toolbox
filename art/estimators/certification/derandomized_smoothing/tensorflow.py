@@ -126,7 +126,7 @@ class TensorFlowV2DeRandomizedSmoothing(TensorFlowV2Classifier, DeRandomizedSmoo
         self.threshold = threshold
         self._channels_first = channels_first
 
-        from art.estimators.certification.derandomized_smoothing.derandomized_smoothing_tensorflow import (
+        from art.estimators.certification.derandomized_smoothing.ablators.tensorflow import (
             ColumnAblator,
             BlockAblator,
         )
