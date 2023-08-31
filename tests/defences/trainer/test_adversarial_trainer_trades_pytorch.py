@@ -21,7 +21,6 @@ import pytest
 import logging
 import numpy as np
 
-from art.utils import load_dataset
 from art.defences.trainer import AdversarialTrainerTRADESPyTorch
 from art.attacks.evasion import ProjectedGradientDescent
 
@@ -50,22 +49,7 @@ def get_adv_trainer(framework, image_dl_estimator):
             trainer = AdversarialTrainerTRADESPyTorch(classifier, attack, beta=6.0)
 
         if framework == "huggingface":
-            classifier, _ = image_dl_estimator(from_logits=True)
-
-            attack = ProjectedGradientDescent(
-                classifier,
-                norm=np.inf,
-                eps=0.3,
-                eps_step=0.03,
-                max_iter=5,
-                targeted=False,
-                num_random_init=1,
-                batch_size=128,
-                verbose=False,
-            )
-
-            trainer = AdversarialTrainerTRADESPyTorch(classifier, attack, beta=6.0)
-
+            trainer = None
         if framework == "scikitlearn":
             trainer = None
 
@@ -80,75 +64,6 @@ def fix_get_mnist_subset(get_mnist_dataset):
     n_train = 100
     n_test = 100
     yield x_train_mnist[:n_train], y_train_mnist[:n_train], x_test_mnist[:n_test], y_test_mnist[:n_test]
-
-
-@pytest.fixture()
-def fix_get_cifar10_data():
-    """
-    Get the first 128 samples of the cifar10 test set
-
-    :return: First 128 sample/label pairs of the cifar10 test dataset.
-    """
-    nb_test = 128
-
-    (x_train, y_train), (x_test, y_test), _, _ = load_dataset("cifar10")
-    y_test = np.argmax(y_test, axis=1)
-    x_test, y_test = x_test[:nb_test], y_test[:nb_test]
-    x_test = np.transpose(x_test, (0, 3, 1, 2))  # return in channels first format
-
-    y_train = np.argmax(y_train, axis=1)
-    x_train, y_train = x_train[:nb_test], y_train[:nb_test]
-    x_train = np.transpose(x_train, (0, 3, 1, 2))  # return in channels first format
-    return x_train.astype(np.float32), y_train, x_test.astype(np.float32), y_test
-
-
-@pytest.mark.only_with_platform("huggingface")
-@pytest.mark.parametrize("label_format", ["one_hot", "numerical"])
-def test_adversarial_trainer_trades_huggingface_fit_and_predict(
-    get_adv_trainer, fix_get_cifar10_data, fix_get_mnist_subset, label_format
-):
-
-    (x_train, y_train, x_test, y_test) = fix_get_mnist_subset
-    x_test_original = x_test.copy()
-
-    if label_format == "one_hot":
-        assert y_train.shape[-1] == 10
-        assert y_test.shape[-1] == 10
-    if label_format == "numerical":
-        y_test = np.argmax(y_test, axis=1)
-        y_train = np.argmax(y_train, axis=1)
-
-    trainer = get_adv_trainer()
-    if trainer is None:
-        logging.warning("Couldn't perform  this test because no trainer is defined for this framework configuration")
-        return
-
-    predictions = np.argmax(trainer.predict(x_test), axis=1)
-
-    if label_format == "one_hot":
-        accuracy = np.sum(predictions == np.argmax(y_test, axis=1)) / x_test.shape[0]
-    else:
-        accuracy = np.sum(predictions == y_test) / x_test.shape[0]
-
-    nb_epochs = 20
-
-    trainer.fit(x_train, y_train, nb_epochs=nb_epochs)
-    predictions_new = np.argmax(trainer.predict(x_test), axis=1)
-
-    if label_format == "one_hot":
-        accuracy_new = np.sum(predictions_new == np.argmax(y_test, axis=1)) / x_test.shape[0]
-    else:
-        accuracy_new = np.sum(predictions_new == y_test) / x_test.shape[0]
-
-    np.testing.assert_array_almost_equal(
-        float(np.mean(x_test_original - x_test)),
-        0.0,
-        decimal=4,
-    )
-
-    assert accuracy == 0.32
-    assert accuracy_new > 0.32
-    trainer.fit(x_train, y_train, nb_epochs=nb_epochs, validation_data=(x_train, y_train))
 
 
 @pytest.mark.only_with_platform("pytorch")

@@ -355,22 +355,3 @@ class HuggingFaceClassifierPyTorch(PyTorchClassifier):
 
         results_array = np.concatenate(results)
         return results_array
-
-    @staticmethod
-    def get_accuracy(preds: Union[np.ndarray, "torch.Tensor"], labels: Union[np.ndarray, "torch.Tensor"]) -> np.ndarray:
-        """
-        Helper function to print out the accuracy during training
-
-        :param preds: model predictions
-        :param labels: ground truth labels (not one hot)
-        :return: prediction accuracy
-        """
-        import torch
-
-        if isinstance(preds, torch.Tensor):
-            preds = preds.detach().cpu().numpy()
-
-        if isinstance(labels, torch.Tensor):
-            labels = labels.detach().cpu().numpy()
-
-        return np.sum(np.argmax(preds, axis=1) == labels) / len(labels)
