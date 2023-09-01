@@ -103,8 +103,8 @@ def translate_labels_x1y1x2y2_to_xcycwh(
         labels[:, 2:6] = label_dict["boxes"]
 
         # normalize bounding boxes to [0, 1]
-        labels[:, 2:6:2] /= width
-        labels[:, 3:6:2] /= height
+        labels[:, 2:6:2] = labels[:, 2:6:2] / width
+        labels[:, 3:6:2] = labels[:, 3:6:2] / height
 
         # convert from x1y1x2y2 to xcycwh
         labels[:, 4] -= labels[:, 2]
@@ -290,7 +290,7 @@ class PyTorchYolo(ObjectDetectorMixin, PyTorchEstimator):
 
             if not self.channels_first:
                 x_tensor = torch.permute(x_tensor, (0, 3, 1, 2))
-            x_tensor /= norm_factor
+            x_tensor = x_tensor / norm_factor
 
             # Set gradients
             if not no_grad:
@@ -311,7 +311,7 @@ class PyTorchYolo(ObjectDetectorMixin, PyTorchEstimator):
 
             if not self.channels_first:
                 x_preprocessed = torch.permute(x_preprocessed, (0, 3, 1, 2))
-            x_preprocessed /= norm_factor
+            x_preprocessed = x_preprocessed / norm_factor
 
             # Set gradients
             if not no_grad:
