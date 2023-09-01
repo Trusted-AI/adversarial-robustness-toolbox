@@ -133,7 +133,6 @@ def test_adversarial_trainer_trades_pytorch_fit_generator_and_predict(
         return
 
     predictions = np.argmax(trainer.predict(x_test_mnist), axis=1)
-
     if label_format == "one_hot":
         accuracy = np.sum(predictions == np.argmax(y_test_mnist, axis=1)) / x_test_mnist.shape[0]
     else:
