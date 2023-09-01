@@ -23,70 +23,39 @@ import numpy as np
 import pytest
 
 from art.defences.trainer.adversarial_trainer_madry_pgd import AdversarialTrainerMadryPGD
-from art.utils import load_mnist
-
-from tests.utils import master_seed
 
 logger = logging.getLogger(__name__)
 
-BATCH_SIZE = 10
-NB_TRAIN = 100
-NB_TEST = 100
-
 
 @pytest.fixture()
-def get_mnist_classifier(framework, image_dl_estimator):
-    def _get_classifier():
-        if framework in ["pytorch", "huggingface"]:
-            classifier, _ = image_dl_estimator()
-            master_seed(seed=1234, set_torch=True)
-        elif framework in ["tensorflow2", "tensorflow1"]:
-            classifier, _ = image_dl_estimator()
-            master_seed(seed=1234)
-        else:
-            return None
-
-        return classifier
-
-    return _get_classifier
+def fix_get_mnist_subset(get_mnist_dataset):
+    (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_mnist_dataset
+    n_train = 100
+    n_test = 100
+    yield x_train_mnist[:n_train], y_train_mnist[:n_train], x_test_mnist[:n_test], y_test_mnist[:n_test]
 
 
 @pytest.mark.only_with_platform("pytorch", "tensorflow2", "huggingface", "tensorflow1", "tensorflow2v1")
-def test_fit_predict(art_warning, get_mnist_classifier, framework):
-    classifier = get_mnist_classifier()
+def test_fit_predict(art_warning, image_dl_estimator, fix_get_mnist_subset):
+    classifier, _ = image_dl_estimator()
 
-    (x_train, y_train), (x_test, y_test), _, _ = load_mnist()
-    x_train, y_train, x_test, y_test = (
-        x_train[:NB_TRAIN],
-        y_train[:NB_TRAIN],
-        x_test[:NB_TEST],
-        y_test[:NB_TEST],
-    )
-    if framework in ["pytorch", "huggingface"]:
-        x_train = np.float32(np.rollaxis(x_train, 3, 1))
-        x_test = np.float32(np.rollaxis(x_test, 3, 1))
-
+    (x_train, y_train, x_test, y_test) = fix_get_mnist_subset
     x_test_original = x_test.copy()
 
     adv_trainer = AdversarialTrainerMadryPGD(classifier, nb_epochs=1, batch_size=128)
     adv_trainer.fit(x_train, y_train)
 
     predictions_new = np.argmax(adv_trainer.trainer.get_classifier().predict(x_test), axis=1)
-    accuracy_new = np.sum(predictions_new == np.argmax(y_test, axis=1)) / NB_TEST
+    accuracy_new = np.mean(predictions_new == np.argmax(y_test, axis=1))
 
-    # Pytorch was not checked in unittest, but has 1% lower performance than tf.
-    if framework in ["pytorch", "huggingface"]:
-        assert accuracy_new == 0.37
-    else:
-        assert accuracy_new == 0.38
-
+    assert accuracy_new == pytest.approx(0.375, abs=0.05)
     # Check that x_test has not been modified by attack and classifier
     assert np.allclose(x_test_original, x_test)
 
 
 @pytest.mark.only_with_platform("pytorch", "tensorflow2", "tensorflow1", "huggingface", "tensorflow2v1")
-def test_get_classifier(art_warning, get_mnist_classifier):
-    classifier = get_mnist_classifier()
+def test_get_classifier(art_warning, image_dl_estimator):
+    classifier, _ = image_dl_estimator()
 
     adv_trainer = AdversarialTrainerMadryPGD(classifier, nb_epochs=1, batch_size=128)
     _ = adv_trainer.get_classifier()
