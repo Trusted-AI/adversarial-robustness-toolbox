@@ -215,8 +215,8 @@ class AutoAttack(EvasionAttack):
                             attack=attack,
                             **kwargs,
                         )
-                except ValueError:
-                    logger.info(f'Skipping {attack} for targeted case as it is not supported.')
+                except ValueError as error:
+                    logger.warning("Error completing attack: %s}", str(error))
         return x_adv
 
     def _run_attack(
