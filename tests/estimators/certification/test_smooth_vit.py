@@ -230,7 +230,7 @@ def test_pytorch_training(art_warning, fix_get_mnist_data, fix_get_cifar10_data)
                 np.load(
                     os.path.join(
                         os.path.dirname(os.path.dirname(__file__)),
-                        "certification/smooth_vit/smooth_vit_weights/head_weight.npy",
+                        "../../utils/resources/models/certification/smooth_vit/head_weight.npy",
                     )
                 )
             ).to(device),
@@ -238,7 +238,7 @@ def test_pytorch_training(art_warning, fix_get_mnist_data, fix_get_cifar10_data)
                 np.load(
                     os.path.join(
                         os.path.dirname(os.path.dirname(__file__)),
-                        "certification/smooth_vit/smooth_vit_weights/head_bias.npy",
+                        "../../utils/resources/models/certification/smooth_vit/head_bias.npy",
                     )
                 )
             ).to(device),
@@ -311,57 +311,59 @@ def test_end_to_end_equivalence(art_warning, fix_get_mnist_data, fix_get_cifar10
 
     cifar_data = fix_get_cifar10_data[0][:50]
     torch.manual_seed(1234)
-
-    art_model = PyTorchDeRandomizedSmoothing(
-        model="vit_base_patch16_224",
-        loss=torch.nn.CrossEntropyLoss(),
-        optimizer=torch.optim.SGD,
-        optimizer_params={"lr": 0.01},
-        input_shape=(3, 32, 32),
-        nb_classes=10,
-        ablation_size=4,
-        load_pretrained=True,
-        replace_last_layer=True,
-        verbose=False,
-    )
-
-    if ablation == "column":
-        ablator = ColumnAblatorPyTorch(
+    try:
+        art_model = PyTorchDeRandomizedSmoothing(
+            model="vit_base_patch16_224",
+            loss=torch.nn.CrossEntropyLoss(),
+            optimizer=torch.optim.SGD,
+            optimizer_params={"lr": 0.01},
+            input_shape=(3, 32, 32),
+            nb_classes=10,
             ablation_size=4,
-            channels_first=True,
-            to_reshape=True,
-            mode="ViT",
-            original_shape=(3, 32, 32),
-            output_shape=(3, 224, 224),
+            load_pretrained=True,
+            replace_last_layer=True,
+            verbose=False,
         )
-        ablated = ablator.forward(cifar_data, column_pos=10)
-        madry_preds = torch.load(
-            os.path.join(
-                os.path.dirname(os.path.dirname(__file__)),
-                "certification/smooth_vit/smooth_vit_results/madry_preds_column.pt",
-            )
-        )
-        art_preds = art_model.model(ablated)
-        assert torch.allclose(madry_preds.to(device), art_preds, rtol=1e-04, atol=1e-04)
 
-    elif ablation == "block":
-        ablator = BlockAblatorPyTorch(
-            ablation_size=4,
-            channels_first=True,
-            to_reshape=True,
-            original_shape=(3, 32, 32),
-            output_shape=(3, 224, 224),
-            mode="ViT",
-        )
-        ablated = ablator.forward(cifar_data, column_pos=10, row_pos=28)
-        madry_preds = torch.load(
-            os.path.join(
-                os.path.dirname(os.path.dirname(__file__)),
-                "certification/smooth_vit/smooth_vit_results/madry_preds_block.pt",
+        if ablation == "column":
+            ablator = ColumnAblatorPyTorch(
+                ablation_size=4,
+                channels_first=True,
+                to_reshape=True,
+                mode="ViT",
+                original_shape=(3, 32, 32),
+                output_shape=(3, 224, 224),
             )
-        )
-        art_preds = art_model.model(ablated)
-        assert torch.allclose(madry_preds.to(device), art_preds, rtol=1e-04, atol=1e-04)
+            ablated = ablator.forward(cifar_data, column_pos=10)
+            madry_preds = torch.load(
+                os.path.join(
+                    os.path.dirname(os.path.dirname(__file__)),
+                    "certification/smooth_vit/smooth_vit_results/madry_preds_column.pt",
+                )
+            )
+            art_preds = art_model.model(ablated)
+            assert torch.allclose(madry_preds.to(device), art_preds, rtol=1e-04, atol=1e-04)
+
+        elif ablation == "block":
+            ablator = BlockAblatorPyTorch(
+                ablation_size=4,
+                channels_first=True,
+                to_reshape=True,
+                original_shape=(3, 32, 32),
+                output_shape=(3, 224, 224),
+                mode="ViT",
+            )
+            ablated = ablator.forward(cifar_data, column_pos=10, row_pos=28)
+            madry_preds = torch.load(
+                os.path.join(
+                    os.path.dirname(os.path.dirname(__file__)),
+                    "certification/smooth_vit/smooth_vit_results/madry_preds_block.pt",
+                )
+            )
+            art_preds = art_model.model(ablated)
+            assert torch.allclose(madry_preds.to(device), art_preds, rtol=1e-04, atol=1e-04)
+    except ARTTestException as e:
+        art_warning(e)
 
 
 @pytest.mark.only_with_platform("pytorch")
@@ -376,233 +378,239 @@ def test_certification_equivalence(art_warning, fix_get_mnist_data, fix_get_cifa
     from art.estimators.certification.derandomized_smoothing import PyTorchDeRandomizedSmoothing
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    try:
+        art_model = PyTorchDeRandomizedSmoothing(
+            model="vit_small_patch16_224",
+            loss=torch.nn.CrossEntropyLoss(),
+            optimizer=torch.optim.SGD,
+            optimizer_params={"lr": 0.01},
+            input_shape=(3, 32, 32),
+            nb_classes=10,
+            ablation_type=ablation,
+            ablation_size=4,
+            load_pretrained=True,
+            replace_last_layer=True,
+            verbose=False,
+        )
 
-    art_model = PyTorchDeRandomizedSmoothing(
-        model="vit_small_patch16_224",
-        loss=torch.nn.CrossEntropyLoss(),
-        optimizer=torch.optim.SGD,
-        optimizer_params={"lr": 0.01},
-        input_shape=(3, 32, 32),
-        nb_classes=10,
-        ablation_type=ablation,
-        ablation_size=4,
-        load_pretrained=True,
-        replace_last_layer=True,
-        verbose=False,
-    )
-
-    head = {
-        "weight": torch.tensor(
-            np.load(
-                os.path.join(
-                    os.path.dirname(os.path.dirname(__file__)),
-                    "certification/smooth_vit/smooth_vit_weights/head_weight.npy",
+        head = {
+            "weight": torch.tensor(
+                np.load(
+                    os.path.join(
+                        os.path.dirname(os.path.dirname(__file__)),
+                        "../../utils/resources/models/certification/smooth_vit/head_weight.npy",
+                    )
                 )
-            )
-        ).to(device),
-        "bias": torch.tensor(
-            np.load(
-                os.path.join(
-                    os.path.dirname(os.path.dirname(__file__)),
-                    "certification/smooth_vit/smooth_vit_weights/head_bias.npy",
+            ).to(device),
+            "bias": torch.tensor(
+                np.load(
+                    os.path.join(
+                        os.path.dirname(os.path.dirname(__file__)),
+                        "../../utils/resources/models/certification/smooth_vit/head_bias.npy",
+                    )
                 )
-            )
-        ).to(device),
-    }
-    art_model.model.head.load_state_dict(head)
+            ).to(device),
+        }
+        art_model.model.head.load_state_dict(head)
 
-    if torch.cuda.is_available():
-        num_to_fetch = 100
-    else:
-        num_to_fetch = 10
-
-    cifar_data = torch.from_numpy(fix_get_cifar10_data[0][:num_to_fetch]).to(device)
-    cifar_labels = torch.from_numpy(fix_get_cifar10_data[1][:num_to_fetch]).to(device)
-
-    acc, cert_acc = art_model.eval_and_certify(
-        x=cifar_data.cpu().numpy(), y=cifar_labels.cpu().numpy(), batch_size=num_to_fetch, size_to_certify=4
-    )
-
-    upsample = torch.nn.Upsample(scale_factor=224 / 32)
-    cifar_data = upsample(cifar_data)
-    acc_non_ablation = art_model.model(cifar_data)
-    acc_non_ablation = art_model.get_accuracy(acc_non_ablation, cifar_labels)
-
-    if torch.cuda.is_available():
-        if ablation == "column":
-            assert np.allclose(cert_acc.cpu().numpy(), 0.29)
-            assert np.allclose(acc.cpu().numpy(), 0.57)
+        if torch.cuda.is_available():
+            num_to_fetch = 100
         else:
-            assert np.allclose(cert_acc.cpu().numpy(), 0.16)
-            assert np.allclose(acc.cpu().numpy(), 0.24)
-        assert np.allclose(acc_non_ablation, 0.52)
-    else:
-        if ablation == "column":
-            assert np.allclose(cert_acc.cpu().numpy(), 0.30)
-            assert np.allclose(acc.cpu().numpy(), 0.70)
+            num_to_fetch = 10
+
+        cifar_data = torch.from_numpy(fix_get_cifar10_data[0][:num_to_fetch]).to(device)
+        cifar_labels = torch.from_numpy(fix_get_cifar10_data[1][:num_to_fetch]).to(device)
+
+        acc, cert_acc = art_model.eval_and_certify(
+            x=cifar_data.cpu().numpy(), y=cifar_labels.cpu().numpy(), batch_size=num_to_fetch, size_to_certify=4
+        )
+
+        upsample = torch.nn.Upsample(scale_factor=224 / 32)
+        cifar_data = upsample(cifar_data)
+        acc_non_ablation = art_model.model(cifar_data)
+        acc_non_ablation = art_model.get_accuracy(acc_non_ablation, cifar_labels)
+
+        if torch.cuda.is_available():
+            if ablation == "column":
+                assert np.allclose(cert_acc.cpu().numpy(), 0.29)
+                assert np.allclose(acc.cpu().numpy(), 0.57)
+            else:
+                assert np.allclose(cert_acc.cpu().numpy(), 0.16)
+                assert np.allclose(acc.cpu().numpy(), 0.24)
+            assert np.allclose(acc_non_ablation, 0.52)
         else:
-            assert np.allclose(cert_acc.cpu().numpy(), 0.20)
-            assert np.allclose(acc.cpu().numpy(), 0.20)
-        assert np.allclose(acc_non_ablation, 0.60)
+            if ablation == "column":
+                assert np.allclose(cert_acc.cpu().numpy(), 0.30)
+                assert np.allclose(acc.cpu().numpy(), 0.70)
+            else:
+                assert np.allclose(cert_acc.cpu().numpy(), 0.20)
+                assert np.allclose(acc.cpu().numpy(), 0.20)
+            assert np.allclose(acc_non_ablation, 0.60)
+    except ARTTestException as e:
+        art_warning(e)
 
 
 @pytest.mark.only_with_platform("pytorch")
-def test_equivalence(fix_get_cifar10_data):
+def test_equivalence(art_warning, fix_get_cifar10_data):
     import torch
     from art.estimators.certification.derandomized_smoothing import PyTorchDeRandomizedSmoothing
-    from art.estimators.certification.derandomized_smoothing.vision_transformers.vit import PyTorchViT
+    from art.estimators.certification.derandomized_smoothing.vision_transformers.vit import PyTorchVisionTransformer
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    class MadrylabImplementations:
-        """
-        Code adapted from the implementation in https://github.com/MadryLab/smoothed-vit
-        to check against our own functionality.
+    try:
 
-        Original License:
-
-        MIT License
-
-        Copyright (c) 2021 Madry Lab
-
-        Permission is hereby granted, free of charge, to any person obtaining a copy
-        of this software and associated documentation files (the "Software"), to deal
-        in the Software without restriction, including without limitation the rights
-        to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-        copies of the Software, and to permit persons to whom the Software is
-        furnished to do so, subject to the following conditions:
-
-        The above copyright notice and this permission notice shall be included in all
-        copies or substantial portions of the Software.
-
-        THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-        IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-        FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-        AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-        LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-        OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-        SOFTWARE.
-
-        """
-
-        def __init__(self):
-            pass
-
-        @classmethod
-        def token_dropper(cls, x, mask):
+        class MadrylabImplementations:
             """
-            The implementation of dropping tokens has been done slightly differently in this tool.
-            Here we check that it is equivalent to the original implementation
+            Code adapted from the implementation in https://github.com/MadryLab/smoothed-vit
+            to check against our own functionality.
+
+            Original License:
+
+            MIT License
+
+            Copyright (c) 2021 Madry Lab
+
+            Permission is hereby granted, free of charge, to any person obtaining a copy
+            of this software and associated documentation files (the "Software"), to deal
+            in the Software without restriction, including without limitation the rights
+            to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+            copies of the Software, and to permit persons to whom the Software is
+            furnished to do so, subject to the following conditions:
+
+            The above copyright notice and this permission notice shall be included in all
+            copies or substantial portions of the Software.
+
+            THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+            IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+            FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+            AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+            LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+            OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+            SOFTWARE.
+
             """
 
-            class MaskProcessor(torch.nn.Module):
-                def __init__(self, patch_size=16):
-                    super().__init__()
-                    self.avg_pool = torch.nn.AvgPool2d(patch_size)
+            def __init__(self):
+                pass
 
-                def forward(self, ones_mask):
-                    B = ones_mask.shape[0]
-                    ones_mask = ones_mask[0].unsqueeze(0)  # take the first mask
-                    ones_mask = self.avg_pool(ones_mask)[0]
-                    ones_mask = torch.where(ones_mask.view(-1) > 0)[0] + 1
-                    ones_mask = torch.cat([torch.IntTensor(1).fill_(0).to(device), ones_mask]).unsqueeze(0)
-                    ones_mask = ones_mask.expand(B, -1)
-                    return ones_mask
+            @classmethod
+            def token_dropper(cls, x, mask):
+                """
+                The implementation of dropping tokens has been done slightly differently in this tool.
+                Here we check that it is equivalent to the original implementation
+                """
 
-            mask_processor = MaskProcessor()
-            patch_mask = mask_processor(mask)
+                class MaskProcessor(torch.nn.Module):
+                    def __init__(self, patch_size=16):
+                        super().__init__()
+                        self.avg_pool = torch.nn.AvgPool2d(patch_size)
 
-            # x = self.pos_drop(x) # B, N, C
-            if patch_mask is not None:
-                # patch_mask is B, K
-                B, N, C = x.shape
-                if len(patch_mask.shape) == 1:  # not a separate one per batch
-                    x = x[:, patch_mask]
-                else:
-                    patch_mask = patch_mask.unsqueeze(-1).expand(-1, -1, C)
-                    x = torch.gather(x, 1, patch_mask)
-            return x
+                    def forward(self, ones_mask):
+                        B = ones_mask.shape[0]
+                        ones_mask = ones_mask[0].unsqueeze(0)  # take the first mask
+                        ones_mask = self.avg_pool(ones_mask)[0]
+                        ones_mask = torch.where(ones_mask.view(-1) > 0)[0] + 1
+                        ones_mask = torch.cat([torch.IntTensor(1).fill_(0).to(device), ones_mask]).unsqueeze(0)
+                        ones_mask = ones_mask.expand(B, -1)
+                        return ones_mask
 
-        @classmethod
-        def embedder(cls, x, pos_embed, cls_token):
+                mask_processor = MaskProcessor()
+                patch_mask = mask_processor(mask)
+
+                # x = self.pos_drop(x) # B, N, C
+                if patch_mask is not None:
+                    # patch_mask is B, K
+                    B, N, C = x.shape
+                    if len(patch_mask.shape) == 1:  # not a separate one per batch
+                        x = x[:, patch_mask]
+                    else:
+                        patch_mask = patch_mask.unsqueeze(-1).expand(-1, -1, C)
+                        x = torch.gather(x, 1, patch_mask)
+                return x
+
+            @classmethod
+            def embedder(cls, x, pos_embed, cls_token):
+                """
+                NB, original code used the pos embed from the divit rather than vit
+                (which we pull from our model) which we use here.
+
+                From timm vit:
+                self.pos_embed = nn.Parameter(torch.randn(1, embed_len, embed_dim) * .02)
+
+                From timm dvit:
+                self.pos_embed = nn.Parameter(torch.zeros(1,
+                                                         self.patch_embed.num_patches + self.num_prefix_tokens,
+                                                         self.embed_dim))
+
+                From repo:
+                self.pos_embed = nn.Parameter(torch.zeros(1, num_patches + 1, embed_dim))
+                """
+                x = torch.cat((cls_token.expand(x.shape[0], -1, -1), x), dim=1)
+                return x + pos_embed
+
+        def forward_features(self, x: torch.Tensor) -> torch.Tensor:
             """
-            NB, original code used the pos embed from the divit rather than vit
-            (which we pull from our model) which we use here.
+            This is a copy of the function in ArtViT.forward_features
+            except we also perform an equivalence assertion compared to the implementation
+            in https://github.com/MadryLab/smoothed-vit (see MadrylabImplementations class above)
 
-            From timm vit:
-            self.pos_embed = nn.Parameter(torch.randn(1, embed_len, embed_dim) * .02)
+            The forward pass of the ViT.
 
-            From timm dvit:
-            self.pos_embed = nn.Parameter(torch.zeros(1,
-                                                     self.patch_embed.num_patches + self.num_prefix_tokens,
-                                                     self.embed_dim))
-
-            From repo:
-            self.pos_embed = nn.Parameter(torch.zeros(1, num_patches + 1, embed_dim))
+            :param x: Input data.
+            :return: The input processed by the ViT backbone
             """
-            x = torch.cat((cls_token.expand(x.shape[0], -1, -1), x), dim=1)
-            return x + pos_embed
+            import copy
 
-    def forward_features(self, x: torch.Tensor) -> torch.Tensor:
-        """
-        This is a copy of the function in ArtViT.forward_features
-        except we also perform an equivalence assertion compared to the implementation
-        in https://github.com/MadryLab/smoothed-vit (see MadrylabImplementations class above)
+            ablated_input = False
+            if x.shape[1] == self.in_chans + 1:
+                ablated_input = True
 
-        The forward pass of the ViT.
+            if ablated_input:
+                x, ablation_mask = x[:, : self.in_chans], x[:, self.in_chans : self.in_chans + 1]
 
-        :param x: Input data.
-        :return: The input processed by the ViT backbone
-        """
-        import copy
+            x = self.patch_embed(x)
 
-        ablated_input = False
-        if x.shape[1] == self.in_chans + 1:
-            ablated_input = True
+            madry_embed = MadrylabImplementations.embedder(copy.copy(x), self.pos_embed, self.cls_token)
+            x = self._pos_embed(x)
+            assert torch.equal(madry_embed, x)
 
-        if ablated_input:
-            x, ablation_mask = x[:, : self.in_chans], x[:, self.in_chans : self.in_chans + 1]
+            # pass the x into the token dropping code
+            madry_dropped = MadrylabImplementations.token_dropper(copy.copy(x), ablation_mask)
 
-        x = self.patch_embed(x)
+            if self.to_drop_tokens and ablated_input:
+                ones = self.ablation_mask_embedder(ablation_mask)
+                to_drop = torch.sum(ones, dim=2)
+                indexes = torch.gt(torch.where(to_drop > 1, 1, 0), 0)
+                x = self.drop_tokens(x, indexes)
 
-        madry_embed = MadrylabImplementations.embedder(copy.copy(x), self.pos_embed, self.cls_token)
-        x = self._pos_embed(x)
-        assert torch.equal(madry_embed, x)
+            assert torch.equal(madry_dropped, x)
 
-        # pass the x into the token dropping code
-        madry_dropped = MadrylabImplementations.token_dropper(copy.copy(x), ablation_mask)
+            x = self.norm_pre(x)
+            x = self.blocks(x)
 
-        if self.to_drop_tokens and ablated_input:
-            ones = self.ablation_mask_embedder(ablation_mask)
-            to_drop = torch.sum(ones, dim=2)
-            indexes = torch.gt(torch.where(to_drop > 1, 1, 0), 0)
-            x = self.drop_tokens(x, indexes)
+            return self.norm(x)
 
-        assert torch.equal(madry_dropped, x)
+        # Replace the forward_features with the forward_features code with checks.
+        PyTorchVisionTransformer.forward_features = forward_features
 
-        x = self.norm_pre(x)
-        x = self.blocks(x)
+        art_model = PyTorchDeRandomizedSmoothing(
+            model="vit_small_patch16_224",
+            loss=torch.nn.CrossEntropyLoss(),
+            optimizer=torch.optim.SGD,
+            optimizer_params={"lr": 0.01},
+            input_shape=(3, 32, 32),
+            nb_classes=10,
+            ablation_size=4,
+            load_pretrained=False,
+            replace_last_layer=True,
+            verbose=False,
+        )
 
-        return self.norm(x)
+        cifar_data = fix_get_cifar10_data[0][:50]
+        cifar_labels = fix_get_cifar10_data[1][:50]
 
-    # Replace the forward_features with the forward_features code with checks.
-    PyTorchViT.forward_features = forward_features
-
-    art_model = PyTorchDeRandomizedSmoothing(
-        model="vit_small_patch16_224",
-        loss=torch.nn.CrossEntropyLoss(),
-        optimizer=torch.optim.SGD,
-        optimizer_params={"lr": 0.01},
-        input_shape=(3, 32, 32),
-        nb_classes=10,
-        ablation_size=4,
-        load_pretrained=False,
-        replace_last_layer=True,
-        verbose=False,
-    )
-
-    cifar_data = fix_get_cifar10_data[0][:50]
-    cifar_labels = fix_get_cifar10_data[1][:50]
-
-    scheduler = torch.optim.lr_scheduler.MultiStepLR(art_model.optimizer, milestones=[1], gamma=0.1)
-    art_model.fit(cifar_data, cifar_labels, nb_epochs=1, update_batchnorm=True, scheduler=scheduler, batch_size=128)
+        scheduler = torch.optim.lr_scheduler.MultiStepLR(art_model.optimizer, milestones=[1], gamma=0.1)
+        art_model.fit(cifar_data, cifar_labels, nb_epochs=1, update_batchnorm=True, scheduler=scheduler, batch_size=128)
+    except ARTTestException as e:
+        art_warning(e)

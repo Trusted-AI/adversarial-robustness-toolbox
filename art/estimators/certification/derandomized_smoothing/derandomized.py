@@ -24,7 +24,7 @@ This module implements (De)Randomized Smoothing defences from papers:
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-from abc import ABC
+from abc import ABC, abstractmethod
 import numpy as np
 
 
@@ -43,6 +43,7 @@ class DeRandomizedSmoothingMixin(ABC):
         """
         super().__init__(*args, **kwargs)  # type: ignore
 
+    @abstractmethod
     def _predict_classifier(self, x: np.ndarray, batch_size: int, training_mode: bool, **kwargs) -> np.ndarray:
         """
         Perform prediction for a batch of inputs.
@@ -54,6 +55,7 @@ class DeRandomizedSmoothingMixin(ABC):
         """
         raise NotImplementedError
 
+    @abstractmethod
     def predict(self, x: np.ndarray, batch_size: int = 128, training_mode: bool = False, **kwargs) -> np.ndarray:
         """
         Performs cumulative predictions over every ablation location

@@ -83,8 +83,11 @@ class ColumnAblatorPyTorch(torch.nn.Module, BaseAblator):
         :param channels_first: If the input is in channels first format. Currently required to be True.
         :param mode: If we are running the algorithm using a CNN or VIT.
         :param to_reshape: If the input requires reshaping.
+        :param ablation_mode: The type of ablation to perform.
         :param original_shape: Original shape of the input.
         :param output_shape: Input shape expected by the ViT. Usually means upscaling the input to 224 x 224.
+        :param algorithm: Either 'salman2021' or 'levine2020'.
+        :param device_type: Type of device on which the classifier is run, either `gpu` or `cpu`.
         """
         super().__init__()
 
@@ -256,6 +259,8 @@ class BlockAblatorPyTorch(torch.nn.Module, BaseAblator):
         :param to_reshape: If the input requires reshaping.
         :param original_shape: Original shape of the input.
         :param output_shape: Input shape expected by the ViT. Usually means upscaling the input to 224 x 224.
+        :param algorithm: Either 'salman2021' or 'levine2020'.
+        :param device_type: Type of device on which the classifier is run, either `gpu` or `cpu`.
         """
         super().__init__()
 

@@ -43,7 +43,6 @@ from tqdm import tqdm
 
 from art.estimators.classification.pytorch import PyTorchClassifier
 from art.estimators.certification.derandomized_smoothing.derandomized import DeRandomizedSmoothingMixin
-from art.estimators.certification.derandomized_smoothing.vision_transformers.pytorch import PyTorchSmoothedViT
 from art.utils import check_and_transform_label_format
 
 if TYPE_CHECKING:
@@ -58,7 +57,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class PyTorchDeRandomizedSmoothing(PyTorchSmoothedViT, DeRandomizedSmoothingMixin, PyTorchClassifier):
+class PyTorchDeRandomizedSmoothing(DeRandomizedSmoothingMixin, PyTorchClassifier):
     """
     Interface class for the two De-randomized smoothing approaches supported by ART for pytorch.
 
@@ -115,8 +114,7 @@ class PyTorchDeRandomizedSmoothing(PyTorchSmoothedViT, DeRandomizedSmoothingMixi
         :param load_pretrained: ViT Specific. If to load a pretrained model matching the ViT name.
                                 Will only affect the ViT if a string name is passed to model rather than a ViT directly.
         :param optimizer: The optimizer used to train the classifier.
-        :param ablation_type: Specific to Levine et al. The type of ablation to perform,
-                              must be either "column" or "block"
+        :param ablation_type: The type of ablation to perform. Either "column", "row", or "block"
         :param threshold: Specific to Levine et al. The minimum threshold to count a prediction.
         :param logits: Specific to Levine et al. If the model returns logits or normalized probabilities
         :param channels_first: Set channels first or last.
@@ -134,9 +132,6 @@ class PyTorchDeRandomizedSmoothing(PyTorchSmoothedViT, DeRandomizedSmoothingMixi
 
         import torch
 
-        logging.basicConfig()
-        logger.setLevel(logging.INFO)
-
         if not channels_first:
             raise ValueError("Channels must be set to first")
         logger.info("Running algorithm: %s", algorithm)
@@ -149,7 +144,9 @@ class PyTorchDeRandomizedSmoothing(PyTorchSmoothedViT, DeRandomizedSmoothingMixi
 
             if isinstance(model, (VisionTransformer, str)):
                 import timm
-                from art.estimators.certification.derandomized_smoothing.vision_transformers.vit import PyTorchViT
+                from art.estimators.certification.derandomized_smoothing.vision_transformers.vit import (
+                    PyTorchVisionTransformer,
+                )
 
                 if replace_last_layer is None:
                     raise ValueError("If using ViTs please specify if the last layer should be replaced")
@@ -158,7 +155,7 @@ class PyTorchDeRandomizedSmoothing(PyTorchSmoothedViT, DeRandomizedSmoothingMixi
                 tmp_func = timm.models.vision_transformer._create_vision_transformer
 
                 # overrride with ART's ViT creation function
-                timm.models.vision_transformer._create_vision_transformer = self.art_create_vision_transformer
+                timm.models.vision_transformer._create_vision_transformer = self.create_vision_transformer
                 if isinstance(model, str):
                     model = timm.create_model(
                         model, pretrained=load_pretrained, drop_tokens=drop_tokens, device_type=device_type
@@ -204,7 +201,7 @@ class PyTorchDeRandomizedSmoothing(PyTorchSmoothedViT, DeRandomizedSmoothingMixi
                         converted_optimizer.load_state_dict(opt_state_dict)
 
                 self.to_reshape = False
-                if not isinstance(model, PyTorchViT):
+                if not isinstance(model, PyTorchVisionTransformer):
                     raise ValueError("Vision transformer is not of PyTorchViT. Error occurred in PyTorchViT creation.")
 
                 if model.default_cfg["input_size"][0] != input_shape[0]:
@@ -307,7 +304,127 @@ class PyTorchDeRandomizedSmoothing(PyTorchSmoothedViT, DeRandomizedSmoothingMixi
                 mode=self.mode,
             )
         else:
-            raise ValueError(f"ablation_type of {ablation_type} not recognized. Must be either column or block")
+            raise ValueError(f"ablation_type of {ablation_type} not recognized. Must be either column, row, or block")
+
+    @classmethod
+    def get_models(cls, generate_from_null: bool = False) -> List[str]:
+        """
+        Return the supported model names to the user.
+
+        :param generate_from_null: If to re-check the creation of all the ViTs in timm from scratch.
+        :return: A list of compatible models
+        """
+        import timm
+        import torch
+
+        supported_models = [
+            "vit_base_patch8_224",
+            "vit_base_patch16_18x2_224",
+            "vit_base_patch16_224",
+            "vit_base_patch16_224_miil",
+            "vit_base_patch16_384",
+            "vit_base_patch16_clip_224",
+            "vit_base_patch16_clip_384",
+            "vit_base_patch16_gap_224",
+            "vit_base_patch16_plus_240",
+            "vit_base_patch16_rpn_224",
+            "vit_base_patch16_xp_224",
+            "vit_base_patch32_224",
+            "vit_base_patch32_384",
+            "vit_base_patch32_clip_224",
+            "vit_base_patch32_clip_384",
+            "vit_base_patch32_clip_448",
+            "vit_base_patch32_plus_256",
+            "vit_giant_patch14_224",
+            "vit_giant_patch14_clip_224",
+            "vit_gigantic_patch14_224",
+            "vit_gigantic_patch14_clip_224",
+            "vit_huge_patch14_224",
+            "vit_huge_patch14_clip_224",
+            "vit_huge_patch14_clip_336",
+            "vit_huge_patch14_xp_224",
+            "vit_large_patch14_224",
+            "vit_large_patch14_clip_224",
+            "vit_large_patch14_clip_336",
+            "vit_large_patch14_xp_224",
+            "vit_large_patch16_224",
+            "vit_large_patch16_384",
+            "vit_large_patch32_224",
+            "vit_large_patch32_384",
+            "vit_medium_patch16_gap_240",
+            "vit_medium_patch16_gap_256",
+            "vit_medium_patch16_gap_384",
+            "vit_small_patch16_18x2_224",
+            "vit_small_patch16_36x1_224",
+            "vit_small_patch16_224",
+            "vit_small_patch16_384",
+            "vit_small_patch32_224",
+            "vit_small_patch32_384",
+            "vit_tiny_patch16_224",
+            "vit_tiny_patch16_384",
+        ]
+
+        if not generate_from_null:
+            return supported_models
+
+        supported = []
+        unsupported = []
+
+        models = timm.list_models("vit_*")
+        pbar = tqdm(models)
+
+        # store in case not re-assigned in the model creation due to unsuccessful creation
+        tmp_func = timm.models.vision_transformer._create_vision_transformer  # pylint: disable=W0212
+
+        for model in pbar:
+            pbar.set_description(f"Testing {model} creation")
+            try:
+                _ = cls(
+                    model=model,
+                    loss=torch.nn.CrossEntropyLoss(),
+                    optimizer=torch.optim.SGD,
+                    optimizer_params={"lr": 0.01},
+                    input_shape=(3, 32, 32),
+                    nb_classes=10,
+                    ablation_size=4,
+                    load_pretrained=False,
+                    replace_last_layer=True,
+                    verbose=False,
+                )
+                supported.append(model)
+            except (TypeError, AttributeError):
+                unsupported.append(model)
+                timm.models.vision_transformer._create_vision_transformer = tmp_func  # pylint: disable=W0212
+
+        if supported != supported_models:
+            logger.warning(
+                "Difference between the generated and fixed model list. Although not necessarily "
+                "an error, this may point to the timm library being updated."
+            )
+
+        return supported
+
+    @staticmethod
+    def create_vision_transformer(variant: str, pretrained: bool = False, **kwargs) -> "PyTorchVisionTransformer":
+        """
+        Creates a vision transformer using PyTorchViT which controls the forward pass of the model
+
+        :param variant: The name of the vision transformer to load
+        :param pretrained: If to load pre-trained weights
+        :return: A ViT with the required methods needed for ART
+        """
+
+        from timm.models._builder import build_model_with_cfg
+        from timm.models.vision_transformer import checkpoint_filter_fn
+        from art.estimators.certification.derandomized_smoothing.vision_transformers.vit import PyTorchVisionTransformer
+
+        return build_model_with_cfg(
+            PyTorchVisionTransformer,
+            variant,
+            pretrained,
+            pretrained_filter_fn=checkpoint_filter_fn,
+            **kwargs,
+        )
 
     def fit(  # pylint: disable=W0221
         self,

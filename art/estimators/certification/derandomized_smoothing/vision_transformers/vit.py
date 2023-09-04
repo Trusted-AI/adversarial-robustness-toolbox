@@ -115,9 +115,9 @@ class PatchEmbed(torch.nn.Module):
         raise ValueError("Projection layer not yet created.")
 
 
-class PyTorchViT(VisionTransformer):
+class PyTorchVisionTransformer(VisionTransformer):
     """
-    Class to control the forward pass of the ViT.
+    Model-specific class to define the forward pass of the Vision Transformer (ViT) in PyTorch.
     """
 
     # Make as a class attribute to avoid being included in the
