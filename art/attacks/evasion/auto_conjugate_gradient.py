@@ -463,7 +463,9 @@ class AutoConjugateGradient(EvasionAttack):
 
                 # self.eta = np.full((self.batch_size, 1, 1, 1), 2 * self.eps_step).astype(ART_NUMPY_DTYPE)
                 _batch_size = x_k.shape[0]
-                eta = np.full((_batch_size, 1, 1, 1), self.eps_step).astype(ART_NUMPY_DTYPE)
+                eta = np.full((_batch_size,) + (1,) * len(self.estimator.input_shape), self.eps_step).astype(
+                    ART_NUMPY_DTYPE
+                )
                 self.count_condition_1 = np.zeros(shape=(_batch_size,))
                 gradk_1 = np.zeros_like(x_k)
                 cgradk_1 = np.zeros_like(x_k)
@@ -650,4 +652,4 @@ def get_beta(gradk, gradk_1, cgradk_1):
     betak = -(_gradk * delta_gradk).sum(axis=1) / (
         (_cgradk_1 * delta_gradk).sum(axis=1) + np.finfo(ART_NUMPY_DTYPE).eps
     )
-    return betak.reshape((_batch_size, 1, 1, 1))
+    return betak.reshape((_batch_size,) + (1,) * (len(gradk.shape) - 1))
