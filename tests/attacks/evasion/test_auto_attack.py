@@ -241,11 +241,30 @@ def test_generate_parallel(art_warning, fix_get_mnist_subset, image_dl_estimator
             in_parallel=True,
         )
 
+        attack_noparallel = AutoAttack(
+            estimator=classifier,
+            norm=norm,
+            eps=eps,
+            eps_step=eps_step,
+            attacks=attacks,
+            batch_size=batch_size,
+            estimator_orig=None,
+            targeted=False,
+            in_parallel=False,
+        )
+
         x_train_mnist_adv = attack.generate(x=x_train_mnist, y=y_train_mnist)
+        x_train_mnist_adv_nop = attack_noparallel.generate(x=x_train_mnist, y=y_train_mnist)
 
         assert np.mean(np.abs(x_train_mnist_adv - x_train_mnist)) == pytest.approx(0.0182, abs=0.105)
         assert np.max(np.abs(x_train_mnist_adv - x_train_mnist)) == pytest.approx(0.3, abs=0.05)
 
+
+        noparallel_perturbation = np.linalg.norm(x_train_mnist[[2]] - x_train_mnist_adv_nop[[2]])
+        parallel_perturbation = np.linalg.norm(x_train_mnist[[2]] - x_train_mnist_adv[[2]])
+
+        assert parallel_perturbation < noparallel_perturbation
+        
         # Then test with defined_attack_only=True
         attack = AutoAttack(
             estimator=classifier,

@@ -18,6 +18,7 @@ numba~=0.56.4
 opencv-python
 sortedcontainers==2.4.0
 h5py==3.8.0
+multiprocess>=0.70.15
 
 # frameworks
 
