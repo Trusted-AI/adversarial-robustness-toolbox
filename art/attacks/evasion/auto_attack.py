@@ -24,7 +24,6 @@ import logging
 from copy import deepcopy
 from typing import TYPE_CHECKING, List, Optional, Tuple, Union
 
-import multiprocess
 import numpy as np
 
 from art.attacks.attack import EvasionAttack
@@ -162,6 +161,8 @@ class AutoAttack(EvasionAttack):
         :type mask: `np.ndarray`
         :return: An array holding the adversarial examples.
         """
+        import multiprocess
+
         x_adv = x.astype(ART_NUMPY_DTYPE)
         if y is not None:
             y = check_and_transform_label_format(y, nb_classes=self.estimator.nb_classes)

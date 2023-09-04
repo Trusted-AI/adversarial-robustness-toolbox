@@ -223,8 +223,27 @@ def test_generate_parallel(art_warning, fix_get_mnist_subset, image_dl_estimator
                 verbose=False,
             )
         )
-        attacks.append(DeepFool(classifier=classifier, max_iter=100, epsilon=1e-6, nb_grads=3, batch_size=batch_size, verbose=False,))
-        attacks.append(SquareAttack(estimator=classifier, norm=norm, max_iter=5000, eps=eps, p_init=0.8, nb_restarts=5, verbose=False,))
+        attacks.append(
+            DeepFool(
+                classifier=classifier,
+                max_iter=100,
+                epsilon=1e-6,
+                nb_grads=3,
+                batch_size=batch_size,
+                verbose=False,
+            )
+        )
+        attacks.append(
+            SquareAttack(
+                estimator=classifier,
+                norm=norm,
+                max_iter=5000,
+                eps=eps,
+                p_init=0.8,
+                nb_restarts=5,
+                verbose=False,
+            )
+        )
 
         (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
 
@@ -259,12 +278,11 @@ def test_generate_parallel(art_warning, fix_get_mnist_subset, image_dl_estimator
         assert np.mean(np.abs(x_train_mnist_adv - x_train_mnist)) == pytest.approx(0.0182, abs=0.105)
         assert np.max(np.abs(x_train_mnist_adv - x_train_mnist)) == pytest.approx(0.3, abs=0.05)
 
-
         noparallel_perturbation = np.linalg.norm(x_train_mnist[[2]] - x_train_mnist_adv_nop[[2]])
         parallel_perturbation = np.linalg.norm(x_train_mnist[[2]] - x_train_mnist_adv[[2]])
 
         assert parallel_perturbation < noparallel_perturbation
-        
+
         # Then test with defined_attack_only=True
         attack = AutoAttack(
             estimator=classifier,

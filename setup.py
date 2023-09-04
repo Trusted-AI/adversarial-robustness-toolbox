@@ -112,6 +112,7 @@ setup(
             "requests",
             "sortedcontainers",
             "numba",
+            "multiprocess",
         ],
     },
     classifiers=[
