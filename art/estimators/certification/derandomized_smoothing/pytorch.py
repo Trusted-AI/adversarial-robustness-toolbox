@@ -50,6 +50,7 @@ if TYPE_CHECKING:
     import torch
     import torchvision
     from timm.models.vision_transformer import VisionTransformer
+    from art.estimators.certification.derandomized_smoothing.vision_transformers.vit import PyTorchVisionTransformer
     from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
     from art.defences.preprocessor import Preprocessor
     from art.defences.postprocessor import Postprocessor
