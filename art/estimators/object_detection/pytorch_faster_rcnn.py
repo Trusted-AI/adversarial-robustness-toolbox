@@ -45,7 +45,7 @@ class PyTorchFasterRCNN(PyTorchObjectDetector):
     def __init__(
         self,
         model: Optional["torchvision.models.detection.FasterRCNN"] = None,
-        input_shape: Tuple[int, ...] = (3, 416, 416),
+        input_shape: Tuple[int, ...] = (-1, -1, -1),
         optimizer: Optional["torch.optim.Optimizer"] = None,
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         channels_first: Optional[bool] = True,
