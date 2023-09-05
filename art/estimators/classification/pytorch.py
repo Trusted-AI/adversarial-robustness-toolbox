@@ -206,6 +206,19 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         return self._model._model  # pylint: disable=W0212
 
     @property
+    def named_parameters():
+        return self._model.named_parameters()
+
+    @property
+    def parameters(self) -> List["torch.nn.Parameter"]:
+        """
+        Get the model parameters.
+
+        :return: The model parameters.
+        """
+        return list(self._model.parameters())
+        
+    @property
     def input_shape(self) -> Tuple[int, ...]:
         """
         Return the shape of one input sample.
