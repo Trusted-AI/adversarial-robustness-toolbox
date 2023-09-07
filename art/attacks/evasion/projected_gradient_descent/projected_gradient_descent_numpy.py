@@ -55,7 +55,7 @@ class ProjectedGradientDescentCommon(FastGradientMethod):
     | Paper link: https://arxiv.org/abs/1706.06083
     """
 
-    attack_params = FastGradientMethod.attack_params + ["max_iter", "random_eps", "verbose"]
+    attack_params = FastGradientMethod.attack_params + [ "decay", "max_iter", "random_eps", "verbose"]
     _estimator_requirements = (BaseEstimator, LossGradientsMixin)
 
     def __init__(
