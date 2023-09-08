@@ -247,6 +247,7 @@ class AutoAttack(EvasionAttack):
         # Check and update successful examples
         rel_acc = 1e-4
         order = np.inf if self.norm == "inf" else self.norm
+        assert isinstance(order, (int, float))
         norm_is_smaller_eps = (1 - rel_acc) * np.linalg.norm(
             (x_robust_adv - x_robust).reshape((x_robust_adv.shape[0], -1)), axis=1, ord=order
         ) <= self.eps
