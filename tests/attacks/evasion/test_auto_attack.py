@@ -257,7 +257,7 @@ def test_generate_parallel(art_warning, fix_get_mnist_subset, image_dl_estimator
             batch_size=batch_size,
             estimator_orig=None,
             targeted=False,
-            in_parallel=True,
+            parallel=True,
         )
 
         attack_noparallel = AutoAttack(
@@ -269,7 +269,7 @@ def test_generate_parallel(art_warning, fix_get_mnist_subset, image_dl_estimator
             batch_size=batch_size,
             estimator_orig=None,
             targeted=False,
-            in_parallel=False,
+            parallel=False,
         )
 
         x_train_mnist_adv = attack.generate(x=x_train_mnist, y=y_train_mnist)
@@ -293,7 +293,7 @@ def test_generate_parallel(art_warning, fix_get_mnist_subset, image_dl_estimator
             batch_size=batch_size,
             estimator_orig=None,
             targeted=True,
-            in_parallel=True,
+            parallel=True,
         )
 
         x_train_mnist_adv = attack.generate(x=x_train_mnist, y=y_train_mnist)

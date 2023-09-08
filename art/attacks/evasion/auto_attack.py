@@ -56,6 +56,7 @@ class AutoAttack(EvasionAttack):
         "batch_size",
         "estimator_orig",
         "targeted",
+        "parallel",
     ]
 
     _estimator_requirements = (BaseEstimator, ClassifierMixin)
@@ -70,7 +71,7 @@ class AutoAttack(EvasionAttack):
         batch_size: int = 32,
         estimator_orig: Optional["CLASSIFIER_TYPE"] = None,
         targeted: bool = False,
-        in_parallel: bool = False,
+        parallel: bool = False,
     ):
         """
         Create a :class:`.AutoAttack` instance.
@@ -143,7 +144,7 @@ class AutoAttack(EvasionAttack):
             self.estimator_orig = estimator
 
         self._targeted = targeted
-        self.in_parallel = in_parallel
+        self.parallel = parallel
         self._check_params()
 
     def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
@@ -185,7 +186,7 @@ class AutoAttack(EvasionAttack):
             if attack.targeted:
                 attack.set_params(targeted=False)
 
-            if self.in_parallel:
+            if self.parallel:
                 args.append(
                     (
                         deepcopy(x_adv),
@@ -232,7 +233,7 @@ class AutoAttack(EvasionAttack):
                             targeted_labels[:, i], nb_classes=self.estimator.nb_classes
                         )
 
-                        if self.in_parallel:
+                        if self.parallel:
                             args.append(
                                 (
                                     deepcopy(x_adv),
@@ -258,7 +259,7 @@ class AutoAttack(EvasionAttack):
                 except ValueError as error:
                     logger.warning("Error completing attack: %s}", str(error))
 
-        if self.in_parallel:
+        if self.parallel:
             with multiprocess.get_context("spawn").Pool() as pool:
                 # Results come back in the order that they were issued
                 results = pool.starmap(run_attack, args)
@@ -303,6 +304,9 @@ def run_attack(
     :param y: An array of the labels.
     :param sample_is_robust: Store the initial robustness of examples.
     :param attack: Evasion attack to run.
+    :param estimator_orig: Original estimator to be attacked by adversarial examples.
+    :param norm: The norm of the adversarial perturbation. Possible values: "inf", np.inf, 1 or 2.
+    :param eps: Maximum perturbation that the attacker can introduce.
     :return: An array holding the adversarial examples.
     """
     # Attack only correctly classified samples
