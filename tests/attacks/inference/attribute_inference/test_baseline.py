@@ -78,8 +78,11 @@ def test_black_box_baseline(art_warning, get_iris_dataset, model_type):
             baseline_inferred_test
         )
 
-        assert 0.5 <= baseline_train_acc
-        assert 0.5 <= baseline_test_acc
+        expected_train_acc = {"nn": 0.58, "rf": 0.98, "gb": 0.98, "lr":0.77, "dt": 0.98, "knn": 0.87, "svm": 0.83}
+        expected_test_acc = {"nn": 0.62, "rf": 0.86, "gb": 0.82, "lr":0.86, "dt": 0.84, "knn": 0.84, "svm": 0.93}
+
+        assert expected_train_acc[model_type] <= baseline_train_acc
+        assert expected_test_acc[model_type] <= baseline_test_acc
 
     except ARTTestException as e:
         art_warning(e)
@@ -172,8 +175,11 @@ def test_black_box_baseline_slice(art_warning, get_iris_dataset, model_type):
             baseline_inferred_test
         )
 
-        assert 0.5 <= baseline_train_acc
-        assert 0.5 <= baseline_test_acc
+        expected_train_acc = {"nn": 0.58, "rf": 0.98, "gb": 0.98, "lr":0.77, "dt": 0.98, "knn": 0.87, "svm": 0.83}
+        expected_test_acc = {"nn": 0.62, "rf": 0.86, "gb": 0.82, "lr":0.86, "dt": 0.8, "knn": 0.84, "svm": 0.93}
+
+        assert expected_train_acc[model_type] <= baseline_train_acc
+        assert expected_test_acc[model_type] <= baseline_test_acc
 
     except ARTTestException as e:
         art_warning(e)
@@ -221,8 +227,11 @@ def test_black_box_baseline_no_values(art_warning, get_iris_dataset, model_type)
             baseline_inferred_test
         )
 
-        assert 0.5 <= baseline_train_acc
-        assert 0.5 <= baseline_test_acc
+        expected_train_acc = {"nn": 0.58, "rf": 0.98, "gb": 0.98, "lr":0.77, "dt": 0.98, "knn": 0.87, "svm": 0.83}
+        expected_test_acc = {"nn": 0.62, "rf": 0.88, "gb": 0.82, "lr":0.86, "dt": 0.8, "knn": 0.84, "svm": 0.93}
+
+        assert expected_train_acc[model_type] <= baseline_train_acc
+        assert expected_test_acc[model_type] <= baseline_test_acc
 
     except ARTTestException as e:
         art_warning(e)
@@ -317,8 +326,11 @@ def test_black_box_baseline_encoder(art_warning, get_iris_dataset, model_type):
             baseline_inferred_test
         )
 
-        assert 0.5 <= baseline_train_acc
-        assert 0.5 <= baseline_test_acc
+        expected_train_acc = {"nn": 0.58, "rf": 0.96, "gb": 0.96, "lr":0.71, "dt": 0.96, "knn": 0.89, "svm": 0.81}
+        expected_test_acc = {"nn": 0.62, "rf": 0.8, "gb": 0.77, "lr":0.75, "dt": 0.82, "knn": 0.84, "svm": 0.88}
+
+        assert expected_train_acc[model_type] <= baseline_train_acc
+        assert expected_test_acc[model_type] <= baseline_test_acc
 
     except ARTTestException as e:
         art_warning(e)
@@ -404,8 +416,11 @@ def test_black_box_baseline_no_encoder(art_warning, get_iris_dataset, model_type
             baseline_inferred_test
         )
 
-        assert 0.5 <= baseline_train_acc
-        assert 0.5 <= baseline_test_acc
+        expected_train_acc = {"nn": 0.58, "rf": 0.96, "gb": 0.96, "lr":0.71, "dt": 0.96, "knn": 0.89, "svm": 0.81}
+        expected_test_acc = {"nn": 0.62, "rf": 0.8, "gb": 0.77, "lr":0.75, "dt": 0.82, "knn": 0.84, "svm": 0.88}
+
+        assert expected_train_acc[model_type] <= baseline_train_acc
+        assert expected_test_acc[model_type] <= baseline_test_acc
 
     except ARTTestException as e:
         art_warning(e)
@@ -494,8 +509,11 @@ def test_black_box_baseline_no_encoder_after_feature(art_warning, get_iris_datas
             baseline_inferred_test
         )
 
-        assert 0.5 <= baseline_train_acc
-        assert 0.5 <= baseline_test_acc
+        expected_train_acc = {"nn": 0.58, "rf": 0.94, "gb": 0.95, "lr":0.8, "dt": 0.94, "knn": 0.87, "svm": 0.8}
+        expected_test_acc = {"nn": 0.62, "rf": 0.84, "gb": 0.84, "lr":0.86, "dt": 0.82, "knn": 0.86, "svm": 0.88}
+
+        assert expected_train_acc[model_type] <= baseline_train_acc
+        assert expected_test_acc[model_type] <= baseline_test_acc
 
     except ARTTestException as e:
         art_warning(e)
@@ -575,17 +593,22 @@ def test_black_box_baseline_no_encoder_after_feature_slice(art_warning, get_iris
         # train attack model
         baseline_attack.fit(x_train)
         # infer attacked feature
-        baseline_inferred_train = baseline_attack.infer(x_train_for_attack)
-        baseline_inferred_test = baseline_attack.infer(x_test_for_attack)
+        baseline_inferred_train = np.argmax(baseline_attack.infer(x_train_for_attack), axis=1)
+        baseline_inferred_test = np.argmax(baseline_attack.infer(x_test_for_attack), axis=1)
+        x_train_feature = np.argmax(x_train_feature, axis=1)
+        x_test_feature = np.argmax(x_test_feature, axis=1)
         # check accuracy
         baseline_train_acc = np.sum(baseline_inferred_train == x_train_feature) / len(baseline_inferred_train)
         baseline_test_acc = np.sum(baseline_inferred_test == x_test_feature) / len(baseline_inferred_test)
 
-        assert 0.0 <= baseline_train_acc
-        assert 0.0 <= baseline_test_acc
+        expected_train_acc = {"nn": 0.96, "rf": 0.99, "gb": 0.99, "lr":0.96, "dt": 0.98, "knn": 0.97, "svm": 0.96}
+        expected_test_acc = {"nn": 0.99, "rf": 0.97, "gb": 0.97, "lr":0.99, "dt": 0.97, "knn": 0.99, "svm": 0.99}
+
+        assert expected_train_acc[model_type] <= baseline_train_acc
+        assert expected_test_acc[model_type] <= baseline_test_acc
 
     except ARTTestException as e:
-        art_warning(e)
+            art_warning(e)
 
 
 @pytest.mark.skip_framework("dl_frameworks")
@@ -670,8 +693,11 @@ def test_black_box_baseline_no_encoder_remove_attack_feature(art_warning, get_ir
             baseline_inferred_test
         )
 
-        assert 0.5 <= baseline_train_acc
-        assert 0.5 <= baseline_test_acc
+        expected_train_acc = {"nn": 0.58, "rf": 0.96, "gb": 0.96, "lr":0.71, "dt": 0.96, "knn": 0.89, "svm": 0.81}
+        expected_test_acc = {"nn": 0.62, "rf": 0.8, "gb": 0.77, "lr":0.75, "dt": 0.82, "knn": 0.84, "svm": 0.88}
+
+        assert expected_train_acc[model_type] <= baseline_train_acc
+        assert expected_test_acc[model_type] <= baseline_test_acc
 
     except ARTTestException as e:
         art_warning(e)

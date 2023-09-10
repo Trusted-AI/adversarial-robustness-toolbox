@@ -38,7 +38,6 @@ num_classes_iris = 3
 num_classes_mnist = 10
 
 
-@pytest.mark.skip_framework("scikitlearn")
 def test_black_box_image(art_warning, get_default_mnist_subset, image_dl_estimator_for_attack):
     try:
         classifier = image_dl_estimator_for_attack(MembershipInferenceBlackBox)
