@@ -52,6 +52,8 @@ jobs:
         run: pytest --cov-report=xml --cov=art --cov-append -q -vv tests/estimators/object_detection/test_pytorch_faster_rcnn.py --framework=pytorch --durations=0
       - name: Run Test Action - test_pytorch_detection_transformer
         run: pytest --cov-report=xml --cov=art --cov-append -q -vv tests/estimators/object_detection/test_pytorch_detection_transformer.py --framework=pytorch --durations=0
+      - name: Run Test Action - test_pytorch_object_seeker_faster_rcnn
+        run: pytest --cov-report=xml --cov=art --cov-append -q -vv tests/estimators/object_detection/test_object_seeker_faster_rcnn.py --framework=pytorch --durations=0
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
         with:
