@@ -65,6 +65,9 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
         input_type: str = "prediction",
         attack_model_type: str = "nn",
         attack_model: Optional[Any] = None,
+        nn_model_epochs: int = 100,
+        nn_model_batch_size: int = 100,
+        nn_model_learning_rate: float = 0.0001,
     ):
         """
         Create a MembershipInferenceBlackBox attack instance.
@@ -83,12 +86,18 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
                            `prediction`. Predictions can be either probabilities or logits, depending on the return type
                            of the model. If the model is a regressor, only `loss` can be used.
         :param attack_model: The attack model to train, optional. If none is provided, a default model will be created.
+        :param nn_model_epochs: the number of epochs to use when training a nn attack model
+        :param nn_model_batch_size: the batch size to use when training a nn attack model
+        :param nn_model_learning_rate: the learning rate to use when training a nn attack model
         """
 
         super().__init__(estimator=estimator)
         self.input_type = input_type
         self.attack_model_type = attack_model_type
         self.attack_model = attack_model
+        self.epochs = nn_model_epochs
+        self.batch_size = nn_model_batch_size
+        self.learning_rate = nn_model_learning_rate
 
         self._regressor_model = RegressorMixin in type(self.estimator).__mro__
 
@@ -159,9 +168,6 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
                     else:
                         num_classes = estimator.nb_classes  # type: ignore
                         self.attack_model = MembershipInferenceAttackModel(num_classes, num_features=1)
-                self.epochs = 100
-                self.batch_size = 100
-                self.learning_rate = 0.0001
             elif self.attack_model_type == "rf":
                 self.attack_model = RandomForestClassifier()
             elif self.attack_model_type == "gb":

@@ -82,6 +82,9 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
         prediction_normal_factor: Optional[float] = 1,
         non_numerical_features: Optional[List[int]] = None,
         encoder: Optional[Union[OrdinalEncoder, OneHotEncoder, ColumnTransformer]] = None,
+        nn_model_epochs: int = 100,
+        nn_model_batch_size: int = 100,
+        nn_model_learning_rate: float = 0.0001,
     ):
         """
         Create an AttributeInferenceBlackBox attack instance.
@@ -113,6 +116,9 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
                                        and an encoder is not supplied.
         :param encoder: An already fit encoder that can be applied to the model's input features without the attacked
                         feature (i.e., should be fit for n-1 features).
+        :param nn_model_epochs: the number of epochs to use when training a nn attack model
+        :param nn_model_batch_size: the batch size to use when training a nn attack model
+        :param nn_model_learning_rate: the learning rate to use when training a nn attack model
         """
         super().__init__(estimator=estimator, attack_feature=attack_feature)
 
@@ -124,9 +130,9 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
         self.attack_model: Optional[Any] = None
         self.prediction_normal_factor = prediction_normal_factor
         self.scale_range = scale_range
-        self.epochs = 100
-        self.batch_size = 100
-        self.learning_rate = 0.0001
+        self.epochs = nn_model_epochs
+        self.batch_size = nn_model_batch_size
+        self.learning_rate = nn_model_learning_rate
 
         self._check_params()
 
