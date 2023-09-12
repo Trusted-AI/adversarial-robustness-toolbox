@@ -251,7 +251,7 @@ def test_pytorch_training(art_warning, fix_get_mnist_data, fix_get_cifar10_data)
         gt_preds = np.load(
             os.path.join(
                 os.path.dirname(os.path.dirname(__file__)),
-                "certification/smooth_vit/smooth_vit_results/cumulative_predictions.npy",
+                "../../utils/resources/models/certification/smooth_vit/cumulative_predictions.npy",
             )
         )
 
@@ -338,7 +338,7 @@ def test_end_to_end_equivalence(art_warning, fix_get_mnist_data, fix_get_cifar10
             madry_preds = torch.load(
                 os.path.join(
                     os.path.dirname(os.path.dirname(__file__)),
-                    "certification/smooth_vit/smooth_vit_results/madry_preds_column.pt",
+                    "../../utils/resources/models/certification/smooth_vit/madry_preds_column.pt",
                 )
             )
             art_preds = art_model.model(ablated)
@@ -357,7 +357,7 @@ def test_end_to_end_equivalence(art_warning, fix_get_mnist_data, fix_get_cifar10
             madry_preds = torch.load(
                 os.path.join(
                     os.path.dirname(os.path.dirname(__file__)),
-                    "certification/smooth_vit/smooth_vit_results/madry_preds_block.pt",
+                    "../../utils/resources/models/certification/smooth_vit/madry_preds_block.pt",
                 )
             )
             art_preds = art_model.model(ablated)
@@ -454,7 +454,7 @@ def test_certification_equivalence(art_warning, fix_get_mnist_data, fix_get_cifa
 def test_equivalence(art_warning, fix_get_cifar10_data):
     import torch
     from art.estimators.certification.derandomized_smoothing import PyTorchDeRandomizedSmoothing
-    from art.estimators.certification.derandomized_smoothing.vision_transformers.vit import PyTorchVisionTransformer
+    from art.estimators.certification.derandomized_smoothing.vision_transformers.pytorch import PyTorchVisionTransformer
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 

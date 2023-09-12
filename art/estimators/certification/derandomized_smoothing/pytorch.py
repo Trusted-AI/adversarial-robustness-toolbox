@@ -50,7 +50,7 @@ if TYPE_CHECKING:
     import torch
     import torchvision
     from timm.models.vision_transformer import VisionTransformer
-    from art.estimators.certification.derandomized_smoothing.vision_transformers.vit import PyTorchVisionTransformer
+    from art.estimators.certification.derandomized_smoothing.vision_transformers.pytorch import PyTorchVisionTransformer
     from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
     from art.defences.preprocessor import Preprocessor
     from art.defences.postprocessor import Postprocessor
@@ -145,7 +145,7 @@ class PyTorchDeRandomizedSmoothing(DeRandomizedSmoothingMixin, PyTorchClassifier
 
             if isinstance(model, (VisionTransformer, str)):
                 import timm
-                from art.estimators.certification.derandomized_smoothing.vision_transformers.vit import (
+                from art.estimators.certification.derandomized_smoothing.vision_transformers.pytorch import (
                     PyTorchVisionTransformer,
                 )
 
@@ -417,7 +417,9 @@ class PyTorchDeRandomizedSmoothing(DeRandomizedSmoothingMixin, PyTorchClassifier
 
         from timm.models._builder import build_model_with_cfg
         from timm.models.vision_transformer import checkpoint_filter_fn
-        from art.estimators.certification.derandomized_smoothing.vision_transformers.vit import PyTorchVisionTransformer
+        from art.estimators.certification.derandomized_smoothing.vision_transformers.pytorch import (
+            PyTorchVisionTransformer,
+        )
 
         return build_model_with_cfg(
             PyTorchVisionTransformer,
