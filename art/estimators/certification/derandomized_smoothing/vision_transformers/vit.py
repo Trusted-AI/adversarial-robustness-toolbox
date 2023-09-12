@@ -126,7 +126,7 @@ class PyTorchVisionTransformer(VisionTransformer):
 
     def __init__(self, **kwargs):
         """
-        Create a PyTorchViT instance
+        Create a PyTorchVisionTransformer instance
 
         :param kwargs: keyword arguments required to create the mask embedder and the vision transformer class
         """

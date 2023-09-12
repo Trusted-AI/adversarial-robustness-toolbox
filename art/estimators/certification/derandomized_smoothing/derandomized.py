@@ -16,9 +16,10 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements (De)Randomized Smoothing defences from papers:
+This module implements (De)Randomized Smoothing certifications against adversarial patches.
 
 | Paper link: https://arxiv.org/abs/2110.07719
+
 | Paper link: https://arxiv.org/abs/2002.10733
 """
 
