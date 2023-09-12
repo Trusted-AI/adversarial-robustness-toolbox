@@ -79,8 +79,8 @@ def test_true_label_baseline(art_warning, get_iris_dataset, model_type):
             baseline_inferred_test
         )
 
-        expected_train_acc = {"nn": 0.81, "rf": 0.98, "gb": 0.98, "lr":0.81, "dt": 0.98, "knn": 0.85, "svm": 0.81}
-        expected_test_acc = {"nn": 0.88, "rf": 0.86, "gb": 0.8, "lr":0.88, "dt": 0.84, "knn": 0.82, "svm": 0.88}
+        expected_train_acc = {"nn": 0.81, "rf": 0.98, "gb": 0.98, "lr": 0.81, "dt": 0.98, "knn": 0.85, "svm": 0.81}
+        expected_test_acc = {"nn": 0.88, "rf": 0.86, "gb": 0.8, "lr": 0.88, "dt": 0.84, "knn": 0.82, "svm": 0.88}
 
         assert expected_train_acc[model_type] <= baseline_train_acc
         assert expected_test_acc[model_type] <= baseline_test_acc
@@ -176,8 +176,8 @@ def test_true_label_baseline_column(art_warning, get_iris_dataset, model_type):
             baseline_inferred_test
         )
 
-        expected_train_acc = {"nn": 0.81, "rf": 0.98, "gb": 0.98, "lr":0.81, "dt": 0.98, "knn": 0.87, "svm": 0.81}
-        expected_test_acc = {"nn": 0.88, "rf": 0.8, "gb": 0.82, "lr":0.88, "dt": 0.82, "knn": 0.84, "svm": 0.88}
+        expected_train_acc = {"nn": 0.81, "rf": 0.98, "gb": 0.98, "lr": 0.81, "dt": 0.98, "knn": 0.87, "svm": 0.81}
+        expected_test_acc = {"nn": 0.88, "rf": 0.8, "gb": 0.82, "lr": 0.88, "dt": 0.82, "knn": 0.84, "svm": 0.88}
 
         assert expected_train_acc[model_type] <= baseline_train_acc
         assert expected_test_acc[model_type] <= baseline_test_acc
@@ -230,8 +230,8 @@ def test_true_label_baseline_no_values(art_warning, get_iris_dataset, model_type
             baseline_inferred_test
         )
 
-        expected_train_acc = {"nn": 0.81, "rf": 0.98, "gb": 0.98, "lr":0.81, "dt": 0.98, "knn": 0.85, "svm": 0.81}
-        expected_test_acc = {"nn": 0.88, "rf": 0.88, "gb": 0.82, "lr":0.88, "dt": 0.8, "knn": 0.82, "svm": 0.88}
+        expected_train_acc = {"nn": 0.81, "rf": 0.98, "gb": 0.98, "lr": 0.81, "dt": 0.98, "knn": 0.85, "svm": 0.81}
+        expected_test_acc = {"nn": 0.88, "rf": 0.88, "gb": 0.82, "lr": 0.88, "dt": 0.8, "knn": 0.82, "svm": 0.88}
 
         assert expected_train_acc[model_type] <= baseline_train_acc
         assert expected_test_acc[model_type] <= baseline_test_acc
@@ -323,8 +323,8 @@ def test_true_label_baseline_regression(art_warning, get_diabetes_dataset, model
             baseline_inferred_test
         )
 
-        expected_train_acc = {"nn": 0.45, "rf": 0.99, "gb": 0.99, "lr":0.68, "dt": 0.99, "knn": 0.69, "svm": 0.54}
-        expected_test_acc = {"nn": 0.5, "rf": 0.75, "gb": 0.72, "lr":0.73, "dt": 0.63, "knn": 0.54, "svm": 0.5}
+        expected_train_acc = {"nn": 0.45, "rf": 0.99, "gb": 0.99, "lr": 0.68, "dt": 0.99, "knn": 0.69, "svm": 0.54}
+        expected_test_acc = {"nn": 0.5, "rf": 0.75, "gb": 0.72, "lr": 0.73, "dt": 0.63, "knn": 0.54, "svm": 0.5}
 
         assert expected_train_acc[model_type] <= baseline_train_acc
         assert expected_test_acc[model_type] <= baseline_test_acc
@@ -422,8 +422,8 @@ def test_black_box_baseline_encoder(art_warning, get_iris_dataset, model_type):
             baseline_inferred_test
         )
 
-        expected_train_acc = {"nn": 0.81, "rf": 0.96, "gb": 0.96, "lr":0.81, "dt": 0.96, "knn": 0.9, "svm": 0.81}
-        expected_test_acc = {"nn": 0.88, "rf": 0.77, "gb": 0.77, "lr":0.88, "dt": 0.84, "knn": 0.84, "svm": 0.88}
+        expected_train_acc = {"nn": 0.81, "rf": 0.96, "gb": 0.96, "lr": 0.81, "dt": 0.96, "knn": 0.9, "svm": 0.81}
+        expected_test_acc = {"nn": 0.88, "rf": 0.77, "gb": 0.77, "lr": 0.88, "dt": 0.84, "knn": 0.84, "svm": 0.88}
 
         assert expected_train_acc[model_type] <= baseline_train_acc
         assert expected_test_acc[model_type] <= baseline_test_acc
@@ -512,8 +512,8 @@ def test_black_box_baseline_no_encoder(art_warning, get_iris_dataset, model_type
             baseline_inferred_test
         )
 
-        expected_train_acc = {"nn": 0.81, "rf": 0.96, "gb": 0.96, "lr":0.81, "dt": 0.96, "knn": 0.9, "svm": 0.81}
-        expected_test_acc = {"nn": 0.88, "rf": 0.84, "gb": 0.77, "lr":0.88, "dt": 0.82, "knn": 0.84, "svm": 0.88}
+        expected_train_acc = {"nn": 0.81, "rf": 0.96, "gb": 0.96, "lr": 0.81, "dt": 0.96, "knn": 0.9, "svm": 0.81}
+        expected_test_acc = {"nn": 0.88, "rf": 0.84, "gb": 0.77, "lr": 0.88, "dt": 0.82, "knn": 0.84, "svm": 0.88}
 
         assert expected_train_acc[model_type] <= baseline_train_acc
         assert expected_test_acc[model_type] <= baseline_test_acc
@@ -605,8 +605,8 @@ def test_black_box_baseline_no_encoder_after_feature(art_warning, get_iris_datas
             baseline_inferred_test
         )
 
-        expected_train_acc = {"nn": 0.81, "rf": 0.95, "gb": 0.95, "lr":0.81, "dt": 0.94, "knn": 0.87, "svm": 0.81}
-        expected_test_acc = {"nn": 0.88, "rf": 0.82, "gb": 0.8, "lr":0.88, "dt": 0.82, "knn": 0.86, "svm": 0.88}
+        expected_train_acc = {"nn": 0.81, "rf": 0.95, "gb": 0.95, "lr": 0.81, "dt": 0.94, "knn": 0.87, "svm": 0.81}
+        expected_test_acc = {"nn": 0.88, "rf": 0.82, "gb": 0.8, "lr": 0.88, "dt": 0.82, "knn": 0.86, "svm": 0.88}
 
         assert expected_train_acc[model_type] <= baseline_train_acc
         assert expected_test_acc[model_type] <= baseline_test_acc
@@ -697,8 +697,8 @@ def test_black_box_baseline_no_encoder_after_feature_slice(art_warning, get_iris
         baseline_train_acc = np.sum(baseline_inferred_train == x_train_feature) / len(baseline_inferred_train)
         baseline_test_acc = np.sum(baseline_inferred_test == x_test_feature) / len(baseline_inferred_test)
 
-        expected_train_acc = {"nn": 0.81, "rf": 0.98, "gb": 0.98, "lr":0.81, "dt": 0.98, "knn": 0.85, "svm": 0.81}
-        expected_test_acc = {"nn": 0.88, "rf": 0.86, "gb": 0.8, "lr":0.88, "dt": 0.84, "knn": 0.82, "svm": 0.88}
+        expected_train_acc = {"nn": 0.81, "rf": 0.98, "gb": 0.98, "lr": 0.81, "dt": 0.98, "knn": 0.85, "svm": 0.81}
+        expected_test_acc = {"nn": 0.88, "rf": 0.86, "gb": 0.8, "lr": 0.88, "dt": 0.84, "knn": 0.82, "svm": 0.88}
 
         assert expected_train_acc[model_type] <= baseline_train_acc
         assert expected_test_acc[model_type] <= baseline_test_acc
@@ -789,8 +789,8 @@ def test_black_box_baseline_no_encoder_remove_attack_feature(art_warning, get_ir
             baseline_inferred_test
         )
 
-        expected_train_acc = {"nn": 0.81, "rf": 0.96, "gb": 0.96, "lr":0.81, "dt": 0.96, "knn": 0.9, "svm": 0.81}
-        expected_test_acc = {"nn": 0.88, "rf": 0.82, "gb": 0.77, "lr":0.88, "dt": 0.82, "knn": 0.84, "svm": 0.88}
+        expected_train_acc = {"nn": 0.81, "rf": 0.96, "gb": 0.96, "lr": 0.81, "dt": 0.96, "knn": 0.9, "svm": 0.81}
+        expected_test_acc = {"nn": 0.88, "rf": 0.82, "gb": 0.77, "lr": 0.88, "dt": 0.82, "knn": 0.84, "svm": 0.88}
 
         assert expected_train_acc[model_type] <= baseline_train_acc
         assert expected_test_acc[model_type] <= baseline_test_acc

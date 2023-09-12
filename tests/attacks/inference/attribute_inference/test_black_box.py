@@ -821,19 +821,11 @@ def test_black_box_baseline_encoder(art_warning, get_iris_dataset, model_type):
         # infer attacked feature
         x_train_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_train)]).reshape(-1, 1)
         x_test_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_test_for_pred)]).reshape(-1, 1)
-        inferred_train = attack.infer(
-            x_train_for_attack, y_train_iris, pred=x_train_predictions, values=values
-        )
-        inferred_test = attack.infer(
-            x_test_for_attack, y_test_iris, pred=x_test_predictions, values=values
-        )
+        inferred_train = attack.infer(x_train_for_attack, y_train_iris, pred=x_train_predictions, values=values)
+        inferred_test = attack.infer(x_test_for_attack, y_test_iris, pred=x_test_predictions, values=values)
         # check accuracy
-        train_acc = np.sum(inferred_train == x_train_feature.reshape(1, -1)) / len(
-            inferred_train
-        )
-        test_acc = np.sum(inferred_test == x_test_feature.reshape(1, -1)) / len(
-            inferred_test
-        )
+        train_acc = np.sum(inferred_train == x_train_feature.reshape(1, -1)) / len(inferred_train)
+        test_acc = np.sum(inferred_test == x_test_feature.reshape(1, -1)) / len(inferred_test)
 
         assert 0.6 <= train_acc
         assert 0.6 <= test_acc
@@ -944,19 +936,11 @@ def test_black_box_baseline_no_encoder(art_warning, get_iris_dataset, model_type
         # infer attacked feature
         x_train_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_train)]).reshape(-1, 1)
         x_test_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_test_for_pred)]).reshape(-1, 1)
-        inferred_train = attack.infer(
-            x_train_for_attack, y_train_iris, pred=x_train_predictions, values=values
-        )
-        inferred_test = attack.infer(
-            x_test_for_attack, y_test_iris, pred=x_test_predictions, values=values
-        )
+        inferred_train = attack.infer(x_train_for_attack, y_train_iris, pred=x_train_predictions, values=values)
+        inferred_test = attack.infer(x_test_for_attack, y_test_iris, pred=x_test_predictions, values=values)
         # check accuracy
-        train_acc = np.sum(inferred_train == x_train_feature.reshape(1, -1)) / len(
-            inferred_train
-        )
-        test_acc = np.sum(inferred_test == x_test_feature.reshape(1, -1)) / len(
-            inferred_test
-        )
+        train_acc = np.sum(inferred_train == x_train_feature.reshape(1, -1)) / len(inferred_train)
+        test_acc = np.sum(inferred_test == x_test_feature.reshape(1, -1)) / len(inferred_test)
 
         assert 0.6 <= train_acc
         assert 0.6 <= test_acc
@@ -1063,19 +1047,11 @@ def test_black_box_baseline_no_encoder_after_feature(art_warning, get_iris_datas
         # infer attacked feature
         x_train_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_train)]).reshape(-1, 1)
         x_test_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_test_for_pred)]).reshape(-1, 1)
-        inferred_train = attack.infer(
-            x_train_for_attack, y_train_iris, pred=x_train_predictions, values=values
-        )
-        inferred_test = attack.infer(
-            x_test_for_attack, y_test_iris, pred=x_test_predictions, values=values
-        )
+        inferred_train = attack.infer(x_train_for_attack, y_train_iris, pred=x_train_predictions, values=values)
+        inferred_test = attack.infer(x_test_for_attack, y_test_iris, pred=x_test_predictions, values=values)
         # check accuracy
-        train_acc = np.sum(inferred_train == x_train_feature.reshape(1, -1)) / len(
-            inferred_train
-        )
-        test_acc = np.sum(inferred_test == x_test_feature.reshape(1, -1)) / len(
-            inferred_test
-        )
+        train_acc = np.sum(inferred_train == x_train_feature.reshape(1, -1)) / len(inferred_train)
+        test_acc = np.sum(inferred_test == x_test_feature.reshape(1, -1)) / len(inferred_test)
 
         assert 0.4 <= train_acc
         assert 0.35 <= test_acc
@@ -1303,19 +1279,11 @@ def test_black_box_baseline_no_encoder_remove_attack_feature(art_warning, get_ir
         # infer attacked feature
         x_train_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_train)]).reshape(-1, 1)
         x_test_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_test_for_pred)]).reshape(-1, 1)
-        inferred_train = attack.infer(
-            x_train_for_attack, y_train_iris, pred=x_train_predictions, values=values
-        )
-        inferred_test = attack.infer(
-            x_test_for_attack, y_test_iris, pred=x_test_predictions, values=values
-        )
+        inferred_train = attack.infer(x_train_for_attack, y_train_iris, pred=x_train_predictions, values=values)
+        inferred_test = attack.infer(x_test_for_attack, y_test_iris, pred=x_test_predictions, values=values)
         # check accuracy
-        train_acc = np.sum(inferred_train == x_train_feature.reshape(1, -1)) / len(
-            inferred_train
-        )
-        test_acc = np.sum(inferred_test == x_test_feature.reshape(1, -1)) / len(
-            inferred_test
-        )
+        train_acc = np.sum(inferred_train == x_train_feature.reshape(1, -1)) / len(inferred_train)
+        test_acc = np.sum(inferred_test == x_test_feature.reshape(1, -1)) / len(inferred_test)
 
         assert 0.6 <= train_acc
         assert 0.6 <= test_acc
