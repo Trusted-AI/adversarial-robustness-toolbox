@@ -186,6 +186,19 @@ class Attack(abc.ABC):
                 return False
         return True
 
+    def __repr__(self):
+        """
+        Returns a string describing the attack class and attack_params
+        """
+        param_str = ""
+        for param in self.attack_params:
+            if hasattr(self, param):
+                param_str += f"{param}={getattr(self, param)}, "
+            elif hasattr(self, "_attack"):
+                if hasattr(self._attack, param):
+                    param_str += f"{param}={getattr(self._attack, param)}, "
+        return f"{type(self).__name__}({param_str})"
+
 
 class EvasionAttack(Attack):
     """
