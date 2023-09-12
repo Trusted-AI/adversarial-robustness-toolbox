@@ -1,26 +1,27 @@
 """
-This is an example of how to use ART for adversarial training of a model with Fast is better than free protocol
+This is an example of how to use ART for adversarial training of a model with AWP protocol
 """
-import math
-from PIL import Image
 
+from PIL import Image
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torchvision.transforms as transforms
 from torch.utils.data import Dataset, DataLoader
+from torch.optim.lr_scheduler import MultiStepLR
 
 from art.estimators.classification import PyTorchClassifier
 from art.data_generators import PyTorchDataGenerator
-from art.defences.trainer import AdversarialTrainerFBFPyTorch
+from art.defences.trainer import AdversarialTrainerAWPPyTorch
 from art.utils import load_cifar10
 from art.attacks.evasion import ProjectedGradientDescent
 
 """
-For this example we choose the PreActResNet model as used in the paper (https://openreview.net/forum?id=BJx040EFvH)
+For this example we choose the PreActResNet18 model as used in the paper
+(https://proceedings.neurips.cc/paper/2020/file/1ef91c212e30e14bf125e9374262401f-Paper.pdf)
 The code for the model architecture has been adopted from
-https://github.com/anonymous-sushi-armadillo/fast_is_better_than_free_CIFAR10/blob/master/preact_resnet.py
+https://github.com/csdongxian/AWP/blob/main/AT_AWP/preactresnet.py
 """
 
 
@@ -43,7 +44,7 @@ class PreActBlock(nn.Module):
 
     def forward(self, x):
         out = F.relu(self.bn1(x))
-        shortcut = self.shortcut(x) if hasattr(self, "shortcut") else x
+        shortcut = self.shortcut(out) if hasattr(self, "shortcut") else x
         out = self.conv1(out)
         out = self.conv2(F.relu(self.bn2(out)))
         out += shortcut
@@ -89,6 +90,7 @@ class PreActResNet(nn.Module):
         self.layer2 = self._make_layer(block, 128, num_blocks[1], stride=2)
         self.layer3 = self._make_layer(block, 256, num_blocks[2], stride=2)
         self.layer4 = self._make_layer(block, 512, num_blocks[3], stride=2)
+        self.bn = nn.BatchNorm2d(512 * block.expansion)
         self.linear = nn.Linear(512 * block.expansion, num_classes)
 
     def _make_layer(self, block, planes, num_blocks, stride):
@@ -105,27 +107,15 @@ class PreActResNet(nn.Module):
         out = self.layer2(out)
         out = self.layer3(out)
         out = self.layer4(out)
+        out = F.relu(self.bn(out))
         out = F.avg_pool2d(out, 4)
         out = out.view(out.size(0), -1)
         out = self.linear(out)
         return out
 
 
-def PreActResNet18():
-    return PreActResNet(PreActBlock, [2, 2, 2, 2])
-
-
-def initialize_weights(module):
-    if isinstance(module, nn.Conv2d):
-        n = module.kernel_size[0] * module.kernel_size[1] * module.out_channels
-        module.weight.data.normal_(0, math.sqrt(2.0 / n))
-        if module.bias is not None:
-            module.bias.data.zero_()
-    elif isinstance(module, nn.BatchNorm2d):
-        module.weight.data.fill_(1)
-        module.bias.data.zero_()
-    elif isinstance(module, nn.Linear):
-        module.bias.data.zero_()
+def PreActResNet18(num_classes=10):
+    return PreActResNet(PreActBlock, [2, 2, 2, 2], num_classes=num_classes)
 
 
 class CIFAR10_dataset(Dataset):
@@ -152,8 +142,6 @@ cifar_mu[0, :, :] = 0.4914
 cifar_mu[1, :, :] = 0.4822
 cifar_mu[2, :, :] = 0.4465
 
-# (0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))
-
 cifar_std = np.ones((3, 32, 32))
 cifar_std[0, :, :] = 0.2471
 cifar_std[1, :, :] = 0.2435
@@ -171,27 +159,34 @@ dataloader = DataLoader(dataset, batch_size=128, shuffle=True)
 
 # Step 2: create the PyTorch model
 model = PreActResNet18()
-# For running on GPU replace the model with the
-# model = PreActResNet18().cuda()
+opt = torch.optim.SGD(model.parameters(), lr=0.1, momentum=0.9, weight_decay=5e-4)
+lr_scheduler = MultiStepLR(opt, milestones=[100, 150], gamma=0.1)
 
-model.apply(initialize_weights)
-model.train()
-
-opt = torch.optim.SGD(model.parameters(), lr=0.21, momentum=0.9, weight_decay=5e-4)
-
-# if you have apex installed, the following line should be uncommented for faster processing
-# import apex.amp as amp
-# model, opt = amp.initialize(model, opt, opt_level="O2", loss_scale=1.0, master_weights=False)
+proxy_model = PreActResNet18()
+gamma = 0.01
+warmup = 0
+proxy_opt = torch.optim.SGD(proxy_model.parameters(), lr=gamma)
 
 criterion = nn.CrossEntropyLoss()
+
 # Step 3: Create the ART classifier
 
 classifier = PyTorchClassifier(
     model=model,
-    clip_values=(0.0, 1.0),
+    clip_values=(min_pixel_value, max_pixel_value),
     preprocessing=(cifar_mu, cifar_std),
     loss=criterion,
     optimizer=opt,
+    input_shape=(3, 32, 32),
+    nb_classes=10,
+)
+
+proxy_classifier = PyTorchClassifier(
+    model=proxy_model,
+    clip_values=(min_pixel_value, max_pixel_value),
+    preprocessing=(cifar_mu, cifar_std),
+    loss=criterion,
+    optimizer=proxy_opt,
     input_shape=(3, 32, 32),
     nb_classes=10,
 )
@@ -201,22 +196,24 @@ attack = ProjectedGradientDescent(
     norm=np.inf,
     eps=8.0 / 255.0,
     eps_step=2.0 / 255.0,
-    max_iter=40,
+    max_iter=10,
     targeted=False,
-    num_random_init=5,
-    batch_size=32,
+    num_random_init=1,
+    batch_size=128,
+    verbose=False,
 )
 
-# Step 4: Create the trainer object - AdversarialTrainerFBFPyTorch
-# if you have apex installed, change use_amp to True
-epsilon = 8.0 / 255.0
-trainer = AdversarialTrainerFBFPyTorch(classifier, eps=epsilon, use_amp=False)
+# Step 4: Create the trainer object - AdversarialTrainerAWPPyTorch
+trainer = AdversarialTrainerAWPPyTorch(
+    classifier, proxy_classifier, attack, mode="PGD", gamma=gamma, beta=6.0, warmup=warmup
+)
 
-# Build a Keras image augmentation object and wrap it in ART
+
+# Build a PyTorch data generator in ART
 art_datagen = PyTorchDataGenerator(iterator=dataloader, size=x_train.shape[0], batch_size=128)
 
 # Step 5: fit the trainer
-trainer.fit_generator(art_datagen, nb_epochs=30)
+trainer.fit_generator(art_datagen, validation_data=(x_test, y_test), nb_epochs=200, scheduler=lr_scheduler)
 
 x_test_pred = np.argmax(classifier.predict(x_test), axis=1)
 print(
@@ -224,7 +221,18 @@ print(
     % (np.sum(x_test_pred == np.argmax(y_test, axis=1)) / x_test.shape[0] * 100)
 )
 
-x_test_attack = attack.generate(x_test)
+attack_test = ProjectedGradientDescent(
+    classifier,
+    norm=np.inf,
+    eps=8.0 / 255.0,
+    eps_step=2.0 / 255.0,
+    max_iter=20,
+    targeted=False,
+    num_random_init=1,
+    batch_size=128,
+    verbose=False,
+)
+x_test_attack = attack_test.generate(x_test, y=y_test)
 x_test_attack_pred = np.argmax(classifier.predict(x_test_attack), axis=1)
 print(
     "Accuracy on original PGD adversarial samples after adversarial training: %.2f%%"

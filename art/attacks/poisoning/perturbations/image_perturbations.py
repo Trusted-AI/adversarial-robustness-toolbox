@@ -21,7 +21,6 @@ Adversarial perturbations designed to work for images.
 from typing import Optional, Tuple
 
 import numpy as np
-from PIL import Image
 
 
 def add_single_bd(x: np.ndarray, distance: int = 2, pixel_value: int = 1) -> np.ndarray:
@@ -112,6 +111,8 @@ def insert_image(
     :param blend: The blending factor
     :return: Backdoored image.
     """
+    from PIL import Image
+
     n_dim = len(x.shape)
     if n_dim == 4:
         return np.array(
