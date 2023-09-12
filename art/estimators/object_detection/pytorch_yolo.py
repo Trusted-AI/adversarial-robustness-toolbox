@@ -148,7 +148,7 @@ class PyTorchYolo(ObjectDetectorMixin, PyTorchEstimator):
         """
         Initialization.
 
-        :param model: Object detection model wrapped as demonstrated in examples/get_started_yolo.py.
+        :param model: YOLO v3 or v5 model wrapped as demonstrated in examples/get_started_yolo.py.
                       The output of the model is `List[Dict[str, torch.Tensor]]`, one for each input image.
                       The fields of the Dict are as follows:
 
