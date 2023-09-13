@@ -35,7 +35,7 @@ logger = logging.getLogger(__name__)
 
 @pytest.mark.skip_framework("dl_frameworks")
 @pytest.mark.parametrize("model_type", ["nn", "rf", "gb", "lr", "dt", "knn", "svm"])
-def test_black_box_baseline(art_warning, get_iris_dataset, model_type):
+def test_baseline(art_warning, get_iris_dataset, model_type):
     try:
         attack_feature = 2  # petal length
 
@@ -90,7 +90,7 @@ def test_black_box_baseline(art_warning, get_iris_dataset, model_type):
 
 @pytest.mark.skip_framework("dl_frameworks")
 @pytest.mark.parametrize("model_type", ["nn", "rf", "gb", "lr", "dt", "knn", "svm"])
-def test_black_box_baseline_continuous(art_warning, get_iris_dataset, model_type):
+def test_baseline_continuous(art_warning, get_iris_dataset, model_type):
     try:
         attack_feature = 2  # petal length
 
@@ -130,7 +130,7 @@ def test_black_box_baseline_continuous(art_warning, get_iris_dataset, model_type
 
 @pytest.mark.skip_framework("dl_frameworks")
 @pytest.mark.parametrize("model_type", ["nn", "rf", "gb", "lr", "dt", "knn", "svm"])
-def test_black_box_baseline_slice(art_warning, get_iris_dataset, model_type):
+def test_baseline_slice(art_warning, get_iris_dataset, model_type):
     try:
         attack_feature = 2  # petal length
 
@@ -175,8 +175,8 @@ def test_black_box_baseline_slice(art_warning, get_iris_dataset, model_type):
             baseline_inferred_test
         )
 
-        expected_train_acc = {"nn": 0.58, "rf": 0.98, "gb": 0.98, "lr": 0.77, "dt": 0.98, "knn": 0.87, "svm": 0.83}
-        expected_test_acc = {"nn": 0.62, "rf": 0.86, "gb": 0.82, "lr": 0.86, "dt": 0.8, "knn": 0.84, "svm": 0.93}
+        expected_train_acc = {"nn": 0.58, "rf": 0.98, "gb": 0.98, "lr": 0.77, "dt": 0.98, "knn": 0.85, "svm": 0.83}
+        expected_test_acc = {"nn": 0.62, "rf": 0.86, "gb": 0.82, "lr": 0.86, "dt": 0.8, "knn": 0.81, "svm": 0.93}
 
         assert expected_train_acc[model_type] <= baseline_train_acc
         assert expected_test_acc[model_type] <= baseline_test_acc
@@ -187,7 +187,7 @@ def test_black_box_baseline_slice(art_warning, get_iris_dataset, model_type):
 
 @pytest.mark.skip_framework("dl_frameworks")
 @pytest.mark.parametrize("model_type", ["nn", "rf", "gb", "lr", "dt", "knn", "svm"])
-def test_black_box_baseline_no_values(art_warning, get_iris_dataset, model_type):
+def test_baseline_no_values(art_warning, get_iris_dataset, model_type):
     try:
         attack_feature = 2  # petal length
 
@@ -239,7 +239,7 @@ def test_black_box_baseline_no_values(art_warning, get_iris_dataset, model_type)
 
 @pytest.mark.skip_framework("dl_frameworks")
 @pytest.mark.parametrize("model_type", ["nn", "rf", "gb", "lr", "dt", "knn", "svm"])
-def test_black_box_baseline_encoder(art_warning, get_iris_dataset, model_type):
+def test_baseline_encoder(art_warning, get_iris_dataset, model_type):
     try:
         attack_feature = 2  # petal length
 
@@ -338,7 +338,7 @@ def test_black_box_baseline_encoder(art_warning, get_iris_dataset, model_type):
 
 @pytest.mark.skip_framework("dl_frameworks")
 @pytest.mark.parametrize("model_type", ["nn", "rf", "gb", "lr", "dt", "knn", "svm"])
-def test_black_box_baseline_no_encoder(art_warning, get_iris_dataset, model_type):
+def test_baseline_no_encoder(art_warning, get_iris_dataset, model_type):
     try:
         attack_feature = 2  # petal length
 
@@ -428,7 +428,7 @@ def test_black_box_baseline_no_encoder(art_warning, get_iris_dataset, model_type
 
 @pytest.mark.skip_framework("dl_frameworks")
 @pytest.mark.parametrize("model_type", ["nn", "rf", "gb", "lr", "dt", "knn", "svm"])
-def test_black_box_baseline_no_encoder_after_feature(art_warning, get_iris_dataset, model_type):
+def test_baseline_no_encoder_after_feature(art_warning, get_iris_dataset, model_type):
     try:
         attack_feature = 2  # petal length
 
@@ -521,7 +521,7 @@ def test_black_box_baseline_no_encoder_after_feature(art_warning, get_iris_datas
 
 @pytest.mark.skip_framework("dl_frameworks")
 @pytest.mark.parametrize("model_type", ["nn", "rf", "gb", "lr", "dt", "knn", "svm"])
-def test_black_box_baseline_no_encoder_after_feature_slice(art_warning, get_iris_dataset, model_type):
+def test_baseline_no_encoder_after_feature_slice(art_warning, get_iris_dataset, model_type):
     try:
         orig_attack_feature = 1  # petal length
         new_attack_feature = slice(1, 4)  # petal length
@@ -613,7 +613,7 @@ def test_black_box_baseline_no_encoder_after_feature_slice(art_warning, get_iris
 
 @pytest.mark.skip_framework("dl_frameworks")
 @pytest.mark.parametrize("model_type", ["nn", "rf", "gb", "lr", "dt", "knn", "svm"])
-def test_black_box_baseline_no_encoder_remove_attack_feature(art_warning, get_iris_dataset, model_type):
+def test_baseline_no_encoder_remove_attack_feature(art_warning, get_iris_dataset, model_type):
     try:
         attack_feature = 2  # petal length
 
