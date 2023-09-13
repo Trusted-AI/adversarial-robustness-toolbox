@@ -159,6 +159,8 @@ class Attack(abc.ABC):
         for key, value in kwargs.items():
             if key in self.attack_params:
                 setattr(self, key, value)
+            else:
+                raise ValueError(f'The attribute "{key}" cannot be set for this attack.')
         self._check_params()
 
     def _check_params(self) -> None:
@@ -185,6 +187,19 @@ class Attack(abc.ABC):
             elif req not in type(estimator).__mro__:
                 return False
         return True
+
+    def __repr__(self):
+        """
+        Returns a string describing the attack class and attack_params
+        """
+        param_str = ""
+        for param in self.attack_params:
+            if hasattr(self, param):
+                param_str += f"{param}={getattr(self, param)}, "
+            elif hasattr(self, "_attack"):
+                if hasattr(self._attack, param):
+                    param_str += f"{param}={getattr(self._attack, param)}, "
+        return f"{type(self).__name__}({param_str})"
 
 
 class EvasionAttack(Attack):
