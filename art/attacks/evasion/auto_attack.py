@@ -273,7 +273,6 @@ class AutoAttack(EvasionAttack):
 
         return x_adv
 
-
     def _check_params(self) -> None:
         if self.norm not in [1, 2, np.inf, "inf"]:
             raise ValueError('The argument norm has to be either 1, 2, np.inf, "inf".')
