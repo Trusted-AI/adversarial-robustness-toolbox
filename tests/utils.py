@@ -1038,6 +1038,18 @@ def get_image_classifier_kr_tf_with_wildcard():
 
 
 def get_image_classifier_hf(from_logits=False, load_init=True, use_maxpool=True):
+    """
+    Standard HF classifier for testing.
+
+    :param from_logits: Flag if model should predict logits (True) or probabilities (False).
+    :type from_logits: `bool`
+    :param load_init: Load the initial weights if True.
+    :type load_init: `bool`
+    :param use_maxpool: If to use a classifier with maxpool or not
+    :type use_maxpool: `bool`
+    :return: HuggingFaceClassifierPyTorch
+    """
+
     import torch
     from transformers.modeling_utils import PreTrainedModel
     from transformers.configuration_utils import PretrainedConfig
@@ -1988,11 +2000,19 @@ class ARTTestFixtureNotImplemented(ARTTestException):
 
 
 def get_tabular_classifier_hf(load_init=True):
+    """
+    Standard Huggingface classifier for unit testing on Iris dataset.
+
+    :param load_init: Load the initial weights if True.
+    :type load_init: `bool`
+    :return: Huggingface model for Iris dataset.
+    :rtype: :class:`.HuggingFaceClassifierPyTorch`
+    """
     import torch
     from transformers.modeling_utils import PreTrainedModel
     from transformers.configuration_utils import PretrainedConfig
     from transformers.modeling_outputs import ImageClassifierOutput
-    from art.estimators.classification.hugging_face import HuggingFaceClassifier
+    from art.estimators.classification.hugging_face import HuggingFaceClassifierPyTorch
 
     class ModelConfig(PretrainedConfig):
         def __init__(
@@ -2067,7 +2087,7 @@ def get_tabular_classifier_hf(load_init=True):
     pt_model = Model(config=config)
     optimizer = torch.optim.Adam(pt_model.parameters(), lr=0.01)
 
-    hf_classifier = HuggingFaceClassifier(
+    hf_classifier = HuggingFaceClassifierPyTorch(
         pt_model,
         loss=torch.nn.CrossEntropyLoss(),
         optimizer=optimizer,

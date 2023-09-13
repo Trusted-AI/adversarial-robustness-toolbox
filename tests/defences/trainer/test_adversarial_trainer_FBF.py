@@ -32,14 +32,11 @@ def get_adv_trainer(framework, image_dl_estimator):
             trainer = None
         if framework in ["tensorflow", "tensorflow2v1"]:
             trainer = None
-        if framework == "pytorch":
+        if framework in ["pytorch", "huggingface"]:
             classifier, _ = image_dl_estimator()
             trainer = AdversarialTrainerFBFPyTorch(classifier, eps=0.05)
         if framework == "scikitlearn":
             trainer = None
-        if framework == "huggingface":
-            classifier, _ = image_dl_estimator()
-            trainer = AdversarialTrainerFBFPyTorch(classifier, eps=0.05)
 
         return trainer
 
