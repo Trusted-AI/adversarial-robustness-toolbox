@@ -49,9 +49,16 @@ class HuggingFaceClassifierPyTorch(PyTorchClassifier):
         input_shape: Tuple[int, ...],
         nb_classes: int,
         optimizer: Optional["torch.optim.Optimizer"] = None,
+        use_amp: bool = False,
+        opt_level: str = "O1",
+        loss_scale: Optional[Union[float, str]] = "dynamic",
+        channels_first: bool = True,
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
+        preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
+        postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
         preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
         processor: Optional[Callable] = None,
+        device_type: str = "gpu",
     ):
         """
         Initialization of HuggingFaceClassifierPyTorch specifically for the PyTorch-based backend.
@@ -72,7 +79,8 @@ class HuggingFaceClassifierPyTorch(PyTorchClassifier):
                             representing a number, e.g., “1.0”, or the string “dynamic”.
         :param nb_classes: The number of classes of the model.
         :param optimizer: The optimizer used to train the classifier.
-        :param channels_first: Set channels first or last.
+        :param channels_first: Set channels first or last. Normally should be set to True for HF models based on
+                               a pytorch backend.
         :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
                 maximum values allowed for features. If floats are provided, these will be used as the range of all
                 features. If arrays are provided, each value will be considered the bound for a feature, thus
@@ -97,12 +105,15 @@ class HuggingFaceClassifierPyTorch(PyTorchClassifier):
             input_shape=input_shape,
             nb_classes=nb_classes,
             optimizer=optimizer,
-            channels_first=True,
+            use_amp=use_amp,
+            opt_level=opt_level,
+            loss_scale=loss_scale,
+            channels_first=channels_first,
             clip_values=clip_values,
-            preprocessing_defences=None,
-            postprocessing_defences=None,
+            preprocessing_defences=preprocessing_defences,
+            postprocessing_defences=postprocessing_defences,
             preprocessing=preprocessing,
-            device_type="gpu",
+            device_type=device_type,
         )
 
         import functools
