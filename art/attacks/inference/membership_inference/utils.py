@@ -15,6 +15,7 @@ def sobel(img_set):
         ret[i, :] = gradxy
     return ret
 
+
 def compute_pairwise_distances(x, y):
     """Computes the squared pairwise Euclidean distances between x and y.
     Args:
@@ -27,16 +28,17 @@ def compute_pairwise_distances(x, y):
     """
 
     if not len(x.get_shape()) == len(y.get_shape()) == 2:
-        raise ValueError('Both inputs should be matrices.')
+        raise ValueError("Both inputs should be matrices.")
 
     if x.get_shape().as_list()[1] != y.get_shape().as_list()[1]:
-        raise ValueError('The number of features should be the same.')
+        raise ValueError("The number of features should be the same.")
 
     norm = lambda x: tf.reduce_sum(tf.square(x), 1)
 
     return tf.transpose(norm(tf.expand_dims(x, 2) - tf.transpose(y)))
-    
-def gaussian_kernel_matrix(x, y, sigmas):
+
+
+def gaussian_kernel_matrix(x, y, sigmas=None):
     r"""Computes a Guassian Radial Basis Kernel between the samples of x and y.
     We create a sum of multiple gaussian kernels each having a width sigma_i.
     Args:
@@ -47,7 +49,7 @@ def gaussian_kernel_matrix(x, y, sigmas):
     Returns:
       A tensor of shape [num_samples{x}, num_samples{y}] with the RBF kernel.
     """
-    beta = 1. / (2. * (tf.expand_dims(sigmas, 1)))
+    beta = 1.0 / (2.0 * (tf.expand_dims(sigmas, 1)))
 
     dist = compute_pairwise_distances(x, y)
 
@@ -55,8 +57,9 @@ def gaussian_kernel_matrix(x, y, sigmas):
 
     return tf.reshape(tf.reduce_sum(tf.exp(-s), 0), tf.shape(dist))
 
+
 def maximum_mean_discrepancy(x, y, kernel=gaussian_kernel_matrix):
-    '''
+    """
     Computes the Maximum Mean Discrepancy (MMD) of two samples: x and y.
     Maximum Mean Discrepancy (MMD) is a distance-measure between the samples of
     the distributions of x and y. Here we use the kernel two sample estimate
@@ -72,16 +75,17 @@ def maximum_mean_discrepancy(x, y, kernel=gaussian_kernel_matrix):
                 GaussianKernelMatrix.
     Returns:
         a scalar denoting the squared maximum mean discrepancy loss.
-    '''
-    with tf.name_scope('MaximumMeanDiscrepancy'):
+    """
+    with tf.name_scope("MaximumMeanDiscrepancy"):
         # \E{ K(x, x) } + \E{ K(y, y) } - 2 \E{ K(x, y) }
         cost = tf.reduce_mean(kernel(x, x))
         cost += tf.reduce_mean(kernel(y, y))
         cost -= 2 * tf.reduce_mean(kernel(x, y))
 
         # We do not allow the loss to become negative.
-        cost = tf.where(cost > 0, cost, 0, name='value')
+        cost = tf.where(cost > 0, cost, 0, name="value")
     return cost
+
 
 def mmd_loss(source_samples, target_samples, weight, scope=None):
     """Adds a similarity loss term, the MMD between two representations.
@@ -95,15 +99,10 @@ def mmd_loss(source_samples, target_samples, weight, scope=None):
     Returns:
       a scalar tensor representing the MMD loss value.
     """
-    sigmas = [
-        1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1, 5, 10, 15, 20, 25, 30, 35, 100,
-        1e3, 1e4, 1e5, 1e6
-    ]
-    gaussian_kernel = partial(
-        gaussian_kernel_matrix, sigmas=tf.constant(sigmas))
+    sigmas = [1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1, 5, 10, 15, 20, 25, 30, 35, 100, 1e3, 1e4, 1e5, 1e6]
+    gaussian_kernel = partial(gaussian_kernel_matrix, sigmas=tf.constant(sigmas))
 
-    loss_value = maximum_mean_discrepancy(
-        source_samples, target_samples, kernel=gaussian_kernel)
+    loss_value = maximum_mean_discrepancy(source_samples, target_samples, kernel=gaussian_kernel)
     loss_value = tf.maximum(1e-4, loss_value) * weight
 
     return loss_value

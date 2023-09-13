@@ -39,16 +39,12 @@ Sponsored by INCD
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Any, Optional, Union, TYPE_CHECKING
+from typing import TYPE_CHECKING
 import tensorflow as tf
 import numpy as np
-from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
-
 from art.attacks.attack import MembershipInferenceAttack
 from art.estimators.estimator import BaseEstimator
 from art.estimators.classification.classifier import ClassifierMixin
-from art.estimators.regression import RegressorMixin
-from art.utils import check_and_transform_label_format
 from art.attacks.inference.membership_inference.utils import (
     sobel,
     mmd_loss,
@@ -83,11 +79,7 @@ class MembershipInferenceBlindMI(MembershipInferenceAttack):
 
         super().__init__(estimator=estimator)
 
-    def infer(self, x: np.ndarray, 
-                    y: np.ndarray,
-                    x_test: np.ndarray,
-                    y_test: np.ndarray,
-                    member) -> np.ndarray:
+    def infer(self, x: np.ndarray, y: np.ndarray, x_test: np.ndarray, y_test: np.ndarray, member) -> np.ndarray:
         """
         Infer membership in the training set of the target estimator.
 
@@ -96,9 +88,9 @@ class MembershipInferenceBlindMI(MembershipInferenceAttack):
         :return: An array holding the inferred membership status, 1 indicates a member and 0 indicates non-member,
                  or class probabilities.
         """
-                
+
         if x is None and x_test is None:
-            raise Value<Error("Must supply either x or pred")
+            raise ValueError("Must supply either x or pred")
 
         if self.estimator.input_shape is not None and x is not None:  # pragma: no cover
             if self.estimator.input_shape[0] != x.shape[1]:
@@ -110,24 +102,28 @@ class MembershipInferenceBlindMI(MembershipInferenceAttack):
         if x is not None and y.shape[0] != x.shape[0]:  # pragma: no cover
             raise ValueError("Number of rows in x and y do not match")
 
-
         x_ = np.r_[x, x_test]
         y_true = np.r_[y, y_test]
-        #import ipdb;ipdb.set_trace()
+        # import ipdb;ipdb.set_trace()
         y_pred = self.estimator.predict(x_).astype(np.float32)
-    
+
         mix = np.c_[y_pred[y_true.astype(bool)], np.sort(y_pred, axis=1)[:, ::-1][:, :2]]
 
         non_mem_idx = np.random.randint(0, x_.shape[0], size=20)
         non_mem_pred = self.estimator.predict(sobel(x_[non_mem_idx]))
-        non_mem =  tf.convert_to_tensor(np.c_[non_mem_pred[y_true[non_mem_idx].astype(bool)], 
-                        np.sort(non_mem_pred, axis=1)[:, ::-1][:, :2]])
+        non_mem = tf.convert_to_tensor(
+            np.c_[non_mem_pred[y_true[non_mem_idx].astype(bool)], np.sort(non_mem_pred, axis=1)[:, ::-1][:, :2]]
+        )
 
-        data = tf.data.Dataset.from_tensor_slices((mix, member)).shuffle(buffer_size=x_.shape[0]).\
-                batch(20).prefetch(tf.data.experimental.AUTOTUNE)
+        data = (
+            tf.data.Dataset.from_tensor_slices((mix, member))
+            .shuffle(buffer_size=x_.shape[0])
+            .batch(20)
+            .prefetch(tf.data.experimental.AUTOTUNE)
+        )
         m_pred, m_true = [], []
         mix_shuffled = []
-        for (mix_batch, m_true_batch) in data:
+        for mix_batch, m_true_batch in data:
             m_pred_batch = np.ones(mix_batch.shape[0])
             m_pred_epoch = np.ones(mix_batch.shape[0])
             non_mem_in_mix = True
@@ -135,12 +131,12 @@ class MembershipInferenceBlindMI(MembershipInferenceAttack):
                 mix_epoch_new = mix_batch[m_pred_epoch.astype(bool)]
                 dis_ori = mmd_loss(non_mem, mix_epoch_new, 1)
                 non_mem_in_mix = False
-                #import ipdb;ipdb.set_trace()
+                # import ipdb;ipdb.set_trace()
                 for index, item in enumerate(mix_batch):
                     if m_pred_batch[index] == 1:
                         non_mem_batch_new = tf.concat([non_mem, [mix_batch[index]]], axis=0)
-                        mix_batch_new = tf.concat([mix_batch[:index], mix_batch[index+1:]], axis=0)
-                        m_pred_without = np.r_[m_pred_batch[:index], m_pred_batch[index+1:]]
+                        mix_batch_new = tf.concat([mix_batch[:index], mix_batch[index + 1 :]], axis=0)
+                        m_pred_without = np.r_[m_pred_batch[:index], m_pred_batch[index + 1 :]]
                         mix_batch_new = mix_batch_new[m_pred_without.astype(bool, copy=True)]
                         dis_new = mmd_loss(non_mem_batch_new, mix_batch_new, weight=1)
                         if dis_new > dis_ori:
@@ -151,5 +147,9 @@ class MembershipInferenceBlindMI(MembershipInferenceAttack):
             mix_shuffled.append(mix_batch)
             m_pred.append(m_pred_batch)
             m_true.append(m_true_batch)
-        return np.concatenate(m_true, axis=0), np.concatenate(m_pred, axis=0), \
-            np.concatenate(mix_shuffled, axis=0), non_mem
+        return (
+            np.concatenate(m_true, axis=0),
+            np.concatenate(m_pred, axis=0),
+            np.concatenate(mix_shuffled, axis=0),
+            non_mem,
+        )

@@ -1,17 +1,14 @@
 from torchvision import transforms
 import sys
 import json
-import logging
 from pathlib import Path
 from datetime import datetime as dt
-from typing import Sequence
 from tqdm import tqdm
 import numpy as np
 import torch
 import torch.nn.functional as F
 from scipy.optimize import fmin_ncg
 from torch.utils.data import DataLoader
-from torch.nn.utils import parameters_to_vector
 from torch.autograd import grad
 from torch.autograd.functional import vhp
 
@@ -60,6 +57,7 @@ def grad_z(x, y, model, gpu=-1, loss_func="cross_entropy"):
     # Compute sum of gradients from model parameters to loss
     return grad(loss, model.parameters())
 
+
 def calc_loss(logits, labels, loss_func="cross_entropy"):
     """Calculates the loss
 
@@ -70,7 +68,7 @@ def calc_loss(logits, labels, loss_func="cross_entropy"):
 
     Returns:
         loss: scalar, the loss"""
-    
+
     if loss_func == "cross_entropy":
         if logits.shape[-1] == 1:
             loss = F.binary_cross_entropy_with_logits(logits, labels.type(torch.float))
@@ -117,34 +115,36 @@ def s_test_sample(
     Returns:
         s_test_vec: torch tensor, contains s_test for a single test image"""
 
-    inverse_hvp = [
-        torch.zeros_like(params, dtype=torch.float) for params in model.parameters()
-    ]
+    inverse_hvp = [torch.zeros_like(params, dtype=torch.float) for params in model.parameters()]
 
     for i in range(r):
-
         hessian_loader = DataLoader(
             train_loader.dataset,
-            sampler=torch.utils.data.RandomSampler(
-                train_loader.dataset, True, num_samples=recursion_depth
-            ),
+            sampler=torch.utils.data.RandomSampler(train_loader.dataset, True, num_samples=recursion_depth),
             batch_size=1,
             num_workers=4,
         )
 
         cur_estimate = s_test(
-            x_test, y_test, model, i, hessian_loader, gpu=gpu, damp=damp, scale=scale, loss_func=loss_func,
+            x_test,
+            y_test,
+            model,
+            i,
+            hessian_loader,
+            gpu=gpu,
+            damp=damp,
+            scale=scale,
+            loss_func=loss_func,
         )
 
         with torch.no_grad():
-            inverse_hvp = [
-                old + (cur / scale) for old, cur in zip(inverse_hvp, cur_estimate)
-            ]
+            inverse_hvp = [old + (cur / scale) for old, cur in zip(inverse_hvp, cur_estimate)]
 
     with torch.no_grad():
         inverse_hvp = [component / r for component in inverse_hvp]
 
     return inverse_hvp
+
 
 def s_test(x_test, y_test, model, i, samples_loader, gpu=-1, damp=0.01, scale=25.0, loss_func="cross_entropy"):
     """s_test can be precomputed for each test point of interest, and then
@@ -175,7 +175,6 @@ def s_test(x_test, y_test, model, i, samples_loader, gpu=-1, damp=0.01, scale=25
     # TODO: Dynamically set the recursion depth so that iterations stop once h_estimate stabilises
     progress_bar = tqdm(samples_loader, desc=f"IHVP sample {i}")
     for i, (x_train, y_train) in enumerate(progress_bar):
-
         if gpu >= 0:
             x_train, y_train = x_train.cuda(), y_train.cuda()
 
@@ -189,10 +188,7 @@ def s_test(x_test, y_test, model, i, samples_loader, gpu=-1, damp=0.01, scale=25
 
         # Recursively calculate h_estimate
         with torch.no_grad():
-            h_estimate = [
-                _v + (1 - damp) * _h_e - _hv / scale
-                for _v, _h_e, _hv in zip(v, h_estimate, hv)
-            ]
+            h_estimate = [_v + (1 - damp) * _h_e - _hv / scale for _v, _h_e, _hv in zip(v, h_estimate, hv)]
 
             if i % 100 == 0:
                 norm = sum([h_.norm() for h_ in h_estimate])
@@ -236,10 +232,7 @@ def save_json(
         append_if_exists = False
         if json_path.exists():
             time = dt.now().strftime("%Y-%m-%d-%H-%M-%S")
-            json_path = (
-                json_path.parents[0] / f"{str(json_path.stem)}_{time}"
-                f"{str(json_path.suffix)}"
-            )
+            json_path = json_path.parents[0] / f"{str(json_path.stem)}_{time}" f"{str(json_path.suffix)}"
 
     if overwrite_if_exists:
         append_if_exists = False
@@ -260,8 +253,7 @@ def save_json(
         json.dump(json_obj, fout, indent=2)
 
 
-def display_progress(text, current_step, last_step,
-                     enabled=True, fix_zero_start=True):
+def display_progress(text, current_step, last_step, enabled=True, fix_zero_start=True):
     """Draws a progress indicator on the screen with the text preceeding the
     progress
 
@@ -287,10 +279,7 @@ def display_progress(text, current_step, last_step,
     if text[-1:] not in final_chars:
         text = text + " "
     if len(text) < term_line_len:
-        bar_len = term_line_len - (
-            len(text) + len(str(current_step)) +
-            len(str(last_step)) + len("  / ")
-        )
+        bar_len = term_line_len - (len(text) + len(str(current_step)) + len(str(last_step)) + len("  / "))
     else:
         bar_len = 30
     filled_len = int(round(bar_len * current_step / float(last_step)))
@@ -306,8 +295,7 @@ def display_progress(text, current_step, last_step,
     sys.stdout.flush()
 
 
-def conjugate_gradient(ax_fn, b, debug_callback=None,
-                       avextol=None, maxiter=None):
+def conjugate_gradient(ax_fn, b, debug_callback=None, avextol=None, maxiter=None):
     """Computes the solution to Ax - b = 0 by minimizing the conjugate objective
     f(x) = x^T A x / 2 - b^T x. This does not require evaluating the matrix A
     explicitly, only the matrix vector product Ax.
@@ -330,9 +318,9 @@ def conjugate_gradient(ax_fn, b, debug_callback=None,
 
     cg_callback = None
     if debug_callback:
-        def cg_callback(x): return debug_callback(
-            x, -np.dot(b, x), 0.5 * np.dot(x, ax_fn(x))
-        )
+
+        def cg_callback(x):
+            return debug_callback(x, -np.dot(b, x), 0.5 * np.dot(x, ax_fn(x)))
 
     result = fmin_ncg(
         f=lambda x: 0.5 * np.dot(x, ax_fn(x)) - np.dot(b, x),
@@ -354,11 +342,13 @@ def load_weights(model, names, params, as_params=False):
         else:
             set_attr(model, name.split("."), torch.nn.Parameter(p))
 
+
 def set_attr(obj, names, val):
     if len(names) == 1:
         setattr(obj, names[0], val)
     else:
         set_attr(getattr(obj, names[0]), names[1:], val)
+
 
 def tensor_to_tuple(vec, parameters):
     r"""Convert one vector to the parameters
@@ -372,20 +362,18 @@ def tensor_to_tuple(vec, parameters):
             parameters of a model.
     """
     if not isinstance(vec, torch.Tensor):
-        raise TypeError('expected torch.Tensor, but got: {}'
-                        .format(torch.typename(vec)))
+        raise TypeError("expected torch.Tensor, but got: {}".format(torch.typename(vec)))
 
     # Pointer for slicing the vector for each parameter
     pointer = 0
 
     split_tensors = []
     for param in parameters:
-
         # The length of the parameter
         num_param = param.numel()
         # Slice the vector, reshape it, and replace the old data of the
         # parameter
-        split_tensors.append(vec[pointer:pointer + num_param].view_as(param))
+        split_tensors.append(vec[pointer : pointer + num_param].view_as(param))
 
         # Increment the pointer
         pointer += num_param

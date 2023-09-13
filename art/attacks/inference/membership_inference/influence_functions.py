@@ -9,15 +9,18 @@ import copy
 import logging
 from tqdm import tqdm
 
+from typing import Any, Tuple
+from torchvision.datasets import VisionDataset
+from PIL import Image
+
 from pathlib import Path
 
 from art.attacks.inference.membership_inference.utils_sif import (
     grad_z,
     s_test_sample,
-    save_json,
     display_progress,
     RGB_MEAN,
-    RGB_STD
+    RGB_STD,
 )
 
 
@@ -69,22 +72,14 @@ def calc_s_test(
         z_test = test_loader.collate_fn([z_test])
         t_test = test_loader.collate_fn([t_test])
 
-        s_test_vec = s_test_sample(
-            model, z_test, t_test, train_loader, gpu, damp, scale, recursion_depth, r
-        )
+        s_test_vec = s_test_sample(model, z_test, t_test, train_loader, gpu, damp, scale, recursion_depth, r)
 
         if save:
             s_test_vec = [s.cpu() for s in s_test_vec]
-            torch.save(
-                s_test_vec, save.joinpath(
-                    f"{i}_recdep{recursion_depth}_r{r}.s_test")
-            )
+            torch.save(s_test_vec, save.joinpath(f"{i}_recdep{recursion_depth}_r{r}.s_test"))
         else:
             s_tests.append(s_test_vec)
-        display_progress(
-            "Calc. z_test (s_test): ", i -
-            start, len(test_loader.dataset) - start
-        )
+        display_progress("Calc. z_test (s_test): ", i - start, len(test_loader.dataset) - start)
 
     return s_tests, save
 
@@ -92,12 +87,11 @@ def calc_s_test(
 def calc_self_influence(X, y, net, rec_dep, r):
     influences = []
     for i in range(X.shape[0]):
-        tensor_dataset = TensorDataset(torch.from_numpy(np.expand_dims(X[i], 0)),
-                                       torch.from_numpy(np.expand_dims(y[i], 0)))
-        loader = DataLoader(tensor_dataset, batch_size=1, shuffle=False,
-                            pin_memory=False, drop_last=False)
-        influence, _, _, _ = calc_influence_single(
-            net, loader, loader, 0, 0, rec_dep, r)
+        tensor_dataset = TensorDataset(
+            torch.from_numpy(np.expand_dims(X[i], 0)), torch.from_numpy(np.expand_dims(y[i], 0))
+        )
+        loader = DataLoader(tensor_dataset, batch_size=1, shuffle=False, pin_memory=False, drop_last=False)
+        influence, _, _, _ = calc_influence_single(net, loader, loader, 0, 0, rec_dep, r)
         influences.append(influence.item())
     return np.asarray(influences)
 
@@ -106,31 +100,27 @@ def calc_self_influence_average(X, y, net, rec_dep, r):
     influences = []
     img_size = X.shape[2]
     pad_size = int(img_size / 8)
-    train_transform = transforms.Compose([
-        transforms.RandomCrop(img_size, padding=pad_size),
-        transforms.RandomHorizontalFlip(),
-        transforms.ToTensor(),
-    ])
+    train_transform = transforms.Compose(
+        [
+            transforms.RandomCrop(img_size, padding=pad_size),
+            transforms.RandomHorizontalFlip(),
+            transforms.ToTensor(),
+        ]
+    )
     for i in range(X.shape[0]):
-        train_transform_gen = MyVisionDataset(
-            X[i], y[i], transform=train_transform)  # just for transformations
-        test_dataset = TensorDataset(torch.from_numpy(np.expand_dims(X[i], 0)),
-                                     torch.from_numpy(np.expand_dims(y[i], 0)))
-        test_loader = DataLoader(
-            test_dataset,
-            batch_size=1,
-            shuffle=False,
-            pin_memory=False,
-            drop_last=False)
+        train_transform_gen = MyVisionDataset(X[i], y[i], transform=train_transform)  # just for transformations
+        test_dataset = TensorDataset(
+            torch.from_numpy(np.expand_dims(X[i], 0)), torch.from_numpy(np.expand_dims(y[i], 0))
+        )
+        test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False, pin_memory=False, drop_last=False)
         influences_tmp = []
         for k in range(8):
             X_aug, y_aug = train_transform_gen.__getitem__(0)
-            train_dataset = TensorDataset(torch.from_numpy(np.expand_dims(X_aug, 0)),
-                                          torch.from_numpy(np.expand_dims(y_aug, 0)))
-            train_loader = DataLoader(train_dataset, batch_size=1, shuffle=False,
-                                      pin_memory=False, drop_last=False)
-            influence, _, _, _ = calc_influence_single(
-                net, train_loader, test_loader, 0, 0, rec_dep, r)
+            train_dataset = TensorDataset(
+                torch.from_numpy(np.expand_dims(X_aug, 0)), torch.from_numpy(np.expand_dims(y_aug, 0))
+            )
+            train_loader = DataLoader(train_dataset, batch_size=1, shuffle=False, pin_memory=False, drop_last=False)
+            influence, _, _, _ = calc_influence_single(net, train_loader, test_loader, 0, 0, rec_dep, r)
             influences_tmp.append(influence.item())
 
         influences.append(np.mean(influences_tmp))
@@ -141,30 +131,22 @@ def calc_self_influence_adaptive(X, y, net, rec_dep, r):
     influences = []
     img_size = X.shape[2]
     pad_size = int(img_size / 8)
-    train_transform = transforms.Compose([
-        transforms.RandomCrop(img_size, padding=pad_size),
-        transforms.RandomHorizontalFlip(),
-        transforms.ToTensor(),
-    ])
+    train_transform = transforms.Compose(
+        [
+            transforms.RandomCrop(img_size, padding=pad_size),
+            transforms.RandomHorizontalFlip(),
+            transforms.ToTensor(),
+        ]
+    )
 
     for i in range(X.shape[0]):
         train_dataset = MyVisionDataset(X[i], y[i], transform=train_transform)
-        test_dataset = TensorDataset(torch.from_numpy(np.expand_dims(X[i], 0)),
-                                     torch.from_numpy(np.expand_dims(y[i], 0)))
-        train_loader = DataLoader(
-            train_dataset,
-            batch_size=1,
-            shuffle=False,
-            pin_memory=False,
-            drop_last=False)
-        test_loader = DataLoader(
-            test_dataset,
-            batch_size=1,
-            shuffle=False,
-            pin_memory=False,
-            drop_last=False)
-        influence, _, _, _ = calc_influence_single_adaptive(
-            net, train_loader, test_loader, 0, 0, rec_dep, r)
+        test_dataset = TensorDataset(
+            torch.from_numpy(np.expand_dims(X[i], 0)), torch.from_numpy(np.expand_dims(y[i], 0))
+        )
+        train_loader = DataLoader(train_dataset, batch_size=1, shuffle=False, pin_memory=False, drop_last=False)
+        test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False, pin_memory=False, drop_last=False)
+        influence, _, _, _ = calc_influence_single_adaptive(net, train_loader, test_loader, 0, 0, rec_dep, r)
         influences.append(influence.item())
     return np.asarray(influences)
 
@@ -173,36 +155,25 @@ def calc_self_influence_adaptive_for_ref(X, y, net, rec_dep, r):
     influences = []
     img_size = X.shape[2]
     pad_size = int(img_size / 8)
-    train_transform = transforms.Compose([
-        transforms.RandomCrop(img_size, padding=pad_size),
-        transforms.RandomHorizontalFlip(),
-        transforms.ToTensor(),
-        transforms.Normalize(RGB_MEAN, RGB_STD)
-    ])
-    test_transform = transforms.Compose([
-        transforms.ToTensor(),
-        transforms.Normalize(RGB_MEAN, RGB_STD)
-    ])
+    train_transform = transforms.Compose(
+        [
+            transforms.RandomCrop(img_size, padding=pad_size),
+            transforms.RandomHorizontalFlip(),
+            transforms.ToTensor(),
+            transforms.Normalize(RGB_MEAN, RGB_STD),
+        ]
+    )
+    test_transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize(RGB_MEAN, RGB_STD)])
 
     for i in range(X.shape[0]):
         train_dataset = MyVisionDataset(X[i], y[i], transform=train_transform)
         test_dataset = MyVisionDataset(X[i], y[i], transform=test_transform)
-        train_loader = DataLoader(
-            train_dataset,
-            batch_size=1,
-            shuffle=False,
-            pin_memory=False,
-            drop_last=False)
-        test_loader = DataLoader(
-            test_dataset,
-            batch_size=1,
-            shuffle=False,
-            pin_memory=False,
-            drop_last=False)
-        influence, _, _, _ = calc_influence_single_adaptive(
-            net, train_loader, test_loader, 0, 0, rec_dep, r)
+        train_loader = DataLoader(train_dataset, batch_size=1, shuffle=False, pin_memory=False, drop_last=False)
+        test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False, pin_memory=False, drop_last=False)
+        influence, _, _, _ = calc_influence_single_adaptive(net, train_loader, test_loader, 0, 0, rec_dep, r)
         influences.append(influence.item())
     return np.asarray(influences)
+
 
 def calc_influence_single_adaptive(
     model,
@@ -276,9 +247,7 @@ def calc_influence_single_adaptive(
     if time_logging:
         time_b = datetime.datetime.now()
         time_delta = time_b - time_a
-        logging.info(
-            f"Time for grad_z iter:" f" {time_delta.total_seconds() * 1000}"
-        )
+        logging.info(f"Time for grad_z iter:" f" {time_delta.total_seconds() * 1000}")
     with torch.no_grad():
         tmp_influence = (
             -sum(
@@ -304,40 +273,35 @@ def calc_influence_single_adaptive(
     return influences, harmful.tolist(), helpful.tolist(), test_id_num
 
 
-
 def calc_self_influence_average_for_ref(X, y, net, rec_dep, r):
     influences = []
     img_size = X.shape[2]
     pad_size = int(img_size / 8)
-    train_transform = transforms.Compose([
-        transforms.RandomCrop(img_size, padding=pad_size),
-        transforms.RandomHorizontalFlip(),
-        transforms.ToTensor(),
-        transforms.Normalize(RGB_MEAN, RGB_STD)
-    ])
+    train_transform = transforms.Compose(
+        [
+            transforms.RandomCrop(img_size, padding=pad_size),
+            transforms.RandomHorizontalFlip(),
+            transforms.ToTensor(),
+            transforms.Normalize(RGB_MEAN, RGB_STD),
+        ]
+    )
     test_transform = transforms.Normalize(RGB_MEAN, RGB_STD)
     for i in range(X.shape[0]):
-        train_transform_gen = MyVisionDataset(
-            X[i], y[i], transform=train_transform)  # just for transformations
+        train_transform_gen = MyVisionDataset(X[i], y[i], transform=train_transform)  # just for transformations
         X_tensor = torch.tensor(X[i])
         X_transformed = test_transform(X_tensor).cpu().numpy()
-        test_dataset = TensorDataset(torch.from_numpy(np.expand_dims(X_transformed, 0)),
-                                     torch.from_numpy(np.expand_dims(y[i], 0)))
-        test_loader = DataLoader(
-            test_dataset,
-            batch_size=1,
-            shuffle=False,
-            pin_memory=False,
-            drop_last=False)
+        test_dataset = TensorDataset(
+            torch.from_numpy(np.expand_dims(X_transformed, 0)), torch.from_numpy(np.expand_dims(y[i], 0))
+        )
+        test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False, pin_memory=False, drop_last=False)
         influences_tmp = []
         for k in range(8):
             X_aug, y_aug = train_transform_gen.__getitem__(0)
-            train_dataset = TensorDataset(torch.from_numpy(np.expand_dims(X_aug, 0)),
-                                          torch.from_numpy(np.expand_dims(y_aug, 0)))
-            train_loader = DataLoader(train_dataset, batch_size=1, shuffle=False,
-                                      pin_memory=False, drop_last=False)
-            influence, _, _, _ = calc_influence_single(
-                net, train_loader, test_loader, 0, 0, rec_dep, r)
+            train_dataset = TensorDataset(
+                torch.from_numpy(np.expand_dims(X_aug, 0)), torch.from_numpy(np.expand_dims(y_aug, 0))
+            )
+            train_loader = DataLoader(train_dataset, batch_size=1, shuffle=False, pin_memory=False, drop_last=False)
+            influence, _, _, _ = calc_influence_single(net, train_loader, test_loader, 0, 0, rec_dep, r)
             influences_tmp.append(influence.item())
 
         influences.append(np.mean(influences_tmp))
@@ -350,14 +314,14 @@ def calc_self_influence_for_ref(X, y, net, rec_dep, r):
     for i in range(X.shape[0]):
         X_tensor = torch.tensor(X[i])
         X_transformed = transform(X_tensor).cpu().numpy()
-        tensor_dataset = TensorDataset(torch.from_numpy(np.expand_dims(X_transformed, 0)),
-                                       torch.from_numpy(np.expand_dims(y[i], 0)))
-        loader = DataLoader(tensor_dataset, batch_size=1, shuffle=False,
-                            pin_memory=False, drop_last=False)
-        influence, _, _, _ = calc_influence_single(
-            net, loader, loader, 0, 0, rec_dep, r)
+        tensor_dataset = TensorDataset(
+            torch.from_numpy(np.expand_dims(X_transformed, 0)), torch.from_numpy(np.expand_dims(y[i], 0))
+        )
+        loader = DataLoader(tensor_dataset, batch_size=1, shuffle=False, pin_memory=False, drop_last=False)
+        influence, _, _, _ = calc_influence_single(net, loader, loader, 0, 0, rec_dep, r)
         influences.append(influence.item())
     return np.asarray(influences)
+
 
 def calc_influence_single(
     model,
@@ -433,9 +397,7 @@ def calc_influence_single(
         if time_logging:
             time_b = datetime.datetime.now()
             time_delta = time_b - time_a
-            logging.info(
-                f"Time for grad_z iter:" f" {time_delta.total_seconds() * 1000}"
-            )
+            logging.info(f"Time for grad_z iter:" f" {time_delta.total_seconds() * 1000}")
         with torch.no_grad():
             tmp_influence = (
                 -sum(
@@ -460,6 +422,7 @@ def calc_influence_single(
 
     return influences, harmful.tolist(), helpful.tolist(), test_id_num
 
+
 def load_grad_z(grad_z_dir=Path("./grad_z/"), train_dataset_size=-1):
     """Loads all grad_z data required to calculate the influence function and
     returns it.
@@ -482,12 +445,13 @@ def load_grad_z(grad_z_dir=Path("./grad_z/"), train_dataset_size=-1):
         if -1 == train_dataset_size:
             train_dataset_size = available_grad_z_files
     for i in range(train_dataset_size):
-        grad_z_vecs.append(torch.load(os.path.join(grad_z_dir, str(i) + '.grad_z')))
+        grad_z_vecs.append(torch.load(os.path.join(grad_z_dir, str(i) + ".grad_z")))
         display_progress("grad_z files loaded: ", i, train_dataset_size)
 
     return grad_z_vecs
 
-def load_s_test(s_test_dir=Path("./s_test/"), test_dataset_size=10, suffix='recdep500_r1'):
+
+def load_s_test(s_test_dir=Path("./s_test/"), test_dataset_size=10, suffix="recdep500_r1"):
     """Loads all s_test data required to calculate the influence function
     and returns a list of it.
 
@@ -506,26 +470,18 @@ def load_s_test(s_test_dir=Path("./s_test/"), test_dataset_size=10, suffix='recd
     logging.info(f"Loading s_test from: {s_test_dir} ...")
     num_s_test_files = len(list(s_test_dir.glob("*.s_test")))
     if num_s_test_files != test_dataset_size:
-        logging.warning(
-            "Load Influence Data: number of s_test sample files"
-            " mismatches the available samples"
-        )
+        logging.warning("Load Influence Data: number of s_test sample files" " mismatches the available samples")
     for i in range(num_s_test_files):
-        s_test.append(torch.load(os.path.join(s_test_dir, str(i) + '_' + suffix + '.s_test')))
+        s_test.append(torch.load(os.path.join(s_test_dir, str(i) + "_" + suffix + ".s_test")))
         display_progress("s_test files loaded: ", i, test_dataset_size)
 
     return s_test
 
-def calc_all_influences(grad_z_dir, train_dataset_size,
-                        s_test_dir, test_dataset_size):
-    grad_z_vecs = load_grad_z(
-        grad_z_dir=grad_z_dir,
-        train_dataset_size=train_dataset_size)
-    suffix = 'recdep{}_r1'.format(train_dataset_size)
-    s_test_vecs = load_s_test(
-        s_test_dir=s_test_dir,
-        test_dataset_size=test_dataset_size,
-        suffix=suffix)
+
+def calc_all_influences(grad_z_dir, train_dataset_size, s_test_dir, test_dataset_size):
+    grad_z_vecs = load_grad_z(grad_z_dir=grad_z_dir, train_dataset_size=train_dataset_size)
+    suffix = "recdep{}_r1".format(train_dataset_size)
+    s_test_vecs = load_s_test(s_test_dir=s_test_dir, test_dataset_size=test_dataset_size, suffix=suffix)
 
     influences = torch.zeros(test_dataset_size, train_dataset_size)
     for i in tqdm(range(test_dataset_size)):
@@ -534,13 +490,7 @@ def calc_all_influences(grad_z_dir, train_dataset_size,
             grad_z_vec = grad_z_vecs[j]
             with torch.no_grad():
                 tmp_influence = (
-                    -sum(
-                        [
-                            torch.sum(k * j).data
-                            for k, j in zip(grad_z_vec, s_test_vec)
-                        ]
-                    )
-                    / train_dataset_size
+                    -sum([torch.sum(k * j).data for k, j in zip(grad_z_vec, s_test_vec)]) / train_dataset_size
                 )
             influences[i, j] = tmp_influence
     influences = influences.cpu().numpy()
@@ -579,15 +529,10 @@ def calc_grad_z(model, train_loader, save_pth=False, gpu=-1, start=0):
             torch.save(grad_z_vec, save_pth.joinpath(f"{i}.grad_z"))
         else:
             grad_zs.append(grad_z_vec)
-        display_progress("Calc. grad_z: ", i - start,
-                         len(train_loader.dataset) - start)
+        display_progress("Calc. grad_z: ", i - start, len(train_loader.dataset) - start)
 
     return grad_zs, save_pth
 
-from typing import Any, Tuple
-from torchvision.datasets import VisionDataset
-import numpy as np
-from PIL import Image
 
 def convert_tensor_to_image(x: np.ndarray):
     """
@@ -604,13 +549,17 @@ def convert_tensor_to_image(x: np.ndarray):
         X = np.transpose(X, [0, 2, 3, 1])
     return X
 
-class MyVisionDataset(VisionDataset):
 
+class MyVisionDataset(VisionDataset):
     def __init__(self, data: np.ndarray, y_gt: np.ndarray, *args, **kwargs) -> None:
         root = None
         super().__init__(root, *args, **kwargs)
-        assert isinstance(data, np.ndarray), 'type of data must be np.ndarray type, but got {} instead'.format(type(data))
-        assert isinstance(y_gt, (np.int32, np.int64)), 'type of y_gt must be np.int type, but got {} instead'.format(type(y_gt))
+        assert isinstance(data, np.ndarray), "type of data must be np.ndarray type, but got {} instead".format(
+            type(data)
+        )
+        assert isinstance(y_gt, (np.int32, np.int64)), "type of y_gt must be np.int type, but got {} instead".format(
+            type(y_gt)
+        )
         self.data = np.expand_dims(convert_tensor_to_image(data), 0)
         self.y_gt = np.expand_dims(y_gt, 0)
 

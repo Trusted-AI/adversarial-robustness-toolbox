@@ -100,7 +100,7 @@ class MembershipInferenceWhiteBox(MembershipInferenceAttack):
         self._regressor_model = RegressorMixin in type(self.estimator).__mro__
 
         self._check_params()
-        
+
         if self.attack_model:
             self.default_model = False
             self.attack_model_type = "None"
@@ -109,7 +109,7 @@ class MembershipInferenceWhiteBox(MembershipInferenceAttack):
             if self.attack_model_type == "nn":
                 import torch
                 from torch import nn
-                
+
                 class MembershipInferenceWhiteBoxAttackModel(nn.Module):
                     """
                     Implementation of a pytorch model for learning a membership inference attack.
@@ -119,7 +119,6 @@ class MembershipInferenceWhiteBox(MembershipInferenceAttack):
                     """
 
                     def __init__(self, num_classes, total, num_features=None):
-
                         self.num_classes = num_classes
                         if num_features:
                             self.num_features = num_features
@@ -134,14 +133,14 @@ class MembershipInferenceWhiteBox(MembershipInferenceAttack):
                             nn.ReLU(),
                             nn.Linear(128, 64),
                         )
-                        
+
                         self.loss = nn.Sequential(
                             nn.Dropout(p=0.2),
                             nn.Linear(1, 128),
                             nn.ReLU(),
                             nn.Linear(128, 64),
                         )
-                        
+
                         self.gradient = nn.Sequential(
                             nn.Dropout(p=0.2),
                             nn.Conv2d(1, 1, kernel_size=5, padding=2),
@@ -157,7 +156,7 @@ class MembershipInferenceWhiteBox(MembershipInferenceAttack):
                             nn.ReLU(),
                             nn.Linear(128, 64),
                         )
-                        
+
                         self.labels = nn.Sequential(
                             nn.Dropout(p=0.2),
                             nn.Linear(self.num_classes, 128),
@@ -182,7 +181,7 @@ class MembershipInferenceWhiteBox(MembershipInferenceAttack):
 
                     def forward(self, x_1, loss, gradient, label):
                         """Forward the model."""
-                        #x_1 = x_1.view(-1, 28 * 28)
+                        # x_1 = x_1.view(-1, 28 * 28)
                         out_x1 = self.features(x_1)
                         out_loss = self.loss(loss)
                         out_g = self.gradient(gradient)
@@ -193,7 +192,7 @@ class MembershipInferenceWhiteBox(MembershipInferenceAttack):
 
                 if self.input_type == "prediction":
                     num_classes = self.estimator.nb_classes  # type: ignore
-                    print (num_classes)
+                    print(num_classes)
                     gradient_size = self.get_gradient_size()
                     total = gradient_size[0][0] // 2 * gradient_size[0][1] // 2
                     self.attack_model = MembershipInferenceWhiteBoxAttackModel(num_classes, total=total)
@@ -204,7 +203,6 @@ class MembershipInferenceWhiteBox(MembershipInferenceAttack):
                 self.attack_model = RandomForestClassifier()
             elif self.attack_model_type == "gb":
                 self.attack_model = GradientBoostingClassifier()
-
 
     def fit(  # pylint: disable=W0613
         self,
@@ -270,10 +268,10 @@ class MembershipInferenceWhiteBox(MembershipInferenceAttack):
             if pred is None:
                 if self.attack_model_type == "nn":
                     features = x
-                else: 
-                  features = self.estimator.predict(x).astype(np.float32)
+                else:
+                    features = self.estimator.predict(x).astype(np.float32)
             else:
-                features = pred.astype(np.float32)  
+                features = pred.astype(np.float32)
             # non-members
             if test_pred is None:
                 if self.attack_model_type == "nn":
@@ -332,29 +330,39 @@ class MembershipInferenceWhiteBox(MembershipInferenceAttack):
             from torch.utils.data import DataLoader
             from art.utils import to_cuda
 
-            
             loss_fn = nn.BCELoss()
             optimizer = optim.Adam(self.attack_model.parameters(), lr=self.learning_rate)  # type: ignore
 
-            attack_train_set = self._get_attack_dataset(f_1=x_1, f_2=x_2, estimator=self.estimator,label=y_new)
+            attack_train_set = self._get_attack_dataset(f_1=x_1, f_2=x_2, estimator=self.estimator, label=y_new)
             train_loader = DataLoader(attack_train_set, batch_size=self.batch_size, shuffle=True, num_workers=0)
 
             self.attack_model = to_cuda(self.attack_model)  # type: ignore
             self.attack_model.train()  # type: ignore
 
             for _ in range(self.epochs):
-                for (input1, losses, gradients, labels, targets) in train_loader:
-                    #import ipdb;ipdb.set_trace
-                    #targets = targets.type(torch.LongTensor)
-                    input1, losses, gradients, labels, targets = to_cuda(input1), to_cuda(losses), to_cuda(gradients), to_cuda(labels), to_cuda(targets)
-                    _, losses, gradients, labels = torch.autograd.Variable(input1), torch.autograd.Variable(losses), torch.autograd.Variable(gradients), torch.autograd.Variable(labels)
+                for input1, losses, gradients, labels, targets in train_loader:
+                    # import ipdb;ipdb.set_trace
+                    # targets = targets.type(torch.LongTensor)
+                    input1, losses, gradients, labels, targets = (
+                        to_cuda(input1),
+                        to_cuda(losses),
+                        to_cuda(gradients),
+                        to_cuda(labels),
+                        to_cuda(targets),
+                    )
+                    _, losses, gradients, labels = (
+                        torch.autograd.Variable(input1),
+                        torch.autograd.Variable(losses),
+                        torch.autograd.Variable(gradients),
+                        torch.autograd.Variable(labels),
+                    )
                     targets = torch.autograd.Variable(targets)
 
                     optimizer.zero_grad()
-                    
+
                     outputs = self.attack_model(input1, losses, gradients, labels)  # type: ignore
                     loss = loss_fn(outputs, targets.unsqueeze(1))
-                    #import ipdb;ipdb.set_trace()
+                    # import ipdb;ipdb.set_trace()
                     loss.backward()
                     optimizer.step()
         else:
@@ -439,7 +447,13 @@ class MembershipInferenceWhiteBox(MembershipInferenceAttack):
             test_set = self._get_attack_dataset(f_1=features, f_2=y, estimator=self.estimator)
             test_loader = DataLoader(test_set, batch_size=self.batch_size, shuffle=False, num_workers=0)
             for input1, losses, gradients, labels, targets in test_loader:
-                input1, losses, gradients, labels, targets = to_cuda(input1), to_cuda(losses), to_cuda(gradients), to_cuda(labels), to_cuda(targets)
+                input1, losses, gradients, labels, targets = (
+                    to_cuda(input1),
+                    to_cuda(losses),
+                    to_cuda(gradients),
+                    to_cuda(labels),
+                    to_cuda(targets),
+                )
                 outputs = self.attack_model(input1, losses, gradients, labels)  # type: ignore
                 if not probabilities:
                     predicted = torch.round(outputs)
@@ -476,7 +490,6 @@ class MembershipInferenceWhiteBox(MembershipInferenceAttack):
         return inferred_return
 
     def _get_attack_dataset(self, f_1, f_2, estimator=None, label=None):
-
         from torch.utils.data.dataset import Dataset
 
         class AttackDataset(Dataset):
@@ -490,15 +503,16 @@ class MembershipInferenceWhiteBox(MembershipInferenceAttack):
             def __init__(self, x_1, x_2, y=None):
                 import torch
                 from torch import nn
+
                 self.x_1 = torch.from_numpy(x_1.astype(np.float64)).type(torch.FloatTensor)
                 self.x_2 = torch.from_numpy(x_2.astype(np.int32)).type(torch.FloatTensor)
-                self.target_criterion = nn.CrossEntropyLoss(reduction = 'none')
+                self.target_criterion = nn.CrossEntropyLoss(reduction="none")
 
                 if y is not None:
                     self.y = torch.from_numpy(y.astype(np.int8)).type(torch.FloatTensor)
                 else:
                     self.y = torch.zeros(x_1.shape[0])
-                
+
                 results = estimator.predict(self.x_1)
                 self.losses = self.target_criterion(torch.tensor(results), self.x_2)
                 self.losses.requires_grad_(True)
@@ -507,12 +521,12 @@ class MembershipInferenceWhiteBox(MembershipInferenceAttack):
                     loss.backward(retain_graph=True)
                     gradient_list = reversed(list(estimator.named_parameters()))
                     for name, parameter in gradient_list:
-                        if 'weight' in name:
-                            gradient = parameter.grad.clone() # [column[:, None], row].resize_(100,100)
+                        if "weight" in name:
+                            gradient = parameter.grad.clone()  # [column[:, None], row].resize_(100,100)
                             gradient = gradient.unsqueeze_(0)
                             self.gradients.append(gradient.unsqueeze_(0))
                             break
-                
+
                 self.labels = []
                 class_num = estimator.nb_classes
                 tar = np.argmax(self.x_2, axis=1)
@@ -520,13 +534,12 @@ class MembershipInferenceWhiteBox(MembershipInferenceAttack):
                     label = [0 for i in range(class_num)]
                     label[num.item()] = 1
                     self.labels.append(label)
-                
+
                 self.gradients = torch.cat(self.gradients, dim=0)
                 with torch.no_grad():
                     self.looses = self.losses.unsqueeze_(1).detach()
                 self.outputs, _ = torch.sort(torch.tensor(results), descending=True)
                 self.labels = torch.Tensor(self.labels)
-
 
             def __len__(self):
                 return len(self.x_1)
@@ -558,7 +571,7 @@ class MembershipInferenceWhiteBox(MembershipInferenceAttack):
         gradient_size = []
         gradient_list = reversed(list(self.estimator.named_parameters()))
         for name, parameter in gradient_list:
-            if 'weight' in name:
+            if "weight" in name:
                 gradient_size.append(parameter.shape)
 
         return gradient_size

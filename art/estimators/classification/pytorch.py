@@ -217,7 +217,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         :return: The model parameters.
         """
         return list(self._model.parameters())
-        
+
     @property
     def input_shape(self) -> Tuple[int, ...]:
         """
