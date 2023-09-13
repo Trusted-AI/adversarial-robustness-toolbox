@@ -18,6 +18,7 @@ if importlib.util.find_spec("numba") is not None:
     from art.attacks.evasion.brendel_bethge import BrendelBethgeAttack
 
 from art.attacks.evasion.boundary import BoundaryAttack
+from art.attacks.evasion.composite_adversarial_attack import CompositeAdversarialAttack
 from art.attacks.evasion.carlini import CarliniL2Method, CarliniLInfMethod, CarliniL0Method
 from art.attacks.evasion.decision_tree_attack import DecisionTreeAttack
 from art.attacks.evasion.deepfool import DeepFool
