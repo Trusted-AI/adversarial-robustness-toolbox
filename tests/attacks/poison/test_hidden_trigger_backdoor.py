@@ -37,11 +37,11 @@ def test_poison(art_warning, get_default_mnist_subset, image_dl_estimator, frame
     try:
         (x_train, y_train), (_, _) = get_default_mnist_subset
         functional = True
-        if framework == "huggigngface":
+        if framework == "huggingface":
             functional = False
         classifier, _ = image_dl_estimator(functional=functional)
 
-        if isinstance(classifier, PyTorchClassifier) or isinstance(classifier, HuggingFaceClassifierPyTorch):
+        if isinstance(classifier, (PyTorchClassifier, HuggingFaceClassifierPyTorch)):
 
             def mod(x):
                 original_dtype = x.dtype
@@ -87,7 +87,7 @@ def test_check_params(art_warning, get_default_mnist_subset, image_dl_estimator,
     try:
         (x_train, y_train), (_, _) = get_default_mnist_subset
         functional = True
-        if framework == "huggigngface":
+        if framework == "huggingface":
             functional = False
         classifier, _ = image_dl_estimator(functional=functional)
 
