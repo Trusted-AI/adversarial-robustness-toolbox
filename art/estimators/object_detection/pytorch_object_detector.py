@@ -52,7 +52,7 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
         input_shape: Tuple[int, ...] = (-1, -1, -1),
         optimizer: Optional["torch.optim.Optimizer"] = None,
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
-        channels_first: Optional[bool] = False,
+        channels_first: Optional[bool] = True,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
         preprocessing: "PREPROCESSING_TYPE" = None,
@@ -67,13 +67,13 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
         """
         Initialization.
 
-        :param model: Object detection model. The output of the model is `List[Dict[Tensor]]`, one for each input
-                      image. The fields of the Dict are as follows:
+        :param model: Object detection model. The output of the model is `List[Dict[str, torch.Tensor]]`, one for
+                      each input image. The fields of the Dict are as follows:
 
-                      - boxes (FloatTensor[N, 4]): the predicted boxes in [x1, y1, x2, y2] format, with values
-                        between 0 and H and 0 and W
-                      - labels (Int64Tensor[N]): the predicted labels for each image
-                      - scores (Tensor[N]): the scores or each prediction
+                      - boxes [N, 4]: the boxes in [x1, y1, x2, y2] format, with 0 <= x1 < x2 <= W and
+                        0 <= y1 < y2 <= H.
+                      - labels [N]: the labels for each image.
+                      - scores [N]: the scores of each prediction.
         :param input_shape: The shape of one input sample.
         :param optimizer: The optimizer for training the classifier.
         :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
@@ -215,11 +215,14 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
 
             if not self.channels_first:
                 x_tensor = torch.permute(x_tensor, (0, 3, 1, 2))
-            x_tensor /= norm_factor
+            x_tensor = x_tensor / norm_factor
 
             # Set gradients
             if not no_grad:
-                x_tensor.requires_grad = True
+                if x_tensor.is_leaf:
+                    x_tensor.requires_grad = True
+                else:
+                    x_tensor.retain_grad()
 
             # Apply framework-specific preprocessing
             x_preprocessed, y_preprocessed = self._apply_preprocessing(x=x_tensor, y=y_tensor, fit=fit, no_grad=no_grad)
@@ -233,7 +236,7 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
 
             if not self.channels_first:
                 x_preprocessed = torch.permute(x_preprocessed, (0, 3, 1, 2))
-            x_preprocessed /= norm_factor
+            x_preprocessed = x_preprocessed / norm_factor
 
             # Set gradients
             if not no_grad:
@@ -266,6 +269,12 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
         # Move inputs to device
         x_preprocessed = x_preprocessed.to(self.device)
         y_preprocessed = [{k: v.to(self.device) for k, v in y_i.items()} for y_i in y_preprocessed]
+
+        # Set gradients again after inputs are moved to another device
+        if x_preprocessed.is_leaf:
+            x_preprocessed.requires_grad = True
+        else:
+            x_preprocessed.retain_grad()
 
         loss_components = self._model(x_preprocessed, y_preprocessed)
 

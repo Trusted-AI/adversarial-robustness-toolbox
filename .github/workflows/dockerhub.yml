@@ -35,11 +35,11 @@ jobs:
         with:
           images: adversarialrobustnesstoolbox/releases
           tags: |
-            type=raw,value={{branch}}-1.15.0-{{sha}}
+            type=raw,value={{branch}}-1.15.2-{{sha}}
             type=semver,pattern={{version}}
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@2eb1c1961a95fc15694676618e422e8ba1d63825
+        uses: docker/build-push-action@0a97817b6ade9f46837855d676c4cca3a2471fc9
         with:
           context: .
           push: true

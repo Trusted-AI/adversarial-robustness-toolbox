@@ -34,7 +34,7 @@ def get_adv_trainer(framework, image_dl_estimator):
         if framework in ["tensorflow", "tensorflow2v1"]:
             trainer = None
         if framework == "pytorch":
-            classifier, _ = image_dl_estimator()
+            classifier, _ = image_dl_estimator(from_logits=True)
             attack = ProjectedGradientDescent(
                 classifier,
                 norm=np.inf,
@@ -63,10 +63,18 @@ def fix_get_mnist_subset(get_mnist_dataset):
     yield x_train_mnist[:n_train], y_train_mnist[:n_train], x_test_mnist[:n_test], y_test_mnist[:n_test]
 
 
-@pytest.mark.skip_framework("tensorflow", "keras", "scikitlearn", "mxnet", "kerastf")
-def test_adversarial_trainer_trades_pytorch_fit_and_predict(get_adv_trainer, fix_get_mnist_subset):
+@pytest.mark.only_with_platform("pytorch")
+@pytest.mark.parametrize("label_format", ["one_hot", "numerical"])
+def test_adversarial_trainer_trades_pytorch_fit_and_predict(get_adv_trainer, fix_get_mnist_subset, label_format):
     (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
     x_test_mnist_original = x_test_mnist.copy()
+
+    if label_format == "one_hot":
+        assert y_train_mnist.shape[-1] == 10
+        assert y_test_mnist.shape[-1] == 10
+    if label_format == "numerical":
+        y_test_mnist = np.argmax(y_test_mnist, axis=1)
+        y_train_mnist = np.argmax(y_train_mnist, axis=1)
 
     trainer = get_adv_trainer()
     if trainer is None:
@@ -74,11 +82,19 @@ def test_adversarial_trainer_trades_pytorch_fit_and_predict(get_adv_trainer, fix
         return
 
     predictions = np.argmax(trainer.predict(x_test_mnist), axis=1)
-    accuracy = np.sum(predictions == np.argmax(y_test_mnist, axis=1)) / x_test_mnist.shape[0]
+
+    if label_format == "one_hot":
+        accuracy = np.sum(predictions == np.argmax(y_test_mnist, axis=1)) / x_test_mnist.shape[0]
+    else:
+        accuracy = np.sum(predictions == y_test_mnist) / x_test_mnist.shape[0]
 
     trainer.fit(x_train_mnist, y_train_mnist, nb_epochs=20)
     predictions_new = np.argmax(trainer.predict(x_test_mnist), axis=1)
-    accuracy_new = np.sum(predictions_new == np.argmax(y_test_mnist, axis=1)) / x_test_mnist.shape[0]
+
+    if label_format == "one_hot":
+        accuracy_new = np.sum(predictions_new == np.argmax(y_test_mnist, axis=1)) / x_test_mnist.shape[0]
+    else:
+        accuracy_new = np.sum(predictions_new == y_test_mnist) / x_test_mnist.shape[0]
 
     np.testing.assert_array_almost_equal(
         float(np.mean(x_test_mnist_original - x_test_mnist)),
@@ -92,12 +108,19 @@ def test_adversarial_trainer_trades_pytorch_fit_and_predict(get_adv_trainer, fix
     trainer.fit(x_train_mnist, y_train_mnist, nb_epochs=20, validation_data=(x_train_mnist, y_train_mnist))
 
 
-@pytest.mark.skip_framework("tensorflow", "keras", "scikitlearn", "mxnet", "kerastf")
+@pytest.mark.only_with_platform("pytorch")
+@pytest.mark.parametrize("label_format", ["one_hot", "numerical"])
 def test_adversarial_trainer_trades_pytorch_fit_generator_and_predict(
-    get_adv_trainer, fix_get_mnist_subset, image_data_generator
+    get_adv_trainer, fix_get_mnist_subset, image_data_generator, label_format
 ):
     (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
     x_test_mnist_original = x_test_mnist.copy()
+
+    if label_format == "one_hot":
+        assert y_train_mnist.shape[-1] == 10
+        assert y_test_mnist.shape[-1] == 10
+    if label_format == "numerical":
+        y_test_mnist = np.argmax(y_test_mnist, axis=1)
 
     generator = image_data_generator()
 
@@ -107,11 +130,18 @@ def test_adversarial_trainer_trades_pytorch_fit_generator_and_predict(
         return
 
     predictions = np.argmax(trainer.predict(x_test_mnist), axis=1)
-    accuracy = np.sum(predictions == np.argmax(y_test_mnist, axis=1)) / x_test_mnist.shape[0]
+    if label_format == "one_hot":
+        accuracy = np.sum(predictions == np.argmax(y_test_mnist, axis=1)) / x_test_mnist.shape[0]
+    else:
+        accuracy = np.sum(predictions == y_test_mnist) / x_test_mnist.shape[0]
 
     trainer.fit_generator(generator=generator, nb_epochs=20)
     predictions_new = np.argmax(trainer.predict(x_test_mnist), axis=1)
-    accuracy_new = np.sum(predictions_new == np.argmax(y_test_mnist, axis=1)) / x_test_mnist.shape[0]
+
+    if label_format == "one_hot":
+        accuracy_new = np.sum(predictions_new == np.argmax(y_test_mnist, axis=1)) / x_test_mnist.shape[0]
+    else:
+        accuracy_new = np.sum(predictions_new == y_test_mnist) / x_test_mnist.shape[0]
 
     np.testing.assert_array_almost_equal(
         float(np.mean(x_test_mnist_original - x_test_mnist)),
