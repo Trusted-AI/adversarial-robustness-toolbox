@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2020
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2023
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -52,7 +52,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class CompositeAdversarialAttack(EvasionAttack):
+class CompositeAdversarialAttackPyTorch(EvasionAttack):
     """
     Implementation of the composite adversarial attack on image classifiers in PyTorch. The attack is constructed by adversarially
     perturbing the hue component of the inputs. It uses the iterative gradient sign method to optimise the semantic
@@ -100,7 +100,7 @@ class CompositeAdversarialAttack(EvasionAttack):
             verbose: bool = True,
     ) -> None:
         """
-        Create an instance of the :class:`.HueGradientPyTorch`.
+        Create an instance of the :class:`.CompositeAdversarialAttackPyTorch`.
 
         :param classifier: A trained PyTorch classifier.
         :param enabled_attack: The norm of the adversarial perturbation. Possible values: `"inf"`, `np.inf`, `1` or `2`.
@@ -134,6 +134,8 @@ class CompositeAdversarialAttack(EvasionAttack):
         :param batch_size: The batch size to use during the generation of adversarial samples.
         :param verbose: Show progress bars.
         """
+        import torch
+
         super().__init__(estimator=classifier)
         self.classifier = classifier
         self.model = classifier.model
@@ -171,7 +173,7 @@ class CompositeAdversarialAttack(EvasionAttack):
     def _check_params(self) -> None:
         super()._check_params()
         if self.attack_order not in ('fixed', 'random', 'scheduled'):
-            print("attack_order: {}, should be either 'fixed', 'random', or 'scheduled'.".format(self.attack_order))
+            logger.info("attack_order: {}, should be either 'fixed', 'random', or 'scheduled'.".format(self.attack_order))
             raise ValueError
 
     def _set_targets(
@@ -212,6 +214,8 @@ class CompositeAdversarialAttack(EvasionAttack):
         return targets
 
     def _setup_attack(self):
+    import torch
+
         hue_space = torch.rand(self.batch_size, device=self.device) * (
                 self.eps_pool[0][1] - self.eps_pool[0][0]) + self.eps_pool[0][0]
         sat_space = torch.rand(self.batch_size, device=self.device) * (
@@ -234,6 +238,8 @@ class CompositeAdversarialAttack(EvasionAttack):
             y: Optional[np.ndarray] = None,
             **kwargs
     ) -> np.ndarray:
+    import torch
+
         targets = self._set_targets(x, y)
         dataset = torch.utils.data.TensorDataset(
             torch.from_numpy(x.astype(ART_NUMPY_DTYPE)),
@@ -282,6 +288,8 @@ class CompositeAdversarialAttack(EvasionAttack):
                      Samples for which the mask is zero will not be adversarially perturbed.
         :return: Adversarial examples.
         """
+        import torch
+
 
         self.batch_size = x.shape[0]
         self._setup_attack()
@@ -292,6 +300,8 @@ class CompositeAdversarialAttack(EvasionAttack):
         return self.caa_attack(x, y).cpu().detach().numpy()
 
     def _comp_pgd(self, data, labels, attack_idx, attack_parameter, ori_is_attacked):
+    import torch
+
         adv_data = self.attack_pool_base[attack_idx](data, attack_parameter)
         for _ in range(self.max_inner_iter):
             outputs = self.model(adv_data)
@@ -359,6 +369,8 @@ class CompositeAdversarialAttack(EvasionAttack):
                               ori_is_attacked=self.is_attacked.clone())
 
     def caa_linf(self, data, labels):
+    import torch
+
         sur_data = data.detach()
         adv_data = data.detach().requires_grad_()
         ori_is_attacked = self.is_attacked.clone()
@@ -382,9 +394,13 @@ class CompositeAdversarialAttack(EvasionAttack):
         return adv_data
 
     def get_linf_perturbation(self, data, noise):
+    import torch
+
         return torch.clamp(data + noise, 0.0, 1.0)
 
     def update_attack_order(self, images, labels, adv_val=None):
+    import torch
+
         def hungarian(matrix_batch):
             sol = torch.tensor([-i for i in range(1, matrix_batch.shape[0] + 1)], dtype=torch.int32)
             for i in range(matrix_batch.shape[0]):
@@ -443,6 +459,8 @@ class CompositeAdversarialAttack(EvasionAttack):
             raise ValueError()
 
     def caa_attack(self, images, labels):
+    import torch
+
         attack = self.attack_dict
         adv_img = images.detach().clone()
         adv_val_saved = torch.zeros((self.seq_num, self.batch_size), device=self.device)
