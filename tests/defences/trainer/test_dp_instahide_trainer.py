@@ -102,20 +102,7 @@ def test_dp_instahide_single_aug(
 ):
     classifier = get_mnist_classifier()
 
-    if framework == "huggingface" and HF_MODEL_SIZE == "LARGE":
-        import numpy as np
-        import torch
-
-        upsampler = torch.nn.Upsample(scale_factor=7, mode="nearest")
-
-        (x_train, y_train), (_, _) = get_default_cifar10_subset
-        x_train = np.rollaxis(x_train, 3, 1)
-        x_train = np.float32(upsampler(torch.from_numpy(x_train)).cpu().numpy())
-        x_train = x_train[0:64]  # large model so select only a small portion
-        y_train = y_train[0:64]
-
-    else:
-        (x_train, y_train), (_, _) = get_default_mnist_subset
+    (x_train, y_train), (_, _) = get_default_mnist_subset
 
     mixup = Mixup(num_classes=10)
 
@@ -133,20 +120,7 @@ def test_dp_instahide_multiple_aug(
 ):
     classifier = get_mnist_classifier()
 
-    if framework == "huggingface" and HF_MODEL_SIZE == "LARGE":
-        import numpy as np
-        import torch
-
-        upsampler = torch.nn.Upsample(scale_factor=7, mode="nearest")
-
-        (x_train, y_train), (_, _) = get_default_cifar10_subset
-        x_train = np.rollaxis(x_train, 3, 1)
-        x_train = np.float32(upsampler(torch.from_numpy(x_train)).cpu().numpy())
-        x_train = x_train[0:64]  # large model so select only a small portion
-        y_train = y_train[0:64]
-
-    else:
-        (x_train, y_train), (_, _) = get_default_mnist_subset
+    (x_train, y_train), (_, _) = get_default_mnist_subset
 
     mixup = Mixup(num_classes=10)
     cutout = Cutout(length=8, channels_first=False)
@@ -165,27 +139,7 @@ def test_dp_instahide_validation_data(
 ):
     classifier = get_mnist_classifier()
 
-    if framework == "huggingface" and HF_MODEL_SIZE == "LARGE":
-        import numpy as np
-        import torch
-
-        upsampler = torch.nn.Upsample(scale_factor=7, mode="nearest")
-
-        (x_train, y_train), (x_test, y_test) = get_default_cifar10_subset
-
-        x_train = np.rollaxis(x_train, 3, 1)
-        x_test = np.rollaxis(x_test, 3, 1)
-
-        x_train = np.float32(upsampler(torch.from_numpy(x_train)).cpu().numpy())
-        x_train = x_train[0:64]  # large model so select only a small portion
-        y_train = y_train[0:64]
-
-        x_test = np.float32(upsampler(torch.from_numpy(x_test)).cpu().numpy())
-        x_test = x_test[0:64]  # large model so select only a small portion
-        y_test = y_test[0:64]
-
-    else:
-        (x_train, y_train), (x_test, y_test) = get_default_mnist_subset
+    (x_train, y_train), (x_test, y_test) = get_default_mnist_subset
     mixup = Mixup(num_classes=10)
 
     try:
@@ -204,19 +158,7 @@ def test_dp_instahide_generator(
 
     classifier = get_mnist_classifier()
 
-    if framework == "huggingface" and HF_MODEL_SIZE == "LARGE":
-        import numpy as np
-        import torch
-
-        upsampler = torch.nn.Upsample(scale_factor=7, mode="nearest")
-
-        (x_train, y_train), (_, _) = get_default_cifar10_subset
-        x_train = np.rollaxis(x_train, 3, 1)
-        x_train = np.float32(upsampler(torch.from_numpy(x_train)).cpu().numpy())
-        x_train = x_train[0:64]  # large model so select only a small portion
-        y_train = y_train[0:64]
-    else:
-        (x_train, y_train), (_, _) = get_default_mnist_subset
+    (x_train, y_train), (_, _) = get_default_mnist_subset
 
     mixup = Mixup(num_classes=10)
     generator = NumpyDataGenerator(x_train, y_train, batch_size=len(x_train))
