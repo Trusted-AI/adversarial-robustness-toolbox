@@ -26,8 +26,6 @@ from art.estimators.classification import PyTorchClassifier, TensorFlowV2Classif
 from tests.utils import ARTTestException
 from tests.utils import get_image_classifier_hf
 
-HF_MODEL_SIZE = "SMALL"
-
 logger = logging.getLogger(__name__)
 
 
@@ -87,27 +85,7 @@ def get_mnist_classifier(framework):
             classifier = KerasClassifier(model, clip_values=(0, 1), use_logits=True)
 
         elif framework == "huggingface":
-            if HF_MODEL_SIZE == "LARGE":  # NB: is killed on CI github actions.
-                import transformers
-                import torch
-                from art.estimators.hugging_face import HuggingFaceClassifier
-
-                model = transformers.AutoModelForImageClassification.from_pretrained(
-                    "facebook/deit-tiny-patch16-224", ignore_mismatched_sizes=True, num_labels=10  # takes 3 min
-                )
-
-                print("num of parameters is ", sum(p.numel() for p in model.parameters() if p.requires_grad))
-                optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
-                classifier = HuggingFaceClassifier(
-                    model,
-                    loss=torch.nn.CrossEntropyLoss(),
-                    optimizer=optimizer,
-                    input_shape=(3, 224, 224),
-                    nb_classes=10,
-                    processor=None,
-                )
-            else:
-                classifier = get_image_classifier_hf(from_logits=True)
+            classifier = get_image_classifier_hf(from_logits=True)
 
         else:
             classifier = None
