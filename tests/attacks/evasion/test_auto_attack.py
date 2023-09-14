@@ -145,6 +145,15 @@ def test_generate_attacks_and_targeted(art_warning, fix_get_mnist_subset, image_
         art_warning(e)
 
 
+@pytest.mark.skip_framework("tensorflow1", "tensorflow2v1", "keras", "non_dl_frameworks", "mxnet", "kerastf")
+def test_attack_if_targeted_not_supported(art_warning, fix_get_mnist_subset, image_dl_estimator):
+    with pytest.raises(ValueError) as excinfo:
+        classifier, _ = image_dl_estimator(from_logits=True)
+        attack = SquareAttack(estimator=classifier, norm=np.inf, max_iter=5000, eps=0.3, p_init=0.8, nb_restarts=5)
+        attack.set_params(targeted=True)
+    assert str(excinfo.value) == """The attribute "targeted" cannot be set for this attack."""
+
+
 @pytest.mark.skip_framework("tensorflow1", "keras", "pytorch", "non_dl_frameworks", "mxnet", "kerastf")
 def test_check_params(art_warning, image_dl_estimator_for_attack):
     try:
