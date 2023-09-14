@@ -10,4 +10,6 @@ from art.defences.trainer.adversarial_trainer_fbf import AdversarialTrainerFBF
 from art.defences.trainer.adversarial_trainer_fbf_pytorch import AdversarialTrainerFBFPyTorch
 from art.defences.trainer.adversarial_trainer_trades import AdversarialTrainerTRADES
 from art.defences.trainer.adversarial_trainer_trades_pytorch import AdversarialTrainerTRADESPyTorch
+from art.defences.trainer.adversarial_trainer_awp import AdversarialTrainerAWP
+from art.defences.trainer.adversarial_trainer_awp_pytorch import AdversarialTrainerAWPPyTorch
 from art.defences.trainer.dp_instahide_trainer import DPInstaHideTrainer

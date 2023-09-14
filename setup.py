@@ -113,7 +113,7 @@ setup(
             "sortedcontainers",
             "numba",
             "timm",
-        ],
+            "multiprocess",
     },
     classifiers=[
         "Development Status :: 3 - Alpha",

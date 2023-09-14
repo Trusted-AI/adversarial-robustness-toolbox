@@ -27,44 +27,6 @@ from tests.utils import ARTTestException
 logger = logging.getLogger(__name__)
 
 
-@pytest.fixture()
-def get_pytorch_faster_rcnn(get_default_mnist_subset):
-    """
-    This class tests the PyTorchFasterRCNN object detector.
-    """
-    from art.estimators.object_detection.pytorch_faster_rcnn import PyTorchFasterRCNN
-
-    # Define object detector
-    object_detector = PyTorchFasterRCNN(
-        clip_values=(0, 1),
-        channels_first=False,
-        attack_losses=["loss_classifier", "loss_box_reg", "loss_objectness", "loss_rpn_box_reg"],
-    )
-
-    (_, _), (x_test_mnist, _) = get_default_mnist_subset
-
-    x_test = np.transpose(x_test_mnist[:2], (0, 2, 3, 1))
-    x_test = np.repeat(x_test.astype(np.float32), repeats=3, axis=3)
-
-    # Create labels
-    result = object_detector.predict(x=x_test)
-
-    y_test = [
-        {
-            "boxes": result[0]["boxes"],
-            "labels": result[0]["labels"],
-            "scores": np.ones_like(result[0]["labels"]),
-        },
-        {
-            "boxes": result[1]["boxes"],
-            "labels": result[1]["labels"],
-            "scores": np.ones_like(result[1]["labels"]),
-        },
-    ]
-
-    yield object_detector, x_test, y_test
-
-
 @pytest.mark.only_with_platform("pytorch")
 def test_predict(art_warning, get_pytorch_faster_rcnn):
     try:
@@ -94,14 +56,7 @@ def test_predict(art_warning, get_pytorch_faster_rcnn):
 @pytest.mark.only_with_platform("pytorch")
 def test_fit(art_warning, get_pytorch_faster_rcnn):
     try:
-        import torch
-
         object_detector, x_test, y_test = get_pytorch_faster_rcnn
-
-        params = [p for p in object_detector.model.parameters() if p.requires_grad]
-        optimizer = torch.optim.SGD(params, lr=0.01)
-
-        object_detector.set_params(optimizer=optimizer)
 
         # Compute loss before training
         loss1 = object_detector.compute_loss(x=x_test, y=y_test)
