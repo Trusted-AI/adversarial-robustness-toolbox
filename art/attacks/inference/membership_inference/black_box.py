@@ -27,6 +27,10 @@ from typing import Any, Optional, Union, TYPE_CHECKING
 
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.svm import SVC
 
 from art.attacks.attack import MembershipInferenceAttack
 from art.estimators.estimator import BaseEstimator
@@ -61,24 +65,39 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
         input_type: str = "prediction",
         attack_model_type: str = "nn",
         attack_model: Optional[Any] = None,
+        nn_model_epochs: int = 100,
+        nn_model_batch_size: int = 100,
+        nn_model_learning_rate: float = 0.0001,
     ):
         """
         Create a MembershipInferenceBlackBox attack instance.
 
         :param estimator: Target estimator.
-        :param attack_model_type: the type of default attack model to train, optional. Should be one of `nn` (for neural
-                                  network, default), `rf` (for random forest) or `gb` (gradient boosting). If
-                                  `attack_model` is supplied, this option will be ignored.
+        :param attack_model_type: the type of default attack model to train, optional. Should be one of:
+                                 `nn` (neural network, default),
+                                 `rf` (random forest),
+                                 `gb` (gradient boosting),
+                                 `lr` (logistic regression),
+                                 `dt` (decision tree),
+                                 `knn` (k nearest neighbors),
+                                 `svm` (support vector machine).
+                                 If `attack_model` is supplied, this option will be ignored.
         :param input_type: the type of input to train the attack on. Can be one of: 'prediction' or 'loss'. Default is
                            `prediction`. Predictions can be either probabilities or logits, depending on the return type
                            of the model. If the model is a regressor, only `loss` can be used.
         :param attack_model: The attack model to train, optional. If none is provided, a default model will be created.
+        :param nn_model_epochs: the number of epochs to use when training a nn attack model
+        :param nn_model_batch_size: the batch size to use when training a nn attack model
+        :param nn_model_learning_rate: the learning rate to use when training a nn attack model
         """
 
         super().__init__(estimator=estimator)
         self.input_type = input_type
         self.attack_model_type = attack_model_type
         self.attack_model = attack_model
+        self.epochs = nn_model_epochs
+        self.batch_size = nn_model_batch_size
+        self.learning_rate = nn_model_learning_rate
 
         self._regressor_model = RegressorMixin in type(self.estimator).__mro__
 
@@ -149,13 +168,18 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
                     else:
                         num_classes = estimator.nb_classes  # type: ignore
                         self.attack_model = MembershipInferenceAttackModel(num_classes, num_features=1)
-                self.epochs = 100
-                self.batch_size = 100
-                self.learning_rate = 0.0001
             elif self.attack_model_type == "rf":
                 self.attack_model = RandomForestClassifier()
             elif self.attack_model_type == "gb":
                 self.attack_model = GradientBoostingClassifier()
+            elif self.attack_model_type == "lr":
+                self.attack_model = LogisticRegression()
+            elif self.attack_model_type == "dt":
+                self.attack_model = DecisionTreeClassifier()
+            elif self.attack_model_type == "knn":
+                self.attack_model = KNeighborsClassifier()
+            elif self.attack_model_type == "svm":
+                self.attack_model = SVC(probability=True)
 
     def fit(  # pylint: disable=W0613
         self,
@@ -454,7 +478,7 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
             if self.input_type != "loss":
                 raise ValueError("Illegal value for parameter `input_type` when estimator is a regressor.")
 
-        if self.attack_model_type not in ["nn", "rf", "gb"]:
+        if self.attack_model_type not in ["nn", "rf", "gb", "lr", "dt", "knn", "svm"]:
             raise ValueError("Illegal value for parameter `attack_model_type`.")
 
         if self.attack_model:
