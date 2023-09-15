@@ -145,6 +145,7 @@ class AutoAttack(EvasionAttack):
 
         self._targeted = targeted
         self.parallel = parallel
+        self.best_attacks: np.ndarray = np.array([])
         self._check_params()
 
     def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
@@ -174,6 +175,11 @@ class AutoAttack(EvasionAttack):
         # Determine correctly predicted samples
         y_pred = self.estimator_orig.predict(x.astype(ART_NUMPY_DTYPE))
         sample_is_robust = np.argmax(y_pred, axis=1) == np.argmax(y, axis=1)
+
+        # Set slots for images which have yet to be filled as -1
+        self.best_attacks = np.array([-1] * len(x))
+        # Set samples that are misclassified and do not need to be filled as -2
+        self.best_attacks[np.logical_not(sample_is_robust)] = -2
 
         args = []
         # Untargeted attacks
@@ -209,6 +215,13 @@ class AutoAttack(EvasionAttack):
                     eps=self.eps,
                     **kwargs,
                 )
+                # create a mask which identifies images which this attack was effective on
+                # not including originally misclassified images
+                atk_mask = np.logical_and(
+                    np.array([i == -1 for i in self.best_attacks]), np.logical_not(sample_is_robust)
+                )
+                # update attack at image index with index of attack that was successful
+                self.best_attacks[atk_mask] = self.attacks.index(attack)
 
         # Targeted attacks
         if self.targeted:
@@ -256,6 +269,13 @@ class AutoAttack(EvasionAttack):
                                 eps=self.eps,
                                 **kwargs,
                             )
+                            # create a mask which identifies images which this attack was effective on
+                            # not including originally misclassified images
+                            atk_mask = np.logical_and(
+                                np.array([i == -1 for i in self.best_attacks]), np.logical_not(sample_is_robust)
+                            )
+                            # update attack at image index with index of attack that was successful
+                            self.best_attacks[atk_mask] = self.attacks.index(attack)
                 except ValueError as error:
                     logger.warning("Error completing attack: %s}", str(error))
 
@@ -270,7 +290,8 @@ class AutoAttack(EvasionAttack):
                 is_robust.append([i[1][img_idx] for i in results])
             best_attacks = np.argmin(np.where(np.invert(np.array(is_robust)), np.array(perturbations), np.inf), axis=1)
             x_adv = np.concatenate([results[best_attacks[img]][0][[img]] for img in range(len(x))])
-
+            self.best_attacks = best_attacks
+            self.args = args
         return x_adv
 
     def _check_params(self) -> None:
@@ -285,6 +306,34 @@ class AutoAttack(EvasionAttack):
 
         if not isinstance(self.batch_size, int) or self.batch_size <= 0:
             raise ValueError("The argument batch_size has to be of type int and larger than zero.")
+
+    def __repr__(self) -> str:
+        """
+        This method returns a summary of the best performing (lowest perturbation in the parallel case) attacks
+        per image passed to the AutoAttack class.
+        """
+        if self.parallel:
+            best_attack_meta = "\n".join(
+                [
+                    f"image {i+1}: {str(self.args[idx][3])}" if idx != 0 else f"image {i+1}: n/a"
+                    for i, idx in enumerate(self.best_attacks)
+                ]
+            )
+            auto_attack_meta = (
+                f"AutoAttack(targeted={self.targeted}, parallel={self.parallel}, num_attacks={len(self.args)})"
+            )
+            return f"{auto_attack_meta}\nBestAttacks:\n{best_attack_meta}"
+
+        best_attack_meta = "\n".join(
+            [
+                f"image {i+1}: {str(self.attacks[idx])}" if idx != -2 else f"image {i+1}: n/a"
+                for i, idx in enumerate(self.best_attacks)
+            ]
+        )
+        auto_attack_meta = (
+            f"AutoAttack(targeted={self.targeted}, parallel={self.parallel}, num_attacks={len(self.attacks)})"
+        )
+        return f"{auto_attack_meta}\nBestAttacks:\n{best_attack_meta}"
 
 
 def run_attack(
