@@ -27,7 +27,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 
-from typing import Optional, Tuple, List, TYPE_CHECKING
+from typing import Optional, Tuple, TYPE_CHECKING
 
 import numpy as np
 from tqdm.auto import tqdm
@@ -84,12 +84,12 @@ class CompositeAdversarialAttackPyTorch(EvasionAttack):
             classifier: "PyTorchClassifier",
             enabled_attack: Tuple = (0, 1, 2, 3, 4, 5),
             # Default: Full Attacks; 0: Hue, 1: Saturation, 2: Rotation, 3: Brightness, 4: Contrast, 5: PGD (L-infinity)
-            hue_epsilon: List = [-np.pi, np.pi],
-            sat_epsilon: List = [0.7, 1.3],
-            rot_epsilon: List = [-10, 10],
-            bri_epsilon: List = [-0.2, 0.2],
-            con_epsilon: List = [0.7, 1.3],
-            pgd_epsilon: List = [-8 / 255, 8 / 255],  # L-infinity
+            hue_epsilon: Tuple = (-np.pi, np.pi),
+            sat_epsilon: Tuple = (0.7, 1.3),
+            rot_epsilon: Tuple = (-10, 10),
+            bri_epsilon: Tuple = (-0.2, 0.2),
+            con_epsilon: Tuple = (0.7, 1.3),
+            pgd_epsilon: Tuple = (-8 / 255, 8 / 255),  # L-infinity
             early_stop: bool = True,
             max_iter: int = 5,
             max_inner_iter: int = 10,
@@ -108,19 +108,19 @@ class CompositeAdversarialAttackPyTorch(EvasionAttack):
                                semantic attacks; `(0,1,2,3,4,5)` means the full attacks.
         :param hue_epsilon: The boundary of the hue perturbation. The value is expected to be in the interval
                            `[-np.pi, np.pi]`. Perturbation of `0` means no shift and `-np.pi` and `np.pi` give a
-                           complete reversal of the hue channel in the HSV colour space in the positive and negative
+                           complete reversal of the hue channel in the HSV color space in the positive and negative
                            directions, respectively. See `kornia.enhance.adjust_hue` for more details.
         :param sat_epsilon: The boundary of the saturation perturbation. The value is expected to be in the interval
-                           `[0, infinity)`. Perturbation of `0` gives a black and white image, `1` gives the original
-                           image, while `2` enhances the saturation by a factor of 2. See
-                           `kornia.geometry.transform.rotate` for more details.
+                            `[0, infinity]`. The perturbation of `0` gives a black-and-white image, `1` gives the
+                            original image, and `2` enhances the saturation by a factor of 2. See
+                            `kornia.geometry.transform.rotate` for more details.
         :param rot_epsilon: The boundary of the rotation perturbation (in degrees). Positive values mean
                             counter-clockwise rotation. See `kornia.geometry.transform.rotate` for more details.
         :param bri_epsilon: The boundary of the brightness perturbation. The value is expected to be in the interval
                            `[-1, 1]`. Perturbation of `0` means no shift, `-1` gives a complete black image, and `1`
                            gives a complete white image. See `kornia.enhance.adjust_brightness` for more details.
         :param con_epsilon: The boundary of the contrast perturbation. The value is expected to be in the interval
-                           `[0, infinity)`. Perturbation of `0` gives a complete black image, `1` does not modify the
+                           `[0, infinity]`. Perturbation of `0` gives a complete black image, `1` does not modify the
                            image, and any other value modifies the brightness by this factor. See
                            `kornia.enhance.adjust_contrast` for more details.
         :param pgd_epsilon: The maximum perturbation that the attacker can introduce in the L-infinity ball.
@@ -129,10 +129,10 @@ class CompositeAdversarialAttackPyTorch(EvasionAttack):
         :param max_iter: The maximum number of iterations for attack order optimization.
         :param max_inner_iter: The maximum number of iterations for each attack optimization.
         :param attack_order: Specify the scheduling type for composite adversarial attack. The value is expected to be
-                             `fixed`, `random', or `scheduled`. `fixed` means the attack order is the same as specified
-                             in `enabled_attack`. `random` means the attack order is randomly generated at each iteration.
-                             `scheduled` means to enable the attack order optimization proposed in the paper. If only one
-                              attack is enabled, `fixed` will be used.
+                             `fixed`, `random`, or `scheduled`. `fixed` means the attack order is the same as specified
+                             in `enabled_attack`. `random` means the attack order is randomly generated at each
+                             iteration. `scheduled` means to enable the attack order optimization proposed in the paper.
+                             If only one attack is enabled, `fixed` will be used.
         :param batch_size: The batch size to use during the generation of adversarial samples.
         :param verbose: Show progress bars.
         """
@@ -178,24 +178,24 @@ class CompositeAdversarialAttackPyTorch(EvasionAttack):
                 value in [0, 1, 2, 3, 4, 5] for value in self.enabled_attack):
             raise ValueError(
                 "The parameter `enabled_attack` must be a tuple specifying the attack to launch. For simplicity, we use"
-                + " the following abbreviations to specify each attack types. 0: Hue, 1: Saturation, 2: Rotation, 3: Br"
-                + "ightness, 4: Contrast, 5: PGD(L-infinity). Therefore, `(0,1,2)` means that the attack combines hue, "
-                + "saturation, and rotation; `(0,1,2,3,4)` means the all semantic attacks; `(0,1,2,3,4,5)` means the fu"
-                + "ll attacks.")
-        _epsilons_range = [["hue_epsilon", [-np.pi, np.pi], "[-np.pi, np.pi]"],
-                           ["sat_epsilon", [0, np.inf], "[0, np.inf]"], ["rot_epsilon", [-360, 360], "[-360, 360]"],
-                           ["bri_epsilon", [-1, 1], "[-1, 1]"], ["con_epsilon", [0, np.inf], "[0, np.inf]"],
-                           ["pgd_epsilon", [-1, 1], "[-1, 1]"]]
+                + " the following abbreviations to specify each attack types. 0: Hue, 1: Saturation, 2: Rotation,"
+                + " 3: Brightness, 4: Contrast, 5: PGD(L-infinity). Therefore, `(0,1,2)` means that the attack combines"
+                + " hue, saturation, and rotation; `(0,1,2,3,4)` means the all semantic attacks; `(0,1,2,3,4,5)` means"
+                + " the full attacks.")
+        _epsilons_range = [["hue_epsilon", (-np.pi, np.pi), "(-np.pi, np.pi)"],
+                           ["sat_epsilon", (0, np.inf), "(0, np.inf)"], ["rot_epsilon", (-360, 360), "(-360, 360)"],
+                           ["bri_epsilon", (-1, 1), "(-1, 1)"], ["con_epsilon", (0, np.inf), "(0, np.inf)"],
+                           ["pgd_epsilon", (-1, 1), "(-1, 1)"]]
         for i in range(6):
-            if (not isinstance(self.epsilons[i], list) or
-                not len(self.epsilons[i]) == 2 or
-                not _epsilons_range[i][1][0] <= self.epsilons[i][0] <= self.epsilons[i][1] <=  _epsilons_range[i][1][1]):
+            if (not isinstance(self.epsilons[i], tuple) or not len(self.epsilons[i]) == 2 or
+                    not (_epsilons_range[i][1][0] <= self.epsilons[i][0] <=
+                         self.epsilons[i][1] <= _epsilons_range[i][1][1])):
                 logger.info(
                     "The argument `" + _epsilons_range[i][0] + "` must be an interval within " + _epsilons_range[i][2]
-                    + " of type list.")
+                    + " of type tuple.")
                 raise ValueError(
                     "The argument `" + _epsilons_range[i][0] + "` must be an interval within " + _epsilons_range[i][2]
-                    + " of type list.")
+                    + " of type tuple.")
 
         if not isinstance(self.early_stop, bool):
             logger.info("The flag `early_stop` has to be of type bool.")
@@ -265,16 +265,16 @@ class CompositeAdversarialAttackPyTorch(EvasionAttack):
     def _setup_attack(self):
         import torch
 
-        hue_space = torch.rand(self.batch_size, device=self.device) * (
-                self.eps_pool[0][1] - self.eps_pool[0][0]) + self.eps_pool[0][0]
-        sat_space = torch.rand(self.batch_size, device=self.device) * (
-                self.eps_pool[1][1] - self.eps_pool[1][0]) + self.eps_pool[1][0]
-        rot_space = torch.rand(self.batch_size, device=self.device) * (
-                self.eps_pool[2][1] - self.eps_pool[2][0]) + self.eps_pool[2][0]
-        bri_space = torch.rand(self.batch_size, device=self.device) * (
-                self.eps_pool[3][1] - self.eps_pool[3][0]) + self.eps_pool[3][0]
-        con_space = torch.rand(self.batch_size, device=self.device) * (
-                self.eps_pool[4][1] - self.eps_pool[4][0]) + self.eps_pool[4][0]
+        hue_space = torch.rand(self.batch_size, device=self.device) * (self.eps_pool[0][1] - self.eps_pool[0][0]) + \
+                    self.eps_pool[0][0]
+        sat_space = torch.rand(self.batch_size, device=self.device) * (self.eps_pool[1][1] - self.eps_pool[1][0]) + \
+                    self.eps_pool[1][0]
+        rot_space = torch.rand(self.batch_size, device=self.device) * (self.eps_pool[2][1] - self.eps_pool[2][0]) + \
+                    self.eps_pool[2][0]
+        bri_space = torch.rand(self.batch_size, device=self.device) * (self.eps_pool[3][1] - self.eps_pool[3][0]) + \
+                    self.eps_pool[3][0]
+        con_space = torch.rand(self.batch_size, device=self.device) * (self.eps_pool[4][1] - self.eps_pool[4][0]) + \
+                    self.eps_pool[4][0]
         pgd_space = 0.001 * torch.randn([self.batch_size, 3, 32, 32], device=self.device)
         self.adv_val_pool = [hue_space, sat_space, rot_space, bri_space, con_space, pgd_space]
 
@@ -305,7 +305,6 @@ class CompositeAdversarialAttackPyTorch(EvasionAttack):
         for (batch_id, batch_all) in enumerate(
                 tqdm(data_loader, desc=self._description, leave=False, disable=not self.verbose)
         ):
-            self._batch_id = batch_id
             (batch_x, batch_targets, batch_mask) = batch_all[0], batch_all[1], None
             batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
 
@@ -339,7 +338,6 @@ class CompositeAdversarialAttackPyTorch(EvasionAttack):
         """
         import torch
 
-
         self.batch_size = x.shape[0]
         self._setup_attack()
         self.is_attacked = torch.zeros(self.batch_size, device=self.device).bool()
@@ -347,6 +345,7 @@ class CompositeAdversarialAttackPyTorch(EvasionAttack):
         x, y = x.to(self.device), y.to(self.device)
 
         return self.caa_attack(x, y).cpu().detach().numpy()
+
     def _comp_pgd(
             self,
             data: "torch.Tensor",
