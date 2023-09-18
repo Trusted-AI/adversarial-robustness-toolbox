@@ -34,11 +34,12 @@ class ARTInput(UserDict):
         if isinstance(key, int):
             pixel_values = UserDict.__getitem__(self, 'pixel_values')
             original_shape = pixel_values.shape
-            if isinstance(value, ARTInput):
-                pixel_values[key] = value['pixel_values']
-            else:
-                pixel_values[key] = torch.tensor(value)
-            self['pixel_values'] = pixel_values
+            with torch.no_grad():
+                if isinstance(value, ARTInput):
+                    pixel_values[key] = value['pixel_values']
+                else:
+                    pixel_values[key] = torch.tensor(value)
+                self['pixel_values'] = pixel_values
             assert self['pixel_values'].shape == original_shape
 
     def __getitem__(self, item):

@@ -54,11 +54,17 @@ def attack_clip():
     labels = torch.tensor(np.asarray([0, 0, 0, 0, 0, 0, 0, 0, 0, 0]))
     loss = art_classifier._get_losses(my_input, labels)
     grad = art_classifier.loss_gradient(my_input, labels)
+    clean_preds = art_classifier.predict(my_input)
+    print(clean_preds)
 
     attack = ProjectedGradientDescent(art_classifier,
                                       max_iter=10,
                                       eps=np.ones((3, 224, 224)) * np.reshape(norm_bound_eps(), (3, 1, 1)),
                                       eps_step=np.ones((3, 224, 224)) * 0.1)
     x_adv = attack.generate(my_input, labels)
+    adv_preds = art_classifier.predict(x_adv)
+    print(clean_preds)
+    print(adv_preds)
+
 
 attack_clip()
