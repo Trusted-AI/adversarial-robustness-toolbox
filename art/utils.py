@@ -39,6 +39,7 @@ from scipy.special import gammainc  # pylint: disable=E0611
 from tqdm.auto import tqdm
 
 from art import config
+from collections import UserDict
 
 if TYPE_CHECKING:
     import torch
@@ -557,10 +558,16 @@ def projection(values: np.ndarray, eps: Union[int, float, np.ndarray], norm_p: U
 
     elif norm_p in [np.inf, "inf"]:
         if isinstance(eps, np.ndarray):
-            eps = eps * np.ones_like(values)
+            if isinstance(values_tmp, UserDict):
+                eps = eps * np.ones_like(values['pixel_values'].cpu().detach().numpy())
+            else:
+                eps = eps * np.ones_like(values)
             eps = eps.reshape([eps.shape[0], -1])  # type: ignore
 
-        values_tmp = np.sign(values_tmp) * np.minimum(abs(values_tmp), eps)
+        if isinstance(values_tmp, UserDict):
+            values_tmp['pixel_values'] = np.sign(values_tmp['pixel_values'].cpu().detach().numpy()) * np.minimum(abs(values_tmp['pixel_values'].cpu().detach().numpy()), eps)
+        else:
+            values_tmp = np.sign(values_tmp) * np.minimum(abs(values_tmp), eps)
 
     else:
         raise NotImplementedError(
