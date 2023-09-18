@@ -61,6 +61,11 @@ class AutoAttack(EvasionAttack):
 
     _estimator_requirements = (BaseEstimator, ClassifierMixin)
 
+    # Identify samples yet to have attack metadata identified
+    SAMPLE_DEFAULT = -1
+    # Identify samples misclassified therefore no attack metadata required
+    SAMPLE_MISCLASSIFIED = -2
+
     def __init__(
         self,
         estimator: "CLASSIFIER_TYPE",
@@ -176,10 +181,10 @@ class AutoAttack(EvasionAttack):
         y_pred = self.estimator_orig.predict(x.astype(ART_NUMPY_DTYPE))
         sample_is_robust = np.argmax(y_pred, axis=1) == np.argmax(y, axis=1)
 
-        # Set slots for images which have yet to be filled as -1
-        self.best_attacks = np.array([-1] * len(x))
-        # Set samples that are misclassified and do not need to be filled as -2
-        self.best_attacks[np.logical_not(sample_is_robust)] = -2
+        # Set slots for images which have yet to be filled as SAMPLE_DEFAULT
+        self.best_attacks = np.array([self.SAMPLE_DEFAULT] * len(x))
+        # Set samples that are misclassified and do not need to be filled as SAMPLE_MISCLASSIFIED
+        self.best_attacks[np.logical_not(sample_is_robust)] = self.SAMPLE_MISCLASSIFIED
 
         args = []
         # Untargeted attacks
@@ -218,7 +223,7 @@ class AutoAttack(EvasionAttack):
                 # create a mask which identifies images which this attack was effective on
                 # not including originally misclassified images
                 atk_mask = np.logical_and(
-                    np.array([i == -1 for i in self.best_attacks]), np.logical_not(sample_is_robust)
+                    np.array([i == self.SAMPLE_DEFAULT for i in self.best_attacks]), np.logical_not(sample_is_robust)
                 )
                 # update attack at image index with index of attack that was successful
                 self.best_attacks[atk_mask] = self.attacks.index(attack)
@@ -230,7 +235,7 @@ class AutoAttack(EvasionAttack):
             y_idx = np.argmax(y, axis=1)
             y_idx = np.expand_dims(y_idx, 1)
             y_t = y_t[y_t != y_idx]
-            targeted_labels = np.reshape(y_t, (y.shape[0], -1))
+            targeted_labels = np.reshape(y_t, (y.shape[0], self.SAMPLE_DEFAULT))
 
             for attack in self.attacks:
 
@@ -272,7 +277,8 @@ class AutoAttack(EvasionAttack):
                             # create a mask which identifies images which this attack was effective on
                             # not including originally misclassified images
                             atk_mask = np.logical_and(
-                                np.array([i == -1 for i in self.best_attacks]), np.logical_not(sample_is_robust)
+                                np.array([i == self.SAMPLE_DEFAULT for i in self.best_attacks]),
+                                np.logical_not(sample_is_robust),
                             )
                             # update attack at image index with index of attack that was successful
                             self.best_attacks[atk_mask] = self.attacks.index(attack)
