@@ -30,13 +30,18 @@ from tests.utils import ARTTestException
 logger = logging.getLogger(__name__)
 
 
-@pytest.mark.skip_framework("non_dl_frameworks", "pytorch", "mxnet")
-def test_poison(art_warning, get_default_mnist_subset, image_dl_estimator):
+@pytest.mark.skip_framework("non_dl_frameworks", "mxnet")
+def test_poison(art_warning, get_default_mnist_subset, image_dl_estimator, framework):
     try:
         (x_train, y_train), (_, _) = get_default_mnist_subset
         classifier, _ = image_dl_estimator()
         target = to_categorical([9], 10)[0]
-        backdoor = PoisoningAttackBackdoor(add_pattern_bd)
+        print(x_train.shape)
+
+        def mod(x):
+            return add_pattern_bd(x, channels_first=classifier.channels_first)
+
+        backdoor = PoisoningAttackBackdoor(mod)
         attack = PoisoningAttackCleanLabelBackdoor(backdoor, classifier, target)
         poison_data, poison_labels = attack.poison(x_train, y_train)
 
@@ -47,7 +52,7 @@ def test_poison(art_warning, get_default_mnist_subset, image_dl_estimator):
 
 
 @pytest.mark.parametrize("params", [dict(pp_poison=-0.2), dict(pp_poison=1.2)])
-@pytest.mark.skip_framework("non_dl_frameworks", "pytorch", "mxnet")
+@pytest.mark.skip_framework("non_dl_frameworks", "mxnet")
 def test_failure_modes(art_warning, image_dl_estimator, params):
     try:
         classifier, _ = image_dl_estimator()

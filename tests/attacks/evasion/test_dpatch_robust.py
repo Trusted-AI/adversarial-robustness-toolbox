@@ -43,7 +43,7 @@ def test_generate(art_warning, fix_get_mnist_subset, fix_get_rcnn, framework):
     try:
         (_, _, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
 
-        if framework == "pytorch":
+        if framework in ["pytorch", "huggingface"]:
             x_test_mnist = np.transpose(x_test_mnist, (0, 2, 3, 1))
 
         frcnn = fix_get_rcnn
@@ -78,7 +78,7 @@ def test_generate_targeted(art_warning, fix_get_mnist_subset, fix_get_rcnn, fram
     try:
         (_, _, x_test_mnist, _) = fix_get_mnist_subset
 
-        if framework == "pytorch":
+        if framework in ["pytorch", "huggingface"]:
             x_test_mnist = np.transpose(x_test_mnist, (0, 2, 3, 1))
 
         frcnn = fix_get_rcnn

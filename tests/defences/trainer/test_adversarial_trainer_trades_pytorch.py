@@ -47,7 +47,8 @@ def get_adv_trainer(framework, image_dl_estimator):
                 verbose=False,
             )
             trainer = AdversarialTrainerTRADESPyTorch(classifier, attack, beta=6.0)
-        if framework == "scikitlearn":
+
+        if framework in ["huggingface", "scikitlearn"]:
             trainer = None
 
         return trainer
