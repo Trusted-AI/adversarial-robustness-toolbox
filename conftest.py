@@ -49,6 +49,7 @@ from tests.utils import (
     get_image_classifier_pt,
     get_image_classifier_pt_functional,
     get_image_classifier_tf,
+    get_image_classifier_hf,
     get_image_gan_tf_v2,
     get_image_generator_tf_v2,
     get_tabular_classifier_kr,
@@ -65,7 +66,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 deep_learning_frameworks = [
-    "keras", "tensorflow1", "tensorflow2", "tensorflow2v1", "pytorch", "kerastf", "mxnet", "jax"
+    "keras", "tensorflow1", "tensorflow2", "tensorflow2v1", "pytorch", "kerastf", "mxnet", "jax", "huggingface",
 ]
 non_deep_learning_frameworks = ["scikitlearn"]
 
@@ -236,7 +237,7 @@ def image_iterator(framework, get_default_mnist_subset, default_batch_size):
             dataset = tf.data.Dataset.from_tensor_slices((x_train_mnist, y_train_mnist)).batch(default_batch_size)
             return dataset
 
-        if framework == "pytorch":
+        if framework in ["pytorch", "huggingface"]:
             import torch
 
             # Create tensors from data
@@ -288,7 +289,7 @@ def image_data_generator(framework, get_default_mnist_subset, image_iterator, de
                 batch_size=default_batch_size,
             )
 
-        if framework == "pytorch":
+        if framework in ["pytorch", "huggingface"]:
             data_generator = PyTorchDataGenerator(
                 iterator=image_it, size=x_train_mnist.shape[0], batch_size=default_batch_size
             )
@@ -596,6 +597,10 @@ def image_dl_estimator(framework, get_image_classifier_mx_instance):
             if wildcard is False and functional is False:
                 classifier = get_image_classifier_mx_instance(**kwargs)
 
+        if framework == "huggingface":
+            if not wildcard:
+                classifier = get_image_classifier_hf(**kwargs)
+
         if classifier is None:
             raise ARTTestFixtureNotImplemented(
                 "no test deep learning estimator available", image_dl_estimator.__name__, framework
@@ -779,7 +784,7 @@ def default_dataset_subset_sizes():
 
 @pytest.fixture()
 def mnist_shape(framework):
-    if framework == "pytorch" or framework == "mxnet":
+    if framework in ["pytorch", "mxnet", "huggingface"]:
         return (1, 28, 28)
     else:
         return (28, 28, 1)

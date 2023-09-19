@@ -24,6 +24,7 @@ from art.defences.preprocessor import Mixup, Cutout
 from art.defences.trainer import DPInstaHideTrainer
 from art.estimators.classification import PyTorchClassifier, TensorFlowV2Classifier, KerasClassifier
 from tests.utils import ARTTestException
+from tests.utils import get_image_classifier_hf
 
 logger = logging.getLogger(__name__)
 
@@ -83,6 +84,9 @@ def get_mnist_classifier(framework):
             model.compile(optimizer="adam", loss="categorical_crossentropy")
             classifier = KerasClassifier(model, clip_values=(0, 1), use_logits=True)
 
+        elif framework == "huggingface":
+            classifier = get_image_classifier_hf(from_logits=True)
+
         else:
             classifier = None
 
@@ -91,11 +95,15 @@ def get_mnist_classifier(framework):
     return _get_classifier
 
 
-@pytest.mark.only_with_platform("pytorch", "tensorflow2", "keras", "kerastf")
+@pytest.mark.only_with_platform("pytorch", "tensorflow2", "keras", "kerastf", "huggingface")
 @pytest.mark.parametrize("noise", ["gaussian", "laplacian", "exponential"])
-def test_dp_instahide_single_aug(art_warning, get_mnist_classifier, get_default_mnist_subset, noise):
+def test_dp_instahide_single_aug(
+    art_warning, get_mnist_classifier, get_default_mnist_subset, get_default_cifar10_subset, noise, framework
+):
     classifier = get_mnist_classifier()
+
     (x_train, y_train), (_, _) = get_default_mnist_subset
+
     mixup = Mixup(num_classes=10)
 
     try:
@@ -105,11 +113,15 @@ def test_dp_instahide_single_aug(art_warning, get_mnist_classifier, get_default_
         art_warning(e)
 
 
-@pytest.mark.only_with_platform("pytorch", "tensorflow2", "keras", "kerastf")
+@pytest.mark.only_with_platform("pytorch", "tensorflow2", "keras", "kerastf", "huggingface")
 @pytest.mark.parametrize("noise", ["gaussian", "laplacian", "exponential"])
-def test_dp_instahide_multiple_aug(art_warning, get_mnist_classifier, get_default_mnist_subset, noise):
+def test_dp_instahide_multiple_aug(
+    art_warning, get_mnist_classifier, get_default_mnist_subset, get_default_cifar10_subset, noise, framework
+):
     classifier = get_mnist_classifier()
+
     (x_train, y_train), (_, _) = get_default_mnist_subset
+
     mixup = Mixup(num_classes=10)
     cutout = Cutout(length=8, channels_first=False)
 
@@ -120,10 +132,13 @@ def test_dp_instahide_multiple_aug(art_warning, get_mnist_classifier, get_defaul
         art_warning(e)
 
 
-@pytest.mark.only_with_platform("pytorch", "tensorflow2", "keras", "kerastf")
+@pytest.mark.only_with_platform("pytorch", "tensorflow2", "keras", "kerastf", "huggingface")
 @pytest.mark.parametrize("noise", ["gaussian", "laplacian", "exponential"])
-def test_dp_instahide_validation_data(art_warning, get_mnist_classifier, get_default_mnist_subset, noise):
+def test_dp_instahide_validation_data(
+    art_warning, get_mnist_classifier, get_default_mnist_subset, get_default_cifar10_subset, noise, framework
+):
     classifier = get_mnist_classifier()
+
     (x_train, y_train), (x_test, y_test) = get_default_mnist_subset
     mixup = Mixup(num_classes=10)
 
@@ -134,15 +149,19 @@ def test_dp_instahide_validation_data(art_warning, get_mnist_classifier, get_def
         art_warning(e)
 
 
-@pytest.mark.only_with_platform("pytorch", "tensorflow2", "keras", "kerastf")
+@pytest.mark.only_with_platform("pytorch", "tensorflow2", "keras", "kerastf", "huggingface")
 @pytest.mark.parametrize("noise", ["gaussian", "laplacian", "exponential"])
-def test_dp_instahide_generator(art_warning, get_mnist_classifier, get_default_mnist_subset, noise):
+def test_dp_instahide_generator(
+    art_warning, get_mnist_classifier, get_default_mnist_subset, get_default_cifar10_subset, noise, framework
+):
     from art.data_generators import NumpyDataGenerator
 
     classifier = get_mnist_classifier()
+
     (x_train, y_train), (_, _) = get_default_mnist_subset
-    generator = NumpyDataGenerator(x_train, y_train, batch_size=len(x_train))
+
     mixup = Mixup(num_classes=10)
+    generator = NumpyDataGenerator(x_train, y_train, batch_size=len(x_train))
 
     try:
         trainer = DPInstaHideTrainer(classifier, augmentations=mixup, noise=noise, loc=0, scale=0.1)
