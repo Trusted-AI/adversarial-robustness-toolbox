@@ -259,7 +259,6 @@ def test_errors(art_warning, decision_tree_estimator, get_iris_dataset):
     try:
         classifier = decision_tree_estimator()
         (x_train, y_train), (x_test, y_test) = get_iris_dataset
-        pred_test = classifier.predict(x_test)
         with pytest.raises(ValueError):
             MembershipInferenceBlackBox(classifier, attack_model_type="a")
         with pytest.raises(ValueError):

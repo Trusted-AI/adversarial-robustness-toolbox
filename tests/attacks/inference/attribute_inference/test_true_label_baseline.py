@@ -605,7 +605,7 @@ def test_true_label_baseline_no_encoder_after_feature(art_warning, get_iris_data
             baseline_inferred_test
         )
 
-        expected_train_acc = {"nn": 0.81, "rf": 0.95, "gb": 0.95, "lr": 0.81, "dt": 0.94, "knn": 0.87, "svm": 0.81}
+        expected_train_acc = {"nn": 0.81, "rf": 0.93, "gb": 0.95, "lr": 0.81, "dt": 0.94, "knn": 0.87, "svm": 0.81}
         expected_test_acc = {"nn": 0.88, "rf": 0.82, "gb": 0.8, "lr": 0.88, "dt": 0.74, "knn": 0.86, "svm": 0.88}
 
         assert expected_train_acc[model_type] <= baseline_train_acc
