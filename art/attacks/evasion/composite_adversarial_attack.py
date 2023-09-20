@@ -36,11 +36,7 @@ from art.attacks.attack import EvasionAttack
 from art.config import ART_NUMPY_DTYPE
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from art.estimators.classification.classifier import ClassifierMixin
-from art.utils import (
-    compute_success,
-    check_and_transform_label_format,
-    get_labels_np_array
-)
+from art.utils import compute_success, check_and_transform_label_format, get_labels_np_array
 
 if TYPE_CHECKING:
     # pylint: disable=C0412
@@ -80,22 +76,22 @@ class CompositeAdversarialAttackPyTorch(EvasionAttack):
     _estimator_requirements = (BaseEstimator, LossGradientsMixin, ClassifierMixin)  # type: ignore
 
     def __init__(
-            self,
-            classifier: "PyTorchClassifier",
-            enabled_attack: Tuple = (0, 1, 2, 3, 4, 5),
-            # Default: Full Attacks; 0: Hue, 1: Saturation, 2: Rotation, 3: Brightness, 4: Contrast, 5: PGD (L-infinity)
-            hue_epsilon: Tuple = (-np.pi, np.pi),
-            sat_epsilon: Tuple = (0.7, 1.3),
-            rot_epsilon: Tuple = (-10, 10),
-            bri_epsilon: Tuple = (-0.2, 0.2),
-            con_epsilon: Tuple = (0.7, 1.3),
-            pgd_epsilon: Tuple = (-8 / 255, 8 / 255),  # L-infinity
-            early_stop: bool = True,
-            max_iter: int = 5,
-            max_inner_iter: int = 10,
-            attack_order: str = "scheduled",
-            batch_size: int = 1,
-            verbose: bool = True,
+        self,
+        classifier: "PyTorchClassifier",
+        enabled_attack: Tuple = (0, 1, 2, 3, 4, 5),
+        # Default: Full Attacks; 0: Hue, 1: Saturation, 2: Rotation, 3: Brightness, 4: Contrast, 5: PGD (L-infinity)
+        hue_epsilon: Tuple = (-np.pi, np.pi),
+        sat_epsilon: Tuple = (0.7, 1.3),
+        rot_epsilon: Tuple = (-10, 10),
+        bri_epsilon: Tuple = (-0.2, 0.2),
+        con_epsilon: Tuple = (0.7, 1.3),
+        pgd_epsilon: Tuple = (-8 / 255, 8 / 255),  # L-infinity
+        early_stop: bool = True,
+        max_iter: int = 5,
+        max_inner_iter: int = 10,
+        attack_order: str = "scheduled",
+        batch_size: int = 1,
+        verbose: bool = True,
     ) -> None:
         """
         Create an instance of the :class:`.CompositeAdversarialAttackPyTorch`.
@@ -147,7 +143,7 @@ class CompositeAdversarialAttackPyTorch(EvasionAttack):
         self.epsilons = [hue_epsilon, sat_epsilon, rot_epsilon, bri_epsilon, con_epsilon, pgd_epsilon]
         self.early_stop = early_stop
         self.attack_order = attack_order
-        self.max_iter = max_iter if self.attack_order == 'scheduled' else 1
+        self.max_iter = max_iter if self.attack_order == "scheduled" else 1
         self.max_inner_iter = max_inner_iter
         self.targeted = False
         self.batch_size = batch_size
@@ -155,47 +151,79 @@ class CompositeAdversarialAttackPyTorch(EvasionAttack):
         self._check_params()
 
         import kornia
+
         self.seq_num = len(self.enabled_attack)  # attack_num
         self.linf_idx = self.enabled_attack.index(5) if 5 in self.enabled_attack else None
         self.attack_pool = (
-            self.caa_hue, self.caa_saturation, self.caa_rotation, self.caa_brightness, self.caa_contrast, self.caa_linf)
+            self.caa_hue,
+            self.caa_saturation,
+            self.caa_rotation,
+            self.caa_brightness,
+            self.caa_contrast,
+            self.caa_linf,
+        )
         self.eps_pool = torch.tensor(self.epsilons, device=self.device)
         self.attack_pool_base = (
-            kornia.enhance.adjust_hue, kornia.enhance.adjust_saturation, kornia.geometry.transform.rotate,
-            kornia.enhance.adjust_brightness, kornia.enhance.adjust_contrast, self.get_linf_perturbation)
+            kornia.enhance.adjust_hue,
+            kornia.enhance.adjust_saturation,
+            kornia.geometry.transform.rotate,
+            kornia.enhance.adjust_brightness,
+            kornia.enhance.adjust_contrast,
+            self.get_linf_perturbation,
+        )
         self.attack_dict = tuple([self.attack_pool[i] for i in self.enabled_attack])
-        self.step_size_pool = [2.5 * ((eps[1] - eps[0]) / 2) / self.max_inner_iter for eps in
-                               self.eps_pool]  # 2.5 * ε-test / num_steps
+        self.step_size_pool = [
+            2.5 * ((eps[1] - eps[0]) / 2) / self.max_inner_iter for eps in self.eps_pool
+        ]  # 2.5 * ε-test / num_steps
 
         self._description = "Composite Adversarial Attack"
         self._is_scheduling = False
-        self.adv_val_pool = self.eps_space = self.adv_val_space = self.curr_dsm = \
-            self.curr_seq = self.is_attacked = self.is_not_attacked = None
+        self.adv_val_pool = (
+            self.eps_space
+        ) = self.adv_val_space = self.curr_dsm = self.curr_seq = self.is_attacked = self.is_not_attacked = None
 
     def _check_params(self) -> None:
         super()._check_params()
         if not isinstance(self.enabled_attack, tuple) or not all(
-                value in [0, 1, 2, 3, 4, 5] for value in self.enabled_attack):
+            value in [0, 1, 2, 3, 4, 5] for value in self.enabled_attack
+        ):
             raise ValueError(
                 "The parameter `enabled_attack` must be a tuple specifying the attack to launch. For simplicity, we use"
                 + " the following abbreviations to specify each attack types. 0: Hue, 1: Saturation, 2: Rotation,"
                 + " 3: Brightness, 4: Contrast, 5: PGD(L-infinity). Therefore, `(0,1,2)` means that the attack combines"
                 + " hue, saturation, and rotation; `(0,1,2,3,4)` means the all semantic attacks; `(0,1,2,3,4,5)` means"
-                + " the full attacks.")
-        _epsilons_range = [["hue_epsilon", (-np.pi, np.pi), "(-np.pi, np.pi)"],
-                           ["sat_epsilon", (0, np.inf), "(0, np.inf)"], ["rot_epsilon", (-360, 360), "(-360, 360)"],
-                           ["bri_epsilon", (-1, 1), "(-1, 1)"], ["con_epsilon", (0, np.inf), "(0, np.inf)"],
-                           ["pgd_epsilon", (-1, 1), "(-1, 1)"]]
+                + " the full attacks."
+            )
+        _epsilons_range = [
+            ["hue_epsilon", (-np.pi, np.pi), "(-np.pi, np.pi)"],
+            ["sat_epsilon", (0, np.inf), "(0, np.inf)"],
+            ["rot_epsilon", (-360, 360), "(-360, 360)"],
+            ["bri_epsilon", (-1, 1), "(-1, 1)"],
+            ["con_epsilon", (0, np.inf), "(0, np.inf)"],
+            ["pgd_epsilon", (-1, 1), "(-1, 1)"],
+        ]
         for i in range(6):
-            if (not isinstance(self.epsilons[i], tuple) or not len(self.epsilons[i]) == 2 or
-                    not (_epsilons_range[i][1][0] <= self.epsilons[i][0] <=
-                         self.epsilons[i][1] <= _epsilons_range[i][1][1])):
+            if (
+                not isinstance(self.epsilons[i], tuple)
+                or not len(self.epsilons[i]) == 2
+                or not (
+                    _epsilons_range[i][1][0] <= self.epsilons[i][0] <= self.epsilons[i][1] <= _epsilons_range[i][1][1]
+                )
+            ):
                 logger.info(
-                    "The argument `" + _epsilons_range[i][0] + "` must be an interval within " + _epsilons_range[i][2]
-                    + " of type tuple.")
+                    "The argument `"
+                    + _epsilons_range[i][0]
+                    + "` must be an interval within "
+                    + _epsilons_range[i][2]
+                    + " of type tuple."
+                )
                 raise ValueError(
-                    "The argument `" + _epsilons_range[i][0] + "` must be an interval within " + _epsilons_range[i][2]
-                    + " of type tuple.")
+                    "The argument `"
+                    + _epsilons_range[i][0]
+                    + "` must be an interval within "
+                    + _epsilons_range[i][2]
+                    + " of type tuple."
+                )
 
         if not isinstance(self.early_stop, bool):
             logger.info("The flag `early_stop` has to be of type bool.")
@@ -213,7 +241,7 @@ class CompositeAdversarialAttackPyTorch(EvasionAttack):
             logger.info("The argument `max_inner_iter` must be positive of type int.")
             raise TypeError("The argument `max_inner_iter` must be positive of type int.")
 
-        if self.attack_order not in ('fixed', 'random', 'scheduled'):
+        if self.attack_order not in ("fixed", "random", "scheduled"):
             logger.info("The argument `attack_order` should be either `fixed`, `random`, or `scheduled`.")
             raise ValueError("The argument `attack_order` should be either `fixed`, `random`, or `scheduled`.")
 
@@ -225,12 +253,7 @@ class CompositeAdversarialAttackPyTorch(EvasionAttack):
             logger.info("The argument `verbose` has to be a Boolean.")
             raise ValueError("The argument `verbose` has to be a Boolean.")
 
-    def _set_targets(
-            self,
-            x: np.ndarray,
-            y: Optional[np.ndarray],
-            classifier_mixin: bool = True
-    ) -> np.ndarray:
+    def _set_targets(self, x: np.ndarray, y: Optional[np.ndarray], classifier_mixin: bool = True) -> np.ndarray:
         """
         Check and set up targets.
 
@@ -265,28 +288,33 @@ class CompositeAdversarialAttackPyTorch(EvasionAttack):
     def _setup_attack(self):
         import torch
 
-        hue_space = torch.rand(self.batch_size, device=self.device) * (self.eps_pool[0][1] - self.eps_pool[0][0]) + \
-                    self.eps_pool[0][0]
-        sat_space = torch.rand(self.batch_size, device=self.device) * (self.eps_pool[1][1] - self.eps_pool[1][0]) + \
-                    self.eps_pool[1][0]
-        rot_space = torch.rand(self.batch_size, device=self.device) * (self.eps_pool[2][1] - self.eps_pool[2][0]) + \
-                    self.eps_pool[2][0]
-        bri_space = torch.rand(self.batch_size, device=self.device) * (self.eps_pool[3][1] - self.eps_pool[3][0]) + \
-                    self.eps_pool[3][0]
-        con_space = torch.rand(self.batch_size, device=self.device) * (self.eps_pool[4][1] - self.eps_pool[4][0]) + \
-                    self.eps_pool[4][0]
+        hue_space = (
+            torch.rand(self.batch_size, device=self.device) * (self.eps_pool[0][1] - self.eps_pool[0][0])
+            + self.eps_pool[0][0]
+        )
+        sat_space = (
+            torch.rand(self.batch_size, device=self.device) * (self.eps_pool[1][1] - self.eps_pool[1][0])
+            + self.eps_pool[1][0]
+        )
+        rot_space = (
+            torch.rand(self.batch_size, device=self.device) * (self.eps_pool[2][1] - self.eps_pool[2][0])
+            + self.eps_pool[2][0]
+        )
+        bri_space = (
+            torch.rand(self.batch_size, device=self.device) * (self.eps_pool[3][1] - self.eps_pool[3][0])
+            + self.eps_pool[3][0]
+        )
+        con_space = (
+            torch.rand(self.batch_size, device=self.device) * (self.eps_pool[4][1] - self.eps_pool[4][0])
+            + self.eps_pool[4][0]
+        )
         pgd_space = 0.001 * torch.randn([self.batch_size, 3, 32, 32], device=self.device)
         self.adv_val_pool = [hue_space, sat_space, rot_space, bri_space, con_space, pgd_space]
 
         self.eps_space = [self.eps_pool[i] for i in self.enabled_attack]
         self.adv_val_space = [self.adv_val_pool[i] for i in self.enabled_attack]
 
-    def generate(
-            self,
-            x: np.ndarray,
-            y: Optional[np.ndarray] = None,
-            **kwargs
-    ) -> np.ndarray:
+    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         import torch
 
         targets = self._set_targets(x, y)
@@ -302,8 +330,8 @@ class CompositeAdversarialAttackPyTorch(EvasionAttack):
         x_adv = x.copy().astype(ART_NUMPY_DTYPE)
 
         # Compute perturbations with batching.
-        for (batch_id, batch_all) in enumerate(
-                tqdm(data_loader, desc=self._description, leave=False, disable=not self.verbose)
+        for batch_id, batch_all in enumerate(
+            tqdm(data_loader, desc=self._description, leave=False, disable=not self.verbose)
         ):
             (batch_x, batch_targets, batch_mask) = batch_all[0], batch_all[1], None
             batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
@@ -321,12 +349,7 @@ class CompositeAdversarialAttackPyTorch(EvasionAttack):
 
         return x_adv
 
-    def _generate_batch(
-            self,
-            x: "torch.Tensor",
-            y: "torch.Tensor",
-            mask: "torch.Tensor"
-    ) -> np.ndarray:
+    def _generate_batch(self, x: "torch.Tensor", y: "torch.Tensor", mask: "torch.Tensor") -> np.ndarray:
         """
         Generate a batch of adversarial samples and return them in a NumPy array.
 
@@ -347,12 +370,12 @@ class CompositeAdversarialAttackPyTorch(EvasionAttack):
         return self.caa_attack(x, y).cpu().detach().numpy()
 
     def _comp_pgd(
-            self,
-            data: "torch.Tensor",
-            labels: "torch.Tensor",
-            attack_idx: "torch.Tensor",
-            attack_parameter: "torch.Tensor",
-            ori_is_attacked: "torch.Tensor"
+        self,
+        data: "torch.Tensor",
+        labels: "torch.Tensor",
+        attack_idx: "torch.Tensor",
+        attack_parameter: "torch.Tensor",
+        ori_is_attacked: "torch.Tensor",
     ) -> Tuple["torch.Tensor", "torch.Tensor"]:
         import torch
         import torch.nn.functional as F
@@ -363,96 +386,101 @@ class CompositeAdversarialAttackPyTorch(EvasionAttack):
 
             if not self._is_scheduling and self.early_stop:
                 cur_pred = outputs.max(1, keepdim=True)[1].squeeze()
-                self.is_attacked = torch.logical_or(ori_is_attacked,
-                                                    cur_pred != labels.max(1, keepdim=True)[1].squeeze())
+                self.is_attacked = torch.logical_or(
+                    ori_is_attacked, cur_pred != labels.max(1, keepdim=True)[1].squeeze()
+                )
 
             with torch.enable_grad():
                 cost = F.cross_entropy(outputs, labels)
             _grad = torch.autograd.grad(cost, attack_parameter)[0]
             if not self._is_scheduling:
                 _grad[self.is_attacked] = 0
-            attack_parameter = torch.clamp(attack_parameter + torch.sign(_grad) * self.step_size_pool[attack_idx],
-                                           self.eps_pool[attack_idx][0],
-                                           self.eps_pool[attack_idx][1]).detach().requires_grad_()
+            attack_parameter = (
+                torch.clamp(
+                    attack_parameter + torch.sign(_grad) * self.step_size_pool[attack_idx],
+                    self.eps_pool[attack_idx][0],
+                    self.eps_pool[attack_idx][1],
+                )
+                .detach()
+                .requires_grad_()
+            )
             adv_data = self.attack_pool_base[attack_idx](data, attack_parameter)
 
         return adv_data, attack_parameter
 
     def caa_hue(
-            self,
-            data: "torch.Tensor",
-            hue: "torch.Tensor",
-            labels: "torch.Tensor"
+        self, data: "torch.Tensor", hue: "torch.Tensor", labels: "torch.Tensor"
     ) -> Tuple["torch.Tensor", "torch.Tensor"]:
         hue = hue.detach().clone()
         hue[self.is_attacked] = 0
         hue.requires_grad_()
         sur_data = data.detach().requires_grad_()
 
-        return self._comp_pgd(data=sur_data, labels=labels, attack_idx=0, attack_parameter=hue,
-                              ori_is_attacked=self.is_attacked.clone())
+        return self._comp_pgd(
+            data=sur_data, labels=labels, attack_idx=0, attack_parameter=hue, ori_is_attacked=self.is_attacked.clone()
+        )
 
     def caa_saturation(
-            self,
-            data: "torch.Tensor",
-            saturation: "torch.Tensor",
-            labels: "torch.Tensor"
+        self, data: "torch.Tensor", saturation: "torch.Tensor", labels: "torch.Tensor"
     ) -> Tuple["torch.Tensor", "torch.Tensor"]:
         saturation = saturation.detach().clone()
         saturation[self.is_attacked] = 1
         saturation.requires_grad_()
         sur_data = data.detach().requires_grad_()
 
-        return self._comp_pgd(data=sur_data, labels=labels, attack_idx=1, attack_parameter=saturation,
-                              ori_is_attacked=self.is_attacked.clone())
+        return self._comp_pgd(
+            data=sur_data,
+            labels=labels,
+            attack_idx=1,
+            attack_parameter=saturation,
+            ori_is_attacked=self.is_attacked.clone(),
+        )
 
     def caa_rotation(
-            self,
-            data: "torch.Tensor",
-            theta: "torch.Tensor",
-            labels: "torch.Tensor"
+        self, data: "torch.Tensor", theta: "torch.Tensor", labels: "torch.Tensor"
     ) -> Tuple["torch.Tensor", "torch.Tensor"]:
         theta = theta.detach().clone()
         theta[self.is_attacked] = 0
         theta.requires_grad_()
         sur_data = data.detach().requires_grad_()
 
-        return self._comp_pgd(data=sur_data, labels=labels, attack_idx=2, attack_parameter=theta,
-                              ori_is_attacked=self.is_attacked.clone())
+        return self._comp_pgd(
+            data=sur_data, labels=labels, attack_idx=2, attack_parameter=theta, ori_is_attacked=self.is_attacked.clone()
+        )
 
     def caa_brightness(
-            self,
-            data: "torch.Tensor",
-            brightness: "torch.Tensor",
-            labels: "torch.Tensor"
+        self, data: "torch.Tensor", brightness: "torch.Tensor", labels: "torch.Tensor"
     ) -> Tuple["torch.Tensor", "torch.Tensor"]:
         brightness = brightness.detach().clone()
         brightness[self.is_attacked] = 0
         brightness.requires_grad_()
         sur_data = data.detach().requires_grad_()
 
-        return self._comp_pgd(data=sur_data, labels=labels, attack_idx=3, attack_parameter=brightness,
-                              ori_is_attacked=self.is_attacked.clone())
+        return self._comp_pgd(
+            data=sur_data,
+            labels=labels,
+            attack_idx=3,
+            attack_parameter=brightness,
+            ori_is_attacked=self.is_attacked.clone(),
+        )
 
     def caa_contrast(
-            self,
-            data: "torch.Tensor",
-            contrast: "torch.Tensor",
-            labels: "torch.Tensor"
+        self, data: "torch.Tensor", contrast: "torch.Tensor", labels: "torch.Tensor"
     ) -> Tuple["torch.Tensor", "torch.Tensor"]:
         contrast = contrast.detach().clone()
         contrast[self.is_attacked] = 1
         contrast.requires_grad_()
         sur_data = data.detach().requires_grad_()
 
-        return self._comp_pgd(data=sur_data, labels=labels, attack_idx=4, attack_parameter=contrast,
-                              ori_is_attacked=self.is_attacked.clone())
+        return self._comp_pgd(
+            data=sur_data,
+            labels=labels,
+            attack_idx=4,
+            attack_parameter=contrast,
+            ori_is_attacked=self.is_attacked.clone(),
+        )
 
-    def caa_linf(
-            self,
-            data: "torch.Tensor",
-            labels: "torch.Tensor"
-    ) -> "torch.Tensor":
+    def caa_linf(self, data: "torch.Tensor", labels: "torch.Tensor") -> "torch.Tensor":
         import torch
         import torch.nn.functional as F
 
@@ -464,8 +492,9 @@ class CompositeAdversarialAttackPyTorch(EvasionAttack):
 
             if not self._is_scheduling and self.early_stop:
                 cur_pred = outputs.max(1, keepdim=True)[1].squeeze()
-                self.is_attacked = torch.logical_or(ori_is_attacked,
-                                                    cur_pred != labels.max(1, keepdim=True)[1].squeeze())
+                self.is_attacked = torch.logical_or(
+                    ori_is_attacked, cur_pred != labels.max(1, keepdim=True)[1].squeeze()
+                )
 
             with torch.enable_grad():
                 cost = F.cross_entropy(outputs, labels)
@@ -474,24 +503,17 @@ class CompositeAdversarialAttackPyTorch(EvasionAttack):
                 _grad[self.is_attacked] = 0
             adv_data = adv_data + self.step_size_pool[5] * torch.sign(_grad)
             eta = torch.clamp(adv_data - sur_data, min=self.eps_pool[5][0], max=self.eps_pool[5][1])
-            adv_data = torch.clamp(sur_data + eta, min=0., max=1.).detach_().requires_grad_()
+            adv_data = torch.clamp(sur_data + eta, min=0.0, max=1.0).detach_().requires_grad_()
 
         return adv_data
 
-    def get_linf_perturbation(
-            self,
-            data: "torch.Tensor",
-            noise: "torch.Tensor"
-    ) -> "torch.Tensor":
+    def get_linf_perturbation(self, data: "torch.Tensor", noise: "torch.Tensor") -> "torch.Tensor":
         import torch
 
         return torch.clamp(data + noise, 0.0, 1.0)
 
     def update_attack_order(
-            self,
-            images: "torch.Tensor",
-            labels: "torch.Tensor",
-            adv_val: Optional["torch.Tensor"] = None
+        self, images: "torch.Tensor", labels: "torch.Tensor", adv_val: Optional["torch.Tensor"] = None
     ) -> None:
         import torch
         import torch.nn.functional as F
@@ -512,13 +534,13 @@ class CompositeAdversarialAttackPyTorch(EvasionAttack):
                 ori_dsm /= ori_dsm.sum(dim=1, keepdim=True)
             return ori_dsm
 
-        if self.attack_order == 'fixed':
+        if self.attack_order == "fixed":
             if self.curr_seq is None:
                 self.fixed_order = tuple([self.enabled_attack.index(i) for i in self.fixed_order])
                 self.curr_seq = torch.tensor(self.fixed_order, device=self.device)
-        elif self.attack_order == 'random':
+        elif self.attack_order == "random":
             self.curr_seq = torch.randperm(self.seq_num)
-        elif self.attack_order == 'scheduled':
+        elif self.attack_order == "scheduled":
             if self.curr_dsm is None:
                 self.curr_dsm = sinkhorn_normalization(torch.rand((self.seq_num, self.seq_num)))
                 self.curr_seq = hungarian(self.curr_dsm)
@@ -553,11 +575,7 @@ class CompositeAdversarialAttackPyTorch(EvasionAttack):
         else:
             raise ValueError()
 
-    def caa_attack(
-            self,
-            images: "torch.Tensor",
-            labels: "torch.Tensor"
-    ) -> "torch.Tensor":
+    def caa_attack(self, images: "torch.Tensor", labels: "torch.Tensor") -> "torch.Tensor":
         import torch
 
         attack = self.attack_dict
