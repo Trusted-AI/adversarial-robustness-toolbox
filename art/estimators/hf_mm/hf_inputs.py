@@ -24,14 +24,14 @@ class ARTInput(UserDict):
                 super().__setitem__('pixel_values', pixel_values)
             assert self['pixel_values'].shape == original_shape
 
-        if isinstance(key, str):
+        elif isinstance(key, str):
             super().__setitem__(key, value)
             if key == 'pixel_values':
                 pixel_values = UserDict.__getitem__(self, 'pixel_values')
                 self.shape = pixel_values.shape
                 self.ndim = pixel_values.ndim
 
-        if isinstance(key, int):
+        elif isinstance(key, int):
             pixel_values = UserDict.__getitem__(self, 'pixel_values')
             original_shape = pixel_values.shape
             with torch.no_grad():
@@ -39,8 +39,11 @@ class ARTInput(UserDict):
                     pixel_values[key] = value['pixel_values']
                 else:
                     pixel_values[key] = torch.tensor(value)
-                self['pixel_values'] = pixel_values
+                super().__setitem__('pixel_values', pixel_values)
             assert self['pixel_values'].shape == original_shape
+        else:
+            raise ValueError(f'Unsupported key {key} with type {type(key)}, '
+                             f'value {value} for __setitem__ in ARTInput')
 
     def __getitem__(self, item):
         if isinstance(item, slice):
@@ -55,16 +58,18 @@ class ARTInput(UserDict):
             output = ARTInput(**self)
             output['pixel_values'] = pixel_values
             return output
-
         elif item in self.keys():
             return UserDict.__getitem__(self, item)
+        else:
+            raise ValueError('Unsupported item for __getitem__ in ARTInput')
 
     def __add__(self, other):
         pixel_values = UserDict.__getitem__(self, 'pixel_values')
-        if isinstance(other, ARTInput):
-            pixel_values = pixel_values + other['pixel_values']
-        else:
-            pixel_values = pixel_values + torch.tensor(other)
+        with torch.no_grad():
+            if isinstance(other, ARTInput):
+                pixel_values = pixel_values + other['pixel_values']
+            else:
+                pixel_values = pixel_values + torch.tensor(other)
         output = ARTInput(**self)
         output['pixel_values'] = pixel_values
         return output

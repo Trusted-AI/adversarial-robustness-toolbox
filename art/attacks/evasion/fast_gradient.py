@@ -519,7 +519,9 @@ class FastGradientMethod(EvasionAttack):
                 x_adv = np.clip(x_adv, clip_min, clip_max)
         else:
             if x.dtype == object:
-                x_adv = x.copy()
+                import copy
+                # x_adv = x.copy()
+                x_adv = copy.deepcopy(x)
             else:
                 x_adv = x.astype(ART_NUMPY_DTYPE)
 

@@ -167,7 +167,6 @@ class HFMMPyTorch(PyTorchEstimator):
         :return: Loss components and gradients of the input `x`.
         """
         self._model.train()
-        print('x is ', x)
 
         # Set gradients again after inputs are moved to another device
         if x['pixel_values'].is_leaf:

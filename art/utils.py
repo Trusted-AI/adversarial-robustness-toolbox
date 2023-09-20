@@ -565,7 +565,9 @@ def projection(values: np.ndarray, eps: Union[int, float, np.ndarray], norm_p: U
             eps = eps.reshape([eps.shape[0], -1])  # type: ignore
 
         if isinstance(values_tmp, UserDict):
-            values_tmp['pixel_values'] = np.sign(values_tmp['pixel_values'].cpu().detach().numpy()) * np.minimum(abs(values_tmp['pixel_values'].cpu().detach().numpy()), eps)
+            sign = np.sign(values_tmp['pixel_values'].cpu().detach().numpy())
+            mag = abs(values_tmp['pixel_values'].cpu().detach().numpy())
+            values_tmp['pixel_values'] = sign * np.minimum(mag, eps)
         else:
             values_tmp = np.sign(values_tmp) * np.minimum(abs(values_tmp), eps)
 

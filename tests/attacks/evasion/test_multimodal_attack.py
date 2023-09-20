@@ -44,13 +44,11 @@ def get_and_process_input(return_batch=False):
     return inputs, original_image, labels
 
 
-def test_grad_equivalence():
+@pytest.mark.parametrize("max_iter", [1, 5])
+def test_grad_equivalence(max_iter):
 
     import torch
-    import numpy as np
-
     from transformers import CLIPModel
-
     from art.estimators.hf_mm import HFMMPyTorch, ARTInput
 
     def grad_art():
@@ -58,11 +56,13 @@ def test_grad_equivalence():
         inputs, original_image, labels = get_and_process_input(return_batch=False)
 
         my_input = ARTInput(**inputs)
-        art_classifier = HFMMPyTorch(model,
-                                     loss=torch.nn.CrossEntropyLoss(),
-                                     input_shape=(3, 224, 224))
+        for _ in range(max_iter):
+            art_classifier = HFMMPyTorch(model,
+                                         loss=torch.nn.CrossEntropyLoss(),
+                                         input_shape=(3, 224, 224))
 
-        return art_classifier.loss_gradient(my_input, labels)
+            loss_grad = art_classifier.loss_gradient(my_input, labels)
+        return loss_grad
 
     def manual_grad():
         model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
@@ -70,12 +70,12 @@ def test_grad_equivalence():
 
         inputs.pixel_values.requires_grad_(True)
         lossfn = torch.nn.CrossEntropyLoss()
+        for _ in range(max_iter):
+            outputs = model(**inputs)
+            logits_per_image = outputs.logits_per_image  # image-text similarity score
 
-        outputs = model(**inputs)
-        logits_per_image = outputs.logits_per_image  # image-text similarity score
-
-        loss = lossfn(logits_per_image, labels)
-        loss.backward()
+            loss = lossfn(logits_per_image, labels)
+            loss.backward()
 
         return inputs.pixel_values.grad
 
@@ -92,7 +92,6 @@ def test_perturbation_equivalence(to_batch):
     import torch
     from transformers import CLIPProcessor, CLIPModel
 
-    import numpy as np
     from art.estimators.hf_mm import HFMMPyTorch, ARTInput
     from art.attacks.evasion import ProjectedGradientDescent, ProjectedGradientDescentNumpy
 
@@ -114,144 +113,138 @@ def test_perturbation_equivalence(to_batch):
                                                eps=np.ones((3, 224, 224)) * np.reshape(norm_bound_eps(), (3, 1, 1)),
                                                eps_step=np.ones((3, 224, 224)) * 0.1,)
 
-        x_pert = attack._compute_perturbation(my_input, labels, mask=None)
+        perturbation = attack._compute_perturbation(my_input, labels, mask=None)
 
-        return x_pert
+        if to_batch:
+            batch_index_2 = 10
+        else:
+            batch_index_2 = 1
+
+        adv_art_x = attack._apply_perturbation(my_input[0:batch_index_2], perturbation, attack.eps_step)
+
+        return perturbation, adv_art_x["pixel_values"].cpu().detach().numpy()
 
     def manual_attack():
 
         model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
         inputs, original_image, labels = get_and_process_input(return_batch=to_batch)
-
-        pixel_values = inputs.pixel_values.requires_grad_(True)
-        attention_mask = inputs.attention_mask
-        input_ids = inputs.input_ids
-
         lossfn = torch.nn.CrossEntropyLoss()
 
-        inputs = {"pixel_values": pixel_values.requires_grad_(True),
-                  "attention_mask": attention_mask,
-                  "input_ids": input_ids}
+        inputs['pixel_values'] = inputs['pixel_values'].requires_grad_(True)
 
         outputs = model(**inputs)
-
         loss = lossfn(outputs.logits_per_image, labels)
         loss.backward()
-
         sign = torch.sign(inputs["pixel_values"].grad)
-        model.zero_grad()
 
-        return sign.cpu().detach().numpy()
+        init_max = torch.max(inputs["pixel_values"])
+        init_min = torch.min(inputs["pixel_values"])
 
-    manual_pert = manual_attack()
-    x_pert = attack_clip()
+        eps = norm_bound_eps()
 
-    assert np.allclose(x_pert, manual_pert)
+        mins = torch.tensor(original_image - eps.reshape((1, 3, 1, 1))).float()
+        maxs = torch.tensor(original_image + eps.reshape((1, 3, 1, 1))).float()
+
+        inputs["pixel_values"] = torch.clamp(inputs["pixel_values"] + sign * 0.1, min=init_min, max=init_max)
+        pixel_values = torch.clamp(inputs["pixel_values"], min=mins, max=maxs)
+
+        return sign.cpu().detach().numpy(), pixel_values.cpu().detach().numpy()
+
+    manual_pert, manual_sample = manual_attack()
+    perturbation, current_x = attack_clip()
+
+    assert np.allclose(perturbation, manual_pert)
+    assert np.allclose(manual_sample, current_x)
 
 
-@pytest.mark.parametrize("to_batch", [False, True])
-def test_equivalence(to_batch):
+@pytest.mark.parametrize("max_iter", [1, 5])
+def test_equivalence(max_iter):
     """
     Test that the result from using ART tools matches that obtained by manual calculation.
     """
     import torch
     from transformers import CLIPProcessor, CLIPModel
 
-    import numpy as np
     from art.estimators.hf_mm import HFMMPyTorch, ARTInput
     from art.attacks.evasion import ProjectedGradientDescent
-
-    from matplotlib import pyplot as plt
 
     def attack_clip():
 
         model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
         loss_fn = torch.nn.CrossEntropyLoss()
 
-        inputs, original_image, labels = get_and_process_input(return_batch=to_batch)
+        inputs, original_image, labels = get_and_process_input(return_batch=False)
         original_image = inputs.pixel_values.clone().cpu().numpy()
 
         my_input = ARTInput(**inputs)
-
+        eps = norm_bound_eps()
         art_classifier = HFMMPyTorch(model,
                                      loss=loss_fn,
                                      clip_values=(np.min(original_image), np.max(original_image)),
                                      input_shape=(3, 224, 224))
-        clip_min, clip_max = art_classifier.clip_values
-        print('Min ', clip_min)
-        print('Max ', clip_max)
 
         attack = ProjectedGradientDescent(art_classifier,
-                                          max_iter=2,
+                                          max_iter=max_iter,
                                           eps=np.ones((3, 224, 224)) * np.reshape(norm_bound_eps(), (3, 1, 1)),
-                                          eps_step=np.ones((3, 224, 224)) * 0.1)
+                                          eps_step=np.ones((3, 224, 224)) * 0.1,
+                                          targeted=False,
+                                          num_random_init=0,)
 
         x_adv = attack.generate(my_input, labels)
         x_adv = x_adv[0]
         check_vals = torch.reshape(x_adv['pixel_values'], (-1, ))
 
-        for val in check_vals:
-            if not torch.ge(val, np.min(original_image)):
-                print(f'Val {val} vs Min {np.min(original_image)}')
+        assert torch.all(torch.ge(check_vals, np.min(original_image)))
+        assert torch.all(torch.le(check_vals, np.max(original_image)))
 
-        # assert torch.all(torch.ge(check_vals, np.min(original_image)))
-        # assert torch.all(check_vals <= np.max(original_image))
+        eps_mins = torch.tensor(original_image - eps.reshape((1, 3, 1, 1))).float()
+        eps_maxs = torch.tensor(original_image + eps.reshape((1, 3, 1, 1))).float()
 
-        '''
-        for i, (channel_std, channel_mean) in enumerate(zip(STD, MEAN)):
-            x_adv['pixel_values'][i, :, :] = x_adv['pixel_values'][i, :, :] * channel_std
-            x_adv['pixel_values'][i, :, :] = x_adv['pixel_values'][i, :, :] + channel_mean
+        eps_mins = torch.reshape(eps_mins, (-1, ))
+        eps_maxs = torch.reshape(eps_maxs, (-1, ))
 
-            # original_image[:, i, :, :] = original_image[:, i, :, :] * channel_std
-            # original_image[:, i, :, :] = original_image[:, i, :, :] + channel_mean
-        pixel_values = x_adv['pixel_values'].cpu().numpy()
-        pixel_values = np.squeeze(np.transpose(pixel_values, (1, 2, 0)))
-        # original_image = np.squeeze(np.transpose(original_image, (0, 2, 3, 1)))
-        fig, (ax1, ax2) = plt.subplots(1, 2)
-        ax1.imshow(pixel_values)
-        plt.show()
-        # ax2.imshow(original_image)
-        '''
+        assert torch.all(torch.ge(check_vals, eps_mins))
+        assert torch.all(torch.le(check_vals, eps_maxs))
+
         return x_adv
 
     def manual_attack():
 
-        model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
-        inputs, original_image, labels = get_and_process_input()
-
-        pixel_values = inputs.pixel_values.requires_grad_(True)
-        attention_mask = inputs.attention_mask
-        input_ids = inputs.input_ids
-
-        init_max = torch.max(pixel_values)
-        init_min = torch.min(pixel_values)
-
         lossfn = torch.nn.CrossEntropyLoss()
         eps = norm_bound_eps()
+        adv_current = None
+        model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
 
-        mins = torch.tensor(original_image - eps.reshape((1, 3, 1, 1))).float()
-        maxs = torch.tensor(original_image + eps.reshape((1, 3, 1, 1))).float()
+        for i in range(max_iter):
 
-        for i in range(2):
             print('On step ', i)
-            # pixel_values = pixel_values.requires_grad_(True)
-            inputs = {"pixel_values": pixel_values.requires_grad_(True),
-                      "attention_mask": attention_mask,
-                      "input_ids": input_ids}
+
+            inputs, original_image, labels = get_and_process_input()
+
+            eps_mins = torch.tensor(original_image - eps.reshape((1, 3, 1, 1))).float()
+            eps_maxs = torch.tensor(original_image + eps.reshape((1, 3, 1, 1))).float()
+            init_max = torch.max(inputs['pixel_values'])
+            init_min = torch.min(inputs['pixel_values'])
+
+            if adv_current is not None:
+                inputs['pixel_values'] = torch.tensor(adv_current, requires_grad=True)
+            else:
+                inputs['pixel_values'].requires_grad_(True)
 
             outputs = model(**inputs)
 
             loss = lossfn(outputs.logits_per_image, labels)
             loss.backward()
 
-            with torch.no_grad():
-                sign = torch.sign(inputs["pixel_values"].grad)
-                inputs["pixel_values"] = torch.clamp(inputs["pixel_values"] + sign * 0.1, min=init_min, max=init_max)
-                pixel_values = torch.clamp(inputs["pixel_values"], min=mins, max=maxs)
+            sign = torch.sign(inputs['pixel_values'].grad)
+            pixel_values = torch.clamp(inputs['pixel_values'] + sign * 0.1, min=init_min, max=init_max)
+            pixel_values = torch.clamp(pixel_values, min=eps_mins, max=eps_maxs)
 
             model.zero_grad()
 
-        return pixel_values.cpu().detach().numpy()
+            adv_current = pixel_values.cpu().detach().numpy()
+
+        return adv_current
 
     manual_adv = manual_attack()
     art_adv = attack_clip()
