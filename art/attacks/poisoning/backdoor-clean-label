@@ -21,59 +21,87 @@ This module implements Clean Label Backdoor Attacks to poison data used in ML mo
 """
 
 import logging
-from typing import Callable, List, Optional, Tuple, Union
+from typing import Callable, Optional, Tuple, Union
+
 
 import numpy as np
 
+
 from art.attacks.attack import PoisoningAttackBlackBox
+
 
 logger = logging.getLogger(__name__)
 
-class PoisoningAttackCleanLabelBackdoor(PoisoningAttackBlackBox):
-    attack_params = PoisoningAttackBlackBox.attack_params + ["trigger_func"]
-    _estimator_requirements = ()
 
-    def __init__(self, trigger_func: Callable) -> None:
-        super().__init__()
-        self.trigger_func = trigger_func
-        self._check_params()
+class PoisoningAttackDynamicCleanLabelBackdoor(PoisoningAttackBlackBox):
+   """
+   A clean-label dynamic backdoor attack that injects a trigger into clean data samples of a specific target class.
 
-    def poison(self, x: np.ndarray, y: Optional[np.ndarray] = None, broadcast=False, **kwargs) -> Tuple[np.ndarray, np.ndarray]:
-        if y is None:
-            raise ValueError("Target labels `y` need to be provided for a targeted attack.")
 
-        if broadcast:
-            y_attack = np.broadcast_to(y, (x.shape[0], y.shape[0]))
-        else:
-            y_attack = np.copy(y)
+   This attack is useful for poisoning machine learning models with a backdoor trigger while maintaining the original labels.
 
-        num_poison = len(x)
-        if num_poison == 0:
-            raise ValueError("Must input at least one poison point.")
-        poisoned = np.copy(x)
 
-        if callable(self.trigger_func):
-            # Apply the trigger function to the input data
-            poisoned = self.trigger_func(poisoned)
+   :param trigger_func: A callable function that applies the backdoor trigger to input data samples dynamically.
+   :param target_label: The target class label to inject the backdoor trigger into.
+   """
 
-        # Labels remain unchanged
-        poisoned_labels = y_attack # Use the broadcasted or copied labels
 
-        return poisoned, poisoned_labels  # Return the poisoned data with clean labels
+   attack_params = PoisoningAttackBlackBox.attack_params + ["trigger_func", "target_label"]
+   _estimator_requirements = ()
 
-    def _check_params(self) -> None:
-        if not callable(self.trigger_func):
-            raise ValueError("Trigger function must be callable.")
 
-    @staticmethod
-    def is_broadcast(broadcast: bool) -> bool:
-        return isinstance(broadcast, bool)
+   def __init__(self, trigger_func: Callable, target_label: Union[int, str]) -> None:
+       """
+       Initialize a CleanLabelDynamicBackdoorAttack instance.
 
-    def _validate_inputs(self, x: np.ndarray, y: Optional[np.ndarray] = None, broadcast: bool = False) -> None:
-        if y is None:
-            raise ValueError("Target labels `y` need to be provided for a targeted attack.")
 
-        if not self.is_broadcast(broadcast):
-            raise ValueError("`broadcast` must be a boolean value.")  
+       :param trigger_func: A callable function that applies the backdoor trigger to input data samples dynamically.
+       :param target_label: The target class label to inject the backdoor trigger into.
+       """
+       super().__init__()
+       self.trigger_func = trigger_func
+       self.target_label = target_label
+       self._check_params()
 
+
+   def poison(
+       self, x: np.ndarray, y: np.ndarray, broadcast: bool = False, **kwargs
+   ) -> Tuple[np.ndarray, np.ndarray]:
+       """
+       Inject a dynamic backdoor trigger into clean data samples of the target class.
+
+
+       :param x: Clean data samples.
+       :param y: True labels for the clean data samples.
+       :param broadcast: If True, broadcast target labels to match the number of samples in x.
+       :param kwargs: Additional keyword arguments (not used).
+
+
+       :return: Poisoned data samples with clean labels.
+       """
+       if self.target_label not in y:
+           # If the target label is not present in y, return the original data and labels
+           return x, y
+
+
+       num_poison = len(x)
+       if num_poison == 0:
+           raise ValueError("Must input at least one poison point.")
+       poisoned = np.copy(x)
+
+
+       if callable(self.trigger_func):
+           # Apply the dynamic trigger function to the input data
+           trigger_samples = x[y == self.target_label]
+           poisoned[y == self.target_label] = self.trigger_func(trigger_samples)
+
+
+       return poisoned, y
+
+
+   def _check_params(self) -> None:
+       if not callable(self.trigger_func):
+           raise ValueError("Trigger function must be callable.")
+       if not isinstance(self.target_label, (int, str)):
+           raise ValueError("Target label must be an integer or string.")
 
