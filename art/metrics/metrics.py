@@ -46,11 +46,11 @@ logger = logging.getLogger(__name__)
 SUPPORTED_METHODS: Dict[str, Dict[str, Any]] = {
     "auto": {
         "class": AutoAttack,
-        "params": {"eps_step": 0.1, "eps_max": 1.0},
+        "params": {"eps_step": 0.1},
     },
     "fgsm": {
         "class": FastGradientMethod,
-        "params": {"eps_step": 0.1, "eps_max": 1.0, "clip_min": 0.0, "clip_max": 1.0},
+        "params": {"eps_step": 0.1},
     },
     "hsj": {
         "class": HopSkipJump,

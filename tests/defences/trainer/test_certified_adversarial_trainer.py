@@ -65,7 +65,7 @@ def fix_get_cifar10_data():
 
 
 @pytest.mark.skip_framework(
-    "mxnet", "non_dl_frameworks", "tensorflow1", "keras", "kerastf", "tensorflow2", "tensorflow2v1"
+    "mxnet", "non_dl_frameworks", "tensorflow1", "keras", "kerastf", "tensorflow2", "tensorflow2v1", "huggingface"
 )
 def test_mnist_certified_training(art_warning, fix_get_mnist_data):
     """
@@ -115,7 +115,7 @@ def test_mnist_certified_training(art_warning, fix_get_mnist_data):
 
 
 @pytest.mark.skip_framework(
-    "mxnet", "non_dl_frameworks", "tensorflow1", "keras", "kerastf", "tensorflow2", "tensorflow2v1"
+    "mxnet", "non_dl_frameworks", "tensorflow1", "keras", "kerastf", "tensorflow2", "tensorflow2v1", "huggingface"
 )
 def test_mnist_certified_loss(art_warning, fix_get_mnist_data):
     """
@@ -236,7 +236,7 @@ def test_mnist_certified_loss(art_warning, fix_get_mnist_data):
 
 
 @pytest.mark.skip_framework(
-    "mxnet", "non_dl_frameworks", "tensorflow1", "keras", "kerastf", "tensorflow2", "tensorflow2v1"
+    "mxnet", "non_dl_frameworks", "tensorflow1", "keras", "kerastf", "tensorflow2", "tensorflow2v1", "huggingface"
 )
 def test_cifar_certified_training(art_warning, fix_get_cifar10_data):
     """
@@ -286,7 +286,7 @@ def test_cifar_certified_training(art_warning, fix_get_cifar10_data):
 
 
 @pytest.mark.skip_framework(
-    "mxnet", "non_dl_frameworks", "tensorflow1", "keras", "kerastf", "tensorflow2", "tensorflow2v1"
+    "mxnet", "non_dl_frameworks", "tensorflow1", "keras", "kerastf", "tensorflow2", "tensorflow2v1", "huggingface"
 )
 def test_cifar_certified_loss(art_warning, fix_get_cifar10_data):
     """
