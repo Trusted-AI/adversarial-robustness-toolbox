@@ -24,7 +24,6 @@ Method attack and extends it to other norms, therefore it is called the Fast Gra
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from collections import UserDict
 from typing import Optional, Union, TYPE_CHECKING
 
 import numpy as np
@@ -33,6 +32,7 @@ from art.config import ART_NUMPY_DTYPE
 from art.attacks.attack import EvasionAttack
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from art.estimators.classification.classifier import ClassifierMixin
+from art.estimators.hf_mm import ARTInput
 from art.utils import (
     compute_success,
     get_labels_np_array,
@@ -481,9 +481,9 @@ class FastGradientMethod(EvasionAttack):
         if self.estimator.clip_values is not None:
             clip_min, clip_max = self.estimator.clip_values
             if x.dtype == object:
-                if isinstance(x, UserDict):
+                if isinstance(x, ARTInput):
                     for i_obj in range(x.shape[0]):
-                        x[i_obj] = np.clip(x[i_obj]['pixel_values'].cpu().detach().numpy(), clip_min, clip_max)
+                        x[i_obj] = np.clip(x[i_obj]["pixel_values"].cpu().detach().numpy(), clip_min, clip_max)
                 else:
                     for i_obj in range(x.shape[0]):
                         x[i_obj] = np.clip(x[i_obj], clip_min, clip_max)
@@ -520,6 +520,7 @@ class FastGradientMethod(EvasionAttack):
         else:
             if x.dtype == object:
                 import copy
+
                 # x_adv = x.copy()
                 x_adv = copy.deepcopy(x)
             else:

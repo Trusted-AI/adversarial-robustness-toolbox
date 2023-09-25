@@ -29,15 +29,13 @@ def get_and_process_input(return_batch=False):
         input_list = []
         for _ in range(10):
             input_list.append(image)
-        inputs = processor(text=text, images=input_list, return_tensors="pt",
-                           padding=True)
-        original_image = inputs['pixel_values'][0].clone().cpu().numpy()
+        inputs = processor(text=text, images=input_list, return_tensors="pt", padding=True)
+        original_image = inputs["pixel_values"][0].clone().cpu().numpy()
         labels = torch.tensor(np.asarray([0, 0, 0, 0, 0, 0, 0, 0, 0, 0]))
 
     else:
 
-        inputs = processor(text=text, images=image, return_tensors="pt",
-                           padding=True)
+        inputs = processor(text=text, images=image, return_tensors="pt", padding=True)
         original_image = inputs.pixel_values.clone().cpu().numpy()
         labels = torch.tensor(np.asarray([0]))
 
@@ -57,9 +55,7 @@ def test_grad_equivalence(max_iter):
 
         my_input = ARTInput(**inputs)
         for _ in range(max_iter):
-            art_classifier = HFMMPyTorch(model,
-                                         loss=torch.nn.CrossEntropyLoss(),
-                                         input_shape=(3, 224, 224))
+            art_classifier = HFMMPyTorch(model, loss=torch.nn.CrossEntropyLoss(), input_shape=(3, 224, 224))
 
             loss_grad = art_classifier.loss_gradient(my_input, labels)
         return loss_grad
@@ -90,10 +86,10 @@ def test_perturbation_equivalence(to_batch):
     Test that the result from using ART tools matches that obtained by manual calculation.
     """
     import torch
-    from transformers import CLIPProcessor, CLIPModel
+    from transformers import CLIPModel
 
     from art.estimators.hf_mm import HFMMPyTorch, ARTInput
-    from art.attacks.evasion import ProjectedGradientDescent, ProjectedGradientDescentNumpy
+    from art.attacks.evasion import ProjectedGradientDescentNumpy
 
     def attack_clip():
 
@@ -103,15 +99,16 @@ def test_perturbation_equivalence(to_batch):
         original_image = inputs.pixel_values.clone().cpu().numpy()
 
         my_input = ARTInput(**inputs)
-        art_classifier = HFMMPyTorch(model,
-                                     loss=loss_fn,
-                                     clip_values=(np.min(original_image), np.max(original_image)),
-                                     input_shape=(3, 224, 224))
+        art_classifier = HFMMPyTorch(
+            model, loss=loss_fn, clip_values=(np.min(original_image), np.max(original_image)), input_shape=(3, 224, 224)
+        )
 
-        attack = ProjectedGradientDescentNumpy(art_classifier,
-                                               max_iter=2,
-                                               eps=np.ones((3, 224, 224)) * np.reshape(norm_bound_eps(), (3, 1, 1)),
-                                               eps_step=np.ones((3, 224, 224)) * 0.1,)
+        attack = ProjectedGradientDescentNumpy(
+            art_classifier,
+            max_iter=2,
+            eps=np.ones((3, 224, 224)) * np.reshape(norm_bound_eps(), (3, 1, 1)),
+            eps_step=np.ones((3, 224, 224)) * 0.1,
+        )
 
         perturbation = attack._compute_perturbation(my_input, labels, mask=None)
 
@@ -130,7 +127,7 @@ def test_perturbation_equivalence(to_batch):
         inputs, original_image, labels = get_and_process_input(return_batch=to_batch)
         lossfn = torch.nn.CrossEntropyLoss()
 
-        inputs['pixel_values'] = inputs['pixel_values'].requires_grad_(True)
+        inputs["pixel_values"] = inputs["pixel_values"].requires_grad_(True)
 
         outputs = model(**inputs)
         loss = lossfn(outputs.logits_per_image, labels)
@@ -163,7 +160,7 @@ def test_equivalence(max_iter):
     Test that the result from using ART tools matches that obtained by manual calculation.
     """
     import torch
-    from transformers import CLIPProcessor, CLIPModel
+    from transformers import CLIPModel
 
     from art.estimators.hf_mm import HFMMPyTorch, ARTInput
     from art.attacks.evasion import ProjectedGradientDescent
@@ -178,21 +175,22 @@ def test_equivalence(max_iter):
 
         my_input = ARTInput(**inputs)
         eps = norm_bound_eps()
-        art_classifier = HFMMPyTorch(model,
-                                     loss=loss_fn,
-                                     clip_values=(np.min(original_image), np.max(original_image)),
-                                     input_shape=(3, 224, 224))
+        art_classifier = HFMMPyTorch(
+            model, loss=loss_fn, clip_values=(np.min(original_image), np.max(original_image)), input_shape=(3, 224, 224)
+        )
 
-        attack = ProjectedGradientDescent(art_classifier,
-                                          max_iter=max_iter,
-                                          eps=np.ones((3, 224, 224)) * np.reshape(norm_bound_eps(), (3, 1, 1)),
-                                          eps_step=np.ones((3, 224, 224)) * 0.1,
-                                          targeted=False,
-                                          num_random_init=0,)
+        attack = ProjectedGradientDescent(
+            art_classifier,
+            max_iter=max_iter,
+            eps=np.ones((3, 224, 224)) * np.reshape(norm_bound_eps(), (3, 1, 1)),
+            eps_step=np.ones((3, 224, 224)) * 0.1,
+            targeted=False,
+            num_random_init=0,
+        )
 
         x_adv = attack.generate(my_input, labels)
         x_adv = x_adv[0]
-        check_vals = torch.reshape(x_adv['pixel_values'], (-1, ))
+        check_vals = torch.reshape(x_adv["pixel_values"], (-1,))
 
         assert torch.all(torch.ge(check_vals, np.min(original_image)))
         assert torch.all(torch.le(check_vals, np.max(original_image)))
@@ -200,8 +198,8 @@ def test_equivalence(max_iter):
         eps_mins = torch.tensor(original_image - eps.reshape((1, 3, 1, 1))).float()
         eps_maxs = torch.tensor(original_image + eps.reshape((1, 3, 1, 1))).float()
 
-        eps_mins = torch.reshape(eps_mins, (-1, ))
-        eps_maxs = torch.reshape(eps_maxs, (-1, ))
+        eps_mins = torch.reshape(eps_mins, (-1,))
+        eps_maxs = torch.reshape(eps_maxs, (-1,))
 
         assert torch.all(torch.ge(check_vals, eps_mins))
         assert torch.all(torch.le(check_vals, eps_maxs))
@@ -217,27 +215,25 @@ def test_equivalence(max_iter):
 
         for i in range(max_iter):
 
-            print('On step ', i)
-
             inputs, original_image, labels = get_and_process_input()
 
             eps_mins = torch.tensor(original_image - eps.reshape((1, 3, 1, 1))).float()
             eps_maxs = torch.tensor(original_image + eps.reshape((1, 3, 1, 1))).float()
-            init_max = torch.max(inputs['pixel_values'])
-            init_min = torch.min(inputs['pixel_values'])
+            init_max = torch.max(inputs["pixel_values"])
+            init_min = torch.min(inputs["pixel_values"])
 
             if adv_current is not None:
-                inputs['pixel_values'] = torch.tensor(adv_current, requires_grad=True)
+                inputs["pixel_values"] = torch.tensor(adv_current, requires_grad=True)
             else:
-                inputs['pixel_values'].requires_grad_(True)
+                inputs["pixel_values"].requires_grad_(True)
 
             outputs = model(**inputs)
 
             loss = lossfn(outputs.logits_per_image, labels)
             loss.backward()
 
-            sign = torch.sign(inputs['pixel_values'].grad)
-            pixel_values = torch.clamp(inputs['pixel_values'] + sign * 0.1, min=init_min, max=init_max)
+            sign = torch.sign(inputs["pixel_values"].grad)
+            pixel_values = torch.clamp(inputs["pixel_values"] + sign * 0.1, min=init_min, max=init_max)
             pixel_values = torch.clamp(pixel_values, min=eps_mins, max=eps_maxs)
 
             model.zero_grad()
@@ -249,10 +245,6 @@ def test_equivalence(max_iter):
     manual_adv = manual_attack()
     art_adv = attack_clip()
 
-    art_adv = art_adv['pixel_values']
-    print(art_adv.shape)
-    print(manual_adv.shape)
-    print(art_adv[0:3, 0, 0])
-    print(manual_adv[0, 0:3, 0, 0])
+    art_adv = art_adv["pixel_values"]
 
     assert np.allclose(art_adv, manual_adv[0])

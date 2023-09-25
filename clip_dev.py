@@ -2,7 +2,7 @@ import numpy as np
 from art.estimators.hf_mm import HFMMPyTorch
 from art.estimators.hf_mm import ARTInput
 
-from art.attacks.evasion import ProjectedGradientDescentPyTorch, ProjectedGradientDescent
+from art.attacks.evasion import ProjectedGradientDescent
 
 import torch
 
@@ -12,12 +12,12 @@ STD = np.asarray([0.26862954, 0.26130258, 0.27577711])
 
 def norm_bound_eps(eps_bound=None):
     if eps_bound is None:
-        eps_bound = np.asarray([8/255, 8/255, 8/255])
+        eps_bound = np.asarray([8 / 255, 8 / 255, 8 / 255])
     eps_bound = np.abs(eps_bound / STD)
     return eps_bound
 
 
-def attack_clip():
+def attack_clip_pgd():
     from PIL import Image
     import requests
 
@@ -26,7 +26,63 @@ def attack_clip():
     model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
     loss_fn = torch.nn.CrossEntropyLoss()
 
+    processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
+    text = ["a photo of a cat", "a photo of a dog", "a photo of a car"]
 
+    url = "http://images.cocodataset.org/val2017/000000039769.jpg"
+    image = Image.open(requests.get(url, stream=True).raw)
+    # make a batch
+    input_list = []
+    input_text = []
+    for _ in range(10):
+        input_list.append(image)
+        input_text.append(text)
+
+    inputs = processor(text=text, images=input_list, return_tensors="pt", padding=True)
+    original_image = inputs["pixel_values"][0].clone().cpu().detach().numpy()
+
+    art_classifier = HFMMPyTorch(
+        model, loss=loss_fn, clip_values=(np.min(original_image), np.max(original_image)), input_shape=(3, 224, 224)
+    )
+
+    my_input = ARTInput(**inputs)
+
+    labels = torch.tensor(np.asarray([0, 0, 0, 0, 0, 0, 0, 0, 0, 0]))
+    # loss = art_classifier._get_losses(my_input, labels)
+    # grad = art_classifier.loss_gradient(my_input, labels)
+    clean_preds = art_classifier.predict(my_input)
+    print("The max perturbation is", np.max(np.ones((3, 224, 224)) * np.reshape(norm_bound_eps(), (3, 1, 1))))
+
+    attack = ProjectedGradientDescent(
+        art_classifier,
+        max_iter=10,
+        eps=np.ones((3, 224, 224)) * np.reshape(norm_bound_eps(), (3, 1, 1)),
+        eps_step=np.ones((3, 224, 224)) * 0.1,
+    )
+    x_adv = attack.generate(my_input, labels)
+    adv_preds = art_classifier.predict(x_adv)
+
+    eps = norm_bound_eps()
+
+    np.save("eps_mins.npy", original_image - eps.reshape((1, 3, 1, 1)))
+    np.save("eps_maxs.npy", original_image + eps.reshape((1, 3, 1, 1)))
+    np.save("original_image.npy", original_image)
+
+    print(clean_preds)
+    print(adv_preds)
+
+
+def attack_clip_patch():
+
+    from art.attacks.evasion import AdversarialPatch
+
+    from PIL import Image
+    import requests
+
+    from transformers import CLIPProcessor, CLIPModel
+
+    model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
+    loss_fn = torch.nn.CrossEntropyLoss()
 
     processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
     text = ["a photo of a cat", "a photo of a dog"]
@@ -35,53 +91,44 @@ def attack_clip():
     image = Image.open(requests.get(url, stream=True).raw)
     # make a batch
     input_list = []
+    input_text = []
     for _ in range(10):
         input_list.append(image)
+        input_text.append(text)
 
-    inputs = processor(text=text, images=input_list, return_tensors="pt",
-                       padding=True)
-    original_image = inputs['pixel_values'][0].clone().cpu().detach().numpy()
+    inputs = processor(text=text, images=input_list, return_tensors="pt", padding=True)
 
-    art_classifier = HFMMPyTorch(model,
-                                 loss=loss_fn,
-                                 clip_values=(np.min(original_image), np.max(original_image)),
-                                 input_shape=(3, 224, 224))
+    original_image = inputs["pixel_values"][0].clone().cpu().detach().numpy()
+
+    art_classifier = HFMMPyTorch(
+        model, loss=loss_fn, clip_values=(np.min(original_image), np.max(original_image)), input_shape=(3, 224, 224)
+    )
 
     my_input = ARTInput(**inputs)
 
     labels = torch.tensor(np.asarray([0, 0, 0, 0, 0, 0, 0, 0, 0, 0]))
-    loss = art_classifier._get_losses(my_input, labels)
-    grad = art_classifier.loss_gradient(my_input, labels)
+    labels = labels.reshape((-1,))
+    # print(labels.shape)
+    # loss = art_classifier._get_losses(my_input, labels)
+    # exit()
+    # grad = art_classifier.loss_gradient(my_input, labels)
     clean_preds = art_classifier.predict(my_input)
     print(clean_preds)
-    print('The max perturbation is', np.max(np.ones((3, 224, 224)) * np.reshape(norm_bound_eps(), (3, 1, 1))))
+    print("The max perturbation is", np.max(np.ones((3, 224, 224)) * np.reshape(norm_bound_eps(), (3, 1, 1))))
 
-    attack = ProjectedGradientDescent(art_classifier,
-                                      max_iter=10,
-                                      eps=np.ones((3, 224, 224)) * np.reshape(norm_bound_eps(), (3, 1, 1)),
-                                      eps_step=np.ones((3, 224, 224)) * 0.1)
-    x_adv = attack.generate(my_input, labels)
-    adv_preds = art_classifier.predict(x_adv)
+    attack = AdversarialPatch(art_classifier, max_iter=10)
+    x_adv_patch, adv_mask = attack.generate(my_input, labels)
+    # adv_preds = art_classifier.predict(x_adv)
+    print(type(x_adv_patch))
+    print(x_adv_patch.shape)
 
-    eps = norm_bound_eps()
+    mod_input = attack.apply_patch(x=my_input, patch_external=x_adv_patch, mask=adv_mask)
 
-    np.save('eps_mins.npy', original_image - eps.reshape((1, 3, 1, 1)))
-    np.save('eps_maxs.npy', original_image + eps.reshape((1, 3, 1, 1)))
-    np.save('original_image.npy', original_image)
-
-    '''
-    eps_mins = torch.tensor(original_image - eps.reshape((1, 3, 1, 1))).float()
-    eps_maxs = torch.tensor(original_image + eps.reshape((1, 3, 1, 1))).float()
-
-    eps_mins = torch.reshape(eps_mins, (-1,))
-    eps_maxs = torch.reshape(eps_maxs, (-1,))
-    check_vals = x_adv['pixel_values']
-    check_vals = check_vals[0].clone().cpu().detach()
-    check_vals = torch.reshape(check_vals, (-1,))
-    '''
+    adv_preds = art_classifier.predict(mod_input)
 
     print(clean_preds)
     print(adv_preds)
 
 
-attack_clip()
+# attack_clip_pgd()
+attack_clip_patch()

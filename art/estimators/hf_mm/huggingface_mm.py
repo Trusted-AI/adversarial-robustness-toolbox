@@ -42,7 +42,7 @@ class HFMMPyTorch(PyTorchEstimator):
     This module implements ...
     """
 
-    estimator_params = PyTorchEstimator.estimator_params + ["input_shape", "optimizer", "attack_losses"]
+    estimator_params = PyTorchEstimator.estimator_params + ["input_shape", "optimizer"]
 
     def __init__(
         self,
@@ -91,7 +91,7 @@ class HFMMPyTorch(PyTorchEstimator):
         self._input_shape = input_shape
         self._optimizer = optimizer
         self.loss_fn = loss
-
+        self.nb_classes = 2
         if self.postprocessing_defences is not None:
             raise ValueError("This estimator does not support `postprocessing_defences`.")
         self._model = model
@@ -126,7 +126,6 @@ class HFMMPyTorch(PyTorchEstimator):
         """
         return self._optimizer
 
-
     @property
     def device(self) -> "torch.device":
         """
@@ -138,11 +137,11 @@ class HFMMPyTorch(PyTorchEstimator):
 
     def _preprocess_and_convert_inputs(
         self,
-        x: Union[np.ndarray, "torch.Tensor"],
-        y: Optional[List[Dict[str, Union[np.ndarray, "torch.Tensor"]]]] = None,
+        x: Dict,
+        y: Optional[Union[np.ndarray, "torch.Tensor"]] = None,
         fit: bool = False,
         no_grad: bool = True,
-    ) -> Tuple["torch.Tensor", List[Dict[str, "torch.Tensor"]]]:
+    ) -> Tuple[Dict, Union[np.ndarray, "torch.Tensor", None]]:
         """
         Dummy function to allow compatibility with ART attacks.
         All pre-processing should be done before by the relevant HF pre-processor.
@@ -156,9 +155,7 @@ class HFMMPyTorch(PyTorchEstimator):
         """
         return x, y
 
-    def _get_losses(
-        self, x: Dict, y: Union[np.ndarray, "torch.Tensor"]
-    ) -> Tuple[Dict[str, "torch.Tensor"], "torch.Tensor"]:
+    def _get_losses(self, x: Dict, y: Union[np.ndarray, "torch.Tensor"]) -> "torch.Tensor":
         """
         Get the loss tensor output of the model including all preprocessing.
 
@@ -166,13 +163,20 @@ class HFMMPyTorch(PyTorchEstimator):
         :param y:
         :return: Loss components and gradients of the input `x`.
         """
-        self._model.train()
+        import torch
 
+        self._model.train()
+        if isinstance(y, np.ndarray):
+            y = torch.tensor(y)
+
+        # reduce labels
+        if y.ndim > 1:
+            y = torch.argmax(y, dim=-1)
         # Set gradients again after inputs are moved to another device
-        if x['pixel_values'].is_leaf:
-            x['pixel_values'].requires_grad = True
+        if x["pixel_values"].is_leaf:
+            x["pixel_values"].requires_grad = True
         else:
-            x['pixel_values'].retain_grad()
+            x["pixel_values"].retain_grad()
 
         # Calculate loss components
         preds = self._model(**x)
@@ -180,7 +184,7 @@ class HFMMPyTorch(PyTorchEstimator):
         return self.loss_fn(preds, y)
 
     def loss_gradient(  # pylint: disable=W0613
-        self, x: Union[np.ndarray, "torch.Tensor"], y: List[Dict[str, Union[np.ndarray, "torch.Tensor"]]], **kwargs
+        self, x: Dict, y: Union[np.ndarray, "torch.Tensor"], **kwargs
     ) -> Union[np.ndarray, "torch.Tensor"]:
         """
         Compute the gradient of the loss function w.r.t. `x`.
@@ -199,7 +203,7 @@ class HFMMPyTorch(PyTorchEstimator):
         # Compute gradients
         loss.backward()  # type: ignore
 
-        '''
+        """
         if x_grad.grad is not None:
             if isinstance(x, np.ndarray):
                 grads = x_grad.grad.cpu().numpy()
@@ -207,8 +211,8 @@ class HFMMPyTorch(PyTorchEstimator):
                 grads = x_grad.grad.clone()
         else:
             raise ValueError("Gradient term in PyTorch model is `None`.")
-        '''
-        grads = x['pixel_values'].grad
+        """
+        grads = x["pixel_values"].grad
         if self.clip_values is not None:
             grads = grads / self.clip_values[1]
 
@@ -217,11 +221,11 @@ class HFMMPyTorch(PyTorchEstimator):
                 grads = np.transpose(grads, (0, 2, 3, 1))
             else:
                 grads = torch.permute(grads, (0, 2, 3, 1))
-        # print('loss_gradient: ', x['pixel_values'])
-        assert grads.shape == x['pixel_values'].shape
+
+        assert grads.shape == x["pixel_values"].shape
         return grads.cpu().numpy()
 
-    def predict(self, x: Dict, batch_size: int = 128, **kwargs) -> List[Dict[str, np.ndarray]]:
+    def predict(self, x: Union[Dict, np.ndarray], batch_size: int = 128, **kwargs) -> np.ndarray:
         """
         Perform prediction for a batch of inputs.
 
@@ -232,10 +236,12 @@ class HFMMPyTorch(PyTorchEstimator):
 
         # Set model to evaluation mode
         self._model.eval()
+        if isinstance(x, np.ndarray):
+            raise ValueError('x should be of type art.estimators.hf_mm.hf_inputs.ARTInput')
         x_preprocessed, _ = self._preprocess_and_convert_inputs(x=x, y=None, fit=False, no_grad=True)
-        predictions = self._model(**x)
+        predictions = self._model(**x_preprocessed)
         predictions = predictions.logits_per_image
-        return predictions
+        return predictions.cpu().numpy()
 
     def fit(  # pylint: disable=W0221
         self,
@@ -257,9 +263,7 @@ class HFMMPyTorch(PyTorchEstimator):
     ) -> np.ndarray:
         raise NotImplementedError
 
-    def compute_losses(
-        self, x: Union[np.ndarray, "torch.Tensor"], y: List[Dict[str, Union[np.ndarray, "torch.Tensor"]]]
-    ) -> Dict[str, np.ndarray]:
+    def compute_losses(self, x: Dict, y: Union[np.ndarray, "torch.Tensor"]) -> Dict:
         """
         Compute all loss components.
 
@@ -278,7 +282,7 @@ class HFMMPyTorch(PyTorchEstimator):
         return output
 
     def compute_loss(  # type: ignore
-        self, x: Union[np.ndarray, "torch.Tensor"], y: List[Dict[str, Union[np.ndarray, "torch.Tensor"]]], **kwargs
+        self, x: Dict, y: Union[np.ndarray, "torch.Tensor"], **kwargs
     ) -> Union[np.ndarray, "torch.Tensor"]:
         """
         Compute the loss of the neural network for samples `x`.
@@ -293,15 +297,7 @@ class HFMMPyTorch(PyTorchEstimator):
         """
         import torch
 
-        loss_components, _ = self._get_losses(x=x, y=y)
-
-        # Compute the gradient and return
-        loss = None
-        for loss_name in self.attack_losses:
-            if loss is None:
-                loss = loss_components[loss_name]
-            else:
-                loss = loss + loss_components[loss_name]
+        loss, _ = self._get_losses(x=x, y=y)
 
         assert loss is not None
 
