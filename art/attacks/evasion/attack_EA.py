@@ -259,6 +259,7 @@ class EA(EvasionAttack):
             all_ = np.concatenate((mutated_middle_class, mutated_keep_group2))
             parents_idx = self._get_crossover_parents(all_)
             crossover_group = self._crossover(x, all_, parents_idx)
+            adv_img = images[0]
             # Create new population
             images = np.concatenate((elite, crossover_group))
             # Report the progress on the screen
@@ -278,4 +279,4 @@ class EA(EvasionAttack):
             if self.targeted and dom_indx == y and dom_cat_prop > self.confidence:
                # if the attack is targeted, the algorithm stops when the image is classified in the target category y.
                 break
-        return images[0]
+        return adv_img
