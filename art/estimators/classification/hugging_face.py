@@ -155,7 +155,7 @@ class HuggingFaceClassifierPyTorch(PyTorchClassifier):
         import torch
 
         input_shape = self._input_shape
-        input_for_hook = torch.rand(input_shape)
+        input_for_hook = torch.rand(input_shape).to(self.device)
         input_for_hook = torch.unsqueeze(input_for_hook, dim=0)
 
         if self.processor is not None:
