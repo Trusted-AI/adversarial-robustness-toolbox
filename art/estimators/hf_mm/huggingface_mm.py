@@ -19,9 +19,11 @@
 This module implements ...
 """
 import logging
+import random
 from typing import List, Dict, Optional, Tuple, Union, TYPE_CHECKING
 
 import numpy as np
+from tqdm import tqdm
 
 from art.estimators.pytorch import PyTorchEstimator
 
@@ -39,16 +41,18 @@ logger = logging.getLogger(__name__)
 
 class HFMMPyTorch(PyTorchEstimator):
     """
-    This module implements ...
+    This module implements an estimator for attacking pre-trained CLIP by adversarial perturbations on the image.
+    Currently only supports PGD attacks.
     """
 
     estimator_params = PyTorchEstimator.estimator_params + ["input_shape", "optimizer"]
 
     def __init__(
         self,
-        model: "torch.nn.Module",
+        model: "transformers.PreTrainedModel",
         loss: "torch.nn.modules.loss._Loss",
-        input_shape: Tuple[int, ...] = (3, 416, 416),
+        input_shape: Tuple[int, ...],
+        nb_classes: int,
         optimizer: Optional["torch.optim.Optimizer"] = None,
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         channels_first: Optional[bool] = True,
@@ -60,9 +64,10 @@ class HFMMPyTorch(PyTorchEstimator):
         """
         Initialization.
 
-        :param model:
+        :param model: CLIP model
         :param input_shape: The shape of one input sample.
         :param optimizer: The optimizer for training the classifier.
+        :param nb_classes: ...
         :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
                maximum values allowed for features. If floats are provided, these will be used as the range of all
                features. If arrays are provided, each value will be considered the bound for a feature, thus
@@ -91,7 +96,7 @@ class HFMMPyTorch(PyTorchEstimator):
         self._input_shape = input_shape
         self._optimizer = optimizer
         self.loss_fn = loss
-        self.nb_classes = 2
+        self.nb_classes = nb_classes
         if self.postprocessing_defences is not None:
             raise ValueError("This estimator does not support `postprocessing_defences`.")
         self._model = model
@@ -135,23 +140,23 @@ class HFMMPyTorch(PyTorchEstimator):
         """
         return self._device
 
+    @staticmethod
     def _preprocess_and_convert_inputs(
-        self,
         x: Dict,
         y: Optional[Union[np.ndarray, "torch.Tensor"]] = None,
-        fit: bool = False,
-        no_grad: bool = True,
+        fit: bool = False,  # pylint: disable=W0613
+        no_grad: bool = True,  # pylint: disable=W0613
     ) -> Tuple[Dict, Union[np.ndarray, "torch.Tensor", None]]:
         """
         Dummy function to allow compatibility with ART attacks.
         All pre-processing should be done before by the relevant HF pre-processor.
 
-        :param x:
-        :param y:
+        :param x: Dictionary inputs for the CLIP model.
+        :param y: Labels
         :param fit: `True` if the function is call before fit/training and `False` if the function is called before a
                     predict operation.
         :param no_grad: `True` if no gradients required.
-        :return: Preprocessed inputs `(x, y)` as tensors.
+        :return: Preprocessed inputs `(x, y)
         """
         return x, y
 
@@ -159,13 +164,14 @@ class HFMMPyTorch(PyTorchEstimator):
         """
         Get the loss tensor output of the model including all preprocessing.
 
-        :param x:
-        :param y:
+        :param x: Dictionary inputs for the CLIP model.
+        :param y: Labels for the loss
         :return: Loss components and gradients of the input `x`.
         """
         import torch
 
-        self._model.train()
+        self._model.eval()
+
         if isinstance(y, np.ndarray):
             y = torch.tensor(y)
 
@@ -185,12 +191,12 @@ class HFMMPyTorch(PyTorchEstimator):
 
     def loss_gradient(  # pylint: disable=W0613
         self, x: Dict, y: Union[np.ndarray, "torch.Tensor"], **kwargs
-    ) -> Union[np.ndarray, "torch.Tensor"]:
+    ) -> np.ndarray:
         """
-        Compute the gradient of the loss function w.r.t. `x`.
+        Compute the gradient of the loss function w.r.t. the image component of the input
 
-        :param x: Samples of shape NCHW or NHWC.
-        :param y:
+        :param x: Dictionary inputs for the CLIP model.
+        :param y: Labels for the loss
         :return: Loss gradients of the same shape as `x`.
         """
         import torch
@@ -202,17 +208,13 @@ class HFMMPyTorch(PyTorchEstimator):
 
         # Compute gradients
         loss.backward()  # type: ignore
+        x_grad = x["pixel_values"].grad
 
-        """
-        if x_grad.grad is not None:
-            if isinstance(x, np.ndarray):
-                grads = x_grad.grad.cpu().numpy()
-            else:
-                grads = x_grad.grad.clone()
+        if x_grad is not None:
+            grads = x_grad.clone()
         else:
             raise ValueError("Gradient term in PyTorch model is `None`.")
-        """
-        grads = x["pixel_values"].grad
+
         if self.clip_values is not None:
             grads = grads / self.clip_values[1]
 
@@ -225,11 +227,11 @@ class HFMMPyTorch(PyTorchEstimator):
         assert grads.shape == x["pixel_values"].shape
         return grads.cpu().numpy()
 
-    def predict(self, x: Union[Dict, np.ndarray], batch_size: int = 128, **kwargs) -> np.ndarray:
+    def predict(self, x: Dict, batch_size: int = 128, **kwargs) -> np.ndarray:
         """
         Perform prediction for a batch of inputs.
 
-        :param x:
+        :param x: Dictionary inputs for the CLIP model.
         :param batch_size: Batch size.
         :return:
         """
@@ -237,49 +239,92 @@ class HFMMPyTorch(PyTorchEstimator):
         # Set model to evaluation mode
         self._model.eval()
         if isinstance(x, np.ndarray):
-            raise ValueError('x should be of type art.estimators.hf_mm.hf_inputs.ARTInput')
+            raise ValueError("x should be of type art.estimators.hf_mm.hf_inputs.MultiModalHuggingFaceInput")
         x_preprocessed, _ = self._preprocess_and_convert_inputs(x=x, y=None, fit=False, no_grad=True)
-        predictions = self._model(**x_preprocessed)
-        predictions = predictions.logits_per_image
-        return predictions.cpu().numpy()
+
+        num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
+        results = []
+        for m in tqdm(range(num_batch)):
+            print(type(x))
+            x_batch = x[batch_size * m: batch_size * (m + 1)]
+            print(type(x_batch))
+
+            predictions = self._model(**x_batch)
+            results.append(predictions.logits_per_image.cpu().detach().numpy())
+
+        return np.concatenate(results)
 
     def fit(  # pylint: disable=W0221
         self,
-        x: np.ndarray,
-        y: List[Dict[str, Union[np.ndarray, "torch.Tensor"]]],
+        x: Dict,
+        y: Union[np.ndarray, "torch.Tensor"],
         batch_size: int = 128,
         nb_epochs: int = 10,
         drop_last: bool = False,
         scheduler: Optional["torch.optim.lr_scheduler._LRScheduler"] = None,
+        verbose: bool = True,
         **kwargs,
     ) -> None:
         """
         Fit the classifier on the training set
         """
-        raise NotImplementedError
+        import torch
+        self._model.train()
+
+        # y_preprocessed = self.reduce_labels(y)
+
+        y_tensor = torch.from_numpy(y)
+
+        num_batch = int(np.ceil(len(y_tensor) / float(batch_size)))
+        ind = np.arange(len(y_tensor))
+
+        # Start training
+        for _ in tqdm(range(nb_epochs)):
+            # Shuffle the examples
+            random.shuffle(ind)
+
+            # Train for one epoch
+            pbar = tqdm(range(num_batch), disable=not verbose)
+            acc = []
+            losses = []
+
+            for m in pbar:
+                x_batch = x[ind[batch_size * m: batch_size * (m + 1)]]
+                y_batch = y_tensor[ind[batch_size * m: batch_size * (m + 1)]]
+
+                # Zero the parameter gradients
+                self._optimizer.zero_grad()
+
+                # Perform prediction
+                try:
+                    model_outputs = self._model(**x_batch)
+                except ValueError as err:
+                    if "Expected more than 1 value per channel when training" in str(err):
+                        logger.exception(
+                            "Try dropping the last incomplete batch by setting drop_last=True in "
+                            "method PyTorchClassifier.fit."
+                        )
+                    raise err
+
+                loss = self.loss_fn(model_outputs["logits_per_image"], y_batch)
+
+                loss.backward()
+
+                self._optimizer.step()
+                losses.append(loss)
+                if verbose:
+                    pbar.set_description(
+                        f"Loss {torch.mean(torch.stack(losses)):.2f} "
+                        # f"Acc {np.mean(non_cert_acc):.2f} Cert Acc {np.mean(cert_acc):.2f} "
+                    )
+
+            if scheduler is not None:
+                scheduler.step()
 
     def get_activations(
         self, x: np.ndarray, layer: Union[int, str], batch_size: int, framework: bool = False
     ) -> np.ndarray:
         raise NotImplementedError
-
-    def compute_losses(self, x: Dict, y: Union[np.ndarray, "torch.Tensor"]) -> Dict:
-        """
-        Compute all loss components.
-
-        :param x: Samples of shape NCHW or NHWC.
-        :param y: Target values of format `List[Dict[str, Union[np.ndarray, torch.Tensor]]]`, one for each input image.
-                  The fields of the Dict are as follows:
-
-                  - boxes [N, 4]: the boxes in [x1, y1, x2, y2] format, with 0 <= x1 < x2 <= W and 0 <= y1 < y2 <= H.
-                  - labels [N]: the labels for each image.
-        :return: Dictionary of loss components.
-        """
-        loss_components, _ = self._get_losses(x=x, y=y)
-        output = {}
-        for key, value in loss_components.items():
-            output[key] = value.detach().cpu().numpy()
-        return output
 
     def compute_loss(  # type: ignore
         self, x: Dict, y: Union[np.ndarray, "torch.Tensor"], **kwargs
@@ -287,7 +332,7 @@ class HFMMPyTorch(PyTorchEstimator):
         """
         Compute the loss of the neural network for samples `x`.
 
-        :param x: Samples of shape NCHW or NHWC.
+        :param x: Dictionary inputs for the CLIP model.
         :param y: Target values of format `List[Dict[str, Union[np.ndarray, torch.Tensor]]]`, one for each input image.
                   The fields of the Dict are as follows:
 

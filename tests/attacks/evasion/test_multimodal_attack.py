@@ -12,7 +12,7 @@ def norm_bound_eps(eps_bound=None):
     return eps_bound
 
 
-def get_and_process_input(return_batch=False):
+def get_and_process_input(to_one_hot=False, return_batch=False):
 
     from PIL import Image
     import requests
@@ -20,7 +20,7 @@ def get_and_process_input(return_batch=False):
     from transformers import CLIPProcessor
 
     processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
-    text = ["a photo of a cat", "a photo of a dog"]
+    text = ["a photo of a cat", "a photo of a dog", "a photo of a bear"]
 
     url = "http://images.cocodataset.org/val2017/000000039769.jpg"
     image = Image.open(requests.get(url, stream=True).raw)
@@ -31,7 +31,13 @@ def get_and_process_input(return_batch=False):
             input_list.append(image)
         inputs = processor(text=text, images=input_list, return_tensors="pt", padding=True)
         original_image = inputs["pixel_values"][0].clone().cpu().numpy()
-        labels = torch.tensor(np.asarray([0, 0, 0, 0, 0, 0, 0, 0, 0, 0]))
+        if to_one_hot:
+            labels = np.zeros((10, 3))
+            labels = labels[0:10] + 1
+        else:
+            labels = np.zeros((10,))
+
+        labels = torch.tensor(labels).type(torch.LongTensor)
 
     else:
 
@@ -39,30 +45,33 @@ def get_and_process_input(return_batch=False):
         original_image = inputs.pixel_values.clone().cpu().numpy()
         labels = torch.tensor(np.asarray([0]))
 
-    return inputs, original_image, labels
+    return inputs, original_image, labels, len(text)
 
 
+@pytest.mark.only_with_platform("huggingface")
 @pytest.mark.parametrize("max_iter", [1, 5])
 def test_grad_equivalence(max_iter):
 
     import torch
     from transformers import CLIPModel
-    from art.estimators.hf_mm import HFMMPyTorch, ARTInput
+    from art.estimators.hf_mm import HFMMPyTorch, MultiModalHuggingFaceInput
 
     def grad_art():
         model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
-        inputs, original_image, labels = get_and_process_input(return_batch=False)
+        inputs, original_image, labels, num_classes = get_and_process_input(return_batch=False)
 
-        my_input = ARTInput(**inputs)
+        my_input = MultiModalHuggingFaceInput(**inputs)
         for _ in range(max_iter):
-            art_classifier = HFMMPyTorch(model, loss=torch.nn.CrossEntropyLoss(), input_shape=(3, 224, 224))
-
+            art_classifier = HFMMPyTorch(model,
+                                         nb_classes=num_classes,
+                                         loss=torch.nn.CrossEntropyLoss(),
+                                         input_shape=(3, 224, 224))
             loss_grad = art_classifier.loss_gradient(my_input, labels)
         return loss_grad
 
     def manual_grad():
         model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
-        inputs, original_image, labels = get_and_process_input(return_batch=False)
+        inputs, original_image, labels, num_classes = get_and_process_input(return_batch=False)
 
         inputs.pixel_values.requires_grad_(True)
         lossfn = torch.nn.CrossEntropyLoss()
@@ -80,27 +89,30 @@ def test_grad_equivalence(max_iter):
     assert np.allclose(art, manual.cpu().detach().numpy())
 
 
+@pytest.mark.only_with_platform("huggingface")
 @pytest.mark.parametrize("to_batch", [False, True])
 def test_perturbation_equivalence(to_batch):
     """
-    Test that the result from using ART tools matches that obtained by manual calculation.
+    Test that the perturbation from using ART tools matches that obtained by manual calculation.
     """
     import torch
     from transformers import CLIPModel
 
-    from art.estimators.hf_mm import HFMMPyTorch, ARTInput
+    from art.estimators.hf_mm import HFMMPyTorch, MultiModalHuggingFaceInput
     from art.attacks.evasion import ProjectedGradientDescentNumpy
 
     def attack_clip():
 
         model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
         loss_fn = torch.nn.CrossEntropyLoss()
-        inputs, original_image, labels = get_and_process_input(return_batch=to_batch)
+        inputs, original_image, labels, num_classes = get_and_process_input(return_batch=to_batch)
         original_image = inputs.pixel_values.clone().cpu().numpy()
 
-        my_input = ARTInput(**inputs)
+        my_input = MultiModalHuggingFaceInput(**inputs)
         art_classifier = HFMMPyTorch(
-            model, loss=loss_fn, clip_values=(np.min(original_image), np.max(original_image)), input_shape=(3, 224, 224)
+            model,
+            nb_classes=num_classes,
+            loss=loss_fn, clip_values=(np.min(original_image), np.max(original_image)), input_shape=(3, 224, 224)
         )
 
         attack = ProjectedGradientDescentNumpy(
@@ -112,19 +124,14 @@ def test_perturbation_equivalence(to_batch):
 
         perturbation = attack._compute_perturbation(my_input, labels, mask=None)
 
-        if to_batch:
-            batch_index_2 = 10
-        else:
-            batch_index_2 = 1
-
-        adv_art_x = attack._apply_perturbation(my_input[0:batch_index_2], perturbation, attack.eps_step)
+        adv_art_x = attack._apply_perturbation(my_input[0:], perturbation, attack.eps_step)
 
         return perturbation, adv_art_x["pixel_values"].cpu().detach().numpy()
 
     def manual_attack():
 
         model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
-        inputs, original_image, labels = get_and_process_input(return_batch=to_batch)
+        inputs, original_image, labels, num_classes = get_and_process_input(return_batch=to_batch)
         lossfn = torch.nn.CrossEntropyLoss()
 
         inputs["pixel_values"] = inputs["pixel_values"].requires_grad_(True)
@@ -154,15 +161,17 @@ def test_perturbation_equivalence(to_batch):
     assert np.allclose(manual_sample, current_x)
 
 
+@pytest.mark.only_with_platform("huggingface")
 @pytest.mark.parametrize("max_iter", [1, 5])
-def test_equivalence(max_iter):
+@pytest.mark.parametrize("to_one_hot", [True, False])
+def test_equivalence(max_iter, to_one_hot):
     """
     Test that the result from using ART tools matches that obtained by manual calculation.
     """
     import torch
     from transformers import CLIPModel
 
-    from art.estimators.hf_mm import HFMMPyTorch, ARTInput
+    from art.estimators.hf_mm import HFMMPyTorch, MultiModalHuggingFaceInput
     from art.attacks.evasion import ProjectedGradientDescent
 
     def attack_clip():
@@ -170,13 +179,15 @@ def test_equivalence(max_iter):
         model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
         loss_fn = torch.nn.CrossEntropyLoss()
 
-        inputs, original_image, labels = get_and_process_input(return_batch=False)
+        inputs, original_image, labels, num_classes = get_and_process_input(to_one_hot=to_one_hot, return_batch=False)
         original_image = inputs.pixel_values.clone().cpu().numpy()
 
-        my_input = ARTInput(**inputs)
+        my_input = MultiModalHuggingFaceInput(**inputs)
         eps = norm_bound_eps()
         art_classifier = HFMMPyTorch(
-            model, loss=loss_fn, clip_values=(np.min(original_image), np.max(original_image)), input_shape=(3, 224, 224)
+            model,
+            nb_classes=num_classes,
+            loss=loss_fn, clip_values=(np.min(original_image), np.max(original_image)), input_shape=(3, 224, 224)
         )
 
         attack = ProjectedGradientDescent(
@@ -215,7 +226,7 @@ def test_equivalence(max_iter):
 
         for i in range(max_iter):
 
-            inputs, original_image, labels = get_and_process_input()
+            inputs, original_image, labels, num_classes = get_and_process_input()
 
             eps_mins = torch.tensor(original_image - eps.reshape((1, 3, 1, 1))).float()
             eps_maxs = torch.tensor(original_image + eps.reshape((1, 3, 1, 1))).float()
@@ -248,3 +259,25 @@ def test_equivalence(max_iter):
     art_adv = art_adv["pixel_values"]
 
     assert np.allclose(art_adv, manual_adv[0])
+
+
+"""
+TODO: move some of the fits to more appropriate testing files
+"""
+@pytest.mark.only_with_platform("huggingface")
+def test_predict():
+    import torch
+    from transformers import CLIPModel
+    from art.estimators.hf_mm import HFMMPyTorch, MultiModalHuggingFaceInput
+
+    model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
+    inputs, original_image, labels, num_classes = get_and_process_input(return_batch=True)
+
+    art_classifier = HFMMPyTorch(
+        model,
+        nb_classes=num_classes,
+        loss=torch.nn.CrossEntropyLoss(), clip_values=(np.min(original_image), np.max(original_image)), input_shape=(3, 224, 224)
+    )
+    inputs = MultiModalHuggingFaceInput(**inputs)
+    preds = art_classifier.predict(inputs)
+

@@ -19,12 +19,15 @@
 This module implements a user-defined dictionary which can support array like functionality to enable compatibility
 with ART's tools.
 """
+from __future__ import annotations
+
 from collections import UserDict
+from typing import List, Dict, Optional, Tuple, Union, TYPE_CHECKING
 
 import numpy as np
 
 
-class ARTInput(UserDict):
+class MultiModalHuggingFaceInput(UserDict):
     """
     Custom class to allow HF inputs which are in a dictionary to be compatible with ART.
     Allows certain array-like functionality to be performed directly onto the input such as
@@ -39,8 +42,9 @@ class ARTInput(UserDict):
     def __setitem__(self, key, value):
         import torch
 
-        if not isinstance(value, torch.Tensor):
-            raise ValueError("Supplied values must be either pytorch tensors or numpy arrays")
+        # if not isinstance(value, (torch.Tensor, np.ndarray, )):
+        #    print(type(value))
+        #    raise ValueError("Supplied values must be pytorch tensors or numpy arrays")
         # print('key ', key)
         # print('value ', value)
         if isinstance(key, slice):
@@ -62,7 +66,7 @@ class ARTInput(UserDict):
             pixel_values = UserDict.__getitem__(self, "pixel_values")
             original_shape = pixel_values.shape
             with torch.no_grad():
-                if isinstance(value, ARTInput):
+                if isinstance(value, MultiModalHuggingFaceInput):
                     pixel_values[key] = value["pixel_values"]
                 else:
                     pixel_values[key] = torch.tensor(value)
@@ -73,66 +77,75 @@ class ARTInput(UserDict):
                 f"Unsupported key {key} with type {type(key)}, " f"value {value} for __setitem__ in ARTInput"
             )
 
-    def __getitem__(self, item):
+    def __getitem__(self, item: Union[slice, Tuple, int, str]) -> MultiModalHuggingFaceInput:
         # print('__getitem__ key ', item)
         # print('with type ', type(item))
         if isinstance(item, (slice, tuple)):
             pixel_values = UserDict.__getitem__(self, "pixel_values")
             pixel_values = pixel_values[item]
-            output = ARTInput(**self)
+            output = MultiModalHuggingFaceInput(**self)
             output["pixel_values"] = pixel_values
             return output
         if isinstance(item, int):
             pixel_values = UserDict.__getitem__(self, "pixel_values")
             pixel_values = pixel_values[item]
-            output = ARTInput(**self)
+            output = MultiModalHuggingFaceInput(**self)
+            output["pixel_values"] = pixel_values
+            return output
+        if isinstance(item, np.ndarray):
+            pixel_values = UserDict.__getitem__(self, "pixel_values")
+            pixel_values = pixel_values[item]
+            output = MultiModalHuggingFaceInput(**self)
             output["pixel_values"] = pixel_values
             return output
         if item in self.keys():
             return UserDict.__getitem__(self, item)
         raise ValueError("Unsupported item for __getitem__ in ARTInput")
 
-    def __add__(self, other):
+    def __add__(self, other: Union[MultiModalHuggingFaceInput, np.ndarray]) -> MultiModalHuggingFaceInput:
         import torch
 
         pixel_values = UserDict.__getitem__(self, "pixel_values")
         with torch.no_grad():
-            if isinstance(other, ARTInput):
+            if isinstance(other, MultiModalHuggingFaceInput):
                 pixel_values = pixel_values + other["pixel_values"]
             else:
                 pixel_values = pixel_values + torch.tensor(other)
-        output = ARTInput(**self)
+        output = MultiModalHuggingFaceInput(**self)
         output["pixel_values"] = pixel_values
         return output
 
-    def __sub__(self, other):
-        if isinstance(other, ARTInput):
+    def __sub__(self, other: MultiModalHuggingFaceInput) -> MultiModalHuggingFaceInput:
+        if isinstance(other, MultiModalHuggingFaceInput):
             pixel_values = UserDict.__getitem__(self, "pixel_values")
             pixel_values = pixel_values - other["pixel_values"]
-            output = ARTInput(**self)
+            output = MultiModalHuggingFaceInput(**self)
             output["pixel_values"] = pixel_values
         else:
             raise ValueError("Unsupported type for __sub__ in ARTInput")
         return output
 
-    def __mul__(self, other):
+    def __mul__(self, other: Union[MultiModalHuggingFaceInput, np.ndarray]) -> MultiModalHuggingFaceInput:
         import torch
 
-        if isinstance(other, ARTInput):
+        if isinstance(other, MultiModalHuggingFaceInput):
             pixel_values = UserDict.__getitem__(self, "pixel_values")
             pixel_values = pixel_values * other["pixel_values"]
-            output = ARTInput(**self)
-            output["pixel_values"] = pixel_values
         elif isinstance(other, np.ndarray):
             pixel_values = UserDict.__getitem__(self, "pixel_values")
             pixel_values = pixel_values * torch.tensor(other)
-            output = ARTInput(**self)
-            output["pixel_values"] = pixel_values
         else:
             raise ValueError("Unsupported type for __mul__ in ARTInput")
+
+        output = MultiModalHuggingFaceInput(**self)
+        output["pixel_values"] = pixel_values
         return output
 
-    def reshape(self, new_shape):
+    def __len__(self):
+        pixel_values = UserDict.__getitem__(self, "pixel_values")
+        return len(pixel_values)
+
+    def reshape(self, new_shape: Tuple) -> MultiModalHuggingFaceInput:
         """
         Defines reshaping on the HF input.
         :param new_shape: The new shape for the input
@@ -143,6 +156,6 @@ class ARTInput(UserDict):
         pixel_values = UserDict.__getitem__(self, "pixel_values")
         if not isinstance(pixel_values, torch.Tensor):
             pixel_values = torch.tensor(pixel_values)
-        output = ARTInput(**self)
+        output = MultiModalHuggingFaceInput(**self)
         output["pixel_values"] = torch.reshape(pixel_values, new_shape)
         return output
