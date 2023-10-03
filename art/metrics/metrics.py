@@ -480,3 +480,41 @@ def wasserstein_distance(
             w_d[i] = scipy.stats.wasserstein_distance(u_values[i], v_values[i], u_weights[i], v_weights[i])
 
     return w_d
+
+def adversarial_accuracy_and_perturbation(
+    classifier: "CLASSIFIER_TYPE",
+    x: np.ndarray,
+    x_adv: np.ndarray,
+    y: np.ndarray,
+    norm_type: int = 2,
+) -> Tuple[float, float, float]:
+    """
+    Compute accuracy and perturbation
+
+    :param classifier: A trained model.
+    :param x: Input samples of shape that can be fed into `classifier`.
+    :param x_adv: Adversarial input samples of shape that can be fed into the `classifier`.
+    :param y: True labels of `x`.
+    :return: Tuple including:
+        - clean accuracy of the classifier computed on `x`
+        - clean accuracy of the classifier computed on `x`
+        - perturbation (distance) between x and x_adv, calculated using norm (2, inf)
+    """
+    y_orig = np.argmax(classifier.predict(x), axis=1)
+    y_pred = np.argmax(classifier.predict(x_adv), axis=1)
+
+    if len(y.shape) > 1:
+        y = np.argmax(y, axis=1)
+
+    y_corr = y_orig == y
+
+    clean_acc = np.sum(y_corr) / len(y_orig)
+    robust_acc = np.sum((y_pred == y_orig) & y_corr) / np.sum(y_corr)
+
+    idxs = y_pred != y
+    avg_perts = 0.0
+    perts_norm = la.norm((x_adv - x).reshape(x.shape[0], -1), ord=norm_type, axis=1)
+    perts_norm = perts_norm[idxs]
+    avg_perts = np.mean(perts_norm)
+
+    return (clean_acc, robust_acc, avg_perts)
