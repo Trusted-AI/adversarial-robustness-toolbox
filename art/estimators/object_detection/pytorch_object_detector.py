@@ -19,7 +19,7 @@
 This module implements the task specific estimator for PyTorch object detectors.
 """
 import logging
-from typing import List, Dict, Optional, Tuple, Union, TYPE_CHECKING
+from typing import Any, List, Dict, Optional, Tuple, Union, TYPE_CHECKING
 
 import numpy as np
 
@@ -247,7 +247,7 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
 
         return x_preprocessed, y_preprocessed
 
-    def _translate_labels(self, labels: List[Dict[str, "torch.Tensor"]]) -> List[Dict[str, "torch.Tensor"]]:
+    def _translate_labels(self, labels: List[Dict[str, "torch.Tensor"]]) -> Any:
         """
         Translate object detection labels from ART format (torchvision) to the model format (torchvision) and
         move tensors to GPU, if applicable.
@@ -258,7 +258,7 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
         labels_translated = [{k: v.to(self.device) for k, v in y_i.items()} for y_i in labels]
         return labels_translated
 
-    def _translate_predictions(self, predictions: List[Dict[str, "torch.Tensor"]]) -> List[Dict[str, "torch.Tensor"]]:
+    def _translate_predictions(self, predictions: Any) -> List[Dict[str, "torch.Tensor"]]:  # pylint: disable=R0201
         """
         Translate object detection predictions from the model format (torchvision) to ART format (torchvision).
 
@@ -268,7 +268,7 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
         return predictions
 
     def _get_losses(
-        self, x: np.ndarray, y: List[Dict[str, Union[np.ndarray, "torch.Tensor"]]]
+        self, x: Union[np.ndarray, "torch.Tensor"], y: List[Dict[str, Union[np.ndarray, "torch.Tensor"]]]
     ) -> Tuple[Dict[str, "torch.Tensor"], "torch.Tensor"]:
         """
         Get the loss tensor output of the model including all preprocessing.

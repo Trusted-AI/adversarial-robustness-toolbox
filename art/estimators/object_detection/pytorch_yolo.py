@@ -120,27 +120,26 @@ class PyTorchYolo(PyTorchObjectDetector):
             width = self.input_shape[1]
 
         labels_xcycwh_list = []
-        device = labels[0]["boxes"].device
 
         for i, label_dict in enumerate(labels):
             # create 2D tensor to encode labels and bounding boxes
-            labels = torch.zeros(len(label_dict["boxes"]), 6, device=device)
-            labels[:, 0] = i
-            labels[:, 1] = label_dict["labels"]
-            labels[:, 2:6] = label_dict["boxes"]
+            label_xcycwh = torch.zeros(len(label_dict["boxes"]), 6, device=self.device)
+            label_xcycwh[:, 0] = i
+            label_xcycwh[:, 1] = label_dict["labels"]
+            label_xcycwh[:, 2:6] = label_dict["boxes"]
 
             # normalize bounding boxes to [0, 1]
-            labels[:, 2:6:2] = labels[:, 2:6:2] / width
-            labels[:, 3:6:2] = labels[:, 3:6:2] / height
+            label_xcycwh[:, 2:6:2] /= width
+            label_xcycwh[:, 3:6:2] /= height
 
             # convert from x1y1x2y2 to xcycwh
-            labels[:, 4] -= labels[:, 2]
-            labels[:, 5] -= labels[:, 3]
-            labels[:, 2] += labels[:, 4] / 2
-            labels[:, 3] += labels[:, 5] / 2
-            labels_xcycwh_list.append(labels)
+            label_xcycwh[:, 4] -= label_xcycwh[:, 2]
+            label_xcycwh[:, 5] -= label_xcycwh[:, 3]
+            label_xcycwh[:, 2] += label_xcycwh[:, 4] / 2
+            label_xcycwh[:, 3] += label_xcycwh[:, 5] / 2
+            labels_xcycwh_list.append(label_xcycwh)
 
-        labels_xcycwh = torch.vstack(labels_xcycwh_list).to(self.device)
+        labels_xcycwh = torch.vstack(labels_xcycwh_list)
         return labels_xcycwh
 
     def _translate_predictions(self, predictions: "torch.Tensor") -> List[Dict[str, "torch.Tensor"]]:
@@ -160,15 +159,14 @@ class PyTorchYolo(PyTorchObjectDetector):
             width = self.input_shape[1]
 
         predictions_x1y1x2y2 = []
-        device = predictions.device
 
         for pred in predictions:
             boxes = torch.vstack(
                 [
-                    torch.maximum((pred[:, 0] - pred[:, 2] / 2), torch.tensor(0, device=device)),
-                    torch.maximum((pred[:, 1] - pred[:, 3] / 2), torch.tensor(0, device=device)),
-                    torch.minimum((pred[:, 0] + pred[:, 2] / 2), torch.tensor(height, device=device)),
-                    torch.minimum((pred[:, 1] + pred[:, 3] / 2), torch.tensor(width, device=device)),
+                    torch.maximum((pred[:, 0] - pred[:, 2] / 2), torch.tensor(0, device=self.device)),
+                    torch.maximum((pred[:, 1] - pred[:, 3] / 2), torch.tensor(0, device=self.device)),
+                    torch.minimum((pred[:, 0] + pred[:, 2] / 2), torch.tensor(height, device=self.device)),
+                    torch.minimum((pred[:, 1] + pred[:, 3] / 2), torch.tensor(width, device=self.device)),
                 ]
             ).permute((1, 0))
             labels = torch.argmax(pred[:, 5:], dim=1)
