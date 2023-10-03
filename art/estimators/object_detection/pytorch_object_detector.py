@@ -247,6 +247,26 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
 
         return x_preprocessed, y_preprocessed
 
+    def _translate_labels(self, labels: List[Dict[str, "torch.Tensor"]]) -> List[Dict[str, "torch.Tensor"]]:
+        """
+        Translate object detection labels from ART format (torchvision) to the model format (torchvision) and
+        move tensors to GPU, if applicable.
+
+        :param labels: Object detection labels in format x1y1x2y2 (torchvision).
+        :return: Object detection labels in format x1y1x2y2 (torchvision).
+        """
+        labels_translated = [{k: v.to(self.device) for k, v in y_i.items()} for y_i in labels]
+        return labels_translated
+
+    def _translate_predictions(self, predictions: List[Dict[str, "torch.Tensor"]]) -> List[Dict[str, "torch.Tensor"]]:
+        """
+        Translate object detection predictions from the model format (torchvision) to ART format (torchvision).
+
+        :param predictions: Object detection predictions in format x1y1x2y2 (torchvision).
+        :return: Object detection predictions in format x1y1x2y2 (torchvision).
+        """
+        return predictions
+
     def _get_losses(
         self, x: np.ndarray, y: List[Dict[str, Union[np.ndarray, "torch.Tensor"]]]
     ) -> Tuple[Dict[str, "torch.Tensor"], "torch.Tensor"]:
@@ -268,7 +288,7 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
 
         # Move inputs to device
         x_preprocessed = x_preprocessed.to(self.device)
-        y_preprocessed = [{k: v.to(self.device) for k, v in y_i.items()} for y_i in y_preprocessed]
+        y_preprocessed = self._translate_labels(y_preprocessed)
 
         # Set gradients again after inputs are moved to another device
         if x_preprocessed.is_leaf:
@@ -281,7 +301,7 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
         return loss_components, x_preprocessed
 
     def loss_gradient(  # pylint: disable=W0613
-        self, x: np.ndarray, y: List[Dict[str, Union[np.ndarray, "torch.Tensor"]]], **kwargs
+        self, x: Union[np.ndarray, "torch.Tensor"], y: List[Dict[str, Union[np.ndarray, "torch.Tensor"]]], **kwargs
     ) -> np.ndarray:
         """
         Compute the gradient of the loss function w.r.t. `x`.
@@ -346,7 +366,7 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
                  are as follows:
 
                  - boxes [N, 4]: the boxes in [x1, y1, x2, y2] format, with 0 <= x1 < x2 <= W and 0 <= y1 < y2 <= H.
-                 - labels [N]: the labels for each image
+                 - labels [N]: the labels for each image.
                  - scores [N]: the scores or each prediction.
         """
         import torch
@@ -370,6 +390,8 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
             # Run prediction
             with torch.no_grad():
                 predictions_x1y1x2y2 = self._model(x_batch)
+
+            predictions_x1y1x2y2 = self._translate_predictions(predictions_x1y1x2y2)
 
             for prediction_x1y1x2y2 in predictions_x1y1x2y2:
                 prediction = {}
@@ -455,7 +477,7 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
             for x_batch, y_batch in dataloader:
                 # Move inputs to device
                 x_batch = torch.stack(x_batch).to(self.device)
-                y_batch = [{k: v.to(self.device) for k, v in y_i.items()} for y_i in y_batch]
+                y_batch = self._translate_labels(y_batch)
 
                 # Zero the parameter gradients
                 self._optimizer.zero_grad()
@@ -480,7 +502,7 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
         raise NotImplementedError
 
     def compute_losses(
-        self, x: np.ndarray, y: List[Dict[str, Union[np.ndarray, "torch.Tensor"]]]
+        self, x: Union[np.ndarray, "torch.Tensor"], y: List[Dict[str, Union[np.ndarray, "torch.Tensor"]]]
     ) -> Dict[str, np.ndarray]:
         """
         Compute all loss components.
@@ -500,7 +522,7 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
         return output
 
     def compute_loss(  # type: ignore
-        self, x: np.ndarray, y: List[Dict[str, Union[np.ndarray, "torch.Tensor"]]], **kwargs
+        self, x: Union[np.ndarray, "torch.Tensor"], y: List[Dict[str, Union[np.ndarray, "torch.Tensor"]]], **kwargs
     ) -> Union[np.ndarray, "torch.Tensor"]:
         """
         Compute the loss of the neural network for samples `x`.
