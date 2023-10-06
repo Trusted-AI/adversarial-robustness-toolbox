@@ -25,6 +25,7 @@ from art.attacks.poisoning import HiddenTriggerBackdoor
 from art.attacks.poisoning import PoisoningAttackBackdoor
 from art.attacks.poisoning.perturbations import add_pattern_bd
 from art.estimators.classification.pytorch import PyTorchClassifier
+from art.estimators.classification.hugging_face import HuggingFaceClassifierPyTorch
 
 from tests.utils import ARTTestException
 
@@ -32,12 +33,15 @@ logger = logging.getLogger(__name__)
 
 
 @pytest.mark.skip_framework("non_dl_frameworks", "tensorflow1", "tensorflow2v1", "mxnet")
-def test_poison(art_warning, get_default_mnist_subset, image_dl_estimator):
+def test_poison(art_warning, get_default_mnist_subset, image_dl_estimator, framework):
     try:
         (x_train, y_train), (_, _) = get_default_mnist_subset
-        classifier, _ = image_dl_estimator(functional=True)
+        functional = True
+        if framework == "huggingface":
+            functional = False
+        classifier, _ = image_dl_estimator(functional=functional)
 
-        if isinstance(classifier, PyTorchClassifier):
+        if isinstance(classifier, (PyTorchClassifier, HuggingFaceClassifierPyTorch)):
 
             def mod(x):
                 original_dtype = x.dtype
@@ -79,10 +83,13 @@ def test_poison(art_warning, get_default_mnist_subset, image_dl_estimator):
 
 
 @pytest.mark.skip_framework("non_dl_frameworks", "tensorflow1", "tensorflow2v1", "mxnet")
-def test_check_params(art_warning, get_default_mnist_subset, image_dl_estimator):
+def test_check_params(art_warning, get_default_mnist_subset, image_dl_estimator, framework):
     try:
         (x_train, y_train), (_, _) = get_default_mnist_subset
-        classifier, _ = image_dl_estimator(functional=True)
+        functional = True
+        if framework == "huggingface":
+            functional = False
+        classifier, _ = image_dl_estimator(functional=functional)
 
         if isinstance(classifier, PyTorchClassifier):
 

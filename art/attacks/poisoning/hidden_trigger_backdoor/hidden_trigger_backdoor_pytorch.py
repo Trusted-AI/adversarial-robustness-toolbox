@@ -240,6 +240,8 @@ class HiddenTriggerBackdoorPyTorch(PoisoningAttackWhiteBox):
 
                 for _ in range(feat2.size(0)):
                     dist_min_index = (dist == torch.min(dist)).nonzero().squeeze()
+                    if dist_min_index.dim() > 1:  # If multiple values in dist equal torch.min(dist), return the first.
+                        dist_min_index = dist_min_index[0]
                     feat1[dist_min_index[1]] = feat11[dist_min_index[0]]
                     dist[dist_min_index[0], dist_min_index[1]] = 1e5
 

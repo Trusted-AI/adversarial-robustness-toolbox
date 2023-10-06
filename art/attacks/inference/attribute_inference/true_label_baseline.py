@@ -21,11 +21,15 @@ This module implements attribute inference attacks.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional, Union, Tuple, List, TYPE_CHECKING
+from typing import Optional, Union, Tuple, List, Any, TYPE_CHECKING
 
 import numpy as np
-from sklearn.neural_network import MLPClassifier, MLPRegressor
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
+from sklearn.ensemble import GradientBoostingClassifier, GradientBoostingRegressor
+from sklearn.linear_model import LogisticRegression, LinearRegression
+from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
+from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
+from sklearn.svm import SVC, SVR
 from sklearn.preprocessing import minmax_scale, OneHotEncoder, OrdinalEncoder
 from sklearn.compose import ColumnTransformer
 
@@ -41,7 +45,7 @@ from art.utils import (
 )
 
 if TYPE_CHECKING:
-    from art.utils import CLASSIFIER_TYPE
+    from art.utils import CLASSIFIER_TYPE, REGRESSOR_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -68,7 +72,7 @@ class AttributeInferenceBaselineTrueLabel(AttributeInferenceAttack):
     def __init__(
         self,
         attack_model_type: str = "nn",
-        attack_model: Optional["CLASSIFIER_TYPE"] = None,
+        attack_model: Optional[Union["CLASSIFIER_TYPE", "REGRESSOR_TYPE"]] = None,
         attack_feature: Union[int, slice] = 0,
         is_continuous: Optional[bool] = False,
         is_regression: Optional[bool] = False,
@@ -76,13 +80,22 @@ class AttributeInferenceBaselineTrueLabel(AttributeInferenceAttack):
         prediction_normal_factor: float = 1,
         non_numerical_features: Optional[List[int]] = None,
         encoder: Optional[Union[OrdinalEncoder, OneHotEncoder, ColumnTransformer]] = None,
+        nn_model_epochs: int = 100,
+        nn_model_batch_size: int = 100,
+        nn_model_learning_rate: float = 0.0001,
     ):
         """
         Create an AttributeInferenceBaseline attack instance.
 
-        :param attack_model_type: the type of default attack model to train, optional. Should be one of `nn` (for neural
-                                  network, default) or `rf` (for random forest). If `attack_model` is supplied, this
-                                  option will be ignored.
+        :param attack_model_type: the type of default attack model to train, optional. Should be one of:
+                                 `nn` (neural network, default),
+                                 `rf` (random forest),
+                                 `gb` (gradient boosting),
+                                 `lr` (logistic/linear regression),
+                                 `dt` (decision tree),
+                                 `knn` (k nearest neighbors),
+                                 `svm` (support vector machine).
+                                  If `attack_model` is supplied, this option will be ignored.
         :param attack_model: The attack model to train, optional. If none is provided, a default model will be created.
         :param attack_feature: The index of the feature to be attacked or a slice representing multiple indexes in
                                case of a one-hot encoded feature.
@@ -99,13 +112,21 @@ class AttributeInferenceBaselineTrueLabel(AttributeInferenceAttack):
                                        and an encoder is not supplied.
         :param encoder: An already fit encoder that can be applied to the model's input features without the attacked
                         feature (i.e., should be fit for n-1 features).
+        :param nn_model_epochs: the number of epochs to use when training a nn attack model
+        :param nn_model_batch_size: the batch size to use when training a nn attack model
+        :param nn_model_learning_rate: the learning rate to use when training a nn attack model
         """
         super().__init__(estimator=None, attack_feature=attack_feature)
 
-        self._values: Optional[list] = None
+        self._values: list = []
         self._encoder = encoder
         self._non_numerical_features = non_numerical_features
         self._is_continuous = is_continuous
+        self._attack_model_type: Optional[str] = attack_model_type
+        self.attack_model: Optional[Any] = None
+        self.epochs = nn_model_epochs
+        self.batch_size = nn_model_batch_size
+        self.learning_rate = nn_model_learning_rate
 
         if attack_model:
             if self._is_continuous:
@@ -114,65 +135,37 @@ class AttributeInferenceBaselineTrueLabel(AttributeInferenceAttack):
             elif ClassifierMixin not in type(attack_model).__mro__:
                 raise ValueError("When attacking a categorical feature the attack model must be of type Classifier.")
             self.attack_model = attack_model
-        elif attack_model_type == "nn":
-            if self._is_continuous:
-                self.attack_model = MLPRegressor(
-                    hidden_layer_sizes=(100,),
-                    activation="relu",
-                    solver="adam",
-                    alpha=0.0001,
-                    batch_size="auto",
-                    learning_rate="constant",
-                    learning_rate_init=0.001,
-                    power_t=0.5,
-                    max_iter=200,
-                    shuffle=True,
-                    random_state=None,
-                    tol=0.0001,
-                    verbose=False,
-                    warm_start=False,
-                    momentum=0.9,
-                    nesterovs_momentum=True,
-                    early_stopping=False,
-                    validation_fraction=0.1,
-                    beta_1=0.9,
-                    beta_2=0.999,
-                    epsilon=1e-08,
-                    n_iter_no_change=10,
-                    max_fun=15000,
-                )
-            else:
-                self.attack_model = MLPClassifier(
-                    hidden_layer_sizes=(100,),
-                    activation="relu",
-                    solver="adam",
-                    alpha=0.0001,
-                    batch_size="auto",
-                    learning_rate="constant",
-                    learning_rate_init=0.001,
-                    power_t=0.5,
-                    max_iter=2000,
-                    shuffle=True,
-                    random_state=None,
-                    tol=0.0001,
-                    verbose=False,
-                    warm_start=False,
-                    momentum=0.9,
-                    nesterovs_momentum=True,
-                    early_stopping=False,
-                    validation_fraction=0.1,
-                    beta_1=0.9,
-                    beta_2=0.999,
-                    epsilon=1e-08,
-                    n_iter_no_change=10,
-                    max_fun=15000,
-                )
         elif attack_model_type == "rf":
             if self._is_continuous:
                 self.attack_model = RandomForestRegressor()
             else:
                 self.attack_model = RandomForestClassifier()
-        else:
+        elif attack_model_type == "gb":
+            if self._is_continuous:
+                self.attack_model = GradientBoostingRegressor()
+            else:
+                self.attack_model = GradientBoostingClassifier()
+        elif attack_model_type == "lr":
+            if self._is_continuous:
+                self.attack_model = LinearRegression()
+            else:
+                self.attack_model = LogisticRegression()
+        elif attack_model_type == "dt":
+            if self._is_continuous:
+                self.attack_model = DecisionTreeRegressor()
+            else:
+                self.attack_model = DecisionTreeClassifier()
+        elif attack_model_type == "knn":
+            if self._is_continuous:
+                self.attack_model = KNeighborsRegressor()
+            else:
+                self.attack_model = KNeighborsClassifier()
+        elif attack_model_type == "svm":
+            if self._is_continuous:
+                self.attack_model = SVR()
+            else:
+                self.attack_model = SVC(probability=True)
+        elif attack_model_type != "nn":
             raise ValueError("Illegal value for parameter `attack_model_type`.")
 
         self.prediction_normal_factor = prediction_normal_factor
@@ -206,6 +199,8 @@ class AttributeInferenceBaselineTrueLabel(AttributeInferenceAttack):
             y_ready = check_and_transform_label_format(y_one_hot, nb_classes=nb_classes, return_one_hot=True)
             if y_ready is None:
                 raise ValueError("None value detected.")
+            if self._attack_model_type in ("gb", "lr", "svm"):
+                y_ready = np.argmax(y_ready, axis=1)
 
         # create training set for attack model
         if self.is_regression:
@@ -240,7 +235,105 @@ class AttributeInferenceBaselineTrueLabel(AttributeInferenceAttack):
         if self._encoder is not None:
             x_train = self._encoder.transform(x_train)
         x_train = np.concatenate((x_train, normalized_labels), axis=1).astype(np.float32)
-        self.attack_model.fit(x_train, y_ready)
+
+        if self._attack_model_type == "nn":
+            import torch
+            from torch import nn
+            from torch import optim
+            from torch.utils.data import DataLoader
+            from art.utils import to_cuda
+
+            self.epochs = 100
+            self.batch_size = 100
+            self.learning_rate = 0.0001
+
+            if self._is_continuous:
+
+                class MembershipInferenceAttackModelRegression(nn.Module):
+                    """
+                    Implementation of a pytorch model for learning a membership inference attack.
+
+                    The features used are probabilities/logits or losses for the attack training data along with
+                    its true labels.
+                    """
+
+                    def __init__(self, num_features):
+
+                        self.num_features = num_features
+
+                        super().__init__()
+
+                        self.features = nn.Sequential(
+                            nn.Linear(self.num_features, 100),
+                            nn.ReLU(),
+                            nn.Linear(100, 64),
+                            nn.ReLU(),
+                            nn.Linear(64, 1),
+                        )
+
+                    def forward(self, x):
+                        """Forward the model."""
+                        return self.features(x)
+
+                self.attack_model = MembershipInferenceAttackModelRegression(x_train.shape[1])
+                loss_fn: Any = nn.MSELoss()
+            else:
+
+                class MembershipInferenceAttackModel(nn.Module):
+                    """
+                    Implementation of a pytorch model for learning an attribute inference attack.
+
+                    The features used are the remaining n-1 features of the attack training data along with
+                    the model's predictions.
+                    """
+
+                    def __init__(self, num_features, num_classes):
+
+                        self.num_classes = num_classes
+                        self.num_features = num_features
+
+                        super().__init__()
+
+                        self.features = nn.Sequential(
+                            nn.Linear(self.num_features, 512),
+                            nn.ReLU(),
+                            nn.Linear(512, 100),
+                            nn.ReLU(),
+                            nn.Linear(100, 64),
+                            nn.ReLU(),
+                            nn.Linear(64, num_classes),
+                        )
+
+                        self.output = nn.Softmax()
+
+                    def forward(self, x):
+                        """Forward the model."""
+                        out = self.features(x)
+                        return self.output(out)
+
+                self.attack_model = MembershipInferenceAttackModel(x_train.shape[1], len(self._values))
+                loss_fn = nn.CrossEntropyLoss()
+
+            optimizer = optim.Adam(self.attack_model.parameters(), lr=self.learning_rate)  # type: ignore
+
+            attack_train_set = self._get_attack_dataset(feature=x_train, label=y_ready)
+            train_loader = DataLoader(attack_train_set, batch_size=self.batch_size, shuffle=True, num_workers=0)
+
+            self.attack_model = to_cuda(self.attack_model)  # type: ignore
+            self.attack_model.train()  # type: ignore
+
+            for _ in range(self.epochs):
+                for (input1, targets) in train_loader:
+                    input1, targets = to_cuda(input1), to_cuda(targets)
+                    _, targets = torch.autograd.Variable(input1), torch.autograd.Variable(targets)
+
+                    optimizer.zero_grad()
+                    outputs = self.attack_model(input1)  # type: ignore
+                    loss = loss_fn(outputs, targets)
+                    loss.backward()
+                    optimizer.step()
+        elif self.attack_model is not None:
+            self.attack_model.fit(x_train, y_ready)
 
     def infer(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
@@ -279,12 +372,44 @@ class AttributeInferenceBaselineTrueLabel(AttributeInferenceAttack):
             x_test = self._encoder.transform(x)
         x_test = np.concatenate((x_test, normalized_labels), axis=1).astype(np.float32)
 
-        predictions = self.attack_model.predict(x_test).astype(np.float32)
+        if self._attack_model_type == "nn":
+            from torch.utils.data import DataLoader
+            from art.utils import to_cuda, from_cuda
 
-        if not self._is_continuous and self._values is not None:
+            self.attack_model.eval()  # type: ignore
+            predictions: np.ndarray = np.array([])
+            test_set = self._get_attack_dataset(feature=x_test)
+            test_loader = DataLoader(test_set, batch_size=self.batch_size, shuffle=False, num_workers=0)
+            for input1, _ in test_loader:
+                input1 = to_cuda(input1)
+                outputs = self.attack_model(input1)  # type: ignore
+                predicted = from_cuda(outputs)
+
+                if np.size(predictions) == 0:
+                    predictions = predicted.detach().numpy()
+                else:
+                    predictions = np.vstack((predictions, predicted.detach().numpy()))
+                if not self._is_continuous:
+                    idx = np.argmax(predictions, axis=-1)
+                    predictions = np.zeros(predictions.shape)
+                    predictions[np.arange(predictions.shape[0]), idx] = 1
+        elif self.attack_model is not None:
+            predictions = self.attack_model.predict(x_test)
+        if predictions is not None:
+            predictions = predictions.astype(np.float32)
+
+        if not self._is_continuous and self._values:
             if isinstance(self.attack_feature, int):
-                predictions = np.array([self._values[np.argmax(arr)] for arr in predictions])
+                if self._attack_model_type in ("gb", "lr", "svm"):
+                    indexes = predictions
+                else:
+                    indexes = np.argmax(predictions, axis=1)
+                predictions = np.array([self._values[int(index)] for index in indexes])
             else:
+                if self._attack_model_type in ("gb", "lr", "svm"):
+                    predictions = check_and_transform_label_format(
+                        predictions, nb_classes=len(self._values), return_one_hot=True
+                    )
                 i = 0
                 for column in predictions.T:
                     for index in range(len(self._values[i])):
@@ -292,11 +417,46 @@ class AttributeInferenceBaselineTrueLabel(AttributeInferenceAttack):
                     i += 1
         return np.array(predictions)
 
+    def _get_attack_dataset(self, feature, label=None):
+        from torch.utils.data.dataset import Dataset
+
+        class AttackDataset(Dataset):
+            """
+            Implementation of a pytorch dataset for membership inference attack.
+
+            The features are probabilities/logits or losses for the attack training data (`x_1`) along with
+            its true labels (`x_2`). The labels (`y`) are a boolean representing whether this is a member.
+            """
+
+            def __init__(self, x, y=None):
+                import torch
+
+                self.x = torch.from_numpy(x.astype(np.float64)).type(torch.FloatTensor)
+
+                if y is not None:
+                    self.y = torch.from_numpy(y.astype(np.float32)).type(torch.FloatTensor)
+                else:
+                    self.y = torch.zeros(x.shape[0])
+
+            def __len__(self):
+                return len(self.x)
+
+            def __getitem__(self, idx):
+                if idx >= len(self.x):  # pragma: no cover
+                    raise IndexError("Invalid Index")
+
+                return self.x[idx], self.y[idx]
+
+        return AttackDataset(x=feature, y=label)
+
     def _check_params(self) -> None:
         super()._check_params()
 
         if not isinstance(self._is_continuous, bool):
             raise ValueError("is_continuous must be a boolean.")
+
+        if self._attack_model_type not in ["nn", "rf", "gb", "lr", "dt", "knn", "svm"]:
+            raise ValueError("Illegal value for parameter `attack_model_type`.")
 
         if self._non_numerical_features and (
             (not isinstance(self._non_numerical_features, list))
