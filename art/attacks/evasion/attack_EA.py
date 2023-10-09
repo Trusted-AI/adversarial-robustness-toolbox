@@ -9,18 +9,18 @@ from typing import Optional, TYPE_CHECKING
 import random
 import sys
 import numpy as np
-from art.attacks.attack import EvasionAttack
-from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
-from art.estimators.classification.classifier import ClassifierMixin
+from art_2.attacks.attack import EvasionAttack
+from art_2.estimators.estimator import BaseEstimator, NeuralNetworkMixin
+from art_2.estimators.classification.classifier import ClassifierMixin
 random.seed(0)
 
 if TYPE_CHECKING:
-    from art.utils import CLASSIFIER_TYPE
+    from art_2.utils import CLASSIFIER_TYPE
 
 logger = logging.getLogger(__name__)
 
 
-class EA(EvasionAttack):
+class attack_EA(EvasionAttack):
     """
     This class implements the black-box attack `attack_EA`.
 
@@ -58,15 +58,15 @@ class EA(EvasionAttack):
         self.pop_size = 40
         self.number_of_elites = 10
 
-    @staticmethod
-    def _get_class_prob(preds: np.ndarray, class_no: np.array) -> np.ndarray:
-        '''
-        :param preds: an array of predictions of individuals for all the categories: (40, 1000) shaped array
-        :param class_no: for the targeted attack target category index number; for the untargeted attack ancestor 
-        category index number
-        :return: an array of the prediction of individuals only for the target/ancestor category: (40,) shaped  array
-        '''
-        return preds[:, class_no]
+    # @staticmethod
+    # def _get_class_prob(preds: np.ndarray, class_no: np.array) -> np.ndarray:
+    #     '''
+    #     :param preds: an array of predictions of individuals for all the categories: (40, 1000) shaped array
+    #     :param class_no: for the targeted attack target category index number; for the untargeted attack ancestor
+    #     category index number
+    #     :return: an array of the prediction of individuals only for the target/ancestor category: (40,) shaped  array
+    #     '''
+    #     return preds[:, class_no]
 
     @staticmethod
     def _get_fitness(probs: np.ndarray) -> np.ndarray:
@@ -153,7 +153,7 @@ class EA(EvasionAttack):
         '''
         mutated_group = mutation_group.copy()
         random.shuffle(mutated_group)
-        no_of_individuals = len(mutated_group)
+        no_of_individuals = len(mutated_group)  # 10
         for individual in range(int(no_of_individuals * percentage)):
             locations_x = np.random.randint(
                 _x.shape[0], size=int(no_of_pixels))
@@ -198,7 +198,7 @@ class EA(EvasionAttack):
                               size_x, start_y: start_y + size_y, _z] = temp
         return crossedover_group
 
-    def _generate(self, x: np.ndarray, y: Optional[np.ndarray] = None) -> np.ndarray:
+    def generate(self, x: np.ndarray, y: Optional[int] = None) -> np.ndarray:
         '''
         :param x: An array with the original inputs to be attacked.
         :param y: An integer with the true or target labels.
@@ -206,15 +206,10 @@ class EA(EvasionAttack):
         '''
         boundary_min = 0
         boundary_max = 255
-        img = x.reshape((1, x.shape[0], x.shape[1], x.shape[2])).copy()
-        img = self.estimator.preprocess_input(img)   # ??????????????????
-        preds = self.estimator.predict(img)
-        label0 = self.estimator.decode_predictions(
-            preds)    # ??????????????????
-        label1 = label0[0][0]  # Gets the Top1 label and values for reporting.
-        ancestor = label1[1]  # label
-        anc_indx = np.argmax(preds)
-        print("Before the image is:  " + ancestor + " --> " + str(label1[2]) + " ____ index: " + str(anc_indx))
+        x_ = (np.expand_dims(x, axis=0))
+        pred = self.estimator.predict(x_)
+        anc_indx = np.argmax(pred)
+        print("Before the image index is: " + str(anc_indx))
 
         if self.targeted:
             print('Target class index number is: ', y)
@@ -222,26 +217,40 @@ class EA(EvasionAttack):
         images = np.array([x] * self.pop_size).astype(int)
         count = 0
         while True:
-            img = self.estimator.preprocess_input(images)
-            preds = self.estimator.predict(img)  # predictions of 40 images
-            dom_indx = np.argmax(preds[int(np.argmax(preds) / 1000)])
-            # Dominant category report ##################
-            # Reports predictions with label and label values
-            label0 = self.estimator.decode_predictions(preds)
-            # Gets the Top1 label and values for reporting.
-            label1 = label0[0][0]
-            dom_cat = label1[1]   # label
-            dom_cat_prop = label1[2]  # label probability
+            preds = self.estimator.predict(images)  # predictions of 40 images
+            dom_indx = np.argmax(preds[int(np.argmax(preds) / 1000)])  # best image indx
+            best_adv = images[int(np.argmax(preds) / 1000)]  # best adversarial image so far
+            dom_cat_prop = preds[int(np.argmax(preds) / 1000)][dom_indx]  # label probability
+            sys.stdout.write(
+            f'\rgeneration: {count}/{self.max_iter} ______ index: {dom_indx} ____ with confidence: {dom_cat_prop}  ')
+            # Terminate the algorithm if:
+            if count == self.max_iter:
+                # if algorithm can not create the adversarial image within "max_iter" stop the algorithm.
+                print("\nFailed to generate adversarial image within",
+                      self.max_iter," generations")
+                break
+            if not self.targeted and dom_indx != anc_indx:
+                # if the attack is not targeted, the algorithm stops as soon as the image is classified in a
+                # category other than its true category.
+                print("\nAdversarial image is generated successfully in",
+                      count , "generations")
+                break
+            if self.targeted and dom_indx == y and dom_cat_prop > self.confidence:
+               # if the attack is targeted, the algorithm stops when the image is classified in the target category y.
+                print("\nAdversarial image is generated successfully in",
+                     count, " generations")
+                break
+
             percentage_middle_class = 1
             percentage_keep = 1
         # Select population classes based on fitness
             if self.targeted:
-                probs = self._get_class_prob(preds, y)
+                probs = np.array(preds)[:, y]
                 fitness = self._get_fitness(probs)
                 elite, middle_class, random_keep = self._selection_targeted(
                     images, fitness)
             else:
-                probs = self._get_class_prob(preds, anc_indx)
+                probs = np.array(preds)[:, anc_indx]
                 fitness = self._get_fitness(probs)
                 elite, middle_class, random_keep = self._selection_untargeted(
                     images, fitness)
@@ -259,24 +268,9 @@ class EA(EvasionAttack):
             all_ = np.concatenate((mutated_middle_class, mutated_keep_group2))
             parents_idx = self._get_crossover_parents(all_)
             crossover_group = self._crossover(x, all_, parents_idx)
-            adv_img = images[0]
+
             # Create new population
             images = np.concatenate((elite, crossover_group))
-            # Report the progress on the screen
-            sys.stdout.write(
-                f'\rgeneration: {count}/{self.max_iter} ______ {dom_cat}: {dom_cat_prop} ____ index: {dom_indx}')
+
             count += 1
-            # Terminate the algorithm if:
-            if count == self.max_iter:
-                # if algorithm can not create the adversarial image within "max_iter" stop the algorithm.
-                print("Failed to generate adversarial image within " +
-                      self.max_iter + " generations")
-                break
-            if not self.targeted and dom_indx != anc_indx:
-                # if the attack is not targeted, the algorithm stops as soon as the image is classified in a
-                # category other than its true category.
-                break
-            if self.targeted and dom_indx == y and dom_cat_prop > self.confidence:
-               # if the attack is targeted, the algorithm stops when the image is classified in the target category y.
-                break
-        return adv_img
+        return best_adv
