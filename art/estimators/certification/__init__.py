@@ -6,9 +6,10 @@ from art.estimators.certification.randomized_smoothing.randomized_smoothing impo
 from art.estimators.certification.randomized_smoothing.numpy import NumpyRandomizedSmoothing
 from art.estimators.certification.randomized_smoothing.tensorflow import TensorFlowV2RandomizedSmoothing
 from art.estimators.certification.randomized_smoothing.pytorch import PyTorchRandomizedSmoothing
-from art.estimators.certification.derandomized_smoothing.derandomized_smoothing import DeRandomizedSmoothingMixin
 from art.estimators.certification.derandomized_smoothing.pytorch import PyTorchDeRandomizedSmoothing
 from art.estimators.certification.derandomized_smoothing.tensorflow import TensorFlowV2DeRandomizedSmoothing
+from art.estimators.certification.object_seeker.object_seeker import ObjectSeekerMixin
+from art.estimators.certification.object_seeker.pytorch import PyTorchObjectSeeker
 
 if importlib.util.find_spec("torch") is not None:
     from art.estimators.certification.deep_z.deep_z import ZonoDenseLayer

@@ -31,7 +31,7 @@ import warnings
 import zipfile
 from functools import wraps
 from inspect import signature
-from typing import TYPE_CHECKING, Callable, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Callable, List, Dict, Optional, Tuple, Union
 
 import numpy as np
 import six
@@ -1060,6 +1060,115 @@ def compute_accuracy(preds: np.ndarray, labels: np.ndarray, abstain: bool = True
         acc_rate = num_correct / preds.shape[0]
 
     return acc_rate, coverage_rate
+
+
+def intersection_over_union(bbox_1: np.ndarray, bbox_2: np.ndarray) -> float:
+    """
+    Compute the intersection over union (IoU) of two bounding boxes.
+    Both bounding boxes are expected to be in torchvision format [x1, y1, x2, y2].
+
+    param bbox_1: Bounding box 1 in torchvision format [x1, y1, x2, y2].
+    param bbox_2: Bounding box 2 in torchvision format [x1, y2, x2, y2].
+    return: The intersection over union (IoU) of the two bounding boxes.
+    """
+    # Calculate area of the intersection
+    x_1 = max(bbox_1[0], bbox_2[0])
+    y_1 = max(bbox_1[1], bbox_2[1])
+    x_2 = min(bbox_1[2], bbox_2[2])
+    y_2 = min(bbox_1[3], bbox_2[3])
+    intersection = max(0, x_2 - x_1 + 1) * max(0, y_2 - y_1 + 1)
+
+    # Calculate the area of the union
+    bbox_1_area = (bbox_1[2] - bbox_1[0] + 1) * (bbox_1[3] - bbox_1[1] + 1)
+    bbox_2_area = (bbox_2[2] - bbox_2[0] + 1) * (bbox_2[3] - bbox_2[1] + 1)
+    union = bbox_1_area + bbox_2_area - intersection
+
+    return intersection / union
+
+
+def intersection_over_area(bbox_1: np.ndarray, bbox_2: np.ndarray) -> float:
+    """
+    Compute the intersection over area (IoA) of two bounding boxes.
+    Both bounding boxes are expected to be in torchvision format [x1, y1, x2, y2].
+
+    param bbox_1: Bounding box 1 in torchvision format [x1, y1, x2, y2].
+    param bbox_2: Bounding box 2 in torchvision format [x1, y2, x2, y2].
+    return: The intersection over area (IoA) of the two bounding boxes.
+    """
+    # Calculate area of the intersection
+    x_1 = max(bbox_1[0], bbox_2[0])
+    y_1 = max(bbox_1[1], bbox_2[1])
+    x_2 = min(bbox_1[2], bbox_2[2])
+    y_2 = min(bbox_1[3], bbox_2[3])
+    intersection = max(0, x_2 - x_1 + 1) * max(0, y_2 - y_1 + 1)
+
+    # Calculate the area of bbox_1
+    bbox_1_area = (bbox_1[2] - bbox_1[0] + 1) * (bbox_1[3] - bbox_1[1] + 1)
+
+    return intersection / bbox_1_area
+
+
+def non_maximum_suppression(
+    preds: Dict[str, np.ndarray], iou_threshold: float, confidence_threshold: Optional[float] = None
+) -> Dict[str, np.ndarray]:
+    """
+    Perform non-maximum suppression on the predicted object detection labels of a single image.
+
+    :param preds: Predicted labels of format `Dict[str, np.ndarray]` for a single image. The fields of the Dict are
+                  as follows:
+
+                  - boxes [N, 4]: the boxes in [x1, y1, x2, y2] format, with 0 <= x1 < x2 <= W and 0 <= y1 < y2 <= H.
+                  - labels [N]: the labels for each image.
+                  - scores [N]: the scores of each prediction.
+    :param iou_threshold: The IoU threshold to discard overlapping bounding boxes.
+    :param confidence_threshold: The confidence threshold to discard bounding boxes.
+    return: Filtered predicted labels of the single image in the same format as the input.
+    """
+    boxes = preds["boxes"]
+    labels = preds["labels"]
+    scores = preds["scores"]
+
+    # Filter out bounding boxes below confidence threshold
+    if confidence_threshold is not None:
+        mask = scores >= confidence_threshold
+        boxes = boxes[mask]
+        labels = labels[mask]
+        scores = scores[mask]
+
+    # Candidate bounding boxes
+    keep_indices = []
+    indices = np.argsort(scores)[::-1]
+
+    while len(indices) > 0:
+        # Get first bounding box
+        current_idx = indices[0]
+        box_1 = boxes[current_idx]
+        label_1 = labels[current_idx]
+
+        keep_indices.append(current_idx)
+        remove_indices = [0]
+
+        # Find overlapping bounding boxes above IoU threshold
+        for i, idx in enumerate(indices[1:], start=1):
+            box_2 = boxes[idx]
+            label_2 = labels[idx]
+
+            if label_1 != label_2:
+                continue
+
+            iou = intersection_over_union(box_1, box_2)
+            if iou >= iou_threshold:
+                remove_indices.append(i)
+
+        # Remove overlapping bounding boxes from candidates
+        indices = np.delete(indices, remove_indices)
+
+    filtered_preds = {
+        "boxes": boxes[keep_indices],
+        "labels": labels[keep_indices],
+        "scores": scores[keep_indices],
+    }
+    return filtered_preds
 
 
 # -------------------------------------------------------------------------------------------------- DATASET OPERATIONS

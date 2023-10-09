@@ -274,10 +274,10 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
             name=None,
         )
 
-        pad_h_before = int((self.image_shape[self.i_h] - image_mask.shape[self.i_h_patch + 1]) / 2)
+        pad_h_before = int((self.image_shape[self.i_h] - image_mask.shape.as_list()[self.i_h_patch + 1]) / 2)
         pad_h_after = int(self.image_shape[self.i_h] - pad_h_before - image_mask.shape[self.i_h_patch + 1])
 
-        pad_w_before = int((self.image_shape[self.i_w] - image_mask.shape[self.i_w_patch + 1]) / 2)
+        pad_w_before = int((self.image_shape[self.i_w] - image_mask.shape.as_list()[self.i_w_patch + 1]) / 2)
         pad_w_after = int(self.image_shape[self.i_w] - pad_w_before - image_mask.shape[self.i_w_patch + 1])
 
         image_mask = tf.pad(  # pylint: disable=E1123
@@ -323,10 +323,10 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
 
             if mask is None:
                 padding_after_scaling_h = (
-                    self.image_shape[self.i_h] - im_scale * padded_patch.shape[self.i_h + 1]
+                    self.image_shape[self.i_h] - im_scale * padded_patch.shape.as_list()[self.i_h + 1]
                 ) / 2.0
                 padding_after_scaling_w = (
-                    self.image_shape[self.i_w] - im_scale * padded_patch.shape[self.i_w + 1]
+                    self.image_shape[self.i_w] - im_scale * padded_patch.shape.as_list()[self.i_w + 1]
                 ) / 2.0
                 x_shift = np.random.uniform(-padding_after_scaling_w, padding_after_scaling_w)
                 y_shift = np.random.uniform(-padding_after_scaling_h, padding_after_scaling_h)
