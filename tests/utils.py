@@ -640,7 +640,7 @@ def get_image_classifier_kr(
                 loss = loss_name
         elif loss_type == "function_losses":
             if from_logits:
-                if int(keras.__version__.split(".")[0]) == 2 and int(keras.__version__.split(".")[1]) >= 3:
+                if is_tf23_keras24:
 
                     def categorical_crossentropy(y_true, y_pred):
                         return keras.losses.categorical_crossentropy(y_true, y_pred, from_logits=True)
