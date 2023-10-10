@@ -30,19 +30,19 @@ jobs:
         include:
           - name: Keras 2.13.1 (TensorFlow 2.13.1 Python 3.10)
             framework: keras
-            python: 3.10
+            python: '3.10'
             tensorflow: 2.13.1
             keras: 2.13.1
             tf_addons: 0.19.0
           - name: Keras 2.14.0 (TensorFlow 2.14.1 Python 3.10)
             framework: keras
-            python: 3.10
+            python: '3.10'
             tensorflow: 2.14.1
             keras: 2.14.0
             tf_addons: 0.20.0
           - name: TensorFlow-Keras 2.14.1 (Keras 2.14.0 Python 3.10)
             framework: kerastf
-            python: 3.10
+            python: '3.10'
             tensorflow: 2.14.1
             keras: 2.14.0
             tf_addons: 0.20.0
