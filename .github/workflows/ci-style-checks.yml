@@ -42,7 +42,7 @@ jobs:
           pip install -q pylint==2.12.2 mypy==0.931 pycodestyle==2.8.0 black==21.12b0
           pip install -q -r requirements_test.txt
           pip install pluggy==0.13.1
-          pip install tensorflow==2.14.1
+          pip install tensorflow==2.14.0
           pip install keras==2.14.0
           pip install types-six
           pip install types-PyYAML

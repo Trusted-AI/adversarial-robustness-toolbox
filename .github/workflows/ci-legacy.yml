@@ -29,10 +29,10 @@ jobs:
       matrix:
         module: [attacks_1, attacks_2, estimators, defences, metrics, art]
         include:
-          - name: legacy (TensorFlow 2.14.1 Keras 2.14.0 PyTorch 1.13.1 scikit-learn 1.1.3 Python 3.9)
+          - name: legacy (TensorFlow 2.14.0 Keras 2.14.0 PyTorch 1.13.1 scikit-learn 1.1.3 Python 3.9)
             framework: legacy
             python: '3.10'
-            tensorflow: 2.14.1
+            tensorflow: 2.14.0
             keras: 2.14.0
             torch: 1.13.1+cpu
             torchvision: 0.14.1+cpu
