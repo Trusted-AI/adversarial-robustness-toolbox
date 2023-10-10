@@ -1885,7 +1885,9 @@ def get_tabular_classifier_kr(load_init=True):
         model.add(Dense(10, activation="relu"))
         model.add(Dense(3, activation="softmax"))
 
-    model.compile(loss="categorical_crossentropy", optimizer=keras.optimizers.legacy.Adam(lr=0.001), metrics=["accuracy"])
+    model.compile(
+        loss="categorical_crossentropy", optimizer=keras.optimizers.legacy.Adam(lr=0.001), metrics=["accuracy"]
+    )
 
     # Get classifier
     krc = KerasClassifier(model, clip_values=(0, 1), use_logits=False, channels_first=True)

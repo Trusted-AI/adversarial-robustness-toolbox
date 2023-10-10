@@ -182,7 +182,7 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier):
         self.loss_combined = self.loss_ce + self.loss_reg * self.cost_tensor
 
         try:
-            from keras.optimizers import Adam
+            from keras.optimizers.legacy import Adam
 
             self.opt = Adam(lr=self.learning_rate, beta_1=0.5, beta_2=0.9)
         except ImportError:
@@ -228,7 +228,7 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier):
         :return: A tuple of the pattern and mask for the model.
         """
         import keras.backend as K
-        from keras_preprocessing.image import ImageDataGenerator
+        from keras.preprocessing.image import ImageDataGenerator
 
         self.reset()
         datagen = ImageDataGenerator()
