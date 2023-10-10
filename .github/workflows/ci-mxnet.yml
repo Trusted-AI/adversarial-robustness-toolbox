@@ -28,9 +28,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: mxnet (Python 3.8)
+          - name: mxnet (Python 3.9)
             framework: mxnet
-            python: 3.8
+            python: 3.9
 
     name: Run ${{ matrix.name }} Tests
     steps:
@@ -45,8 +45,6 @@ jobs:
           sudo apt-get update
           sudo apt-get -y -q install ffmpeg libavcodec-extra
           python -m pip install --upgrade pip setuptools wheel
-          pip install tensorflow==2.4.1
-          pip install keras==2.4.3
           pip3 install -q -r requirements_test.txt
           pip list
       - name: Run ${{ matrix.name }} ${{ matrix.module }} Tests
