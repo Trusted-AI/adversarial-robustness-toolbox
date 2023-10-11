@@ -145,13 +145,12 @@ class attack_EA(EvasionAttack):
         :return: An array of mutated individuals
         """
         mutated_group = mutation_group.copy()
-        random.shuffle(mutated_group)
         no_of_individuals = len(mutated_group)  # 10
         for individual in range(int(no_of_individuals * percentage)):
             locations_x = np.random.randint(_x.shape[0], size=int(no_of_pixels))
             locations_y = np.random.randint(_x.shape[1], size=int(no_of_pixels))
             locations_z = np.random.randint(_x.shape[2], size=int(no_of_pixels))
-            new_values = random.choices(np.array([-1, 1]), k=int(no_of_pixels))
+            new_values: list[int] = random.choices(np.array([-1, 1]), k=int(no_of_pixels))
             mutated_group[individual, locations_x, locations_y, locations_z] = (
                 mutated_group[individual, locations_x, locations_y, locations_z] - new_values
             )
@@ -185,7 +184,7 @@ class attack_EA(EvasionAttack):
             crossedover_group[parent_index_2, start_x : start_x + size_x, start_y : start_y + size_y, _z] = temp
         return crossedover_group
 
-    def generate(self, x: np.ndarray, y: Optional[int] = None) -> np.ndarray:
+    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
         :param x: An array with the original inputs to be attacked.
         :param y: An integer with the true or target labels.
@@ -193,8 +192,8 @@ class attack_EA(EvasionAttack):
         """
         boundary_min = 0
         boundary_max = 255
-        x_ = np.expand_dims(x, axis=0)
-        pred = self.estimator.predict(x_)
+        x_temp = np.expand_dims(x, axis=0)
+        pred = self.estimator.predict(x_temp)
         anc_indx = np.argmax(pred)
         print("Before the image index is: " + str(anc_indx))
 
