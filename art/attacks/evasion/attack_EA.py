@@ -59,16 +59,6 @@ class attack_EA(EvasionAttack):
         self.pop_size = 40
         self.number_of_elites = 10
 
-    # @staticmethod
-    # def _get_class_prob(preds: np.ndarray, class_no: np.array) -> np.ndarray:
-    #     '''
-    #     :param preds: an array of predictions of individuals for all the categories: (40, 1000) shaped array
-    #     :param class_no: for the targeted attack target category index number; for the untargeted attack ancestor
-    #     category index number
-    #     :return: an array of the prediction of individuals only for the target/ancestor category: (40,) shaped  array
-    #     '''
-    #     return preds[:, class_no]
-
     @staticmethod
     def _get_fitness(probs: np.ndarray) -> np.ndarray:
         """
