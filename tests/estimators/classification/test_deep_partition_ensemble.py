@@ -112,6 +112,7 @@ class TestDeepPartitionEnsemble(unittest.TestCase):
             model = TensorFlowModel()
             loss_object = tf.keras.losses.CategoricalCrossentropy(from_logits=True)
             optimizer = Adam(learning_rate=0.01)
+            model.compile(loss=loss_object, optimizer=optimizer)
 
             classifier = TensorFlowV2Classifier(
                 model=model,

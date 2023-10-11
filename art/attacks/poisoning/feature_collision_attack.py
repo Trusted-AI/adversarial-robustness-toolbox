@@ -293,7 +293,7 @@ def tensor_norm(tensor, norm_type: Union[int, float, str] = 2):  # pylint: disab
     :param norm_type: Order of the norm.
     :return: A tensor with the norm applied.
     """
-    tf_tensor_types = ("tensorflow.python.framework.ops.Tensor", "tensorflow.python.framework.ops.EagerTensor")
+    tf_tensor_types = ("tensorflow.python.framework.ops.Tensor", "tensorflow.python.framework.ops.EagerTensor", "tensorflow.python.framework.ops.SymbolicTensor")
     torch_tensor_types = ("torch.Tensor", "torch.float", "torch.double", "torch.long")
     mxnet_tensor_types = ()
     supported_types = tf_tensor_types + torch_tensor_types + mxnet_tensor_types
