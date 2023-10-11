@@ -378,83 +378,83 @@ def expected_values(framework, request):
     return _expected_values
 
 
-# @pytest.fixture(scope="session")
-# def get_image_classifier_mx_model():
-#     import mxnet  # lgtm [py/import-and-import-from]
-#
-#     # TODO needs to be made parameterizable once Mxnet allows multiple identical models to be created in one session
-#     from_logits = True
-#
-#     class Model(mxnet.gluon.nn.Block):
-#         def __init__(self, **kwargs):
-#             super(Model, self).__init__(**kwargs)
-#             self.model = mxnet.gluon.nn.Sequential()
-#             self.model.add(
-#                 mxnet.gluon.nn.Conv2D(
-#                     channels=1,
-#                     kernel_size=7,
-#                     activation="relu",
-#                 ),
-#                 mxnet.gluon.nn.MaxPool2D(pool_size=4, strides=4),
-#                 mxnet.gluon.nn.Flatten(),
-#                 mxnet.gluon.nn.Dense(
-#                     10,
-#                     activation=None,
-#                 ),
-#             )
-#
-#         def forward(self, x):
-#             y = self.model(x)
-#             if from_logits:
-#                 return y
-#
-#             return y.softmax()
-#
-#     model = Model()
-#     custom_init = get_image_classifier_mxnet_custom_ini()
-#     model.initialize(init=custom_init)
-#     return model
+@pytest.fixture(scope="session")
+def get_image_classifier_mx_model():
+    import mxnet  # lgtm [py/import-and-import-from]
+
+    # TODO needs to be made parameterizable once Mxnet allows multiple identical models to be created in one session
+    from_logits = True
+
+    class Model(mxnet.gluon.nn.Block):
+        def __init__(self, **kwargs):
+            super(Model, self).__init__(**kwargs)
+            self.model = mxnet.gluon.nn.Sequential()
+            self.model.add(
+                mxnet.gluon.nn.Conv2D(
+                    channels=1,
+                    kernel_size=7,
+                    activation="relu",
+                ),
+                mxnet.gluon.nn.MaxPool2D(pool_size=4, strides=4),
+                mxnet.gluon.nn.Flatten(),
+                mxnet.gluon.nn.Dense(
+                    10,
+                    activation=None,
+                ),
+            )
+
+        def forward(self, x):
+            y = self.model(x)
+            if from_logits:
+                return y
+
+            return y.softmax()
+
+    model = Model()
+    custom_init = get_image_classifier_mxnet_custom_ini()
+    model.initialize(init=custom_init)
+    return model
 
 
-# @pytest.fixture
-# def get_image_classifier_mx_instance(get_image_classifier_mx_model, mnist_shape):
-#     import mxnet  # lgtm [py/import-and-import-from]
-#     from art.estimators.classification import MXClassifier
-#
-#     model = get_image_classifier_mx_model
-#
-#     def _get_image_classifier_mx_instance(from_logits=True):
-#         if from_logits is False:
-#             # due to the fact that only 1 instance of get_image_classifier_mx_model can be created in one session
-#             # this will be resolved once Mxnet allows for 2 models with identical weights to be created in 1 session
-#             raise ARTTestFixtureNotImplemented(
-#                 "Currently only supporting Mxnet classifier with from_logit set to True",
-#                 get_image_classifier_mx_instance.__name__,
-#                 framework,
-#             )
-#
-#         loss = mxnet.gluon.loss.SoftmaxCrossEntropyLoss(from_logits=from_logits)
-#         trainer = mxnet.gluon.Trainer(model.collect_params(), "sgd", {"learning_rate": 0.1})
-#
-#         # Get classifier
-#         mxc = MXClassifier(
-#             model=model,
-#             loss=loss,
-#             input_shape=mnist_shape,
-#             # input_shape=(28, 28, 1),
-#             nb_classes=10,
-#             optimizer=trainer,
-#             ctx=None,
-#             channels_first=True,
-#             clip_values=(0, 1),
-#             preprocessing_defences=None,
-#             postprocessing_defences=None,
-#             preprocessing=(0.0, 1.0),
-#         )
-#
-#         return mxc
-#
-#     return _get_image_classifier_mx_instance
+@pytest.fixture
+def get_image_classifier_mx_instance(get_image_classifier_mx_model, mnist_shape):
+    import mxnet  # lgtm [py/import-and-import-from]
+    from art.estimators.classification import MXClassifier
+
+    model = get_image_classifier_mx_model
+
+    def _get_image_classifier_mx_instance(from_logits=True):
+        if from_logits is False:
+            # due to the fact that only 1 instance of get_image_classifier_mx_model can be created in one session
+            # this will be resolved once Mxnet allows for 2 models with identical weights to be created in 1 session
+            raise ARTTestFixtureNotImplemented(
+                "Currently only supporting Mxnet classifier with from_logit set to True",
+                get_image_classifier_mx_instance.__name__,
+                framework,
+            )
+
+        loss = mxnet.gluon.loss.SoftmaxCrossEntropyLoss(from_logits=from_logits)
+        trainer = mxnet.gluon.Trainer(model.collect_params(), "sgd", {"learning_rate": 0.1})
+
+        # Get classifier
+        mxc = MXClassifier(
+            model=model,
+            loss=loss,
+            input_shape=mnist_shape,
+            # input_shape=(28, 28, 1),
+            nb_classes=10,
+            optimizer=trainer,
+            ctx=None,
+            channels_first=True,
+            clip_values=(0, 1),
+            preprocessing_defences=None,
+            postprocessing_defences=None,
+            preprocessing=(0.0, 1.0),
+        )
+
+        return mxc
+
+    return _get_image_classifier_mx_instance
 
 
 @pytest.fixture
@@ -550,7 +550,7 @@ def image_dl_gan(framework):
 
 
 @pytest.fixture
-def image_dl_estimator(framework):
+def image_dl_estimator(framework, get_image_classifier_mx_instance):
     def _image_dl_estimator(functional=False, **kwargs):
         sess = None
         wildcard = False
@@ -593,9 +593,9 @@ def image_dl_estimator(framework):
                 else:
                     classifier = get_image_classifier_kr_tf(**kwargs)
 
-        # if framework == "mxnet":
-        #     if wildcard is False and functional is False:
-        #         classifier = get_image_classifier_mx_instance(**kwargs)
+        if framework == "mxnet":
+            if wildcard is False and functional is False:
+                classifier = get_image_classifier_mx_instance(**kwargs)
 
         if framework == "huggingface":
             if not wildcard:
