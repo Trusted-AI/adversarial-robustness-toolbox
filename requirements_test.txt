@@ -14,7 +14,7 @@ ffmpeg-python==0.2.0
 cma==3.3.0
 pandas==2.0.1
 librosa==0.10.0.post2
-numba~=0.56.4
+numba~=0.58.0
 opencv-python
 sortedcontainers==2.4.0
 h5py==3.8.0
@@ -44,7 +44,7 @@ lightgbm==3.3.5
 xgboost==1.7.5
 
 kornia~=0.6.12
-tensorboardX==2.6
+tensorboardX==2.14.1
 lief==0.12.3
 jax[cpu]==0.4.8
 
