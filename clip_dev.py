@@ -51,6 +51,7 @@ def get_and_process_input(to_one_hot=False, return_batch=False):
 
     return inputs, original_image, labels, len(text)
 
+
 def norm_bound_eps(eps_bound=None):
     if eps_bound is None:
         eps_bound = np.asarray([8 / 255, 8 / 255, 8 / 255])
@@ -165,7 +166,6 @@ def cifar_clip_pgd():
 
     original_images = np.concatenate(original_images)
 
-
     art_classifier = HFMMPyTorch(
         model, loss=loss_fn, clip_values=(np.min(original_images), np.max(original_images)), input_shape=(3, 224, 224)
     )
@@ -185,6 +185,7 @@ def cifar_clip_pgd():
 
     print(clean_preds)
     print(adv_preds)
+
 
 def test_fit():
     from transformers import CLIPProcessor, CLIPModel
@@ -233,7 +234,37 @@ def test_predict():
     preds = art_classifier.predict(inputs)
     print('Pred shape is ', preds.shape)
 
-test_predict()
+
+def test_adv_train():
+    import torch
+    from transformers import CLIPModel
+    from art.estimators.hf_mm import HFMMPyTorch, MultiModalHuggingFaceInput
+    from art.defences.trainer import AdversarialTrainerMadryPGD
+
+    model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
+    inputs, original_image, labels, num_classes = get_and_process_input()
+    optimizer = torch.optim.SGD(model.parameters(), lr=0.01, momentum=0.9)
+
+    art_classifier = HFMMPyTorch(
+        model,
+        nb_classes=num_classes,
+        optimizer=optimizer,
+        loss=torch.nn.CrossEntropyLoss(), clip_values=(np.min(original_image), np.max(original_image)),
+        input_shape=(3, 224, 224)
+    )
+    trainer = AdversarialTrainerMadryPGD(art_classifier,
+                                         nb_epochs=10,
+                                         eps=8/255,
+                                         eps_step=1/255,
+                                         max_iter=10,
+                                         num_random_init=0)
+    inputs = MultiModalHuggingFaceInput(**inputs)
+
+    trainer.fit(inputs, labels.detach().cpu().numpy())
+
+
+test_adv_train()
+# test_predict()
 # test_fit()
 # attack_clip_pgd()
 # cifar_clip_pgd()

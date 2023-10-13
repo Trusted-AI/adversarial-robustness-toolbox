@@ -72,6 +72,10 @@ class MultiModalHuggingFaceInput(UserDict):
                     pixel_values[key] = torch.tensor(value)
                 super().__setitem__("pixel_values", pixel_values)
             assert self["pixel_values"].shape == original_shape
+        elif isinstance(key, np.ndarray):
+            pixel_values = UserDict.__getitem__(self, "pixel_values")
+            pixel_values = pixel_values[key]
+            super().__setitem__("pixel_values", pixel_values)
         else:
             raise ValueError(
                 f"Unsupported key {key} with type {type(key)}, " f"value {value} for __setitem__ in ARTInput"
