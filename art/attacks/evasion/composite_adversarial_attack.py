@@ -27,7 +27,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 
-from typing import Optional, Tuple, TYPE_CHECKING
+from typing import Optional, Tuple, List, TYPE_CHECKING
 
 import numpy as np
 from tqdm.auto import tqdm
@@ -36,7 +36,7 @@ from art.attacks.attack import EvasionAttack
 from art.config import ART_NUMPY_DTYPE
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from art.estimators.classification.classifier import ClassifierMixin
-from art.utils import compute_success, check_and_transform_label_format, get_labels_np_array
+from art.utils import compute_success, check_and_transform_label_format
 
 if TYPE_CHECKING:
     # pylint: disable=C0412
@@ -50,8 +50,8 @@ class CompositeAdversarialAttackPyTorch(EvasionAttack):
     """
     Implementation of the composite adversarial attack on image classifiers in PyTorch. The attack is constructed by
     adversarially perturbing the hue component of the inputs. It uses order scheduling to search for the attack sequence
-     and uses the iterative gradient sign method to optimize the perturbations in semantic space and Lp-ball (see
-     `FastGradientMethod` and `BasicIterativeMethod`).
+    and uses the iterative gradient sign method to optimize the perturbations in semantic space and Lp-ball (see
+    `FastGradientMethod` and `BasicIterativeMethod`).
 
     Note that this attack is intended for only PyTorch image classifiers with RGB images in the range [0, 1] as inputs.
 
@@ -80,12 +80,12 @@ class CompositeAdversarialAttackPyTorch(EvasionAttack):
         classifier: "PyTorchClassifier",
         enabled_attack: Tuple = (0, 1, 2, 3, 4, 5),
         # Default: Full Attacks; 0: Hue, 1: Saturation, 2: Rotation, 3: Brightness, 4: Contrast, 5: PGD (L-infinity)
-        hue_epsilon: Tuple = (-np.pi, np.pi),
-        sat_epsilon: Tuple = (0.7, 1.3),
-        rot_epsilon: Tuple = (-10, 10),
-        bri_epsilon: Tuple = (-0.2, 0.2),
-        con_epsilon: Tuple = (0.7, 1.3),
-        pgd_epsilon: Tuple = (-8 / 255, 8 / 255),  # L-infinity
+        hue_epsilon: Tuple[float, float] = (-np.pi, np.pi),
+        sat_epsilon: Tuple[float, float] = (0.7, 1.3),
+        rot_epsilon: Tuple[float, float] = (-10.0, 10.0),
+        bri_epsilon: Tuple[float, float] = (-0.2, 0.2),
+        con_epsilon: Tuple[float, float] = (0.7, 1.3),
+        pgd_epsilon: Tuple[float, float] = (-8 / 255, 8 / 255),  # L-infinity
         early_stop: bool = True,
         max_iter: int = 5,
         max_inner_iter: int = 10,
@@ -145,7 +145,6 @@ class CompositeAdversarialAttackPyTorch(EvasionAttack):
         self.attack_order = attack_order
         self.max_iter = max_iter if self.attack_order == "scheduled" else 1
         self.max_inner_iter = max_inner_iter
-        self.targeted = False
         self.batch_size = batch_size
         self.verbose = verbose
         self._check_params()
@@ -169,20 +168,25 @@ class CompositeAdversarialAttackPyTorch(EvasionAttack):
             kornia.geometry.transform.rotate,
             kornia.enhance.adjust_brightness,
             kornia.enhance.adjust_contrast,
-            self.get_linf_perturbation,
         )
-        self.attack_dict = tuple([self.attack_pool[i] for i in self.enabled_attack])
+        self.attack_dict = tuple(self.attack_pool[i] for i in self.enabled_attack)
         self.step_size_pool = [
             2.5 * ((eps[1] - eps[0]) / 2) / self.max_inner_iter for eps in self.eps_pool
         ]  # 2.5 * ε-test / num_steps
 
         self._description = "Composite Adversarial Attack"
-        self._is_scheduling = False
-        self.adv_val_pool = (
-            self.eps_space
-        ) = self.adv_val_space = self.curr_dsm = self.curr_seq = self.is_attacked = self.is_not_attacked = None
+        self._is_scheduling: bool = False
+        self.eps_space: List = []
+        self.adv_val_space: List = []
+        self.curr_dsm: "torch.Tensor" = torch.zeros((len(self.enabled_attack), len(self.enabled_attack)))
+        self.curr_seq: "torch.Tensor" = torch.zeros(len(self.enabled_attack))
+        self.is_attacked: "torch.Tensor" = torch.zeros(self.batch_size, device=self.device).bool()
+        self.is_not_attacked: "torch.Tensor" = torch.ones(self.batch_size, device=self.device).bool()
 
     def _check_params(self) -> None:
+        """
+        Check validity of parameters.
+        """
         super()._check_params()
         if not isinstance(self.enabled_attack, tuple) or not all(
             value in [0, 1, 2, 3, 4, 5] for value in self.enabled_attack
@@ -194,14 +198,14 @@ class CompositeAdversarialAttackPyTorch(EvasionAttack):
                 + " hue, saturation, and rotation; `(0,1,2,3,4)` means the all semantic attacks; `(0,1,2,3,4,5)` means"
                 + " the full attacks."
             )
-        _epsilons_range = [
-            ["hue_epsilon", (-np.pi, np.pi), "(-np.pi, np.pi)"],
-            ["sat_epsilon", (0, np.inf), "(0, np.inf)"],
-            ["rot_epsilon", (-360, 360), "(-360, 360)"],
-            ["bri_epsilon", (-1, 1), "(-1, 1)"],
-            ["con_epsilon", (0, np.inf), "(0, np.inf)"],
-            ["pgd_epsilon", (-1, 1), "(-1, 1)"],
-        ]
+        _epsilons_range = (
+            ("hue_epsilon", (-np.pi, np.pi), "(-np.pi, np.pi)"),
+            ("sat_epsilon", (0.0, np.inf), "(0.0, np.inf)"),
+            ("rot_epsilon", (-360.0, 360.0), "(-360.0, 360.0)"),
+            ("bri_epsilon", (-1.0, 1.0), "(-1.0, 1.0)"),
+            ("con_epsilon", (0.0, np.inf), "(0.0, np.inf)"),
+            ("pgd_epsilon", (-1.0, 1.0), "(-1.0, 1.0)"),
+        )
         for i in range(6):
             if (
                 not isinstance(self.epsilons[i], tuple)
@@ -210,28 +214,12 @@ class CompositeAdversarialAttackPyTorch(EvasionAttack):
                     _epsilons_range[i][1][0] <= self.epsilons[i][0] <= self.epsilons[i][1] <= _epsilons_range[i][1][1]
                 )
             ):
-                logger.info(
-                    "The argument `"
-                    + _epsilons_range[i][0]
-                    + "` must be an interval within "
-                    + _epsilons_range[i][2]
-                    + " of type tuple."
-                )
-                raise ValueError(
-                    "The argument `"
-                    + _epsilons_range[i][0]
-                    + "` must be an interval within "
-                    + _epsilons_range[i][2]
-                    + " of type tuple."
-                )
+                logger.info("The argument `%s` must be an interval within %s of type tuple.", _epsilons_range[i][0], _epsilons_range[i][2])
+                raise ValueError("The argument `{}` must be an interval within {} of type tuple.".format(_epsilons_range[i][0], _epsilons_range[i][2]))
 
         if not isinstance(self.early_stop, bool):
             logger.info("The flag `early_stop` has to be of type bool.")
             raise ValueError("The flag `early_stop` has to be of type bool.")
-
-        if not isinstance(self.targeted, bool):
-            logger.info("The flag `targeted` has to be of type bool.")
-            raise ValueError("The flag `targeted` has to be of type bool.")
 
         if not isinstance(self.max_iter, int) or self.max_iter <= 0:
             logger.info("The argument `max_iter` must be positive of type int.")
@@ -253,39 +241,10 @@ class CompositeAdversarialAttackPyTorch(EvasionAttack):
             logger.info("The argument `verbose` has to be a Boolean.")
             raise ValueError("The argument `verbose` has to be a Boolean.")
 
-    def _set_targets(self, x: np.ndarray, y: Optional[np.ndarray], classifier_mixin: bool = True) -> np.ndarray:
-        """
-        Check and set up targets.
-
-        :param x: An array with all the original inputs.
-        :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices of shape
-                  `(nb_samples,)`. Only provide this parameter if you'd like to use true labels when crafting
-                  adversarial samples. Otherwise, model predictions are used as labels to avoid the "label leaking"
-                  effect (explained in this paper: https://arxiv.org/abs/1611.01236). Default is `None`.
-        :param classifier_mixin: Whether the estimator is of type `ClassifierMixin`.
-        :return: The targets.
-        """
-        if classifier_mixin:
-            if y is not None:
-                y = check_and_transform_label_format(y, nb_classes=self.estimator.nb_classes)
-
-        if y is None:
-            # Throw an error if the attack is targeted, but no targets are provided.
-            if self.targeted:  # pragma: no cover
-                raise ValueError("Target labels `y` need to be provided for a targeted attack.")
-
-            # Use the model predictions as correct outputs.
-            if classifier_mixin:
-                targets = get_labels_np_array(self.estimator.predict(x, batch_size=self.batch_size))
-            else:
-                targets = self.estimator.predict(x, batch_size=self.batch_size)
-
-        else:
-            targets = y
-
-        return targets
-
     def _setup_attack(self):
+        """
+        Set up the initial parameter for each attack component.
+        """
         import torch
 
         hue_space = (
@@ -309,15 +268,26 @@ class CompositeAdversarialAttackPyTorch(EvasionAttack):
             + self.eps_pool[4][0]
         )
         pgd_space = 0.001 * torch.randn([self.batch_size, 3, 32, 32], device=self.device)
-        self.adv_val_pool = [hue_space, sat_space, rot_space, bri_space, con_space, pgd_space]
 
         self.eps_space = [self.eps_pool[i] for i in self.enabled_attack]
-        self.adv_val_space = [self.adv_val_pool[i] for i in self.enabled_attack]
+        self.adv_val_space = [
+            [hue_space, sat_space, rot_space, bri_space, con_space, pgd_space][i] for i in self.enabled_attack
+        ]
 
     def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
+        """
+        Generate the composite adversarial samples and return them in a Numpy array.
+
+        :param x: An array with the original inputs to be attacked.
+        :param y: An array with the original labels to be predicted.
+        :return: An array holding the composite adversarial examples.
+        """
+        if y is None:
+            raise ValueError("The argument `y` must be provided.")
+
         import torch
 
-        targets = self._set_targets(x, y)
+        y = check_and_transform_label_format(y, nb_classes=self.estimator.nb_classes)
         dataset = torch.utils.data.TensorDataset(
             torch.from_numpy(x.astype(ART_NUMPY_DTYPE)),
             torch.from_numpy(y.astype(ART_NUMPY_DTYPE)),
@@ -333,31 +303,25 @@ class CompositeAdversarialAttackPyTorch(EvasionAttack):
         for batch_id, batch_all in enumerate(
             tqdm(data_loader, desc=self._description, leave=False, disable=not self.verbose)
         ):
-            (batch_x, batch_targets, batch_mask) = batch_all[0], batch_all[1], None
+            (batch_x, batch_y) = batch_all[0], batch_all[1]
             batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
 
-            x_adv[batch_index_1:batch_index_2] = self._generate_batch(
-                x=batch_x,
-                y=batch_targets,
-                mask=batch_mask,
-            )
+            x_adv[batch_index_1:batch_index_2] = self._generate_batch(x=batch_x, y=batch_y)
 
         logger.info(
             "Success rate of attack: %.2f%%",
-            100 * compute_success(self.estimator, x, targets, x_adv, self.targeted, batch_size=self.batch_size),
+            100 * compute_success(self.estimator, x, y, x_adv, batch_size=self.batch_size),
         )
 
         return x_adv
 
-    def _generate_batch(self, x: "torch.Tensor", y: "torch.Tensor", mask: "torch.Tensor") -> np.ndarray:
+    def _generate_batch(self, x: "torch.Tensor", y: "torch.Tensor") -> np.ndarray:
         """
-        Generate a batch of adversarial samples and return them in a NumPy array.
+        Generate a batch of composite adversarial examples and return them in a NumPy array.
 
-        :param x: Original inputs.
-        :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)`.
-        :param mask: A 1D array of masks defining which samples to perturb. Shape needs to be `(nb_samples,)`.
-                     Samples for which the mask is zero will not be adversarially perturbed.
-        :return: Adversarial examples.
+        :param x: A tensor of a batch of original inputs to be attacked.
+        :param y: A tensor of a batch of the original labels to be predicted.
+        :return: An array holding the composite adversarial examples.
         """
         import torch
 
@@ -373,10 +337,20 @@ class CompositeAdversarialAttackPyTorch(EvasionAttack):
         self,
         data: "torch.Tensor",
         labels: "torch.Tensor",
-        attack_idx: "torch.Tensor",
+        attack_idx: int,
         attack_parameter: "torch.Tensor",
         ori_is_attacked: "torch.Tensor",
     ) -> Tuple["torch.Tensor", "torch.Tensor"]:
+        """
+        Compute the adversarial examples for each attack component.
+        :param data: A tensor of a batch of original inputs to be attacked.
+        :param labels: A tensor of a batch of the original labels to be predicted.
+        :param attack_idx: The index of the attack component (one of the enabled attacks) in the attack pool.
+        :param attack_parameter: Specify the parameter of the attack component. For example, hue shift angle, saturation
+         factor, etc.
+        :param ori_is_attacked: Specify whether the perturbed data is already attacked.
+        :return: The perturbed data and the corresponding attack parameter.
+        """
         import torch
         import torch.nn.functional as F
 
@@ -411,6 +385,13 @@ class CompositeAdversarialAttackPyTorch(EvasionAttack):
     def caa_hue(
         self, data: "torch.Tensor", hue: "torch.Tensor", labels: "torch.Tensor"
     ) -> Tuple["torch.Tensor", "torch.Tensor"]:
+        """
+        Compute the adversarial examples for hue component.
+        :param data: A tensor of a batch of original inputs to be attacked.
+        :param hue: Specify the hue shift angle.
+        :param labels: A tensor of a batch of the original labels to be predicted.
+        :return: The perturbed data and the corresponding hue shift angle.
+        """
         hue = hue.detach().clone()
         hue[self.is_attacked] = 0
         hue.requires_grad_()
@@ -423,6 +404,13 @@ class CompositeAdversarialAttackPyTorch(EvasionAttack):
     def caa_saturation(
         self, data: "torch.Tensor", saturation: "torch.Tensor", labels: "torch.Tensor"
     ) -> Tuple["torch.Tensor", "torch.Tensor"]:
+        """
+        Compute the adversarial examples for saturation component.
+        :param data: A tensor of a batch of original inputs to be attacked.
+        :param saturation: Specify the saturation factor.
+        :param labels: A tensor of a batch of the original labels to be predicted.
+        :return: The perturbed data and the corresponding saturation factor.
+        """
         saturation = saturation.detach().clone()
         saturation[self.is_attacked] = 1
         saturation.requires_grad_()
@@ -439,6 +427,13 @@ class CompositeAdversarialAttackPyTorch(EvasionAttack):
     def caa_rotation(
         self, data: "torch.Tensor", theta: "torch.Tensor", labels: "torch.Tensor"
     ) -> Tuple["torch.Tensor", "torch.Tensor"]:
+        """
+        Compute the adversarial examples for rotation component.
+        :param data: A tensor of a batch of original inputs to be attacked.
+        :param theta: Specify the rotation angle.
+        :param labels: A tensor of a batch of the original labels to be predicted.
+        :return: The perturbed data and the corresponding rotation angle.
+        """
         theta = theta.detach().clone()
         theta[self.is_attacked] = 0
         theta.requires_grad_()
@@ -451,6 +446,13 @@ class CompositeAdversarialAttackPyTorch(EvasionAttack):
     def caa_brightness(
         self, data: "torch.Tensor", brightness: "torch.Tensor", labels: "torch.Tensor"
     ) -> Tuple["torch.Tensor", "torch.Tensor"]:
+        """
+        Compute the adversarial examples for brightness component.
+        :param data: A tensor of a batch of original inputs to be attacked.
+        :param brightness: Specify the brightness factor.
+        :param labels: A tensor of a batch of the original labels to be predicted.
+        :return: The perturbed data and the corresponding brightness factor.
+        """
         brightness = brightness.detach().clone()
         brightness[self.is_attacked] = 0
         brightness.requires_grad_()
@@ -467,6 +469,13 @@ class CompositeAdversarialAttackPyTorch(EvasionAttack):
     def caa_contrast(
         self, data: "torch.Tensor", contrast: "torch.Tensor", labels: "torch.Tensor"
     ) -> Tuple["torch.Tensor", "torch.Tensor"]:
+        """
+        Compute the adversarial examples for contrast component.
+        :param data: A tensor of a batch of original inputs to be attacked.
+        :param contrast: Specify the contrast factor.
+        :param labels: A tensor of a batch of the original labels to be predicted.
+        :return: The perturbed data and the corresponding contrast factor.
+        """
         contrast = contrast.detach().clone()
         contrast[self.is_attacked] = 1
         contrast.requires_grad_()
@@ -480,7 +489,16 @@ class CompositeAdversarialAttackPyTorch(EvasionAttack):
             ori_is_attacked=self.is_attacked.clone(),
         )
 
-    def caa_linf(self, data: "torch.Tensor", labels: "torch.Tensor") -> "torch.Tensor":
+    def caa_linf(
+        self, data: "torch.Tensor", eta: "torch.Tensor", labels: "torch.Tensor"
+    ) -> Tuple["torch.Tensor", "torch.Tensor"]:
+        """
+        Compute the adversarial examples for L-infinity (PGD) component.
+        :param data: A tensor of a batch of original inputs to be attacked.
+        :param labels: A tensor of a batch of the original labels to be predicted.
+        :param eta: The perturbation in the L-infinity ball.
+        :return: The perturbed data.
+        """
         import torch
         import torch.nn.functional as F
 
@@ -505,16 +523,17 @@ class CompositeAdversarialAttackPyTorch(EvasionAttack):
             eta = torch.clamp(adv_data - sur_data, min=self.eps_pool[5][0], max=self.eps_pool[5][1])
             adv_data = torch.clamp(sur_data + eta, min=0.0, max=1.0).detach_().requires_grad_()
 
-        return adv_data
-
-    def get_linf_perturbation(self, data: "torch.Tensor", noise: "torch.Tensor") -> "torch.Tensor":
-        import torch
-
-        return torch.clamp(data + noise, 0.0, 1.0)
+        return adv_data, eta
 
     def update_attack_order(
-        self, images: "torch.Tensor", labels: "torch.Tensor", adv_val: Optional["torch.Tensor"] = None
+        self, images: "torch.Tensor", labels: "torch.Tensor", adv_val: List
     ) -> None:
+        """
+        Update the specified attack ordering.
+        :param images: A tensor of a batch of original inputs to be attacked.
+        :param labels: A tensor of a batch of the original labels to be predicted.
+        :param adv_val: Optional; A list of a batch of current attack parameters.
+        """
         import torch
         import torch.nn.functional as F
 
@@ -535,13 +554,13 @@ class CompositeAdversarialAttackPyTorch(EvasionAttack):
             return ori_dsm
 
         if self.attack_order == "fixed":
-            if self.curr_seq is None:
-                self.fixed_order = tuple([self.enabled_attack.index(i) for i in self.fixed_order])
+            if self.curr_seq.sum() == 0:
+                self.fixed_order = tuple(self.enabled_attack.index(i) for i in self.fixed_order)
                 self.curr_seq = torch.tensor(self.fixed_order, device=self.device)
         elif self.attack_order == "random":
             self.curr_seq = torch.randperm(self.seq_num)
         elif self.attack_order == "scheduled":
-            if self.curr_dsm is None:
+            if self.curr_seq.sum() == 0:
                 self.curr_dsm = sinkhorn_normalization(torch.rand((self.seq_num, self.seq_num)))
                 self.curr_seq = hungarian(self.curr_dsm)
             self.curr_dsm = self.curr_dsm.detach().requires_grad_()
@@ -553,11 +572,8 @@ class CompositeAdversarialAttackPyTorch(EvasionAttack):
                 prev_img = adv_img.clone()
                 adv_img = torch.zeros_like(adv_img)
                 for idx in range(self.seq_num):
-                    if idx == self.linf_idx:
-                        adv_img = adv_img + self.curr_dsm[tdx][idx] * self.attack_dict[idx](prev_img, labels)
-                    else:
-                        _adv_img, _ = self.attack_dict[idx](prev_img, adv_val[idx], labels)
-                        adv_img = adv_img + self.curr_dsm[tdx][idx] * _adv_img
+                    _adv_img, _ = self.attack_dict[idx](prev_img, adv_val[idx], labels)
+                    adv_img = adv_img + self.curr_dsm[tdx][idx] * _adv_img
             self._is_scheduling = False
             self.max_inner_iter = original_iter_num
             outputs = self.model(adv_img)
@@ -576,6 +592,12 @@ class CompositeAdversarialAttackPyTorch(EvasionAttack):
             raise ValueError()
 
     def caa_attack(self, images: "torch.Tensor", labels: "torch.Tensor") -> "torch.Tensor":
+        """
+        The main algorithm to generate the adversarial examples for composite adversarial attack.
+        :param images: A tensor of a batch of original inputs to be attacked.
+        :param labels: A tensor of a batch of the original labels to be predicted.
+        :return: The perturbed data.
+        """
         import torch
 
         attack = self.attack_dict
@@ -601,10 +623,8 @@ class CompositeAdversarialAttackPyTorch(EvasionAttack):
 
             for tdx in range(self.seq_num):
                 idx = self.curr_seq[tdx]
-                if idx == self.linf_idx:
-                    adv_img = attack[idx](adv_img, labels)
-                else:
-                    adv_img, adv_val_updated = attack[idx](adv_img, adv_val[idx], labels)
+                adv_img, adv_val_updated = attack[idx](adv_img, adv_val[idx], labels)
+                if idx != self.linf_idx:
                     adv_val[idx] = adv_val_updated
 
             outputs = self.model(adv_img)
