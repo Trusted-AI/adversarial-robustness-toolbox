@@ -211,23 +211,52 @@ class CompositeAdversarialAttackPyTorch(EvasionAttack):
                 not isinstance(self.epsilons[i], tuple)
                 or not len(self.epsilons[i]) == 2
                 or not (
+                    isinstance(self.epsilons[i][0], float) and isinstance(self.epsilons[i][1], float)
+                )
+            ):
+                logger.info(
+                    "The argument `%s` must be an interval within %s of type tuple.",
+                    _epsilons_range[i][0],
+                    _epsilons_range[i][2],
+                )
+                raise TypeError(
+                    f"The argument `{_epsilons_range[i][0]}` must be an interval "
+                    f"within {_epsilons_range[i][2]} of type tuple."
+                )
+
+            if (not (
                     _epsilons_range[i][1][0] <= self.epsilons[i][0] <= self.epsilons[i][1] <= _epsilons_range[i][1][1]
                 )
             ):
-                logger.info("The argument `%s` must be an interval within %s of type tuple.", _epsilons_range[i][0], _epsilons_range[i][2])
-                raise ValueError("The argument `{}` must be an interval within {} of type tuple.".format(_epsilons_range[i][0], _epsilons_range[i][2]))
+                logger.info(
+                    "The argument `%s` must be an interval within %s of type tuple.",
+                    _epsilons_range[i][0],
+                    _epsilons_range[i][2],
+                )
+                raise ValueError(
+                    f"The argument `{_epsilons_range[i][0]}` must be an interval "
+                    f"within {_epsilons_range[i][2]} of type tuple."
+                )
 
         if not isinstance(self.early_stop, bool):
             logger.info("The flag `early_stop` has to be of type bool.")
-            raise ValueError("The flag `early_stop` has to be of type bool.")
+            raise TypeError("The flag `early_stop` has to be of type bool.")
 
-        if not isinstance(self.max_iter, int) or self.max_iter <= 0:
+        if not isinstance(self.max_iter, int):
+            logger.info("The argument `max_iter` must be positive of type int.")
+            raise TypeError("The argument `max_iter` must be positive of type int.")
+
+        if self.max_iter <= 0:
             logger.info("The argument `max_iter` must be positive of type int.")
             raise ValueError("The argument `max_iter` must be positive of type int.")
 
         if not isinstance(self.max_inner_iter, int):
             logger.info("The argument `max_inner_iter` must be positive of type int.")
             raise TypeError("The argument `max_inner_iter` must be positive of type int.")
+
+        if self.max_inner_iter <= 0:
+            logger.info("The argument `max_inner_iter` must be positive of type int.")
+            raise ValueError("The argument `max_inner_iter` must be positive of type int.")
 
         if self.attack_order not in ("fixed", "random", "scheduled"):
             logger.info("The argument `attack_order` should be either `fixed`, `random`, or `scheduled`.")
@@ -239,7 +268,7 @@ class CompositeAdversarialAttackPyTorch(EvasionAttack):
 
         if not isinstance(self.verbose, bool):
             logger.info("The argument `verbose` has to be a Boolean.")
-            raise ValueError("The argument `verbose` has to be a Boolean.")
+            raise TypeError("The argument `verbose` has to be a Boolean.")
 
     def _setup_attack(self):
         """
@@ -525,9 +554,7 @@ class CompositeAdversarialAttackPyTorch(EvasionAttack):
 
         return adv_data, eta
 
-    def update_attack_order(
-        self, images: "torch.Tensor", labels: "torch.Tensor", adv_val: List
-    ) -> None:
+    def update_attack_order(self, images: "torch.Tensor", labels: "torch.Tensor", adv_val: List) -> None:
         """
         Update the specified attack ordering.
         :param images: A tensor of a batch of original inputs to be attacked.
@@ -600,7 +627,6 @@ class CompositeAdversarialAttackPyTorch(EvasionAttack):
         """
         import torch
 
-        attack = self.attack_dict
         adv_img = images.detach().clone()
         adv_val_saved = torch.zeros((self.seq_num, self.batch_size), device=self.device)
         adv_val = [self.adv_val_space[idx] for idx in range(self.seq_num)]
@@ -623,7 +649,7 @@ class CompositeAdversarialAttackPyTorch(EvasionAttack):
 
             for tdx in range(self.seq_num):
                 idx = self.curr_seq[tdx]
-                adv_img, adv_val_updated = attack[idx](adv_img, adv_val[idx], labels)
+                adv_img, adv_val_updated = self.attack_dict[idx](adv_img, adv_val[idx], labels)
                 if idx != self.linf_idx:
                     adv_val[idx] = adv_val_updated
 

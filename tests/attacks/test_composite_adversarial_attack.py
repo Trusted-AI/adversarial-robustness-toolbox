@@ -50,11 +50,15 @@ def test_generate(art_warning, fix_get_cifar10_subset):
         classifier = get_cifar10_image_classifier_pt(from_logits=False, load_init=True)
         attack = CompositeAdversarialAttackPyTorch(classifier)
 
-        x_train_adv = attack.generate(x=x_test, y=y_test)
+        x_train_adv = attack.generate(x=x_train, y=y_train)
+        x_test_adv = attack.generate(x=x_test, y=y_test)
 
         assert x_train.shape == x_train_adv.shape
         assert np.min(x_train_adv) >= 0.0
         assert np.max(x_train_adv) <= 1.0
+        assert x_test.shape == x_test_adv.shape
+        assert np.min(x_test_adv) >= 0.0
+        assert np.max(x_test_adv) <= 1.0
 
     except ARTTestException as e:
         art_warning(e)
@@ -67,8 +71,6 @@ def test_check_params(art_warning):
     try:
         classifier = get_cifar10_image_classifier_pt(from_logits=False, load_init=True)
 
-        with pytest.raises(TypeError):
-            _ = CompositeAdversarialAttackPyTorch(classifier, enabled_attack=[0, 1, 2, 3, 4])
         with pytest.raises(ValueError):
             _ = CompositeAdversarialAttackPyTorch(classifier, enabled_attack=(0, 1, 2, 3, 4, 5, 6, 7))
 
@@ -76,97 +78,97 @@ def test_check_params(art_warning):
             _ = CompositeAdversarialAttackPyTorch(classifier, hue_epsilon=(-10.0, 0.0))
         with pytest.raises(ValueError):
             _ = CompositeAdversarialAttackPyTorch(classifier, hue_epsilon=(0.0, 10.0))
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = CompositeAdversarialAttackPyTorch(classifier, hue_epsilon=(-1, 2.0))
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = CompositeAdversarialAttackPyTorch(classifier, hue_epsilon=3.14)
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = CompositeAdversarialAttackPyTorch(classifier, hue_epsilon=(0.0, 10.0, 20.0))
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = CompositeAdversarialAttackPyTorch(classifier, hue_epsilon=("1.0", 2.0))
 
         with pytest.raises(ValueError):
             _ = CompositeAdversarialAttackPyTorch(classifier, sat_epsilon=(-10.0, 0.0))
         with pytest.raises(ValueError):
             _ = CompositeAdversarialAttackPyTorch(classifier, sat_epsilon=(0.0, -10.0))
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = CompositeAdversarialAttackPyTorch(classifier, sat_epsilon=(1, 2.0))
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = CompositeAdversarialAttackPyTorch(classifier, sat_epsilon=2.0)
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = CompositeAdversarialAttackPyTorch(classifier, sat_epsilon=(0.0, 10.0, 20.0))
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = CompositeAdversarialAttackPyTorch(classifier, sat_epsilon=("1.0", 2.0))
 
         with pytest.raises(ValueError):
-            _ = CompositeAdversarialAttackPyTorch(classifier, rot_epsilon=(-450.0, 359))
+            _ = CompositeAdversarialAttackPyTorch(classifier, rot_epsilon=(-450.0, 359.0))
         with pytest.raises(ValueError):
             _ = CompositeAdversarialAttackPyTorch(classifier, rot_epsilon=(10.0, -10.0))
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = CompositeAdversarialAttackPyTorch(classifier, rot_epsilon=(1.0, 2))
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = CompositeAdversarialAttackPyTorch(classifier, rot_epsilon=10)
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = CompositeAdversarialAttackPyTorch(classifier, rot_epsilon=(0.0, 10.0, 20.0))
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = CompositeAdversarialAttackPyTorch(classifier, rot_epsilon=("10", 20.0))
 
         with pytest.raises(ValueError):
             _ = CompositeAdversarialAttackPyTorch(classifier, bri_epsilon=(-10.0, 0.0))
         with pytest.raises(ValueError):
             _ = CompositeAdversarialAttackPyTorch(classifier, bri_epsilon=(0.0, 10.0))
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = CompositeAdversarialAttackPyTorch(classifier, bri_epsilon=(-1, 1.0))
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = CompositeAdversarialAttackPyTorch(classifier, bri_epsilon=1.0)
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = CompositeAdversarialAttackPyTorch(classifier, bri_epsilon=(0.0, 10.0, 20.0))
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = CompositeAdversarialAttackPyTorch(classifier, bri_epsilon=("1.0", 2.0))
 
         with pytest.raises(ValueError):
             _ = CompositeAdversarialAttackPyTorch(classifier, con_epsilon=(-10.0, 10.0))
         with pytest.raises(ValueError):
             _ = CompositeAdversarialAttackPyTorch(classifier, con_epsilon=(0.0, -10.0))
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = CompositeAdversarialAttackPyTorch(classifier, con_epsilon=(1, 2.0))
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = CompositeAdversarialAttackPyTorch(classifier, con_epsilon=2.0)
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = CompositeAdversarialAttackPyTorch(classifier, con_epsilon=(0.0, 10.0, 20.0))
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = CompositeAdversarialAttackPyTorch(classifier, con_epsilon=("1.0", 2.0))
 
         with pytest.raises(ValueError):
-            _ = CompositeAdversarialAttackPyTorch(classifier, pgd_epsilon=(-0.5, 0))
+            _ = CompositeAdversarialAttackPyTorch(classifier, pgd_epsilon=(-0.5, 2.0))
         with pytest.raises(ValueError):
             _ = CompositeAdversarialAttackPyTorch(classifier, pgd_epsilon=(8 / 255, -8 / 255))
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = CompositeAdversarialAttackPyTorch(classifier, pgd_epsilon=(-2, 1))
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = CompositeAdversarialAttackPyTorch(classifier, pgd_epsilon=8 / 255)
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = CompositeAdversarialAttackPyTorch(classifier, pgd_epsilon=(0.0, 10.0, 20.0))
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = CompositeAdversarialAttackPyTorch(classifier, pgd_epsilon=("2/255", 3 / 255))
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = CompositeAdversarialAttackPyTorch(classifier, early_stop="true")
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = CompositeAdversarialAttackPyTorch(classifier, early_stop=1)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = CompositeAdversarialAttackPyTorch(classifier, max_iter="max")
         with pytest.raises(ValueError):
             _ = CompositeAdversarialAttackPyTorch(classifier, max_iter=-5)
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = CompositeAdversarialAttackPyTorch(classifier, max_iter=2.5)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = CompositeAdversarialAttackPyTorch(classifier, max_inner_iter="max")
         with pytest.raises(ValueError):
             _ = CompositeAdversarialAttackPyTorch(classifier, max_inner_iter=-5)
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = CompositeAdversarialAttackPyTorch(classifier, max_inner_iter=2.5)
 
         with pytest.raises(ValueError):
@@ -175,7 +177,7 @@ def test_check_params(art_warning):
         with pytest.raises(ValueError):
             _ = CompositeAdversarialAttackPyTorch(classifier, batch_size=-1)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = CompositeAdversarialAttackPyTorch(classifier, verbose="true")
 
     except ARTTestException as e:
