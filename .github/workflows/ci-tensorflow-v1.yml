@@ -53,6 +53,7 @@ jobs:
           pip install scipy==1.7.2
           pip install matplotlib==3.5.3
           pip install xgboost==1.6.2
+          pip install protobuf==3.20.1
           pip install tensorflow==${{ matrix.tensorflow }}
           pip install keras==${{ matrix.keras }}
           pip install jax[cpu]==0.3.25

@@ -31,7 +31,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
-          python-version: 3.9
+          python-version: 3.8
       - name: Pre-install
         run: |
           sudo apt-get update
@@ -43,8 +43,8 @@ jobs:
           pip install -q -r <(sed '/^numpy/d;/^pluggy/d;/^tensorflow/d;/^keras/d' requirements_test.txt)
           pip install numpy==1.21.6
           pip install pluggy==0.13.1
-          pip install tensorflow==2.14.0
-          pip install keras==2.14.0
+          pip install tensorflow==2.13.1
+          pip install keras==2.13.1
           pip install types-six
           pip install types-PyYAML
           pip install types-setuptools
