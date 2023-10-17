@@ -22,9 +22,13 @@ with ART's tools.
 from __future__ import annotations
 
 from collections import UserDict
-from typing import List, Dict, Optional, Tuple, Union, TYPE_CHECKING
+from typing import List, Tuple, Union, TYPE_CHECKING
 
 import numpy as np
+
+if TYPE_CHECKING:
+    # pylint: disable=C0412
+    import torch
 
 
 class MultiModalHuggingFaceInput(UserDict):
@@ -81,7 +85,7 @@ class MultiModalHuggingFaceInput(UserDict):
                 f"Unsupported key {key} with type {type(key)}, " f"value {value} for __setitem__ in ARTInput"
             )
 
-    def __getitem__(self, item: Union[slice, Tuple, int, str]) -> MultiModalHuggingFaceInput:
+    def __getitem__(self, item: Union[slice, Tuple, int, str]) -> Union[MultiModalHuggingFaceInput, "torch.Tensor"]:
         # print('__getitem__ key ', item)
         # print('with type ', type(item))
         if isinstance(item, (slice, tuple)):
@@ -172,7 +176,26 @@ class MultiModalHuggingFaceInput(UserDict):
         output["pixel_values"] = torch.reshape(pixel_values, new_shape)
         return output
 
-    def to(self, device):
+    def to(self, device: Union["torch.device", str]) -> MultiModalHuggingFaceInput:  # pylint: disable=C0103
+        """
+        Moves tensors to the supplied device
+        :param device: device to move the tensors to.
+        :return: A MultiModalHuggingFaceInput instance with tensors moved to the supplied device
+        """
         for key in self.keys():
             self[key] = self[key].to(device)
         return self
+
+    @staticmethod
+    def is_leaf():
+        """
+        Enable mypy compatibility
+        """
+        raise ValueError("Trying to acces is_leaf for the whole dictionay. Please use on individual tensors")
+
+    @staticmethod
+    def grad():
+        """
+        Enable mypy compatibility
+        """
+        raise ValueError("Trying to acces is_leaf for the whole dictionay. Please use on individual tensors")

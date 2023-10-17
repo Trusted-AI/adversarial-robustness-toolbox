@@ -20,7 +20,7 @@ This module implements ...
 """
 import logging
 import random
-from typing import List, Dict, Optional, Tuple, Union, TYPE_CHECKING
+from typing import List, Optional, Any, Tuple, Union, TYPE_CHECKING
 
 import numpy as np
 from tqdm import tqdm
@@ -31,10 +31,11 @@ from art.estimators.pytorch import PyTorchEstimator
 if TYPE_CHECKING:
     # pylint: disable=C0412
     import torch
-
+    import transformers
     from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
     from art.defences.preprocessor.preprocessor import Preprocessor
     from art.defences.postprocessor.postprocessor import Postprocessor
+    from art.estimators.hf_mm.hf_inputs import MultiModalHuggingFaceInput
 
 logger = logging.getLogger(__name__)
 
@@ -105,8 +106,8 @@ class HFMMPyTorch(PyTorchEstimator):
         self._model.eval()
 
         # Attributes for forward compatibility with progress bar updates.
-        self.training_loss = []
-        self.training_accuracy = []
+        self.training_loss: List[Any] = []
+        self.training_accuracy: List[Any] = []
 
     @property
     def model(self) -> "torch.nn.Module":
@@ -146,11 +147,11 @@ class HFMMPyTorch(PyTorchEstimator):
 
     @staticmethod
     def _preprocess_and_convert_inputs(
-        x: Dict,
+        x: "MultiModalHuggingFaceInput",
         y: Optional[Union[np.ndarray, "torch.Tensor"]] = None,
         fit: bool = False,  # pylint: disable=W0613
         no_grad: bool = True,  # pylint: disable=W0613
-    ) -> Tuple[Dict, Union[np.ndarray, "torch.Tensor", None]]:
+    ) -> Tuple["MultiModalHuggingFaceInput", Union[np.ndarray, "torch.Tensor", None]]:
         """
         Dummy function to allow compatibility with ART attacks.
         All pre-processing should be done before by the relevant HF pre-processor.
@@ -164,7 +165,7 @@ class HFMMPyTorch(PyTorchEstimator):
         """
         return x, y
 
-    def _get_losses(self, x: Dict, y: Union[np.ndarray, "torch.Tensor"]) -> "torch.Tensor":
+    def _get_losses(self, x: "MultiModalHuggingFaceInput", y: Union[np.ndarray, "torch.Tensor"]) -> "torch.Tensor":
         """
         Get the loss tensor output of the model including all preprocessing.
 
@@ -179,15 +180,15 @@ class HFMMPyTorch(PyTorchEstimator):
         if isinstance(y, np.ndarray):
             y = torch.tensor(y)
 
-        x = x.to(self.device)
-        y = y.to(self.device)
+        x = x.to(self._device)
+        y = y.to(self._device)
 
         # reduce labels
         if y.ndim > 1:
             y = torch.argmax(y, dim=-1)
         # Set gradients again after inputs are moved to another device
         if x["pixel_values"].is_leaf:
-            x["pixel_values"].requires_grad = True
+            x["pixel_values"].requires_grad = True  # type: ignore
         else:
             x["pixel_values"].retain_grad()
 
@@ -197,7 +198,7 @@ class HFMMPyTorch(PyTorchEstimator):
         return self.loss_fn(preds, y)
 
     def loss_gradient(  # pylint: disable=W0613
-        self, x: Dict, y: Union[np.ndarray, "torch.Tensor"], **kwargs
+        self, x: "MultiModalHuggingFaceInput", y: Union[np.ndarray, "torch.Tensor"], **kwargs
     ) -> np.ndarray:
         """
         Compute the gradient of the loss function w.r.t. the image component of the input
@@ -218,6 +219,7 @@ class HFMMPyTorch(PyTorchEstimator):
         x_grad = x["pixel_values"].grad
 
         if x_grad is not None:
+            assert isinstance(x_grad, torch.Tensor)
             grads = x_grad.clone()
         else:
             raise ValueError("Gradient term in PyTorch model is `None`.")
@@ -234,7 +236,9 @@ class HFMMPyTorch(PyTorchEstimator):
         assert grads.shape == x["pixel_values"].shape
         return grads.cpu().numpy()
 
-    def predict(self, x: Dict, batch_size: int = 128, **kwargs) -> np.ndarray:
+    def predict(
+        self, x: Union["MultiModalHuggingFaceInput", np.ndarray], batch_size: int = 128, **kwargs
+    ) -> np.ndarray:
         """
         Perform prediction for a batch of inputs.
 
@@ -242,6 +246,7 @@ class HFMMPyTorch(PyTorchEstimator):
         :param batch_size: Batch size.
         :return:
         """
+        from art.estimators.hf_mm.hf_inputs import MultiModalHuggingFaceInput
 
         # Set model to evaluation mode
         self._model.eval()
@@ -253,16 +258,18 @@ class HFMMPyTorch(PyTorchEstimator):
         results = []
         for m in tqdm(range(num_batch)):
             x_batch = x[batch_size * m : batch_size * (m + 1)]
-            x_batch = x_batch.to(self.device)
-
-            predictions = self._model(**x_batch)
+            x_batch = x_batch.to(self._device)
+            if isinstance(x_batch, MultiModalHuggingFaceInput):
+                predictions = self._model(**x_batch)
+            else:
+                raise ValueError("expected art.estimators.hf_mm.hf_inputs.MultiModalHuggingFaceInput")
             results.append(predictions.logits_per_image.cpu().detach().numpy())
 
         return np.concatenate(results)
 
     def fit(  # pylint: disable=W0221
         self,
-        x: Dict,
+        x: Union[np.ndarray, "MultiModalHuggingFaceInput"],
         y: Union[np.ndarray, "torch.Tensor"],
         batch_size: int = 128,
         nb_epochs: int = 10,
@@ -275,9 +282,11 @@ class HFMMPyTorch(PyTorchEstimator):
         Fit the classifier on the training set
         """
         import torch
+        from art.estimators.hf_mm.hf_inputs import MultiModalHuggingFaceInput
 
         self._model.train()
-
+        if self._optimizer is None:
+            raise ValueError("Please supply a optimizer")
         # y_preprocessed = self.reduce_labels(y)
 
         y_tensor = torch.from_numpy(y)
@@ -288,7 +297,7 @@ class HFMMPyTorch(PyTorchEstimator):
         # Start training
         for _ in tqdm(range(nb_epochs)):
             # Shuffle the examples
-            # random.shuffle(ind)
+            random.shuffle(ind)
 
             # Train for one epoch
             pbar = tqdm(range(num_batch), disable=not verbose)
@@ -296,20 +305,20 @@ class HFMMPyTorch(PyTorchEstimator):
             losses = []
 
             for m in pbar:
-                # x_batch = x[ind[batch_size * m: batch_size * (m + 1)]]
-                x_batch = x[batch_size * m : batch_size * (m + 1)]
-                # y_batch = y_tensor[ind[batch_size * m: batch_size * (m + 1)]]
-                y_batch = y_tensor[batch_size * m : batch_size * (m + 1)].to(self.device)
-                print("y_batch ", y_batch)
-                x_batch = x_batch.to(self.device)
-                assert torch.equal(y_batch, torch.tensor([6, 9]).to(self.device))
+                x_batch = x[ind[batch_size * m : batch_size * (m + 1)]]
+                y_batch = y_tensor[ind[batch_size * m : batch_size * (m + 1)]]
+
+                x_batch = x_batch.to(self._device)
 
                 # Zero the parameter gradients
                 self._optimizer.zero_grad()
 
                 # Perform prediction
                 try:
-                    model_outputs = self._model(**x_batch)
+                    if isinstance(x_batch, MultiModalHuggingFaceInput):
+                        model_outputs = self._model(**x_batch)
+                    else:
+                        raise ValueError("expected art.estimators.hf_mm.hf_inputs.MultiModalHuggingFaceInput")
                 except ValueError as err:
                     if "Expected more than 1 value per channel when training" in str(err):
                         logger.exception(
@@ -348,17 +357,13 @@ class HFMMPyTorch(PyTorchEstimator):
         raise NotImplementedError
 
     def compute_loss(  # type: ignore
-        self, x: Dict, y: Union[np.ndarray, "torch.Tensor"], **kwargs
+        self, x: "MultiModalHuggingFaceInput", y: Union[np.ndarray, "torch.Tensor"], **kwargs
     ) -> Union[np.ndarray, "torch.Tensor"]:
         """
         Compute the loss of the neural network for samples `x`.
 
         :param x: Dictionary inputs for the CLIP model.
-        :param y: Target values of format `List[Dict[str, Union[np.ndarray, torch.Tensor]]]`, one for each input image.
-                  The fields of the Dict are as follows:
-
-                  - boxes [N, 4]: the boxes in [x1, y1, x2, y2] format, with 0 <= x1 < x2 <= W and 0 <= y1 < y2 <= H.
-                  - labels [N]: the labels for each image.
+        :param y: Target values
         :return: Loss.
         """
         import torch
