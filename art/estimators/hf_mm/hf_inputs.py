@@ -110,11 +110,19 @@ class MultiModalHuggingFaceInput(UserDict):
         import torch
 
         pixel_values = UserDict.__getitem__(self, "pixel_values")
+        dev_id = pixel_values.get_device()
+
         with torch.no_grad():
             if isinstance(other, MultiModalHuggingFaceInput):
-                pixel_values = pixel_values + other["pixel_values"]
+                if dev_id == -1:
+                    pixel_values = pixel_values + other["pixel_values"].to("cpu")
+                else:
+                    pixel_values = pixel_values + other["pixel_values"].to("cuda:" + str(dev_id))
             else:
-                pixel_values = pixel_values + torch.tensor(other)
+                if dev_id == -1:
+                    pixel_values = pixel_values + torch.tensor(other)
+                else:
+                    pixel_values = pixel_values + torch.tensor(other).to("cuda:" + str(dev_id))
         output = MultiModalHuggingFaceInput(**self)
         output["pixel_values"] = pixel_values
         return output
@@ -163,3 +171,8 @@ class MultiModalHuggingFaceInput(UserDict):
         output = MultiModalHuggingFaceInput(**self)
         output["pixel_values"] = torch.reshape(pixel_values, new_shape)
         return output
+
+    def to(self, device):
+        for key in self.keys():
+            self[key] = self[key].to(device)
+        return self

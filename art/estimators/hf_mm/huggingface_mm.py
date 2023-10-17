@@ -104,6 +104,10 @@ class HFMMPyTorch(PyTorchEstimator):
         self._model.to(self._device)
         self._model.eval()
 
+        # Attributes for forward compatibility with progress bar updates.
+        self.training_loss = []
+        self.training_accuracy = []
+
     @property
     def model(self) -> "torch.nn.Module":
         """
@@ -175,6 +179,9 @@ class HFMMPyTorch(PyTorchEstimator):
         if isinstance(y, np.ndarray):
             y = torch.tensor(y)
 
+        x = x.to(self.device)
+        y = y.to(self.device)
+
         # reduce labels
         if y.ndim > 1:
             y = torch.argmax(y, dim=-1)
@@ -245,9 +252,8 @@ class HFMMPyTorch(PyTorchEstimator):
         num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
         results = []
         for m in tqdm(range(num_batch)):
-            print(type(x))
-            x_batch = x[batch_size * m: batch_size * (m + 1)]
-            print(type(x_batch))
+            x_batch = x[batch_size * m : batch_size * (m + 1)]
+            x_batch = x_batch.to(self.device)
 
             predictions = self._model(**x_batch)
             results.append(predictions.logits_per_image.cpu().detach().numpy())
@@ -269,6 +275,7 @@ class HFMMPyTorch(PyTorchEstimator):
         Fit the classifier on the training set
         """
         import torch
+
         self._model.train()
 
         # y_preprocessed = self.reduce_labels(y)
@@ -281,16 +288,21 @@ class HFMMPyTorch(PyTorchEstimator):
         # Start training
         for _ in tqdm(range(nb_epochs)):
             # Shuffle the examples
-            random.shuffle(ind)
+            # random.shuffle(ind)
 
             # Train for one epoch
             pbar = tqdm(range(num_batch), disable=not verbose)
-            acc = []
+            accs = []
             losses = []
 
             for m in pbar:
-                x_batch = x[ind[batch_size * m: batch_size * (m + 1)]]
-                y_batch = y_tensor[ind[batch_size * m: batch_size * (m + 1)]]
+                # x_batch = x[ind[batch_size * m: batch_size * (m + 1)]]
+                x_batch = x[batch_size * m : batch_size * (m + 1)]
+                # y_batch = y_tensor[ind[batch_size * m: batch_size * (m + 1)]]
+                y_batch = y_tensor[batch_size * m : batch_size * (m + 1)].to(self.device)
+                print("y_batch ", y_batch)
+                x_batch = x_batch.to(self.device)
+                assert torch.equal(y_batch, torch.tensor([6, 9]).to(self.device))
 
                 # Zero the parameter gradients
                 self._optimizer.zero_grad()
@@ -311,12 +323,21 @@ class HFMMPyTorch(PyTorchEstimator):
                 loss.backward()
 
                 self._optimizer.step()
-                losses.append(loss)
+                losses.append(loss.data.detach().cpu().numpy())
+
+                if isinstance(y_batch, torch.Tensor):
+                    y_batch = y_batch.detach().cpu().numpy()
+
+                acc = np.sum(
+                    np.argmax(model_outputs["logits_per_image"].detach().cpu().numpy(), axis=1) == y_batch
+                ) / len(y_batch)
+                accs.append(acc)
+
                 if verbose:
-                    pbar.set_description(
-                        f"Loss {torch.mean(torch.stack(losses)):.2f} "
-                        # f"Acc {np.mean(non_cert_acc):.2f} Cert Acc {np.mean(cert_acc):.2f} "
-                    )
+                    pbar.set_description(f"Loss {np.mean(np.stack(losses)):.2f} " f"Acc {np.mean(np.stack(accs)):.2f} ")
+
+            self.training_loss.append(losses)
+            self.training_accuracy.append(accs)
 
             if scheduler is not None:
                 scheduler.step()
