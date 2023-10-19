@@ -166,6 +166,8 @@ def is_valid_framework(framework):
 
 
 def _tf_weights_loader(dataset, weights_type, layer="DENSE", tf_version=1):
+    import tensorflow as tf
+
     filename = str(weights_type) + "_" + str(layer) + "_" + str(dataset) + ".npy"
 
     # pylint: disable=W0613
@@ -192,6 +194,8 @@ def _tf_weights_loader(dataset, weights_type, layer="DENSE", tf_version=1):
 
     else:
         raise ValueError("The TensorFlow version tf_version has to be either 1 or 2.")
+
+    _tf_initializer.__name__ = "_tf_initializer_" + str(weights_type) + "_" + str(layer) + "_" + str(dataset)
 
     return _tf_initializer
 
@@ -459,14 +463,24 @@ def get_image_classifier_tf_v2(from_logits=False):
     if tf.__version__[0] != "2":
         raise ImportError("This function requires TensorFlow v2.")
 
+    _tf_initializer_W_CONV2D_MNIST = _tf_weights_loader("MNIST", "W", "CONV2D", 2)
+    # _tf_initializer_MNIST_W_CONV2D.__name__ = "_tf_initializer_MNIST_W_CONV2D"
+    _tf_initializer_B_CONV2D_MNIST = _tf_weights_loader("MNIST", "B", "CONV2D", 2)
+    # _tf_initializer_MNIST_B_CONV2D.__name__ = "_tf_initializer_MNIST_B_CONV2D"
+
+    _tf_initializer_W_DENSE_MNIST = _tf_weights_loader("MNIST", "W", "DENSE", 2)
+    # _tf_initializer_MNIST_W_DENSE.__name__ = "_tf_initializer_MNIST_W_DENSE"
+    _tf_initializer_B_DENSE_MNIST = _tf_weights_loader("MNIST", "B", "DENSE", 2)
+    # _tf_initializer_MNIST_B_DENSE.__name__ = "_tf_initializer_MNIST_B_DENSE"
+
     model = Sequential()
     model.add(
         Conv2D(
             filters=1,
             kernel_size=7,
             activation="relu",
-            kernel_initializer=_tf_weights_loader("MNIST", "W", "CONV2D", 2),
-            bias_initializer=_tf_weights_loader("MNIST", "B", "CONV2D", 2),
+            kernel_initializer=_tf_initializer_W_CONV2D_MNIST,
+            bias_initializer=_tf_initializer_B_CONV2D_MNIST,
             input_shape=(28, 28, 1),
         )
     )
@@ -477,8 +491,8 @@ def get_image_classifier_tf_v2(from_logits=False):
             Dense(
                 10,
                 activation="linear",
-                kernel_initializer=_tf_weights_loader("MNIST", "W", "DENSE", 2),
-                bias_initializer=_tf_weights_loader("MNIST", "B", "DENSE", 2),
+                kernel_initializer=_tf_initializer_W_DENSE_MNIST,
+                bias_initializer=_tf_initializer_B_DENSE_MNIST,
             )
         )
     else:
@@ -486,15 +500,17 @@ def get_image_classifier_tf_v2(from_logits=False):
             Dense(
                 10,
                 activation="softmax",
-                kernel_initializer=_tf_weights_loader("MNIST", "W", "DENSE", 2),
-                bias_initializer=_tf_weights_loader("MNIST", "B", "DENSE", 2),
+                kernel_initializer=_tf_initializer_W_DENSE_MNIST,
+                bias_initializer=_tf_initializer_B_DENSE_MNIST,
             )
         )
 
     loss_object = tf.keras.losses.SparseCategoricalCrossentropy(
         from_logits=from_logits, reduction=tf.keras.losses.Reduction.SUM
     )
-    optimizer = tf.keras.optimizers.legacy.Adam(learning_rate=0.01)
+    optimizer = tf.keras.optimizers.Adam(learning_rate=0.01)
+
+    optimizer._distribution_strategy = None
 
     model.compile(optimizer=optimizer, loss=loss_object)
 

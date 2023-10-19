@@ -281,8 +281,31 @@ def test_generate_parallel(art_warning, fix_get_mnist_subset, image_dl_estimator
             parallel=False,
         )
 
-        x_train_mnist_adv = attack.generate(x=x_train_mnist, y=y_train_mnist)
-        x_train_mnist_adv_nop = attack_noparallel.generate(x=x_train_mnist, y=y_train_mnist)
+        from tensorflow.keras.utils import CustomObjectScope
+
+        # Copy
+        from tests.utils import _tf_weights_loader
+
+        _tf_initializer_W_CONV2D_MNIST = _tf_weights_loader("MNIST", "W", "CONV2D", 2)
+        # _tf_initializer_MNIST_W_CONV2D.__name__ = "_tf_initializer_MNIST_W_CONV2D"
+        _tf_initializer_B_CONV2D_MNIST = _tf_weights_loader("MNIST", "B", "CONV2D", 2)
+        # _tf_initializer_MNIST_B_CONV2D.__name__ = "_tf_initializer_MNIST_B_CONV2D"
+
+        _tf_initializer_W_DENSE_MNIST = _tf_weights_loader("MNIST", "W", "DENSE", 2)
+        # _tf_initializer_MNIST_W_DENSE.__name__ = "_tf_initializer_MNIST_W_DENSE"
+        _tf_initializer_B_DENSE_MNIST = _tf_weights_loader("MNIST", "B", "DENSE", 2)
+        # _tf_initializer_MNIST_B_DENSE.__name__ = "_tf_initializer_MNIST_B_DENSE"
+
+        custom_objects = {
+            "_tf_initializer_W_CONV2D_MNIST": _tf_initializer_W_CONV2D_MNIST,
+            "_tf_initializer_B_CONV2D_MNIST": _tf_initializer_B_CONV2D_MNIST,
+            "_tf_initializer_W_DENSE_MNIST": _tf_initializer_W_DENSE_MNIST,
+            "_tf_initializer_B_DENSE_MNIST": _tf_initializer_B_DENSE_MNIST,
+        }
+
+        with CustomObjectScope(custom_objects):
+            x_train_mnist_adv = attack.generate(x=x_train_mnist, y=y_train_mnist)
+            x_train_mnist_adv_nop = attack_noparallel.generate(x=x_train_mnist, y=y_train_mnist)
 
         assert np.mean(np.abs(x_train_mnist_adv - x_train_mnist)) == pytest.approx(0.0182, abs=0.105)
         assert np.max(np.abs(x_train_mnist_adv - x_train_mnist)) == pytest.approx(0.3, abs=0.05)
