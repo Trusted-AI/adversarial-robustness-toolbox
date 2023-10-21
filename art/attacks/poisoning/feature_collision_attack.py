@@ -239,7 +239,9 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
         num_features = base_image.size
         num_activations = poison_feature_rep.size
         beta = self.similarity_coeff * (num_activations / num_features) ** 2
-        return np.linalg.norm(poison_feature_rep - target_feature_rep) + beta * np.linalg.norm(poison - base_image)
+        return float(
+            np.linalg.norm(poison_feature_rep - target_feature_rep) + beta * np.linalg.norm(poison - base_image)
+        )
 
     def _check_params(self) -> None:
         if self.learning_rate <= 0:

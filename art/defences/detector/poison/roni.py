@@ -25,7 +25,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 from copy import deepcopy
-from typing import Callable, List, Tuple, Union, TYPE_CHECKING
+from typing import Any, Callable, List, Tuple, Union, TYPE_CHECKING
 
 import numpy as np
 from sklearn.model_selection import train_test_split
@@ -178,11 +178,11 @@ class RONIDefense(PoisonFilteringDefence):
         """
         if self.calibrated:
             median, std_dev = self.get_calibration_info(before_classifier)
-            return perf_shift < median - 3 * std_dev
+            return bool(perf_shift < median - 3 * std_dev)
 
-        return perf_shift < -self.eps
+        return bool(perf_shift < -self.eps)
 
-    def get_calibration_info(self, before_classifier: "CLASSIFIER_TYPE") -> Tuple[np.ndarray, np.ndarray]:
+    def get_calibration_info(self, before_classifier: "CLASSIFIER_TYPE") -> Tuple[np.floating[Any], np.floating[Any]]:
         """
         Calculate the median and standard deviation of the accuracy shifts caused
         by the calibration set.

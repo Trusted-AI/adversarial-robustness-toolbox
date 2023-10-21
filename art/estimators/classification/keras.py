@@ -757,7 +757,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
             if isinstance(label, int):
                 unique_labels = [label]
             else:
-                unique_labels = np.unique(label)
+                unique_labels = np.unique(label).tolist()
             logger.debug("Computing class gradients for classes %s.", str(unique_labels))
 
             if not hasattr(self, "_class_gradients_idx"):

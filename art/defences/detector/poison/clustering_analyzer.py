@@ -227,12 +227,12 @@ class ClusteringAnalyzer:
             if np.size(sizes) > 2:
                 raise ValueError(" RelativeSizeAnalyzer does not support more than two clusters.")
             percentages = np.round(sizes / float(np.sum(sizes)), r_size)
-            poison_clusters = np.where(percentages < size_threshold)
-            clean_clusters = np.where(percentages >= size_threshold)
+            poison_clusters = np.where(percentages < size_threshold)[0]
+            clean_clusters = np.where(percentages >= size_threshold)[0]
 
-            for p_id in poison_clusters[0]:
+            for p_id in poison_clusters:
                 summary_poison_clusters[i][p_id] = 1
-            for c_id in clean_clusters[0]:
+            for c_id in clean_clusters:
                 summary_poison_clusters[i][c_id] = 0
 
             assigned_clean = self.assign_class(clusters, clean_clusters, poison_clusters)
@@ -309,8 +309,8 @@ class ClusteringAnalyzer:
             if np.size(bins) > 2:
                 raise ValueError("Analyzer does not support more than two clusters.")
             percentages = np.round(bins / float(np.sum(bins)), r_size)
-            poison_clusters = np.where(percentages < size_threshold)
-            clean_clusters = np.where(percentages >= size_threshold)
+            poison_clusters = np.where(percentages < size_threshold)[0]
+            clean_clusters = np.where(percentages >= size_threshold)[0]
 
             # Generate report for class
             silhouette_avg = round(silhouette_score(activations, clusters), r_silhouette)
@@ -324,12 +324,12 @@ class ClusteringAnalyzer:
                 # Relative size of the clusters is suspicious
                 if silhouette_avg > silhouette_threshold:
                     # In this case the cluster is considered poisonous
-                    clean_clusters = np.where(percentages < size_threshold)
+                    clean_clusters = np.where(percentages < size_threshold)[0]
                     logger.info("computed silhouette score: %s", silhouette_avg)
                     dict_i.update(suspicious=True)
                 else:
-                    poison_clusters = [[]]
-                    clean_clusters = np.where(percentages >= 0)
+                    poison_clusters = np.array([[]])
+                    clean_clusters = np.where(percentages >= 0)[0]
                     dict_i.update(suspicious=False)
             else:
                 # If relative size of the clusters is Not suspicious, we conclude it's not suspicious.
@@ -337,9 +337,9 @@ class ClusteringAnalyzer:
 
             report_class: Dict[str, Dict[str, bool]] = {"class_" + str(i): dict_i}
 
-            for p_id in poison_clusters[0]:
+            for p_id in poison_clusters:
                 summary_poison_clusters[i][p_id] = 1
-            for c_id in clean_clusters[0]:
+            for c_id in clean_clusters:
                 summary_poison_clusters[i][c_id] = 0
 
             assigned_clean = self.assign_class(clusters, clean_clusters, poison_clusters)

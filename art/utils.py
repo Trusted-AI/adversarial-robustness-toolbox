@@ -435,10 +435,10 @@ def projection_l1_1(values: np.ndarray, eps: Union[int, float, np.ndarray]) -> n
         #    The vector of reductions
         delta_vec = np.transpose(np.array([delta] * (n - j - 1)))
         #   The sub-vectors:  a_sorted[:, (j+1):]
-        a_sub = a_sorted[:, (j + 1) :]
+        a_sub = a_sorted[:, int(j + 1) :]
         #   After reduction by delta_vec
         a_after = a_sub - delta_vec
-        after_vec[:, (j + 1) :] = a_after
+        after_vec[:, int(j + 1) :] = a_after
         proj += act_multiplier * (after_vec - proj)
         active = active * ind_set
         if sum(active) == 0:
@@ -983,7 +983,7 @@ def compute_success_array(
     x_adv: np.ndarray,
     targeted: bool = False,
     batch_size: int = 1,
-) -> float:
+) -> np.ndarray:
     """
     Compute the success rate of an attack based on clean samples, adversarial samples and targets or correct labels.
 

@@ -166,7 +166,6 @@ def is_valid_framework(framework):
 
 
 def _tf_weights_loader(dataset, weights_type, layer="DENSE", tf_version=1):
-    import tensorflow as tf
 
     filename = str(weights_type) + "_" + str(layer) + "_" + str(dataset) + ".npy"
 
@@ -464,14 +463,10 @@ def get_image_classifier_tf_v2(from_logits=False):
         raise ImportError("This function requires TensorFlow v2.")
 
     _tf_initializer_W_CONV2D_MNIST = _tf_weights_loader("MNIST", "W", "CONV2D", 2)
-    # _tf_initializer_MNIST_W_CONV2D.__name__ = "_tf_initializer_MNIST_W_CONV2D"
     _tf_initializer_B_CONV2D_MNIST = _tf_weights_loader("MNIST", "B", "CONV2D", 2)
-    # _tf_initializer_MNIST_B_CONV2D.__name__ = "_tf_initializer_MNIST_B_CONV2D"
 
     _tf_initializer_W_DENSE_MNIST = _tf_weights_loader("MNIST", "W", "DENSE", 2)
-    # _tf_initializer_MNIST_W_DENSE.__name__ = "_tf_initializer_MNIST_W_DENSE"
     _tf_initializer_B_DENSE_MNIST = _tf_weights_loader("MNIST", "B", "DENSE", 2)
-    # _tf_initializer_MNIST_B_DENSE.__name__ = "_tf_initializer_MNIST_B_DENSE"
 
     model = Sequential()
     model.add(
