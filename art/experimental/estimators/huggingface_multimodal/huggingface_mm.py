@@ -35,7 +35,7 @@ if TYPE_CHECKING:
     from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
     from art.defences.preprocessor.preprocessor import Preprocessor
     from art.defences.postprocessor.postprocessor import Postprocessor
-    from art.estimators.hf_mm.hf_inputs import MultiModalHuggingFaceInput
+    from art.experimental.estimators.huggingface_multimodal.huggingface_mm_inputs import HuggingFaceMultiModalInput
 
 logger = logging.getLogger(__name__)
 
@@ -147,11 +147,11 @@ class HFMMPyTorch(PyTorchEstimator):
 
     @staticmethod
     def _preprocess_and_convert_inputs(
-        x: "MultiModalHuggingFaceInput",
+        x: "HuggingFaceMultiModalInput",
         y: Optional[Union[np.ndarray, "torch.Tensor"]] = None,
         fit: bool = False,  # pylint: disable=W0613
         no_grad: bool = True,  # pylint: disable=W0613
-    ) -> Tuple["MultiModalHuggingFaceInput", Union[np.ndarray, "torch.Tensor", None]]:
+    ) -> Tuple["HuggingFaceMultiModalInput", Union[np.ndarray, "torch.Tensor", None]]:
         """
         Dummy function to allow compatibility with ART attacks.
         All pre-processing should be done before by the relevant HF pre-processor.
@@ -165,7 +165,7 @@ class HFMMPyTorch(PyTorchEstimator):
         """
         return x, y
 
-    def _get_losses(self, x: "MultiModalHuggingFaceInput", y: Union[np.ndarray, "torch.Tensor"]) -> "torch.Tensor":
+    def _get_losses(self, x: "HuggingFaceMultiModalInput", y: Union[np.ndarray, "torch.Tensor"]) -> "torch.Tensor":
         """
         Get the loss tensor output of the model including all preprocessing.
 
@@ -198,7 +198,7 @@ class HFMMPyTorch(PyTorchEstimator):
         return self.loss_fn(preds, y)
 
     def loss_gradient(  # pylint: disable=W0613
-        self, x: "MultiModalHuggingFaceInput", y: Union[np.ndarray, "torch.Tensor"], **kwargs
+        self, x: "HuggingFaceMultiModalInput", y: Union[np.ndarray, "torch.Tensor"], **kwargs
     ) -> np.ndarray:
         """
         Compute the gradient of the loss function w.r.t. the image component of the input
@@ -237,7 +237,7 @@ class HFMMPyTorch(PyTorchEstimator):
         return grads.cpu().numpy()
 
     def predict(
-        self, x: Union["MultiModalHuggingFaceInput", np.ndarray], batch_size: int = 128, **kwargs
+        self, x: Union["HuggingFaceMultiModalInput", np.ndarray], batch_size: int = 128, **kwargs
     ) -> np.ndarray:
         """
         Perform prediction for a batch of inputs.
@@ -246,12 +246,14 @@ class HFMMPyTorch(PyTorchEstimator):
         :param batch_size: Batch size.
         :return:
         """
-        from art.estimators.hf_mm.hf_inputs import MultiModalHuggingFaceInput
+        from art.experimental.estimators.huggingface_multimodal.huggingface_mm_inputs import HuggingFaceMultiModalInput
 
         # Set model to evaluation mode
         self._model.eval()
         if isinstance(x, np.ndarray):
-            raise ValueError("x should be of type art.estimators.hf_mm.hf_inputs.MultiModalHuggingFaceInput")
+            raise ValueError(
+                "x should be of type art.experimental.estimators.huggingface_multimodal.huggingface_mm_inputs.HuggingFaceMultiModalInput"
+            )
         x_preprocessed, _ = self._preprocess_and_convert_inputs(x=x, y=None, fit=False, no_grad=True)
 
         num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
@@ -259,17 +261,19 @@ class HFMMPyTorch(PyTorchEstimator):
         for m in tqdm(range(num_batch)):
             x_batch = x[batch_size * m : batch_size * (m + 1)]
             x_batch = x_batch.to(self._device)
-            if isinstance(x_batch, MultiModalHuggingFaceInput):
+            if isinstance(x_batch, HuggingFaceMultiModalInput):
                 predictions = self._model(**x_batch)
             else:
-                raise ValueError("expected art.estimators.hf_mm.hf_inputs.MultiModalHuggingFaceInput")
+                raise ValueError(
+                    "expected art.experimental.estimators.huggingface_multimodal.huggingface_mm_inputs.HuggingFaceMultiModalInput"
+                )
             results.append(predictions.logits_per_image.cpu().detach().numpy())
 
         return np.concatenate(results)
 
     def fit(  # pylint: disable=W0221
         self,
-        x: Union[np.ndarray, "MultiModalHuggingFaceInput"],
+        x: Union[np.ndarray, "HuggingFaceMultiModalInput"],
         y: Union[np.ndarray, "torch.Tensor"],
         batch_size: int = 128,
         nb_epochs: int = 10,
@@ -282,7 +286,7 @@ class HFMMPyTorch(PyTorchEstimator):
         Fit the classifier on the training set
         """
         import torch
-        from art.estimators.hf_mm.hf_inputs import MultiModalHuggingFaceInput
+        from art.experimental.estimators.huggingface_multimodal.huggingface_mm_inputs import HuggingFaceMultiModalInput
 
         self._model.train()
         if self._optimizer is None:
@@ -315,10 +319,12 @@ class HFMMPyTorch(PyTorchEstimator):
 
                 # Perform prediction
                 try:
-                    if isinstance(x_batch, MultiModalHuggingFaceInput):
+                    if isinstance(x_batch, HuggingFaceMultiModalInput):
                         model_outputs = self._model(**x_batch)
                     else:
-                        raise ValueError("expected art.estimators.hf_mm.hf_inputs.MultiModalHuggingFaceInput")
+                        raise ValueError(
+                            "expected art.experimental.estimators.huggingface_multimodal.huggingface_mm_inputs.HuggingFaceMultiModalInput"
+                        )
                 except ValueError as err:
                     if "Expected more than 1 value per channel when training" in str(err):
                         logger.exception(
@@ -357,7 +363,7 @@ class HFMMPyTorch(PyTorchEstimator):
         raise NotImplementedError
 
     def compute_loss(  # type: ignore
-        self, x: "MultiModalHuggingFaceInput", y: Union[np.ndarray, "torch.Tensor"], **kwargs
+        self, x: "HuggingFaceMultiModalInput", y: Union[np.ndarray, "torch.Tensor"], **kwargs
     ) -> Union[np.ndarray, "torch.Tensor"]:
         """
         Compute the loss of the neural network for samples `x`.

@@ -24,7 +24,7 @@ al. for adversarial training.
 | Paper link: https://arxiv.org/abs/1706.06083
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
-
+import copy
 import logging
 from typing import Optional, Union, TYPE_CHECKING
 
@@ -376,7 +376,7 @@ class ProjectedGradientDescentNumpy(ProjectedGradientDescentCommon):
                     if rand_init_num == 0:
                         # initial (and possibly only) random restart: we only have this set of
                         # adversarial examples for now
-                        adv_x[batch_index_1:batch_index_2] = np.copy(batch)
+                        adv_x[batch_index_1:batch_index_2] = copy.deepcopy(batch)
                     else:
                         # replace adversarial examples if they are successful
                         attack_success = compute_success_array(
@@ -410,7 +410,8 @@ class ProjectedGradientDescentNumpy(ProjectedGradientDescentCommon):
 
             # Start to compute adversarial examples
             if x.dtype == object:
-                adv_x = x.copy()
+                # adv_x = x.copy()
+                adv_x = copy.deepcopy(x)
             else:
                 adv_x = x.astype(ART_NUMPY_DTYPE)
 

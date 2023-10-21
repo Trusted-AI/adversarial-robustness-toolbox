@@ -16,6 +16,7 @@ on:
     branches:
       - main
       - dev*
+      - clip_attack
 
   # Run scheduled CI flow daily
   schedule:
