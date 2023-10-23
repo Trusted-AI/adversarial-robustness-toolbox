@@ -28,8 +28,10 @@ demonstrates the dirty-label backdoor attack on a TensorflowV2 estimator for spe
 <p align="center">
   <img src="../utils/data/images/adversarial_audio_waveform.png?raw=true" width="200" title="adversarial_audio_waveform">
 </p>
+  
+[stylistics_attack_backdoor_audio.ipynb](IEEE_OJSP_;_Backdoor_attack_using_audio_stylistic_transformations_in_deep_neural_network_model_learning.ipynb) [[on nbviewer](https://github.com/OrsonTyphanel93/Deep-Learning-Orson-/blob/master/IEEE_OJSP_%3B_Backdoor_attack_using_audio_stylistic_transformations_in_deep_neural_network_model_learning.ipynb)]
 
-## Adversarial training
+## Adversarial training  
 
 [adversarial_retraining.ipynb](adversarial_retraining.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/adversarial_retraining.ipynb)]
 shows how to load and evaluate the MNIST and CIFAR-10 models synthesized and adversarially trained by 
