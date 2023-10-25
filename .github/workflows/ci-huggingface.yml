@@ -17,6 +17,7 @@ on:
       - main
       - dev*
       - clip_attack
+      - CI_run
 
   # Run scheduled CI flow daily
   schedule:
