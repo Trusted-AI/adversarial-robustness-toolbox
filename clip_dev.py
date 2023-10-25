@@ -1,7 +1,6 @@
 import numpy as np
 from art.estimators.hf_mm import HFMMPyTorch
 from art.estimators.hf_mm import MultiModalHuggingFaceInput
-import matplotlib.pyplot as plt
 
 from art.attacks.evasion import ProjectedGradientDescent
 
@@ -60,8 +59,8 @@ def norm_bound_eps(eps_bound=None):
 
 
 def get_cifar_data():
-    train_set = datasets.CIFAR10('./data', train=True, download=True)
-    test_set = datasets.CIFAR10('./data', train=False, download=True)
+    train_set = datasets.CIFAR10("./data", train=True, download=True)
+    test_set = datasets.CIFAR10("./data", train=False, download=True)
 
     x_train = train_set.data.astype(np.float32)
     y_train = np.asarray(train_set.targets)
@@ -139,20 +138,14 @@ def cifar_clip_pgd():
     import requests
 
     from transformers import CLIPProcessor, CLIPModel
-    image_list = ['000000039769.jpg',
-                  '000000000285.jpg',
-                  '000000002006.jpg',
-                  '000000002149.jpg',
-                  '000000005992.jpg',
-                  '000000011615.jpg',
-                  '000000013597.jpg']
+
     text = ["a photo of a cat", "a photo of a bear", "a photo of a car", "a photo of a bus", "apples"]
 
     labels = torch.tensor(np.asarray([0, 1, 3]))
 
     input_list = []
-    for fname in ['000000039769.jpg', '000000000285.jpg', '000000002006.jpg', '000000002149.jpg']:
-        url = 'http://images.cocodataset.org/val2017/' + fname
+    for fname in ["000000039769.jpg", "000000000285.jpg", "000000002006.jpg", "000000002149.jpg"]:
+        url = "http://images.cocodataset.org/val2017/" + fname
         input_list.append(Image.open(requests.get(url, stream=True).raw))
 
     model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
@@ -194,7 +187,6 @@ def test_fit():
     model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
     processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
 
-    labels = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
     text = ["plane", "car", "bird", "cat", "deer", "dog", "frog", "horse", "ship", "truck"]
     inputs = processor(text=text, images=x_train, return_tensors="pt", padding=True)
     original_image = inputs["pixel_values"][0].clone().cpu().detach().numpy()
@@ -206,9 +198,8 @@ def test_fit():
         optimizer=optimizer,
         nb_classes=10,
         loss=torch.nn.CrossEntropyLoss(),
-        clip_values=(np.min(original_image),
-                     np.max(original_image)),
-        input_shape=(3, 224, 224)
+        clip_values=(np.min(original_image), np.max(original_image)),
+        input_shape=(3, 224, 224),
     )
 
     num_of_samples = len(inputs)
@@ -227,12 +218,14 @@ def test_predict():
     art_classifier = HFMMPyTorch(
         model,
         nb_classes=num_classes,
-        loss=torch.nn.CrossEntropyLoss(), clip_values=(np.min(original_image), np.max(original_image)), input_shape=(3, 224, 224)
+        loss=torch.nn.CrossEntropyLoss(),
+        clip_values=(np.min(original_image), np.max(original_image)),
+        input_shape=(3, 224, 224),
     )
     inputs = MultiModalHuggingFaceInput(**inputs)
 
     preds = art_classifier.predict(inputs)
-    print('Pred shape is ', preds.shape)
+    print("Pred shape is ", preds.shape)
 
 
 def test_adv_train():
@@ -249,15 +242,13 @@ def test_adv_train():
         model,
         nb_classes=num_classes,
         optimizer=optimizer,
-        loss=torch.nn.CrossEntropyLoss(), clip_values=(np.min(original_image), np.max(original_image)),
-        input_shape=(3, 224, 224)
+        loss=torch.nn.CrossEntropyLoss(),
+        clip_values=(np.min(original_image), np.max(original_image)),
+        input_shape=(3, 224, 224),
     )
-    trainer = AdversarialTrainerMadryPGD(art_classifier,
-                                         nb_epochs=10,
-                                         eps=8/255,
-                                         eps_step=1/255,
-                                         max_iter=10,
-                                         num_random_init=0)
+    trainer = AdversarialTrainerMadryPGD(
+        art_classifier, nb_epochs=10, eps=8 / 255, eps_step=1 / 255, max_iter=10, num_random_init=0
+    )
     inputs = MultiModalHuggingFaceInput(**inputs)
 
     trainer.fit(inputs, labels.detach().cpu().numpy())

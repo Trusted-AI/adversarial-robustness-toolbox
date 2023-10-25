@@ -206,7 +206,7 @@ class AdversarialTrainer(Trainer):
         ind = np.arange(len(x))
         attack_id = 0
         from tqdm import tqdm
-        import torch
+
         # Precompute adversarial samples for transferred attacks
         logged = False
         self._precomputed_adv_samples = []
@@ -223,12 +223,12 @@ class AdversarialTrainer(Trainer):
             else:
                 self._precomputed_adv_samples.append(None)
 
-        for epoch in trange(nb_epochs, desc="Adversarial training epochs"):
+        for _ in trange(nb_epochs, desc="Adversarial training epochs"):
             # Shuffle the examples
             # np.random.shuffle(ind)
             pbar = tqdm(range(nb_batches))
-            self._classifier.training_loss = []
-            self._classifier.training_accuracy = []
+            self._classifier.training_loss = []  # type: ignore
+            self._classifier.training_accuracy = []  # type: ignore
 
             for batch_id in pbar:
                 # Create batch data
@@ -259,11 +259,13 @@ class AdversarialTrainer(Trainer):
                     x_batch[adv_ids] = x_adv
 
                 # Fit batch
-                self._classifier.fit(x_batch, y_batch, nb_epochs=1, batch_size=x_batch.shape[0], verbose=False, **kwargs)
+                self._classifier.fit(
+                    x_batch, y_batch, nb_epochs=1, batch_size=x_batch.shape[0], verbose=False, **kwargs
+                )
                 pbar.set_description(
-                        f"Loss {np.mean(np.stack(self._classifier.training_loss)):.2f} "
-                        f"Acc {np.mean(self._classifier.training_accuracy):.2f} "
-                    )
+                    f"Loss {np.mean(np.stack(self._classifier.training_loss)):.2f} "  # type: ignore
+                    f"Acc {np.mean(self._classifier.training_accuracy):.2f} "  # type: ignore
+                )
                 attack_id = (attack_id + 1) % len(self.attacks)
             # torch.save(self._classifier.model.state_dict(), 'clip_adv_trained_' + str(epoch) + '.pt')
             # torch.save(self._classifier._optimizer.state_dict(), 'clip__opt_adv_trained_' + str(epoch) + '.pt')

@@ -176,8 +176,7 @@ def test_perturbation_equivalence(to_batch):
 
 @pytest.mark.only_with_platform("huggingface")
 @pytest.mark.parametrize("max_iter", [1, 5])
-@pytest.mark.parametrize("to_one_hot", [False])
-def test_equivalence(max_iter, to_one_hot):
+def test_equivalence(max_iter):
     """
     Test that the result from using ART tools matches that obtained by manual calculation.
     """
@@ -195,7 +194,7 @@ def test_equivalence(max_iter, to_one_hot):
         model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
         loss_fn = torch.nn.CrossEntropyLoss()
 
-        inputs, original_image, labels, num_classes = get_and_process_input(to_one_hot=to_one_hot, return_batch=False)
+        inputs, original_image, labels, num_classes = get_and_process_input()
         original_image = inputs.pixel_values.clone().cpu().numpy()
 
         my_input = HuggingFaceMultiModalInput(**inputs)
@@ -278,20 +277,20 @@ def test_equivalence(max_iter, to_one_hot):
 
         return adv_current
 
-    inputs, original_image, labels, num_classes = get_and_process_input(to_one_hot=to_one_hot, return_batch=False)
+    inputs, original_image, labels, num_classes = get_and_process_input()
     manual_adv = manual_attack()
     art_adv = attack_clip()
 
     art_adv = art_adv["pixel_values"]
     art_adv = art_adv.cpu().detach().numpy()
-    
+
     art_adv = art_adv.flatten()
     original_image = original_image.flatten()
     manual_adv = manual_adv.flatten()
 
-    '''
+    """
     Assert valid adversarial examples
-    '''
+    """
     assert np.all(art_adv >= np.min(original_image))
     assert np.all(art_adv <= np.max(original_image))
     assert np.all(manual_adv >= np.min(original_image))
@@ -300,9 +299,6 @@ def test_equivalence(max_iter, to_one_hot):
 
     eps_mins = original_image - 0.3
     eps_maxs = original_image + 0.3
-
-    # for a, e in zip(art_adv, eps_mins):
-    #    assert np.all(a >= e)
 
     assert np.all(art_adv >= eps_mins)
     assert np.all(art_adv <= eps_maxs)
@@ -313,15 +309,8 @@ def test_equivalence(max_iter, to_one_hot):
     target = manual_adv - original_image
     # np.save('art_adv_' + str(max_iter) + '.npy', art_delta)
     # target = np.load('art_adv_' + str(max_iter) + '.npy')
-    diff_count = 0
-    diff = np.abs(art_delta - target)
-    for d in diff:
-        if d >= 0.0001:
-        # if not np.allclose(d, 0, rtol=1e-04, atol=1e-03):
-            assert d <= 0.11 # one grad step
-            diff_count += 1
-    assert diff_count < 10
-    assert np.allclose(art_delta, target, rtol=1e-04, atol=1e-03)
+
+    assert np.allclose(art_delta, target, rtol=1e-04, atol=1e-04)
 
 
 """
@@ -346,4 +335,4 @@ def test_predict():
         input_shape=(3, 224, 224),
     )
     inputs = HuggingFaceMultiModalInput(**inputs)
-    preds = art_classifier.predict(inputs)
+    _ = art_classifier.predict(inputs)

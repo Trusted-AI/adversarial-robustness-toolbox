@@ -251,9 +251,7 @@ class HFMMPyTorch(PyTorchEstimator):
         # Set model to evaluation mode
         self._model.eval()
         if isinstance(x, np.ndarray):
-            raise ValueError(
-                "x should be of type art.experimental.estimators.huggingface_multimodal.huggingface_mm_inputs.HuggingFaceMultiModalInput"
-            )
+            raise ValueError("x should be of type HuggingFaceMultiModalInput")
         x_preprocessed, _ = self._preprocess_and_convert_inputs(x=x, y=None, fit=False, no_grad=True)
 
         num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
@@ -264,9 +262,7 @@ class HFMMPyTorch(PyTorchEstimator):
             if isinstance(x_batch, HuggingFaceMultiModalInput):
                 predictions = self._model(**x_batch)
             else:
-                raise ValueError(
-                    "expected art.experimental.estimators.huggingface_multimodal.huggingface_mm_inputs.HuggingFaceMultiModalInput"
-                )
+                raise ValueError("expected type HuggingFaceMultiModalInput")
             results.append(predictions.logits_per_image.cpu().detach().numpy())
 
         return np.concatenate(results)
@@ -277,7 +273,6 @@ class HFMMPyTorch(PyTorchEstimator):
         y: Union[np.ndarray, "torch.Tensor"],
         batch_size: int = 128,
         nb_epochs: int = 10,
-        drop_last: bool = False,
         scheduler: Optional["torch.optim.lr_scheduler._LRScheduler"] = None,
         verbose: bool = True,
         **kwargs,
@@ -295,7 +290,7 @@ class HFMMPyTorch(PyTorchEstimator):
 
         y_tensor = torch.from_numpy(y)
 
-        num_batch = int(np.ceil(len(y_tensor) / float(batch_size)))
+        num_batch = int(len(y_tensor) / float(batch_size))
         ind = np.arange(len(y_tensor))
 
         # Start training
@@ -322,9 +317,7 @@ class HFMMPyTorch(PyTorchEstimator):
                     if isinstance(x_batch, HuggingFaceMultiModalInput):
                         model_outputs = self._model(**x_batch)
                     else:
-                        raise ValueError(
-                            "expected art.experimental.estimators.huggingface_multimodal.huggingface_mm_inputs.HuggingFaceMultiModalInput"
-                        )
+                        raise ValueError("expected type HuggingFaceMultiModalInput")
                 except ValueError as err:
                     if "Expected more than 1 value per channel when training" in str(err):
                         logger.exception(

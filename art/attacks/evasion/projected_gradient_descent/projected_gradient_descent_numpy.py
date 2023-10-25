@@ -410,7 +410,6 @@ class ProjectedGradientDescentNumpy(ProjectedGradientDescentCommon):
 
             # Start to compute adversarial examples
             if x.dtype == object:
-                # adv_x = x.copy()
                 adv_x = copy.deepcopy(x)
             else:
                 adv_x = x.astype(ART_NUMPY_DTYPE)
