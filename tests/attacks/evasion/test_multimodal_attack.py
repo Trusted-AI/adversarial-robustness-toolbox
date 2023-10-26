@@ -108,7 +108,7 @@ def test_perturbation_equivalence(to_batch):
     from transformers import CLIPModel
 
     from art.experimental.estimators.huggingface_multimodal import HFMMPyTorch, HuggingFaceMultiModalInput
-    from art.attacks.evasion import ProjectedGradientDescentNumpy
+    from art.experimental.attacks.evasion import CLIPProjectedGradientDescentNumpy
 
     def attack_clip():
 
@@ -126,7 +126,7 @@ def test_perturbation_equivalence(to_batch):
             input_shape=(3, 224, 224),
         )
 
-        attack = ProjectedGradientDescentNumpy(
+        attack = CLIPProjectedGradientDescentNumpy(
             art_classifier,
             max_iter=2,
             eps=np.ones((3, 224, 224)) * 0.3,  # np.reshape(norm_bound_eps(), (3, 1, 1)),
@@ -187,7 +187,7 @@ def test_equivalence(max_iter):
     from transformers import CLIPModel
 
     from art.experimental.estimators.huggingface_multimodal import HFMMPyTorch, HuggingFaceMultiModalInput
-    from art.attacks.evasion import ProjectedGradientDescent
+    from art.experimental.attacks.evasion import CLIPProjectedGradientDescentNumpy
 
     def attack_clip():
 
@@ -207,7 +207,7 @@ def test_equivalence(max_iter):
             input_shape=(3, 224, 224),
         )
 
-        attack = ProjectedGradientDescent(
+        attack = CLIPProjectedGradientDescentNumpy(
             art_classifier,
             max_iter=max_iter,
             # eps=np.ones((3, 224, 224)) * np.reshape(norm_bound_eps(), (3, 1, 1)),

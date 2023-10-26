@@ -1,0 +1,257 @@
+import numpy as np
+import copy
+
+from art.attacks.evasion.fast_gradient import FastGradientMethod
+from typing import Optional, Union, TYPE_CHECKING
+from art.attacks.attack import EvasionAttack
+from art.estimators.estimator import BaseEstimator, LossGradientsMixin
+from art.experimental.estimators.huggingface_multimodal import HuggingFaceMultiModalInput
+
+from art.summary_writer import SummaryWriter
+from art.config import ART_NUMPY_DTYPE
+
+from art.utils import (
+    compute_success,
+    get_labels_np_array,
+    random_sphere,
+    projection,
+    check_and_transform_label_format,
+)
+
+
+class FastGradientMethodCLIP(FastGradientMethod):
+
+    attack_params = EvasionAttack.attack_params + [
+        "norm",
+        "eps",
+        "eps_step",
+        "targeted",
+        "num_random_init",
+        "batch_size",
+        "minimal",
+        "summary_writer",
+    ]
+    _estimator_requirements = (BaseEstimator, LossGradientsMixin)
+
+    def __init__(
+        self,
+        estimator: "CLASSIFIER_LOSS_GRADIENTS_TYPE",
+        norm: Union[int, float, str] = np.inf,
+        eps: Union[int, float, np.ndarray] = 0.3,
+        eps_step: Union[int, float, np.ndarray] = 0.1,
+        targeted: bool = False,
+        num_random_init: int = 0,
+        batch_size: int = 32,
+        minimal: bool = False,
+        summary_writer: Union[str, bool, SummaryWriter] = False,
+    ) -> None:
+
+        super().__init__(
+            estimator=estimator,
+            norm=norm,
+            eps=eps,
+            eps_step=eps_step,
+            targeted=targeted,
+            num_random_init=num_random_init,
+            batch_size=batch_size,
+            minimal=minimal,
+            summary_writer=summary_writer,
+        )
+
+    def _minimal_perturbation(self, x: np.ndarray, y: np.ndarray, mask: np.ndarray) -> np.ndarray:
+        """
+        Iteratively compute the minimal perturbation necessary to make the class prediction change. Stop when the
+        first adversarial example was found.
+
+        :param x: An array with the original inputs.
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes).
+        :return: An array holding the adversarial examples.
+        """
+        adv_x = copy.deepcopy(x)
+
+        # Compute perturbation with implicit batching
+        for batch_id in range(int(np.ceil(adv_x.shape[0] / float(self.batch_size)))):
+            batch_index_1, batch_index_2 = (
+                batch_id * self.batch_size,
+                (batch_id + 1) * self.batch_size,
+            )
+            batch = adv_x[batch_index_1:batch_index_2]
+            batch_labels = y[batch_index_1:batch_index_2]
+
+            mask_batch = mask
+            if mask is not None:
+                # Here we need to make a distinction: if the masks are different for each input, we need to index
+                # those for the current batch. Otherwise (i.e. mask is meant to be broadcasted), keep it as it is.
+                if len(mask.shape) == len(x.shape):
+                    mask_batch = mask[batch_index_1:batch_index_2]
+
+            # Get perturbation
+            perturbation = self._compute_perturbation(batch, batch_labels, mask_batch)
+
+            # Get current predictions
+            active_indices = np.arange(len(batch))
+
+            if isinstance(self.eps, np.ndarray) and isinstance(self.eps_step, np.ndarray):
+                if len(self.eps.shape) == len(x.shape) and self.eps.shape[0] == x.shape[0]:
+                    current_eps = self.eps_step[batch_index_1:batch_index_2]
+                    partial_stop_condition = (current_eps <= self.eps[batch_index_1:batch_index_2]).all()
+
+                else:
+                    current_eps = self.eps_step
+                    partial_stop_condition = (current_eps <= self.eps).all()
+
+            else:
+                current_eps = self.eps_step
+                partial_stop_condition = current_eps <= self.eps
+
+            while active_indices.size > 0 and partial_stop_condition:
+                # Adversarial crafting
+                current_x = self._apply_perturbation(x[batch_index_1:batch_index_2], perturbation, current_eps)
+
+                # Update
+                batch[active_indices] = current_x[active_indices]
+                adv_preds = self.estimator.predict(batch)
+
+                # If targeted active check to see whether we have hit the target, otherwise head to anything but
+                if self.targeted:
+                    active_indices = np.where(np.argmax(batch_labels, axis=1) != np.argmax(adv_preds, axis=1))[0]
+                else:
+                    active_indices = np.where(np.argmax(batch_labels, axis=1) == np.argmax(adv_preds, axis=1))[0]
+
+                # Update current eps and check the stop condition
+                if isinstance(self.eps, np.ndarray) and isinstance(self.eps_step, np.ndarray):
+                    if len(self.eps.shape) == len(x.shape) and self.eps.shape[0] == x.shape[0]:
+                        current_eps = current_eps + self.eps_step[batch_index_1:batch_index_2]
+                        partial_stop_condition = (current_eps <= self.eps[batch_index_1:batch_index_2]).all()
+
+                    else:
+                        current_eps = current_eps + self.eps_step
+                        partial_stop_condition = (current_eps <= self.eps).all()
+
+                else:
+                    current_eps = current_eps + self.eps_step
+                    partial_stop_condition = current_eps <= self.eps
+
+            adv_x[batch_index_1:batch_index_2] = batch
+
+        return adv_x
+
+    def _apply_perturbation(
+        self, x: np.ndarray, perturbation: np.ndarray, eps_step: Union[int, float, np.ndarray]
+    ) -> np.ndarray:
+
+        perturbation_step = eps_step * perturbation
+        if perturbation_step.dtype != object:
+            perturbation_step[np.isnan(perturbation_step)] = 0
+        else:
+            for i, _ in enumerate(perturbation_step):
+                perturbation_step_i_array = perturbation_step[i].astype(np.float32)
+                if np.isnan(perturbation_step_i_array).any():
+                    perturbation_step[i] = np.where(
+                        np.isnan(perturbation_step_i_array), 0.0, perturbation_step_i_array
+                    ).astype(object)
+
+        x = x + perturbation_step
+        if self.estimator.clip_values is not None:
+            clip_min, clip_max = self.estimator.clip_values
+            if x.dtype == object:
+                if isinstance(x, HuggingFaceMultiModalInput):
+                    for i_obj in range(x.shape[0]):
+                        x[i_obj] = np.clip(x[i_obj]["pixel_values"].cpu().detach().numpy(), clip_min, clip_max)
+                else:
+                    for i_obj in range(x.shape[0]):
+                        x[i_obj] = np.clip(x[i_obj], clip_min, clip_max)
+            else:
+                x = np.clip(x, clip_min, clip_max)
+
+        return x
+
+    def _compute(
+        self,
+        x: np.ndarray,
+        x_init: np.ndarray,
+        y: np.ndarray,
+        mask: Optional[np.ndarray],
+        eps: Union[int, float, np.ndarray],
+        eps_step: Union[int, float, np.ndarray],
+        project: bool,
+        random_init: bool,
+        batch_id_ext: Optional[int] = None,
+        decay: Optional[float] = None,
+        momentum: Optional[np.ndarray] = None,
+    ) -> np.ndarray:
+        if random_init:
+            n = x.shape[0]
+            m = np.prod(x.shape[1:]).item()
+            random_perturbation = random_sphere(n, m, eps, self.norm).reshape(x.shape).astype(ART_NUMPY_DTYPE)
+            if mask is not None:
+                random_perturbation = random_perturbation * (mask.astype(ART_NUMPY_DTYPE))
+            x_adv = x.astype(ART_NUMPY_DTYPE) + random_perturbation
+
+            if self.estimator.clip_values is not None:
+                clip_min, clip_max = self.estimator.clip_values
+                x_adv = np.clip(x_adv, clip_min, clip_max)
+        else:
+            if x.dtype == object:
+                x_adv = copy.deepcopy(x)
+            else:
+                x_adv = x.astype(ART_NUMPY_DTYPE)
+
+        # Compute perturbation with implicit batching
+        for batch_id in range(int(np.ceil(x.shape[0] / float(self.batch_size)))):
+            if batch_id_ext is None:
+                self._batch_id = batch_id
+            else:
+                self._batch_id = batch_id_ext
+            batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
+            batch_index_2 = min(batch_index_2, x.shape[0])
+            batch = x_adv[batch_index_1:batch_index_2]
+            batch_labels = y[batch_index_1:batch_index_2]
+
+            mask_batch = mask
+            if mask is not None:
+                # Here we need to make a distinction: if the masks are different for each input, we need to index
+                # those for the current batch. Otherwise (i.e. mask is meant to be broadcasted), keep it as it is.
+                if len(mask.shape) == len(x.shape):
+                    mask_batch = mask[batch_index_1:batch_index_2]
+
+            # Get perturbation
+            perturbation = self._compute_perturbation(batch, batch_labels, mask_batch, decay, momentum)
+
+            # Compute batch_eps and batch_eps_step
+            if isinstance(eps, np.ndarray) and isinstance(eps_step, np.ndarray):
+                if len(eps.shape) == len(x.shape) and eps.shape[0] == x.shape[0]:
+                    batch_eps = eps[batch_index_1:batch_index_2]
+                    batch_eps_step = eps_step[batch_index_1:batch_index_2]
+
+                else:
+                    batch_eps = eps
+                    batch_eps_step = eps_step
+
+            else:
+                batch_eps = eps
+                batch_eps_step = eps_step
+
+            # Apply perturbation and clip
+            x_adv[batch_index_1:batch_index_2] = self._apply_perturbation(batch, perturbation, batch_eps_step)
+
+            if project:
+                if x_adv.dtype == object:
+                    for i_sample in range(batch_index_1, batch_index_2):
+                        if isinstance(batch_eps, np.ndarray) and batch_eps.shape[0] == x_adv.shape[0]:
+                            perturbation = projection(
+                                x_adv[i_sample] - x_init[i_sample], batch_eps[i_sample], self.norm
+                            )
+
+                        else:
+                            perturbation = projection(x_adv[i_sample] - x_init[i_sample], batch_eps, self.norm)
+
+                        x_adv[i_sample] = x_init[i_sample] + perturbation
+
+                else:
+                    perturbation = projection(
+                        x_adv[batch_index_1:batch_index_2] - x_init[batch_index_1:batch_index_2], batch_eps, self.norm
+                    )
+                    x_adv[batch_index_1:batch_index_2] = x_init[batch_index_1:batch_index_2] + perturbation
+
+        return x_adv
