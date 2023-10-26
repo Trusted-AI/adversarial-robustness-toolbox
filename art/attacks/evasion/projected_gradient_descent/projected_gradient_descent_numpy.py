@@ -24,7 +24,7 @@ al. for adversarial training.
 | Paper link: https://arxiv.org/abs/1706.06083
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
-import copy
+
 import logging
 from typing import Optional, Union, TYPE_CHECKING
 
@@ -55,7 +55,7 @@ class ProjectedGradientDescentCommon(FastGradientMethod):
     | Paper link: https://arxiv.org/abs/1706.06083
     """
 
-    attack_params = FastGradientMethod.attack_params + ["max_iter", "random_eps", "verbose"]
+    attack_params = FastGradientMethod.attack_params + ["decay", "max_iter", "random_eps", "verbose"]
     _estimator_requirements = (BaseEstimator, LossGradientsMixin)
 
     def __init__(
@@ -376,7 +376,7 @@ class ProjectedGradientDescentNumpy(ProjectedGradientDescentCommon):
                     if rand_init_num == 0:
                         # initial (and possibly only) random restart: we only have this set of
                         # adversarial examples for now
-                        adv_x[batch_index_1:batch_index_2] = copy.deepcopy(batch)
+                        adv_x[batch_index_1:batch_index_2] = np.copy(batch)
                     else:
                         # replace adversarial examples if they are successful
                         attack_success = compute_success_array(
@@ -410,7 +410,7 @@ class ProjectedGradientDescentNumpy(ProjectedGradientDescentCommon):
 
             # Start to compute adversarial examples
             if x.dtype == object:
-                adv_x = copy.deepcopy(x)
+                adv_x = x.copy()
             else:
                 adv_x = x.astype(ART_NUMPY_DTYPE)
 

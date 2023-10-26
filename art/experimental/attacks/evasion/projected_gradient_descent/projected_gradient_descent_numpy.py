@@ -16,14 +16,16 @@ if TYPE_CHECKING:
 from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent_numpy import (
     ProjectedGradientDescentNumpy,
 )
-
+from art.experimental.attacks.evasion.fast_gradient import (
+    FastGradientMethodCLIP,
+)
 from art.summary_writer import SummaryWriter
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_LOSS_GRADIENTS_TYPE, OBJECT_DETECTOR_TYPE
 
 
-class CLIPProjectedGradientDescentNumpy(ProjectedGradientDescentNumpy):
+class CLIPProjectedGradientDescentNumpy(ProjectedGradientDescentNumpy, FastGradientMethodCLIP):
     def __init__(
         self,
         estimator: Union["CLASSIFIER_LOSS_GRADIENTS_TYPE", "OBJECT_DETECTOR_TYPE"],

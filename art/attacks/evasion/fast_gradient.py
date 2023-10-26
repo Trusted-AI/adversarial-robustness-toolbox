@@ -23,7 +23,6 @@ Method attack and extends it to other norms, therefore it is called the Fast Gra
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import copy
 import logging
 from typing import Optional, Union, TYPE_CHECKING
 
@@ -33,7 +32,6 @@ from art.config import ART_NUMPY_DTYPE
 from art.attacks.attack import EvasionAttack
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from art.estimators.classification.classifier import ClassifierMixin
-from art.experimental.estimators.huggingface_multimodal import HuggingFaceMultiModalInput
 from art.utils import (
     compute_success,
     get_labels_np_array,
@@ -137,7 +135,7 @@ class FastGradientMethod(EvasionAttack):
         :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes).
         :return: An array holding the adversarial examples.
         """
-        adv_x = copy.deepcopy(x)
+        adv_x = x.copy()
 
         # Compute perturbation with implicit batching
         for batch_id in range(int(np.ceil(adv_x.shape[0] / float(self.batch_size)))):
@@ -482,12 +480,8 @@ class FastGradientMethod(EvasionAttack):
         if self.estimator.clip_values is not None:
             clip_min, clip_max = self.estimator.clip_values
             if x.dtype == object:
-                if isinstance(x, HuggingFaceMultiModalInput):
-                    for i_obj in range(x.shape[0]):
-                        x[i_obj] = np.clip(x[i_obj]["pixel_values"].cpu().detach().numpy(), clip_min, clip_max)
-                else:
-                    for i_obj in range(x.shape[0]):
-                        x[i_obj] = np.clip(x[i_obj], clip_min, clip_max)
+                for i_obj in range(x.shape[0]):
+                    x[i_obj] = np.clip(x[i_obj], clip_min, clip_max)
             else:
                 x = np.clip(x, clip_min, clip_max)
 
@@ -520,7 +514,7 @@ class FastGradientMethod(EvasionAttack):
                 x_adv = np.clip(x_adv, clip_min, clip_max)
         else:
             if x.dtype == object:
-                x_adv = copy.deepcopy(x)
+                x_adv = x.copy()
             else:
                 x_adv = x.astype(ART_NUMPY_DTYPE)
 
