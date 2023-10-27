@@ -503,7 +503,7 @@ def get_image_classifier_tf_v2(from_logits=False):
     loss_object = tf.keras.losses.SparseCategoricalCrossentropy(
         from_logits=from_logits, reduction=tf.keras.losses.Reduction.SUM
     )
-    optimizer = tf.keras.optimizers.Adam(learning_rate=0.01)
+    optimizer = tf.keras.optimizers.legacy.Adam(learning_rate=0.01)
 
     optimizer._distribution_strategy = None
 
