@@ -1305,11 +1305,11 @@ def load_stl() -> DATASET_TYPE:
 
     with open(os.path.join(path, "train_y.bin"), "rb") as f_numpy:
         y_train = np.fromfile(f_numpy, dtype=np.uint8)
-        y_train -= 1
+        y_train = y_train - 1
 
     with open(os.path.join(path, "test_y.bin"), "rb") as f_numpy:
         y_test = np.fromfile(f_numpy, dtype=np.uint8)
-        y_test -= 1
+        y_test = y_test - 1
 
     x_train, y_train = preprocess(x_train, y_train)
     x_test, y_test = preprocess(x_test, y_test)

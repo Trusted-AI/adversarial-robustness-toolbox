@@ -25,7 +25,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 from copy import deepcopy
-from typing import Any, Callable, List, Tuple, Union, TYPE_CHECKING
+from typing import Callable, List, Tuple, Union, TYPE_CHECKING
 
 import numpy as np
 from sklearn.model_selection import train_test_split
