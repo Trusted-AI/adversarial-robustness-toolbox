@@ -53,7 +53,7 @@ class CompositeAdversarialAttackPyTorch(EvasionAttack):
     and uses the iterative gradient sign method to optimize the perturbations in semantic space and Lp-ball (see
     `FastGradientMethod` and `BasicIterativeMethod`).
 
-    Note that this attack is intended for only PyTorch image classifiers with RGB images in the range [0, 1] as inputs.
+    | Note that this attack is intended for only PyTorch image classifiers with RGB images in the range [0, 1] as inputs.
 
     | Paper link: https://arxiv.org/abs/2202.04235
     """
@@ -372,6 +372,7 @@ class CompositeAdversarialAttackPyTorch(EvasionAttack):
     ) -> Tuple["torch.Tensor", "torch.Tensor"]:
         """
         Compute the adversarial examples for each attack component.
+
         :param data: A tensor of a batch of original inputs to be attacked.
         :param labels: A tensor of a batch of the original labels to be predicted.
         :param attack_idx: The index of the attack component (one of the enabled attacks) in the attack pool.
@@ -416,6 +417,7 @@ class CompositeAdversarialAttackPyTorch(EvasionAttack):
     ) -> Tuple["torch.Tensor", "torch.Tensor"]:
         """
         Compute the adversarial examples for hue component.
+
         :param data: A tensor of a batch of original inputs to be attacked.
         :param hue: Specify the hue shift angle.
         :param labels: A tensor of a batch of the original labels to be predicted.
@@ -435,6 +437,7 @@ class CompositeAdversarialAttackPyTorch(EvasionAttack):
     ) -> Tuple["torch.Tensor", "torch.Tensor"]:
         """
         Compute the adversarial examples for saturation component.
+
         :param data: A tensor of a batch of original inputs to be attacked.
         :param saturation: Specify the saturation factor.
         :param labels: A tensor of a batch of the original labels to be predicted.
@@ -458,6 +461,7 @@ class CompositeAdversarialAttackPyTorch(EvasionAttack):
     ) -> Tuple["torch.Tensor", "torch.Tensor"]:
         """
         Compute the adversarial examples for rotation component.
+
         :param data: A tensor of a batch of original inputs to be attacked.
         :param theta: Specify the rotation angle.
         :param labels: A tensor of a batch of the original labels to be predicted.
@@ -477,6 +481,7 @@ class CompositeAdversarialAttackPyTorch(EvasionAttack):
     ) -> Tuple["torch.Tensor", "torch.Tensor"]:
         """
         Compute the adversarial examples for brightness component.
+
         :param data: A tensor of a batch of original inputs to be attacked.
         :param brightness: Specify the brightness factor.
         :param labels: A tensor of a batch of the original labels to be predicted.
@@ -500,6 +505,7 @@ class CompositeAdversarialAttackPyTorch(EvasionAttack):
     ) -> Tuple["torch.Tensor", "torch.Tensor"]:
         """
         Compute the adversarial examples for contrast component.
+
         :param data: A tensor of a batch of original inputs to be attacked.
         :param contrast: Specify the contrast factor.
         :param labels: A tensor of a batch of the original labels to be predicted.
@@ -523,9 +529,10 @@ class CompositeAdversarialAttackPyTorch(EvasionAttack):
     ) -> Tuple["torch.Tensor", "torch.Tensor"]:
         """
         Compute the adversarial examples for L-infinity (PGD) component.
+
         :param data: A tensor of a batch of original inputs to be attacked.
-        :param labels: A tensor of a batch of the original labels to be predicted.
         :param eta: The perturbation in the L-infinity ball.
+        :param labels: A tensor of a batch of the original labels to be predicted.
         :return: The perturbed data.
         """
         import torch
@@ -557,6 +564,7 @@ class CompositeAdversarialAttackPyTorch(EvasionAttack):
     def update_attack_order(self, images: "torch.Tensor", labels: "torch.Tensor", adv_val: List) -> None:
         """
         Update the specified attack ordering.
+
         :param images: A tensor of a batch of original inputs to be attacked.
         :param labels: A tensor of a batch of the original labels to be predicted.
         :param adv_val: Optional; A list of a batch of current attack parameters.
@@ -621,6 +629,7 @@ class CompositeAdversarialAttackPyTorch(EvasionAttack):
     def caa_attack(self, images: "torch.Tensor", labels: "torch.Tensor") -> "torch.Tensor":
         """
         The main algorithm to generate the adversarial examples for composite adversarial attack.
+
         :param images: A tensor of a batch of original inputs to be attacked.
         :param labels: A tensor of a batch of the original labels to be predicted.
         :return: The perturbed data.

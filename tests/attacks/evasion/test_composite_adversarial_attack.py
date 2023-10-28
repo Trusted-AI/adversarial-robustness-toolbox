@@ -19,7 +19,6 @@ import logging
 
 import numpy as np
 import pytest
-import torch
 
 from art.attacks.evasion import CompositeAdversarialAttackPyTorch
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
@@ -43,7 +42,6 @@ def fix_get_cifar10_subset(get_cifar10_dataset):
     "tensorflow1", "tensorflow2", "tensorflow2v1", "keras", "non_dl_frameworks", "mxnet", "kerastf"
 )
 def test_generate(art_warning, fix_get_cifar10_subset):
-    print("test_generate")
     try:
         (x_train, y_train, x_test, y_test) = fix_get_cifar10_subset
 
