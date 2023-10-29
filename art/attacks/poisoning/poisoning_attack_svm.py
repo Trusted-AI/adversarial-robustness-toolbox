@@ -49,7 +49,7 @@ class PoisoningAttackSVM(PoisoningAttackWhiteBox):
         "y_train",
         "x_val",
         "y_val",
-        "verbose",
+        "max_iter" "verbose",
     ]
     _estimator_requirements = (ScikitlearnSVC,)
 
@@ -63,7 +63,7 @@ class PoisoningAttackSVM(PoisoningAttackWhiteBox):
         x_val: np.ndarray,
         y_val: np.ndarray,
         max_iter: int,
-        verbose: bool,
+        verbose: bool = True,
     ) -> None:
         """
         Initialize an SVM poisoning attack.

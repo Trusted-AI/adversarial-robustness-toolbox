@@ -236,7 +236,7 @@ class JaxClassifier(ClassGradientsMixin, ClassifierMixin, JaxEstimator):
         raise NotImplementedError
 
     def class_gradient(  # pylint: disable=W0221
-        self, x: np.ndarray, label: Union[int, List[int], None] = None, **kwargs
+        self, x: np.ndarray, label: Optional[Union[int, List[int], np.ndarray]] = None, **kwargs
     ) -> np.ndarray:
         """
         Compute per-class derivatives w.r.t. `x`.

@@ -391,7 +391,11 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier):
         return self.loss_gradient(x=x, y=y, training_mode=training_mode, **kwargs)
 
     def class_gradient(
-        self, x: np.ndarray, label: Union[int, List[int], None] = None, training_mode: bool = False, **kwargs
+        self,
+        x: np.ndarray,
+        label: Optional[Union[int, List[int], np.ndarray]] = None,
+        training_mode: bool = False,
+        **kwargs,
     ) -> np.ndarray:
         """
         Compute per-class derivatives of the given classifier w.r.t. `x` of original classifier.
