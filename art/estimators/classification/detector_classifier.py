@@ -142,7 +142,7 @@ class DetectorClassifier(ClassifierNeuralNetwork):
     def class_gradient(  # pylint: disable=W0221
         self,
         x: np.ndarray,
-        label: Union[int, List[int], np.ndarray, None] = None,
+        label: Optional[Union[int, List[int], np.ndarray]] = None,
         training_mode: bool = False,
         **kwargs,
     ) -> np.ndarray:
