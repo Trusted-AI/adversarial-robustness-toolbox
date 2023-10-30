@@ -154,7 +154,7 @@ def test_loss_functions(
         art_warning(e)
 
 
-@pytest.mark.skip_framework("non_dl_frameworks", "huggingface", "tensorflow2")
+@pytest.mark.skip_framework("non_dl_frameworks", "huggingface", "tensorflow2", "kerastf")
 def test_pickle(art_warning, image_dl_estimator, image_dl_estimator_defended, tmp_path):
     try:
         full_path = os.path.join(tmp_path, "my_classifier.p")

@@ -49,7 +49,8 @@ class PoisoningAttackSVM(PoisoningAttackWhiteBox):
         "y_train",
         "x_val",
         "y_val",
-        "max_iter" "verbose",
+        "max_iter",
+        "verbose",
     ]
     _estimator_requirements = (ScikitlearnSVC,)
 
