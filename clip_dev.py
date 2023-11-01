@@ -1,6 +1,5 @@
 import numpy as np
-from art.estimators.hf_mm import HFMMPyTorch
-from art.estimators.hf_mm import MultiModalHuggingFaceInput
+from art.experimental.estimators.huggingface_multimodal import HFMMPyTorch, HuggingFaceMultiModalInput
 
 from art.attacks.evasion import ProjectedGradientDescent
 
@@ -230,13 +229,22 @@ def test_predict():
 
 def test_adv_train():
     import torch
-    from transformers import CLIPModel
-    from art.estimators.hf_mm import HFMMPyTorch, MultiModalHuggingFaceInput
-    from art.defences.trainer import AdversarialTrainerMadryPGD
+    from transformers import CLIPProcessor, CLIPModel
+    from art.defences.trainer import AdversarialTrainer
+    from art.experimental.estimators.huggingface_multimodal import HFMMPyTorch, HuggingFaceMultiModalInput
+    from art.experimental.attacks.evasion import CLIPProjectedGradientDescentNumpy
+
+    (x_train, y_train), (x_test, y_test) = get_cifar_data()
 
     model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
-    inputs, original_image, labels, num_classes = get_and_process_input()
+    inputs, original_image, _, num_classes = get_and_process_input()
     optimizer = torch.optim.SGD(model.parameters(), lr=0.01, momentum=0.9)
+
+    processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
+
+    text = ["plane", "car", "bird", "cat", "deer", "dog", "frog", "horse", "ship", "truck"]
+    inputs = processor(text=text, images=x_train, return_tensors="pt", padding=True)
+    original_image = inputs["pixel_values"][0].clone().cpu().detach().numpy()
 
     art_classifier = HFMMPyTorch(
         model,
@@ -246,12 +254,20 @@ def test_adv_train():
         clip_values=(np.min(original_image), np.max(original_image)),
         input_shape=(3, 224, 224),
     )
-    trainer = AdversarialTrainerMadryPGD(
-        art_classifier, nb_epochs=10, eps=8 / 255, eps_step=1 / 255, max_iter=10, num_random_init=0
-    )
-    inputs = MultiModalHuggingFaceInput(**inputs)
 
-    trainer.fit(inputs, labels.detach().cpu().numpy())
+    attack = CLIPProjectedGradientDescentNumpy(
+        art_classifier,
+        max_iter=10,
+        eps=np.ones((3, 224, 224)) * np.reshape(norm_bound_eps(), (3, 1, 1)),
+        eps_step=np.ones((3, 224, 224)) * 0.1,
+    )
+
+    trainer = AdversarialTrainer(
+        art_classifier, attacks=attack,
+    )
+    inputs = HuggingFaceMultiModalInput(**inputs)
+
+    trainer.fit(inputs, y_train)
 
 
 test_adv_train()

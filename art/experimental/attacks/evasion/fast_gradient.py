@@ -1,8 +1,29 @@
-import numpy as np
+# MIT License
+#
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2023
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+# documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
+# rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit
+# persons to whom the Software is furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all copies or substantial portions of the
+# Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
+# WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+# TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+"""
+This module contains an experimental FGSM attack for multimodal models.
+"""
 import copy
+from typing import Optional, Union, TYPE_CHECKING
+
+import numpy as np
 
 from art.attacks.evasion.fast_gradient import FastGradientMethod
-from typing import Optional, Union, TYPE_CHECKING
 from art.attacks.attack import EvasionAttack
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from art.experimental.estimators.huggingface_multimodal import HuggingFaceMultiModalInput
@@ -11,15 +32,19 @@ from art.summary_writer import SummaryWriter
 from art.config import ART_NUMPY_DTYPE
 
 from art.utils import (
-    compute_success,
-    get_labels_np_array,
     random_sphere,
     projection,
-    check_and_transform_label_format,
 )
+
+if TYPE_CHECKING:
+    from art.utils import CLASSIFIER_LOSS_GRADIENTS_TYPE
 
 
 class FastGradientMethodCLIP(FastGradientMethod):
+    """
+    Implementation of the FGSM attack operating on the image portion of multimodal inputs
+    to the CLIP model.
+    """
 
     attack_params = EvasionAttack.attack_params + [
         "norm",

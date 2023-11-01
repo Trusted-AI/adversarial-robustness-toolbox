@@ -225,7 +225,7 @@ class AdversarialTrainer(Trainer):
 
         for _ in trange(nb_epochs, desc="Adversarial training epochs"):
             # Shuffle the examples
-            # np.random.shuffle(ind)
+            np.random.shuffle(ind)
             pbar = tqdm(range(nb_batches))
             self._classifier.training_loss = []  # type: ignore
             self._classifier.training_accuracy = []  # type: ignore
