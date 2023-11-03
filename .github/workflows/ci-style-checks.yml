@@ -16,6 +16,7 @@ on:
     branches:
       - main
       - dev*
+      - hf_notebook_updates
 
   # Run scheduled CI flow daily
   schedule:

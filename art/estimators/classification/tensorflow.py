@@ -27,6 +27,7 @@ import random
 import shutil
 import time
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union, TYPE_CHECKING
+from tqdm.auto import tqdm
 
 import numpy as np
 import six
@@ -957,11 +958,13 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
                   shape (nb_samples,).
         :param batch_size: Size of batches.
         :param nb_epochs: Number of epochs to use for training.
-        :param kwargs: Dictionary of framework-specific arguments. This parameter currently only supports
+        :param kwargs: Dictionary of framework-specific arguments. This parameter currently supports
                        "scheduler" which is an optional function that will be called at the end of every
-                       epoch to adjust the learning rate.
+                       epoch to adjust the learning rate, and "display_progress_bar" to display training progress.
         """
         import tensorflow as tf
+
+        display_progress_bar = kwargs.get("display_progress_bar", False)
 
         if self._train_step is None:  # pragma: no cover
             if self._loss_object is None:  # pragma: no cover
@@ -999,8 +1002,8 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
 
         train_ds = tf.data.Dataset.from_tensor_slices((x_preprocessed, y_preprocessed)).shuffle(10000).batch(batch_size)
 
-        for epoch in range(nb_epochs):
-            for images, labels in train_ds:
+        for epoch in tqdm(range(nb_epochs), disable=not display_progress_bar, desc="Epochs"):
+            for images, labels in tqdm(train_ds, disable=not display_progress_bar, desc="Batches"):
                 train_step(self.model, images, labels)
 
             if scheduler is not None:
@@ -1013,12 +1016,14 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         :param generator: Batch generator providing `(x, y)` for each epoch. If the generator can be used for native
                           training in TensorFlow, it will.
         :param nb_epochs: Number of epochs to use for training.
-        :param kwargs: Dictionary of framework-specific arguments. This parameter currently only supports
+        :param kwargs: Dictionary of framework-specific arguments. This parameter currently supports
                        "scheduler" which is an optional function that will be called at the end of every
-                       epoch to adjust the learning rate.
+                       epoch to adjust the learning rate, and "display_progress_bar" to display training progress.
         """
         import tensorflow as tf
         from art.data_generators import TensorFlowV2DataGenerator
+
+        display_progress_bar = kwargs.get("display_progress_bar", False)
 
         if self._train_step is None:  # pragma: no cover
             if self._loss_object is None:  # pragma: no cover
@@ -1059,8 +1064,8 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
                 == (0, 1)
             )
         ):
-            for epoch in range(nb_epochs):
-                for i_batch, o_batch in generator.iterator:
+            for epoch in tqdm(range(nb_epochs), disable=not display_progress_bar, desc="Epochs"):
+                for i_batch, o_batch in tqdm(generator.iterator, disable=not display_progress_bar, desc="Batches"):
                     if self._reduce_labels:
                         o_batch = tf.math.argmax(o_batch, axis=1)
                     train_step(self._model, i_batch, o_batch)
