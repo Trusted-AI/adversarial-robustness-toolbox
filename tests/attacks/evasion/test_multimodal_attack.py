@@ -1,16 +1,6 @@
 import numpy as np
 import pytest
 
-MEAN = np.asarray([0.48145466, 0.4578275, 0.40821073])
-STD = np.asarray([0.26862954, 0.26130258, 0.27577711])
-
-
-def norm_bound_eps(eps_bound=None):
-    if eps_bound is None:
-        eps_bound = np.asarray([8 / 255, 8 / 255, 8 / 255])
-    eps_bound = np.abs(eps_bound / STD)
-    return eps_bound
-
 
 def get_and_process_input(to_one_hot=False, return_batch=False):
 
@@ -65,7 +55,6 @@ def test_grad_equivalence(max_iter):
         for _ in range(max_iter):
             art_classifier = HFMMPyTorch(
                 model,
-                nb_classes=num_classes,
                 loss=torch.nn.CrossEntropyLoss(),
                 input_shape=(3, 224, 224),
                 device_type="gpu",
@@ -120,7 +109,6 @@ def test_perturbation_equivalence(to_batch):
         my_input = HuggingFaceMultiModalInput(**inputs)
         art_classifier = HFMMPyTorch(
             model,
-            nb_classes=num_classes,
             loss=loss_fn,
             clip_values=(np.min(original_image), np.max(original_image)),
             input_shape=(3, 224, 224),
@@ -156,8 +144,6 @@ def test_perturbation_equivalence(to_batch):
 
         init_max = torch.max(inputs["pixel_values"])
         init_min = torch.min(inputs["pixel_values"])
-
-        # eps = norm_bound_eps()
 
         mins = torch.tensor(original_image - 0.3).float().to(device)
         maxs = torch.tensor(original_image + 0.3).float().to(device)
@@ -198,10 +184,9 @@ def test_equivalence(max_iter):
         original_image = inputs.pixel_values.clone().cpu().numpy()
 
         my_input = HuggingFaceMultiModalInput(**inputs)
-        # eps = norm_bound_eps()
+
         art_classifier = HFMMPyTorch(
             model,
-            nb_classes=num_classes,
             loss=loss_fn,
             clip_values=(np.min(original_image), np.max(original_image)),
             input_shape=(3, 224, 224),
@@ -210,7 +195,6 @@ def test_equivalence(max_iter):
         attack = CLIPProjectedGradientDescentNumpy(
             art_classifier,
             max_iter=max_iter,
-            # eps=np.ones((3, 224, 224)) * np.reshape(norm_bound_eps(), (3, 1, 1)),
             eps=np.ones((3, 224, 224)) * 0.3,
             eps_step=np.ones((3, 224, 224)) * 0.1,
             targeted=False,
@@ -224,8 +208,6 @@ def test_equivalence(max_iter):
         assert torch.all(torch.ge(check_vals, np.min(original_image)))
         assert torch.all(torch.le(check_vals, np.max(original_image)))
 
-        # eps_mins = torch.tensor(original_image - eps.reshape((1, 3, 1, 1))).float()
-        # eps_maxs = torch.tensor(original_image + eps.reshape((1, 3, 1, 1))).float()
         eps_mins = torch.tensor(original_image - 0.3).float()
         eps_maxs = torch.tensor(original_image + 0.3).float()
         eps_mins = torch.reshape(eps_mins, (-1,))
@@ -239,21 +221,18 @@ def test_equivalence(max_iter):
     def manual_attack():
 
         lossfn = torch.nn.CrossEntropyLoss()
-        # eps = norm_bound_eps()
+
         adv_current = None
         model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
         model = model.to(device)
 
         for i in range(max_iter):
 
-            inputs, original_image, labels, num_classes = get_and_process_input()
+            inputs, original_image, labels, _ = get_and_process_input()
             inputs = inputs.to(device)
 
             eps_mins = torch.tensor(original_image - 0.3).float().to(device)
             eps_maxs = torch.tensor(original_image + 0.3).float().to(device)
-
-            # eps_mins = torch.tensor(original_image - eps.reshape((1, 3, 1, 1))).float().to(device)
-            # eps_maxs = torch.tensor(original_image + eps.reshape((1, 3, 1, 1))).float().to(device)
 
             init_max = torch.max(inputs["pixel_values"]).to(device)
             init_min = torch.min(inputs["pixel_values"]).to(device)
@@ -295,7 +274,6 @@ def test_equivalence(max_iter):
     assert np.all(art_adv <= np.max(original_image))
     assert np.all(manual_adv >= np.min(original_image))
     assert np.all(manual_adv <= np.max(original_image))
-    # eps = norm_bound_eps()
 
     eps_mins = original_image - 0.3
     eps_maxs = original_image + 0.3
@@ -329,7 +307,6 @@ def test_predict():
 
     art_classifier = HFMMPyTorch(
         model,
-        nb_classes=num_classes,
         loss=torch.nn.CrossEntropyLoss(),
         clip_values=(np.min(original_image), np.max(original_image)),
         input_shape=(3, 224, 224),

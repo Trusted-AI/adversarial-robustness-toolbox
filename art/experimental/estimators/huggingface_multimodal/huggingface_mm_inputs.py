@@ -22,7 +22,7 @@ with ART's tools.
 from __future__ import annotations
 
 from collections import UserDict
-from typing import List, Tuple, Union, TYPE_CHECKING
+from typing import Optional, Tuple, Union, TYPE_CHECKING
 
 import numpy as np
 
@@ -40,8 +40,8 @@ class HuggingFaceMultiModalInput(UserDict):
     """
 
     dtype = object
-    shape = (1, 3, 224, 224)
-    ndim = 4
+    shape: Optional[Tuple] = None
+    ndim: Optional[int] = None
 
     def __setitem__(self, key, value):
         import torch
@@ -85,7 +85,9 @@ class HuggingFaceMultiModalInput(UserDict):
                 f"Unsupported key {key} with type {type(key)}, " f"value {value} for __setitem__ in ARTInput"
             )
 
-    def __getitem__(self, item: Union[slice, Tuple, int, str, np.ndarray]) -> Union[HuggingFaceMultiModalInput, "torch.Tensor"]:
+    def __getitem__(
+        self, item: Union[slice, Tuple, int, str, np.ndarray]
+    ) -> Union[HuggingFaceMultiModalInput, "torch.Tensor"]:
         # print('__getitem__ key ', item)
         # print('with type ', type(item))
         if isinstance(item, (slice, tuple, int)):

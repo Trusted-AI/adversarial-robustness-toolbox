@@ -205,7 +205,6 @@ class AdversarialTrainer(Trainer):
         nb_batches = int(np.ceil(len(x) / batch_size))
         ind = np.arange(len(x))
         attack_id = 0
-        from tqdm import tqdm
 
         # Precompute adversarial samples for transferred attacks
         logged = False

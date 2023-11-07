@@ -1,6 +1,5 @@
 import numpy as np
-from art.experimental.estimators.huggingface_multimodal import HFMMPyTorch, HuggingFaceMultiModalInput
-
+from art.experimental.estimators.huggingface_multimodal import HFMMPyTorch, MultiModalHuggingFaceInput
 from art.attacks.evasion import ProjectedGradientDescent
 
 import torch
@@ -12,7 +11,8 @@ ssl._create_default_https_context = ssl._create_unverified_context
 
 MEAN = np.asarray([0.48145466, 0.4578275, 0.40821073])
 STD = np.asarray([0.26862954, 0.26130258, 0.27577711])
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 
 def get_and_process_input(to_one_hot=False, return_batch=False):
 
@@ -81,6 +81,7 @@ def attack_clip_pgd():
     import requests
 
     from transformers import CLIPProcessor, CLIPModel
+    from art.experimental.estimators.huggingface_multimodal import HFMMPyTorch, HuggingFaceMultiModalInput
 
     model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
     loss_fn = torch.nn.CrossEntropyLoss()
@@ -105,7 +106,7 @@ def attack_clip_pgd():
         model, loss=loss_fn, clip_values=(np.min(original_image), np.max(original_image)), input_shape=(3, 224, 224)
     )
 
-    my_input = MultiModalHuggingFaceInput(**inputs)
+    my_input = HuggingFaceMultiModalInput(**inputs)
 
     labels = torch.tensor(np.asarray([0, 0, 0, 0, 0, 0, 0, 0, 0, 0]))
     # loss = art_classifier._get_losses(my_input, labels)
@@ -139,6 +140,7 @@ def cifar_clip_pgd():
     from transformers import CLIPProcessor, CLIPModel
     from art.experimental.estimators.huggingface_multimodal import HFMMPyTorch, HuggingFaceMultiModalInput
     from art.experimental.attacks.evasion import CLIPProjectedGradientDescentNumpy
+
     text = ["a photo of a cat", "a photo of a bear", "a photo of a car", "a photo of a bus", "apples"]
 
     labels = torch.tensor(np.asarray([0, 1, 3, 4]))
@@ -160,7 +162,10 @@ def cifar_clip_pgd():
     original_images = np.concatenate(original_images)
 
     art_classifier = HFMMPyTorch(
-        model, loss=loss_fn, clip_values=(np.min(original_images), np.max(original_images)), input_shape=(3, 224, 224),
+        model,
+        loss=loss_fn,
+        clip_values=(np.min(original_images), np.max(original_images)),
+        input_shape=(3, 224, 224),
         nb_classes=5,
     )
 
@@ -168,7 +173,7 @@ def cifar_clip_pgd():
     clean_preds = art_classifier.predict(my_input)
     print(clean_preds)
     clean_acc = np.sum(np.argmax(clean_preds, axis=1) == labels.cpu().detach().numpy()) / len(labels)
-    print('clean acc ', clean_acc)
+    print("clean acc ", clean_acc)
     attack = CLIPProjectedGradientDescentNumpy(
         art_classifier,
         max_iter=10,
@@ -178,7 +183,7 @@ def cifar_clip_pgd():
     x_adv = attack.generate(my_input, labels)
     adv_preds = art_classifier.predict(x_adv)
     adv_acc = np.sum(np.argmax(adv_preds, axis=1) == labels.cpu().detach().numpy()) / len(labels)
-    print('adv_acc ', adv_acc)
+    print("adv_acc ", adv_acc)
 
     print(clean_preds)
     print(adv_preds)
@@ -214,7 +219,6 @@ def test_fit():
 def test_predict():
     import torch
     from transformers import CLIPModel
-    from art.estimators.hf_mm import HFMMPyTorch, MultiModalHuggingFaceInput
 
     model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
     inputs, original_image, labels, num_classes = get_and_process_input()
@@ -268,7 +272,9 @@ def test_adv_train():
     )
 
     trainer = AdversarialTrainer(
-        art_classifier, attacks=attack, ratio=1.0,
+        art_classifier,
+        attacks=attack,
+        ratio=1.0,
     )
     inputs = HuggingFaceMultiModalInput(**inputs)
 

@@ -53,7 +53,6 @@ class HFMMPyTorch(PyTorchEstimator):
         model: "transformers.PreTrainedModel",
         loss: "torch.nn.modules.loss._Loss",
         input_shape: Tuple[int, ...],
-        nb_classes: int,
         optimizer: Optional["torch.optim.Optimizer"] = None,
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         channels_first: Optional[bool] = True,
@@ -68,7 +67,6 @@ class HFMMPyTorch(PyTorchEstimator):
         :param model: CLIP model
         :param input_shape: The shape of one input sample.
         :param optimizer: The optimizer for training the classifier.
-        :param nb_classes: ...
         :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
                maximum values allowed for features. If floats are provided, these will be used as the range of all
                features. If arrays are provided, each value will be considered the bound for a feature, thus
@@ -97,7 +95,6 @@ class HFMMPyTorch(PyTorchEstimator):
         self._input_shape = input_shape
         self._optimizer = optimizer
         self.loss_fn = loss
-        self.nb_classes = nb_classes
         if self.postprocessing_defences is not None:
             raise ValueError("This estimator does not support `postprocessing_defences`.")
         self._model = model
@@ -244,7 +241,7 @@ class HFMMPyTorch(PyTorchEstimator):
 
         :param x: Dictionary inputs for the CLIP model.
         :param batch_size: Batch size.
-        :return:
+        :return: Predictions over the supplied data.
         """
         from art.experimental.estimators.huggingface_multimodal.huggingface_mm_inputs import HuggingFaceMultiModalInput
 
@@ -278,7 +275,20 @@ class HFMMPyTorch(PyTorchEstimator):
         **kwargs,
     ) -> None:
         """
-        Fit the classifier on the training set
+        Fit the classifier on the training set `(x, y)`.
+
+        :param x: Training data.
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or index labels of
+                  shape (nb_samples,).
+        :param batch_size: Size of batches.
+        :param nb_epochs: Number of epochs to use for training.
+        :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
+        :param drop_last: Set to ``True`` to drop the last incomplete batch, if the dataset size is not divisible by
+                          the batch size. If ``False`` and the size of dataset is not divisible by the batch size, then
+                          the last batch will be smaller. (default: ``False``)
+        :param scheduler: Learning rate scheduler to run at the start of every epoch.
+        :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
+                       and providing it takes no effect.
         """
         import torch
         from art.experimental.estimators.huggingface_multimodal.huggingface_mm_inputs import HuggingFaceMultiModalInput
