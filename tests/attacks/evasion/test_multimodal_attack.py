@@ -160,140 +160,84 @@ def test_perturbation_equivalence(to_batch):
     assert np.allclose(manual_sample, current_x)
 
 
-@pytest.mark.only_with_platform("huggingface")
-@pytest.mark.parametrize("max_iter", [1, 5])
-def test_equivalence(max_iter):
-    """
-    Test that the result from using ART tools matches that obtained by manual calculation.
-    """
+def test_attack_functionality():
+
     import torch
+    import requests
+    from PIL import Image
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-    from transformers import CLIPModel
+    from transformers import CLIPProcessor, CLIPModel
 
     from art.experimental.estimators.huggingface_multimodal import HFMMPyTorch, HuggingFaceMultiModalInput
     from art.experimental.attacks.evasion import CLIPProjectedGradientDescentNumpy
 
-    def attack_clip():
+    std = np.asarray([0.26862954, 0.26130258, 0.27577711])
 
-        model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
-        loss_fn = torch.nn.CrossEntropyLoss()
+    def norm_bound_eps(eps_bound=None):
+        if eps_bound is None:
+            eps_bound = np.asarray([8 / 255, 8 / 255, 8 / 255])
+        eps_bound = np.abs(eps_bound / std)
+        return eps_bound
 
-        inputs, original_image, labels, num_classes = get_and_process_input()
-        original_image = inputs.pixel_values.clone().cpu().numpy()
+    text = ["a photo of a cat", "a photo of a bear", "a photo of a car", "a photo of a bus", "apples"]
 
-        my_input = HuggingFaceMultiModalInput(**inputs)
+    labels = torch.tensor(np.asarray([0, 1, 3, 4]))
 
-        art_classifier = HFMMPyTorch(
-            model,
-            loss=loss_fn,
-            clip_values=(np.min(original_image), np.max(original_image)),
-            input_shape=(3, 224, 224),
-        )
+    input_list = []
+    for fname in ["000000039769.jpg", "000000000285.jpg", "000000002006.jpg", "000000002149.jpg"]:
+        url = "http://images.cocodataset.org/val2017/" + fname
+        input_list.append(Image.open(requests.get(url, stream=True).raw))
 
-        attack = CLIPProjectedGradientDescentNumpy(
-            art_classifier,
-            max_iter=max_iter,
-            eps=np.ones((3, 224, 224)) * 0.3,
-            eps_step=np.ones((3, 224, 224)) * 0.1,
-            targeted=False,
-            num_random_init=0,
-        )
+    model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
+    processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
 
-        x_adv = attack.generate(my_input, labels)
-        x_adv = x_adv[0]
-        check_vals = torch.reshape(x_adv["pixel_values"], (-1,))
+    loss_fn = torch.nn.CrossEntropyLoss()
+    inputs = processor(text=text, images=input_list, return_tensors="pt", padding=True)
+    original_images = []
+    for i in range(4):
+        original_images.append(inputs["pixel_values"][i].clone().cpu().detach().numpy())
 
-        assert torch.all(torch.ge(check_vals, np.min(original_image)))
-        assert torch.all(torch.le(check_vals, np.max(original_image)))
+    original_images = np.stack(original_images)
 
-        eps_mins = torch.tensor(original_image - 0.3).float()
-        eps_maxs = torch.tensor(original_image + 0.3).float()
-        eps_mins = torch.reshape(eps_mins, (-1,))
-        eps_maxs = torch.reshape(eps_maxs, (-1,))
+    art_classifier = HFMMPyTorch(
+        model,
+        loss=loss_fn,
+        clip_values=(np.min(original_images), np.max(original_images)),
+        input_shape=(3, 224, 224),
+    )
 
-        assert torch.all(torch.ge(check_vals, eps_mins))
-        assert torch.all(torch.le(check_vals, eps_maxs))
+    my_input = HuggingFaceMultiModalInput(**inputs)
+    clean_preds = art_classifier.predict(my_input)
+    clean_acc = np.sum(np.argmax(clean_preds, axis=1) == labels.cpu().detach().numpy()) / len(labels)
 
-        return x_adv
+    attack = CLIPProjectedGradientDescentNumpy(
+        art_classifier,
+        max_iter=10,
+        eps=np.ones((3, 224, 224)) * np.reshape(norm_bound_eps(), (3, 1, 1)),
+        eps_step=np.ones((3, 224, 224)) * 0.1,
+    )
+    x_adv = attack.generate(my_input, labels)
+    adv_preds = art_classifier.predict(x_adv)
+    adv_acc = np.sum(np.argmax(adv_preds, axis=1) == labels.cpu().detach().numpy()) / len(labels)
 
-    def manual_attack():
+    x_adv = x_adv["pixel_values"]
+    x_adv = x_adv.cpu().detach().numpy()
 
-        lossfn = torch.nn.CrossEntropyLoss()
+    assert np.all(x_adv >= np.min(original_images))
+    assert np.all(x_adv <= np.max(original_images))
 
-        adv_current = None
-        model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
-        model = model.to(device)
+    eps_mins = original_images - np.ones((3, 224, 224)) * np.reshape(norm_bound_eps(), (3, 1, 1))
+    eps_maxs = original_images + np.ones((3, 224, 224)) * np.reshape(norm_bound_eps(), (3, 1, 1))
 
-        for i in range(max_iter):
+    eps_mins = eps_mins.flatten()
+    eps_maxs = eps_maxs.flatten()
+    x_adv = x_adv.flatten()
 
-            inputs, original_image, labels, _ = get_and_process_input()
-            inputs = inputs.to(device)
+    assert np.all(np.logical_or(x_adv >= eps_mins, np.isclose(x_adv, eps_mins)))
+    assert np.all(np.logical_or(x_adv <= eps_maxs, np.isclose(x_adv, eps_maxs)))
 
-            eps_mins = torch.tensor(original_image - 0.3).float().to(device)
-            eps_maxs = torch.tensor(original_image + 0.3).float().to(device)
-
-            init_max = torch.max(inputs["pixel_values"]).to(device)
-            init_min = torch.min(inputs["pixel_values"]).to(device)
-
-            if adv_current is not None:
-                inputs["pixel_values"] = torch.tensor(adv_current).to(device)
-            inputs["pixel_values"].requires_grad_(True)
-
-            outputs = model(**inputs)
-
-            loss = lossfn(outputs.logits_per_image, labels.to(device))
-            loss.backward()
-
-            sign = torch.sign(inputs["pixel_values"].grad)
-            pixel_values = torch.clamp(inputs["pixel_values"] + sign * 0.1, min=init_min, max=init_max)
-            pixel_values = torch.clamp(pixel_values, min=eps_mins, max=eps_maxs)
-
-            model.zero_grad()
-
-            adv_current = pixel_values.cpu().detach().numpy()
-
-        return adv_current
-
-    inputs, original_image, labels, num_classes = get_and_process_input()
-    manual_adv = manual_attack()
-    art_adv = attack_clip()
-
-    art_adv = art_adv["pixel_values"]
-    art_adv = art_adv.cpu().detach().numpy()
-
-    art_adv = art_adv.flatten()
-    original_image = original_image.flatten()
-    manual_adv = manual_adv.flatten()
-
-    """
-    Assert valid adversarial examples
-    """
-    assert np.all(art_adv >= np.min(original_image))
-    assert np.all(art_adv <= np.max(original_image))
-    assert np.all(manual_adv >= np.min(original_image))
-    assert np.all(manual_adv <= np.max(original_image))
-
-    eps_mins = original_image - 0.3
-    eps_maxs = original_image + 0.3
-
-    assert np.all(art_adv >= eps_mins)
-    assert np.all(art_adv <= eps_maxs)
-    assert np.all(manual_adv >= eps_mins)
-    assert np.all(manual_adv <= eps_maxs)
-
-    art_delta = art_adv - original_image
-    target = manual_adv - original_image
-    # np.save('art_adv_' + str(max_iter) + '.npy', art_delta)
-    # target = np.load('art_adv_' + str(max_iter) + '.npy')
-
-    assert np.allclose(art_delta, target, rtol=1e-04, atol=1e-04)
-
-
-"""
-TODO: move some of the fits to more appropriate testing files
-"""
+    assert clean_acc == 1.0
+    assert adv_acc == 0.0
 
 
 @pytest.mark.only_with_platform("huggingface")

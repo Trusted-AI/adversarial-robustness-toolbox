@@ -1,5 +1,5 @@
 import numpy as np
-from art.experimental.estimators.huggingface_multimodal import HFMMPyTorch, MultiModalHuggingFaceInput
+from art.experimental.estimators.huggingface_multimodal import HFMMPyTorch, HuggingFaceMultiModalInput
 from art.attacks.evasion import ProjectedGradientDescent
 
 import torch
