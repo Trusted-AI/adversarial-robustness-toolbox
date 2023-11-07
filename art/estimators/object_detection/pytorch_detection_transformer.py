@@ -18,15 +18,14 @@
 """
 This module implements the task specific estimator for DEtection TRansformer (DETR) in PyTorch.
 
- | Paper link: https://arxiv.org/abs/2005.12872
+| Paper link: https://arxiv.org/abs/2005.12872
 """
 import logging
-from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, Union, Any
+from typing import Any, Dict, List, Optional, Tuple, Union, TYPE_CHECKING
 
 import numpy as np
 
-from art.estimators.object_detection.object_detector import ObjectDetectorMixin
-from art.estimators.pytorch import PyTorchEstimator
+from art.estimators.object_detection.pytorch_object_detector import PyTorchObjectDetector
 
 if TYPE_CHECKING:
     # pylint: disable=C0412
@@ -39,15 +38,16 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class PyTorchDetectionTransformer(ObjectDetectorMixin, PyTorchEstimator):
+class PyTorchDetectionTransformer(PyTorchObjectDetector):
     """
     This class implements a model-specific object detector using DEtection TRansformer (DETR)
     and PyTorch following the input and output formats of torchvision.
+
+    | Paper link: https://arxiv.org/abs/2005.12872
     """
 
     MIN_IMAGE_SIZE = 800
     MAX_IMAGE_SIZE = 1333
-    estimator_params = PyTorchEstimator.estimator_params + ["attack_losses"]
 
     def __init__(
         self,
@@ -68,13 +68,13 @@ class PyTorchDetectionTransformer(ObjectDetectorMixin, PyTorchEstimator):
         """
         Initialization.
 
-        :param model: DETR model. The output of the model is `List[Dict[Tensor]]`, one for each input image. The
-                      fields of the Dict are as follows:
+        :param model: DETR model. The output of the model is `List[Dict[str, torch.Tensor]]`, one for each input
+                      image. The fields of the Dict are as follows:
 
-                      - boxes (FloatTensor[N, 4]): the predicted boxes in [x1, y1, x2, y2] format, with values \
-                        between 0 and H and 0 and W
-                      - labels (Tensor[N]): the predicted labels for each image
-                      - scores (Tensor[N]): the scores or each prediction
+                      - boxes [N, 4]: the boxes in [x1, y1, x2, y2] format, with 0 <= x1 < x2 <= W and
+                        0 <= y1 < y2 <= H.
+                      - labels [N]: the labels for each image.
+                      - scores [N]: the scores of each prediction.
         :param input_shape: Tuple of the form `(height, width)` of ints representing input image height and width
         :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
                maximum values allowed for features. If floats are provided, these will be used as the range of all
@@ -86,46 +86,27 @@ class PyTorchDetectionTransformer(ObjectDetectorMixin, PyTorchEstimator):
         :param preprocessing: Tuple of the form `(subtrahend, divisor)` of floats or `np.ndarray` of values to be
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
+        :param attack_losses: Tuple of any combination of strings of loss components: 'loss_ce', 'loss_bbox', and
+                              'loss_giou'.
         :param device_type: Type of device to be used for model and tensors, if `cpu` run on CPU, if `gpu` run on GPU
                             if available otherwise run on CPU.
         """
         import torch
         from art.estimators.object_detection.detr import HungarianMatcher, SetCriterion, grad_enabled_forward
 
-        if model is None:
+        if model is None:  # pragma: no cover
             model = torch.hub.load("facebookresearch/detr", "detr_resnet50", pretrained=True)
 
         func_type = type(model.forward)
         model.forward = func_type(grad_enabled_forward, model)  # type: ignore
 
-        super().__init__(
-            model=model,
-            clip_values=clip_values,
-            channels_first=channels_first,
-            preprocessing_defences=preprocessing_defences,
-            postprocessing_defences=postprocessing_defences,
-            preprocessing=preprocessing,
-            device_type=device_type,
-        )
-
-        # Check clip values
-        if self.clip_values is not None:
-            if not np.all(self.clip_values[0] == 0):
-                raise ValueError("This estimator requires normalized input images with clip_vales=(0, 1).")
-            if not np.all(self.clip_values[1] == 1):  # pragma: no cover
-                raise ValueError("This estimator requires normalized input images with clip_vales=(0, 1).")
-
-        if self.postprocessing_defences is not None:
-            raise ValueError("This estimator does not support `postprocessing_defences`.")
-
-        self._input_shape = input_shape
+        self.max_norm = 0.1
         cost_class = 1.0
         cost_bbox = 5.0
         cost_giou = 2.0
         bbox_loss_coef = 5.0
         giou_loss_coef = 2.0
         eos_coef = 0.1
-        self.max_norm = 0.1
         num_classes = 91
 
         matcher = HungarianMatcher(cost_class=cost_class, cost_bbox=cost_bbox, cost_giou=cost_giou)
@@ -135,34 +116,18 @@ class PyTorchDetectionTransformer(ObjectDetectorMixin, PyTorchEstimator):
             num_classes, matcher=matcher, weight_dict=self.weight_dict, eos_coef=eos_coef, losses=losses
         )
 
-        self._model.to(self._device)
-        self._model.eval()
-        self.attack_losses: Tuple[str, ...] = attack_losses
-
-    @property
-    def native_label_is_pytorch_format(self) -> bool:
-        """
-        Are the native labels in PyTorch format [x1, y1, x2, y2]?
-        """
-        return True
-
-    @property
-    def input_shape(self) -> Tuple[int, ...]:
-        """
-        Return the shape of one input sample.
-
-        :return: Shape of one input sample.
-        """
-        return self._input_shape
-
-    @property
-    def device(self) -> "torch.device":
-        """
-        Get current used device.
-
-        :return: Current used device.
-        """
-        return self._device
+        super().__init__(
+            model=model,
+            input_shape=input_shape,
+            optimizer=None,
+            clip_values=clip_values,
+            channels_first=channels_first,
+            preprocessing_defences=preprocessing_defences,
+            postprocessing_defences=postprocessing_defences,
+            preprocessing=preprocessing,
+            attack_losses=attack_losses,
+            device_type=device_type,
+        )
 
     def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> List[Dict[str, np.ndarray]]:
         """
@@ -174,16 +139,18 @@ class PyTorchDetectionTransformer(ObjectDetectorMixin, PyTorchEstimator):
                  are as follows:
 
                  - boxes [N, 4]: the boxes in [x1, y1, x2, y2] format, with 0 <= x1 < x2 <= W and 0 <= y1 < y2 <= H.
-                 - labels [N]: the labels for each image
+                 - labels [N]: the labels for each image.
                  - scores [N]: the scores or each prediction.
         """
         import torch
+        from torch.utils.data import TensorDataset, DataLoader
+
         from art.estimators.object_detection.detr import rescale_bboxes
 
         self._model.eval()
-        x_resized, _ = self._apply_resizing(x)
+        # x_resized, _ = self._apply_resizing(x)
 
-        x_preprocessed, _ = self._apply_preprocessing(x_resized, y=None, fit=False)
+        x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
 
         if self.clip_values is not None:
             norm_factor = self.clip_values[1]
@@ -193,33 +160,50 @@ class PyTorchDetectionTransformer(ObjectDetectorMixin, PyTorchEstimator):
         x_preprocessed_tensor = torch.from_numpy(x_preprocessed).to(self.device)
         x_preprocessed_tensor /= norm_factor
 
-        model_output = self._model(x_preprocessed_tensor)
+        # Create dataloader
+        dataset = TensorDataset(x_preprocessed_tensor)
+        dataloader = DataLoader(dataset=dataset, batch_size=batch_size, shuffle=False)
 
         predictions: List[Dict[str, np.ndarray]] = []
-        for i in range(x_preprocessed_tensor.shape[0]):
-            predictions.append(
-                {
-                    "boxes": rescale_bboxes(
-                        model_output["pred_boxes"][i, :, :].cpu(), (self._input_shape[2], self._input_shape[1])
-                    )
-                    .detach()
-                    .numpy(),
-                    "labels": model_output["pred_logits"][i, :, :]
+        for (x_batch,) in dataloader:
+            # Move inputs to device
+            x_batch = x_batch.to(self._device)
+
+            with torch.no_grad():
+                model_output = self._model(x_batch)
+
+            for i in range(x_batch.shape[0]):
+                boxes = (
+                    rescale_bboxes(model_output["pred_boxes"][i, :, :].detach().cpu(), (self._input_shape[2], self._input_shape[1]))
+                    .numpy()
+                )
+                labels = (
+                    model_output["pred_logits"][i, :, :]
                     .unsqueeze(0)
                     .softmax(-1)[0, :, :-1]
                     .max(dim=1)[1]
                     .detach()
                     .cpu()
-                    .numpy(),
-                    "scores": model_output["pred_logits"][i, :, :]
+                    .numpy()
+                )
+                scores = (
+                    model_output["pred_logits"][i, :, :]
                     .unsqueeze(0)
                     .softmax(-1)[0, :, :-1]
                     .max(dim=1)[0]
                     .detach()
                     .cpu()
-                    .numpy(),
+                    .numpy()
+                )
+
+                pred_dict = {
+                    "boxes": boxes,
+                    "labels": labels,
+                    "scores": scores,
                 }
-            )
+
+                predictions.append(pred_dict)
+
         return predictions
 
     def _get_losses(

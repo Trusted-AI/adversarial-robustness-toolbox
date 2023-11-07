@@ -144,7 +144,8 @@ class PyTorchYolo(PyTorchObjectDetector):
 
     def _translate_predictions(self, predictions: "torch.Tensor") -> List[Dict[str, "torch.Tensor"]]:
         """
-        Translate object detection predictions from the model format (YOLO) to ART format (torchvision).
+        Translate object detection predictions from the model format (YOLO) to ART format (torchvision) and
+        convert tensors to numpy arrays.
 
         :param predictions: Object detection labels in format xcycwh (YOLO).
         :return: Object detection labels in format x1y1x2y2 (torchvision).
@@ -173,9 +174,9 @@ class PyTorchYolo(PyTorchObjectDetector):
             scores = pred[:, 4]
 
             pred_dict = {
-                "boxes": boxes,
-                "labels": labels,
-                "scores": scores,
+                "boxes": boxes.detach().cpu().numpy(),
+                "labels": labels.detach().cpu().numpy(),
+                "scores": scores.detach().cpu().numpy(),
             }
 
             predictions_x1y1x2y2.append(pred_dict)

@@ -258,9 +258,8 @@ def test_preprocessing_defences(get_pytorch_detr):
 def test_compute_losses(get_pytorch_detr):
 
     object_detector, x_test, y_test = get_pytorch_detr
-    object_detector.attack_losses = "loss_ce"
     losses = object_detector.compute_losses(x=x_test, y=y_test)
-    assert len(losses) == 1
+    assert len(losses) == 3
 
 
 @pytest.mark.only_with_platform("pytorch")
