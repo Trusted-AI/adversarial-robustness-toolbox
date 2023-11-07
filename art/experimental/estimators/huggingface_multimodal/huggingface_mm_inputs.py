@@ -85,16 +85,10 @@ class HuggingFaceMultiModalInput(UserDict):
                 f"Unsupported key {key} with type {type(key)}, " f"value {value} for __setitem__ in ARTInput"
             )
 
-    def __getitem__(self, item: Union[slice, Tuple, int, str]) -> Union[HuggingFaceMultiModalInput, "torch.Tensor"]:
+    def __getitem__(self, item: Union[slice, Tuple, int, str, np.ndarray]) -> Union[HuggingFaceMultiModalInput, "torch.Tensor"]:
         # print('__getitem__ key ', item)
         # print('with type ', type(item))
-        if isinstance(item, (slice, tuple)):
-            pixel_values = UserDict.__getitem__(self, "pixel_values")
-            pixel_values = pixel_values[item]
-            output = HuggingFaceMultiModalInput(**self)
-            output["pixel_values"] = pixel_values
-            return output
-        if isinstance(item, int):
+        if isinstance(item, (slice, tuple, int)):
             pixel_values = UserDict.__getitem__(self, "pixel_values")
             pixel_values = pixel_values[item]
             output = HuggingFaceMultiModalInput(**self)

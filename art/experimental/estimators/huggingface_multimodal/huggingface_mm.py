@@ -308,6 +308,7 @@ class HFMMPyTorch(PyTorchEstimator):
                 y_batch = y_tensor[ind[batch_size * m : batch_size * (m + 1)]]
 
                 x_batch = x_batch.to(self._device)
+                y_batch = y_batch.to(self._device)
 
                 # Zero the parameter gradients
                 self._optimizer.zero_grad()

@@ -12,7 +12,7 @@ ssl._create_default_https_context = ssl._create_unverified_context
 
 MEAN = np.asarray([0.48145466, 0.4578275, 0.40821073])
 STD = np.asarray([0.26862954, 0.26130258, 0.27577711])
-
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 def get_and_process_input(to_one_hot=False, return_batch=False):
 
@@ -73,7 +73,7 @@ def get_cifar_data():
     x_train = x_train / 255.0
     x_test = x_test / 255.0
 
-    return (x_train[0:100], y_train[0:100]), (x_test[0:100], y_test[0:100])
+    return (x_train[0:250], y_train[0:250]), (x_test[0:250], y_test[0:250])
 
 
 def attack_clip_pgd():
@@ -137,10 +137,11 @@ def cifar_clip_pgd():
     import requests
 
     from transformers import CLIPProcessor, CLIPModel
-
+    from art.experimental.estimators.huggingface_multimodal import HFMMPyTorch, HuggingFaceMultiModalInput
+    from art.experimental.attacks.evasion import CLIPProjectedGradientDescentNumpy
     text = ["a photo of a cat", "a photo of a bear", "a photo of a car", "a photo of a bus", "apples"]
 
-    labels = torch.tensor(np.asarray([0, 1, 3]))
+    labels = torch.tensor(np.asarray([0, 1, 3, 4]))
 
     input_list = []
     for fname in ["000000039769.jpg", "000000000285.jpg", "000000002006.jpg", "000000002149.jpg"]:
@@ -159,14 +160,16 @@ def cifar_clip_pgd():
     original_images = np.concatenate(original_images)
 
     art_classifier = HFMMPyTorch(
-        model, loss=loss_fn, clip_values=(np.min(original_images), np.max(original_images)), input_shape=(3, 224, 224)
+        model, loss=loss_fn, clip_values=(np.min(original_images), np.max(original_images)), input_shape=(3, 224, 224),
+        nb_classes=5,
     )
 
-    my_input = MultiModalHuggingFaceInput(**inputs)
+    my_input = HuggingFaceMultiModalInput(**inputs)
     clean_preds = art_classifier.predict(my_input)
     print(clean_preds)
-
-    attack = ProjectedGradientDescent(
+    clean_acc = np.sum(np.argmax(clean_preds, axis=1) == labels.cpu().detach().numpy()) / len(labels)
+    print('clean acc ', clean_acc)
+    attack = CLIPProjectedGradientDescentNumpy(
         art_classifier,
         max_iter=10,
         eps=np.ones((3, 224, 224)) * np.reshape(norm_bound_eps(), (3, 1, 1)),
@@ -174,6 +177,8 @@ def cifar_clip_pgd():
     )
     x_adv = attack.generate(my_input, labels)
     adv_preds = art_classifier.predict(x_adv)
+    adv_acc = np.sum(np.argmax(adv_preds, axis=1) == labels.cpu().detach().numpy()) / len(labels)
+    print('adv_acc ', adv_acc)
 
     print(clean_preds)
     print(adv_preds)
@@ -247,7 +252,7 @@ def test_adv_train():
     original_image = inputs["pixel_values"][0].clone().cpu().detach().numpy()
 
     art_classifier = HFMMPyTorch(
-        model,
+        model.to(device),
         nb_classes=num_classes,
         optimizer=optimizer,
         loss=torch.nn.CrossEntropyLoss(),
@@ -263,15 +268,15 @@ def test_adv_train():
     )
 
     trainer = AdversarialTrainer(
-        art_classifier, attacks=attack,
+        art_classifier, attacks=attack, ratio=1.0,
     )
     inputs = HuggingFaceMultiModalInput(**inputs)
 
     trainer.fit(inputs, y_train)
 
 
-test_adv_train()
+# test_adv_train()
 # test_predict()
 # test_fit()
 # attack_clip_pgd()
-# cifar_clip_pgd()
+cifar_clip_pgd()
