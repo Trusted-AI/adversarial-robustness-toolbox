@@ -171,13 +171,6 @@ def test_errors(art_warning):
                 attack_losses=("loss_classifier", "loss_box_reg", "loss_objectness", "loss_rpn_box_reg"),
             )
 
-        with pytest.raises(ValueError):
-            PyTorchFasterRCNN(
-                clip_values=(0, 1),
-                attack_losses=("loss_classifier", "loss_box_reg", "loss_objectness", "loss_rpn_box_reg"),
-                preprocessing=(0, 1),
-            )
-
         from art.defences.postprocessor.rounded import Rounded
 
         post_def = Rounded()

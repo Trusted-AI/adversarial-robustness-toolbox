@@ -125,8 +125,6 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
             if self.clip_values[1] <= 0:  # pragma: no cover
                 raise ValueError("This classifier requires un-normalized input images with clip_vales=(0, max_value).")
 
-        if preprocessing is not None:
-            raise ValueError("This estimator does not support `preprocessing`.")
         if self.postprocessing_defences is not None:
             raise ValueError("This estimator does not support `postprocessing_defences`.")
 
@@ -258,13 +256,26 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
         labels_translated = [{k: v.to(self.device) for k, v in y_i.items()} for y_i in labels]
         return labels_translated
 
-    def _translate_predictions(self, predictions: Any) -> List[Dict[str, "torch.Tensor"]]:  # pylint: disable=R0201
+    def _translate_predictions(self, predictions: Any) -> List[Dict[str, np.ndarray]]:  # pylint: disable=R0201
         """
-        Translate object detection predictions from the model format (torchvision) to ART format (torchvision).
+        Translate object detection predictions from the model format (torchvision) to ART format (torchvision) and
+        convert tensors to numpy arrays.
 
         :param predictions: Object detection predictions in format x1y1x2y2 (torchvision).
         :return: Object detection predictions in format x1y1x2y2 (torchvision).
         """
+        predictions_x1y1x2y2: List[Dict[str, np.ndarray]] = []
+        for pred in predictions:
+            prediction = {}
+
+            prediction["boxes"] = pred["boxes"].detach().cpu().numpy()
+            prediction["labels"] = pred["labels"].detach().cpu().numpy()
+            prediction["scores"] = pred["scores"].detach().cpu().numpy()
+            if "masks" in pred:
+                prediction["masks"] = pred["masks"].detach().cpu().numpy().squeeze()
+
+            predictions_x1y1x2y2.append(prediction)
+
         return predictions
 
     def _get_losses(
@@ -282,6 +293,9 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
         :return: Loss components and gradients of the input `x`.
         """
         self._model.train()
+
+        self.set_dropout(False)
+        self.set_multihead_attention(False)
 
         # Apply preprocessing and convert to tensors
         x_preprocessed, y_preprocessed = self._preprocess_and_convert_inputs(x=x, y=y, fit=False, no_grad=False)
@@ -389,20 +403,10 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
 
             # Run prediction
             with torch.no_grad():
-                predictions_x1y1x2y2 = self._model(x_batch)
+                outputs = self._model(x_batch)
 
-            predictions_x1y1x2y2 = self._translate_predictions(predictions_x1y1x2y2)
-
-            for prediction_x1y1x2y2 in predictions_x1y1x2y2:
-                prediction = {}
-
-                prediction["boxes"] = prediction_x1y1x2y2["boxes"].detach().cpu().numpy()
-                prediction["labels"] = prediction_x1y1x2y2["labels"].detach().cpu().numpy()
-                prediction["scores"] = prediction_x1y1x2y2["scores"].detach().cpu().numpy()
-                if "masks" in prediction_x1y1x2y2:
-                    prediction["masks"] = prediction_x1y1x2y2["masks"].detach().cpu().numpy().squeeze()
-
-                predictions.append(prediction)
+            predictions_x1y1x2y2 = self._translate_predictions(outputs)
+            predictions.extend(predictions_x1y1x2y2)
 
         return predictions
 
