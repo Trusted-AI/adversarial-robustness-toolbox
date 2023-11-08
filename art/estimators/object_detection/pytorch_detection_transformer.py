@@ -129,82 +129,98 @@ class PyTorchDetectionTransformer(PyTorchObjectDetector):
             device_type=device_type,
         )
 
-    def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> List[Dict[str, np.ndarray]]:
+    def _translate_labels(self, labels: List[Dict[str, "torch.Tensor"]]) -> List[Any]:
         """
-        Perform prediction for a batch of inputs.
+        Translate object detection labels from ART format (torchvision) to the model format (DETR) and
+        move tensors to GPU, if applicable.
 
-        :param x: Samples of shape (nb_samples, height, width, nb_channels).
-        :param batch_size: Batch size.
-        :return: Predictions of format `List[Dict[str, np.ndarray]]`, one for each input image. The fields of the Dict
-                 are as follows:
-
-                 - boxes [N, 4]: the boxes in [x1, y1, x2, y2] format, with 0 <= x1 < x2 <= W and 0 <= y1 < y2 <= H.
-                 - labels [N]: the labels for each image.
-                 - scores [N]: the scores or each prediction.
+        :param labels: Object detection labels in format x1y1x2y2 (torchvision).
+        :return: Object detection labels in format xcycwh (DETR).
         """
-        import torch
-        from torch.utils.data import TensorDataset, DataLoader
+        from art.estimators.object_detection.detr import revert_rescale_bboxes
 
+        if self.channels_first:
+            height = self.input_shape[1]
+            width = self.input_shape[2]
+        else:
+            height = self.input_shape[0]
+            width = self.input_shape[1]
+
+        labels_translated = []
+
+        for label_dict in labels:
+            label_dict_translated = {}
+
+            boxes = revert_rescale_bboxes(label_dict["boxes"], (height, width))
+            label_dict_translated['boxes'] = boxes.to(self.device)
+
+            label = label_dict['labels']
+            label_dict_translated['labels'] = label.to(self.device)
+
+            if 'scores' in label_dict:
+                scores = label_dict['scores']
+                label_dict_translated['scores'] = scores.to(self.device)
+
+            labels_translated.append(label_dict_translated)
+
+        return labels_translated
+
+    def _translate_predictions(self, predictions: Dict[str, "torch.Tensor"]) -> List[Dict[str, "torch.Tensor"]]:
+        """
+        Translate object detection predictions from the model format (DETR) to ART format (torchvision) and
+        convert tensors to numpy arrays.
+
+        :param predictions: Object detection labels in format xcycwh (DETR).
+        :return: Object detection labels in format x1y1x2y2 (torchvision).
+        """
         from art.estimators.object_detection.detr import rescale_bboxes
 
-        self._model.eval()
-        # x_resized, _ = self._apply_resizing(x)
-
-        x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
-
-        if self.clip_values is not None:
-            norm_factor = self.clip_values[1]
+        if self.channels_first:
+            height = self.input_shape[1]
+            width = self.input_shape[2]
         else:
-            norm_factor = 1.0
+            height = self.input_shape[0]
+            width = self.input_shape[1]
 
-        x_preprocessed_tensor = torch.from_numpy(x_preprocessed).to(self.device)
-        x_preprocessed_tensor /= norm_factor
+        pred_boxes = predictions['pred_boxes']
+        pred_logits = predictions['pred_logits']
 
-        # Create dataloader
-        dataset = TensorDataset(x_preprocessed_tensor)
-        dataloader = DataLoader(dataset=dataset, batch_size=batch_size, shuffle=False)
+        predictions_x1y1x2y2 = []
 
-        predictions: List[Dict[str, np.ndarray]] = []
-        for (x_batch,) in dataloader:
-            # Move inputs to device
-            x_batch = x_batch.to(self._device)
+        for pred_box, pred_logit in zip(pred_boxes, pred_logits):
+            boxes = (
+                rescale_bboxes(pred_box.detach().cpu(), (height, width))
+                .numpy()
+            )
+            labels = (
+                pred_logit
+                .unsqueeze(0)
+                .softmax(-1)[0, :, :-1]
+                .max(dim=1)[1]
+                .detach()
+                .cpu()
+                .numpy()
+            )
+            scores = (
+                pred_logit
+                .unsqueeze(0)
+                .softmax(-1)[0, :, :-1]
+                .max(dim=1)[0]
+                .detach()
+                .cpu()
+                .numpy()
+            )
 
-            with torch.no_grad():
-                model_output = self._model(x_batch)
 
-            for i in range(x_batch.shape[0]):
-                boxes = (
-                    rescale_bboxes(model_output["pred_boxes"][i, :, :].detach().cpu(), (self._input_shape[2], self._input_shape[1]))
-                    .numpy()
-                )
-                labels = (
-                    model_output["pred_logits"][i, :, :]
-                    .unsqueeze(0)
-                    .softmax(-1)[0, :, :-1]
-                    .max(dim=1)[1]
-                    .detach()
-                    .cpu()
-                    .numpy()
-                )
-                scores = (
-                    model_output["pred_logits"][i, :, :]
-                    .unsqueeze(0)
-                    .softmax(-1)[0, :, :-1]
-                    .max(dim=1)[0]
-                    .detach()
-                    .cpu()
-                    .numpy()
-                )
+            pred_dict = {
+                "boxes": boxes,
+                "labels": labels,
+                "scores": scores,
+            }
 
-                pred_dict = {
-                    "boxes": boxes,
-                    "labels": labels,
-                    "scores": scores,
-                }
+            predictions_x1y1x2y2.append(pred_dict)
 
-                predictions.append(pred_dict)
-
-        return predictions
+        return predictions_x1y1x2y2
 
     def _get_losses(
         self, x: Union[np.ndarray, "torch.Tensor"], y: List[Dict[str, Union[np.ndarray, "torch.Tensor"]]]
@@ -220,87 +236,28 @@ class PyTorchDetectionTransformer(PyTorchObjectDetector):
                   - labels (Int64Tensor[N]): the labels for each image
         :return: Loss gradients of the same shape as `x`.
         """
-        import torch
-
         self._model.train()
 
         self.set_dropout(False)
         self.set_multihead_attention(False)
 
-        if self.all_framework_preprocessing:
-            if y is not None and isinstance(y, list) and isinstance(y[0]["boxes"], np.ndarray):
-                y_tensor = []
-                for y_i in y:
-                    y_t = {
-                        "boxes": torch.from_numpy(y_i["boxes"]).type(torch.float).to(self.device),
-                        "labels": torch.from_numpy(y_i["labels"]).type(torch.int64).to(self.device),
-                    }
-                    y_tensor.append(y_t)
-            elif y is not None and isinstance(y, dict):
-                y_tensor = []
-                for i in range(y["boxes"].shape[0]):
-                    y_t = {"boxes": y["boxes"][i], "labels": y["labels"][i]}
-                    y_tensor.append(y_t)
-            else:
-                y_tensor = y  # type: ignore
+        # Apply preprocessing and convert to tensors
+        x_preprocessed, y_preprocessed = self._preprocess_and_convert_inputs(x=x, y=y, fit=False, no_grad=False)
 
-            if isinstance(x, np.ndarray):
-                if self.clip_values is not None:
-                    norm_factor = self.clip_values[1]
-                else:
-                    norm_factor = 1.0
+        # Move inputs to device
+        x_preprocessed = x_preprocessed.to(self.device)
+        y_preprocessed = self._translate_labels(y_preprocessed)
 
-                x_grad = torch.from_numpy(x / norm_factor).to(self.device)
-                x_grad.requires_grad = True
-
-            else:
-                x_grad = x.to(self.device)
-                if x_grad.shape[2] < x_grad.shape[0] and x_grad.shape[2] < x_grad.shape[1]:
-                    x_grad = torch.permute(x_grad, (2, 0, 1)).to(self.device)
-
-            image_tensor_list_grad = x_grad
-            x_preprocessed, y_preprocessed = self._apply_preprocessing(x_grad, y=y_tensor, fit=False, no_grad=False)
-            inputs_t = x_preprocessed
-
-        elif isinstance(x, np.ndarray):
-            if y is not None and isinstance(y, list) and isinstance(y[0]["boxes"], np.ndarray):
-                y_tensor = []
-                for y_i in y:
-                    y_t = {
-                        "boxes": torch.from_numpy(y_i["boxes"]).type(torch.float).to(self.device),
-                        "labels": torch.from_numpy(y_i["labels"]).type(torch.int64).to(self.device),
-                    }
-                    y_tensor.append(y_t)
-            elif y is not None and isinstance(y[0]["boxes"], np.ndarray):
-                y_tensor = []
-                for y_i in y_preprocessed:
-                    y_t = {
-                        "boxes": torch.from_numpy(y_i["boxes"]).type(torch.float).to(self.device),
-                        "labels": torch.from_numpy(y_i["labels"]).type(torch.int64).to(self.device),
-                    }
-                    y_tensor.append(y_t)
-            else:
-                y_tensor = y  # type: ignore
-
-            x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y=y_tensor, fit=False, no_grad=True)
-
-            if self.clip_values is not None:
-                norm_factor = self.clip_values[1]
-            else:
-                norm_factor = 1.0
-
-            x_grad = torch.from_numpy(x_preprocessed / norm_factor).to(self.device)
-            x_grad.requires_grad = True
-            image_tensor_list_grad = x_grad
-            inputs_t = image_tensor_list_grad
-
+        # Set gradients again after inputs are moved to another device
+        if x_preprocessed.is_leaf:
+            x_preprocessed.requires_grad = True
         else:
-            raise NotImplementedError("Combination of inputs and preprocessing not supported.")
+            x_preprocessed.retain_grad()
 
-        outputs = self._model(inputs_t)
+        outputs = self._model(x_preprocessed)
         loss_components = self.criterion(outputs, y_preprocessed)
 
-        return loss_components, inputs_t, image_tensor_list_grad
+        return loss_components, x_preprocessed
 
     def loss_gradient(
         self, x: Union[np.ndarray, "torch.Tensor"], y: List[Dict[str, "torch.Tensor"]], **kwargs
@@ -317,40 +274,39 @@ class PyTorchDetectionTransformer(PyTorchObjectDetector):
                   - labels (Tensor[N]): the predicted labels for each image
         :return: Loss gradients of the same shape as `x`.
         """
-        x_resized, y_resized = self._apply_resizing(x, y)
-        output, inputs_t, image_tensor_list_grad = self._get_losses(x=x_resized, y=y_resized)
-        loss = sum(output[k] * self.weight_dict[k] for k in output.keys() if k in self.weight_dict)
+        loss_components, x_grad = self._get_losses(x=x, y=y)
 
+        loss = sum(loss_components[k] * self.weight_dict[k] for k in loss_components.keys() if k in self.weight_dict)
+
+        # Clean gradients
         self._model.zero_grad()
 
+        # Compute gradients
         loss.backward(retain_graph=True)  # type: ignore
 
-        if isinstance(x_resized, np.ndarray):
-            if image_tensor_list_grad.grad is not None:
-                grads = image_tensor_list_grad.grad.cpu().numpy().copy()
+        if x_grad.grad is not None:
+            if isinstance(x, np.ndarray):
+                grads = x_grad.grad.cpu().numpy()
             else:
-                raise ValueError("Gradient term in PyTorch model is `None`.")
+                grads = x_grad.grad.clone()
         else:
-            if inputs_t.grad is not None:
-                grads = inputs_t.grad.clone()
-            else:
-                raise ValueError("Gradient term in PyTorch model is `None`.")
+            raise ValueError("Gradient term in PyTorch model is `None`.")
 
         if self.clip_values is not None:
             grads = grads / self.clip_values[1]
 
         if not self.all_framework_preprocessing:
-            grads = self._apply_preprocessing_gradient(x_resized, grads)
+            grads = self._apply_preprocessing_gradient(x, grads)
+
+        if not self.channels_first:
+            if isinstance(x, np.ndarray):
+                grads = np.transpose(grads, (0, 2, 3, 1))
+            else:
+                grads = torch.permute(grads, (0, 2, 3, 1))
+
+        assert grads.shape == x.shape
 
         return grads
-
-    def get_activations(
-        self, x: np.ndarray, layer: Union[int, str], batch_size: int, framework: bool = False
-    ) -> np.ndarray:
-        raise NotImplementedError
-
-    def fit(self, x: np.ndarray, y, batch_size: int = 128, nb_epochs: int = 20, **kwargs) -> None:
-        raise NotImplementedError
 
     def compute_losses(
         self, x: np.ndarray, y: List[Dict[str, Union[np.ndarray, "torch.Tensor"]]]
@@ -369,12 +325,10 @@ class PyTorchDetectionTransformer(PyTorchObjectDetector):
                   - scores (Tensor[N]): the scores or each prediction.
         :return: Dictionary of loss components.
         """
-        x_resized, y = self._apply_resizing(x, y)
-        output_tensor, _, _ = self._get_losses(x=x_resized, y=y)
+        loss_components, _ = self._get_losses(x=x, y=y)
         output = {}
-        for key, value in output_tensor.items():
-            if key in self.attack_losses:
-                output[key] = value.detach().cpu().numpy()
+        for key, value in loss_components.items():
+            output[key] = value.detach().cpu().numpy()
         return output
 
     def compute_loss(  # type: ignore
@@ -396,102 +350,19 @@ class PyTorchDetectionTransformer(PyTorchObjectDetector):
         """
         import torch
 
-        x, y = self._apply_resizing(x, y)
-        output, _, _ = self._get_losses(x=x, y=y)
+        loss_components, _ = self._get_losses(x=x, y=y)
 
+        # Compute the gradient and return
         loss = None
         for loss_name in self.attack_losses:
             if loss is None:
-                loss = output[loss_name]
+                loss = loss_components[loss_name]
             else:
-                loss = loss + output[loss_name]
+                loss = loss + loss_components[loss_name]
+
         assert loss is not None
 
         if isinstance(x, torch.Tensor):
             return loss
 
         return loss.detach().cpu().numpy()
-
-    def _apply_resizing(
-        self,
-        x: Union[np.ndarray, "torch.Tensor"],
-        y: Any = None,
-        height: int = 800,
-        width: int = 800,
-    ) -> Tuple[Union[np.ndarray, "torch.Tensor"], List[Any]]:
-        """
-        Resize the input and targets to dimensions expected by DETR.
-
-        :param x: Array or Tensor representing images of any size
-        :param y: List of targets to be transformed
-        :param height: Int representing desired height, the default is compatible with DETR
-        :param width: Int representing desired width, the default is compatible with DETR
-        """
-        import cv2
-        import torchvision.transforms as T
-        import torch
-        from art.estimators.object_detection.detr import revert_rescale_bboxes
-
-        if (
-            self._input_shape[1] < self.MIN_IMAGE_SIZE
-            or self._input_shape[1] > self.MAX_IMAGE_SIZE
-            or self._input_shape[2] < self.MIN_IMAGE_SIZE
-            or self.input_shape[2] > self.MAX_IMAGE_SIZE
-        ):
-            resized_imgs = []
-            if isinstance(x, torch.Tensor):
-                x = T.Resize(size=(height, width))(x).to(self.device)
-            else:
-                for i in x:
-                    resized = cv2.resize(
-                        i.transpose(1, 2, 0),
-                        dsize=(height, width),
-                        interpolation=cv2.INTER_CUBIC,
-                    )
-                    resized = resized.transpose(2, 0, 1)
-                    resized_imgs.append(resized)
-                x = np.array(resized_imgs)
-
-        elif self._input_shape[1] != self._input_shape[2]:
-            rescale_dim = max(self._input_shape[1], self._input_shape[2])
-            resized_imgs = []
-            if isinstance(x, torch.Tensor):
-                x = T.Resize(size=(rescale_dim, rescale_dim))(x).to(self.device)
-            else:
-                for i in x:
-                    resized = cv2.resize(
-                        i.transpose(1, 2, 0),
-                        dsize=(rescale_dim, rescale_dim),
-                        interpolation=cv2.INTER_CUBIC,
-                    )
-                    resized = resized.transpose(2, 0, 1)
-                    resized_imgs.append(resized)
-                x = np.array(resized_imgs)
-
-        targets: List[Any] = []
-        if y is not None:
-            if isinstance(y[0]["boxes"], torch.Tensor):
-                for target in y:
-                    assert isinstance(target["boxes"], torch.Tensor)
-                    assert isinstance(target["labels"], torch.Tensor)
-                    assert isinstance(target["scores"], torch.Tensor)
-                    cxcy_norm = revert_rescale_bboxes(target["boxes"], (self.input_shape[2], self.input_shape[1]))
-                    targets.append(
-                        {
-                            "labels": target["labels"].type(torch.int64).to(self.device),
-                            "boxes": cxcy_norm.to(self.device),
-                            "scores": target["scores"].type(torch.float).to(self.device),
-                        }
-                    )
-            else:
-                for target in y:
-                    tensor_box = torch.from_numpy(target["boxes"])
-                    cxcy_norm = revert_rescale_bboxes(tensor_box, (self.input_shape[2], self.input_shape[1]))
-                    targets.append(
-                        {
-                            "labels": torch.from_numpy(target["labels"]).type(torch.int64).to(self.device),
-                            "boxes": cxcy_norm.to(self.device),
-                            "scores": torch.from_numpy(target["scores"]).type(torch.float).to(self.device),
-                        }
-                    )
-        return x, targets
