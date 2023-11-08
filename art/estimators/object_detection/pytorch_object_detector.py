@@ -52,7 +52,7 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
         input_shape: Tuple[int, ...] = (-1, -1, -1),
         optimizer: Optional["torch.optim.Optimizer"] = None,
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
-        channels_first: Optional[bool] = True,
+        channels_first: bool = True,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
         preprocessing: "PREPROCESSING_TYPE" = None,
@@ -118,6 +118,10 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
         self._input_shape = input_shape
         self._optimizer = optimizer
         self._attack_losses = attack_losses
+
+        # Parameters used for subclasses
+        self.weight_dict = None
+        self.criterion = None
 
         if self.clip_values is not None:
             if self.clip_values[0] != 0:
@@ -310,7 +314,11 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
         else:
             x_preprocessed.retain_grad()
 
-        loss_components = self._model(x_preprocessed, y_preprocessed)
+        if self.criterion is None:
+            loss_components = self._model(x_preprocessed, y_preprocessed)
+        else:
+            outputs = self._model(x_preprocessed)
+            loss_components = self.criterion(outputs, y_preprocessed)
 
         return loss_components, x_preprocessed
 
@@ -332,13 +340,15 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
 
         loss_components, x_grad = self._get_losses(x=x, y=y)
 
-        # Compute the gradient and return
-        loss = None
-        for loss_name in self.attack_losses:
-            if loss is None:
-                loss = loss_components[loss_name]
-            else:
-                loss = loss + loss_components[loss_name]
+        # Compute the loss
+        if self.weight_dict is None:
+            loss = sum(loss_components[loss_name] for loss_name in self.attack_losses if loss_name in loss_components)
+        else:
+            loss = sum(
+                loss_component * self.weight_dict[loss_name]
+                for loss_name, loss_component in loss_components.items()
+                if loss_name in self.weight_dict
+            )
 
         # Clean gradients
         self._model.zero_grad()
@@ -486,12 +496,24 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
                 # Zero the parameter gradients
                 self._optimizer.zero_grad()
 
-                # Form the loss function
-                loss_components = self._model(x_batch, y_batch)
-                if isinstance(loss_components, dict):
-                    loss = sum(loss_components.values())
+                # Get the loss components
+                if self.criterion is None:
+                    loss_components = self._model(x_batch, y_batch)
                 else:
-                    loss = loss_components
+                    outputs = self._model(x_batch)
+                    loss_components = self.criterion(outputs, y_batch)
+
+                # Form the loss tensor
+                if self.weight_dict is None:
+                    loss = sum(
+                        loss_components[loss_name] for loss_name in self.attack_losses if loss_name in loss_components
+                    )
+                else:
+                    loss = sum(
+                        loss_component * self.weight_dict[loss_name]
+                        for loss_name, loss_component in loss_components.items()
+                        if loss_name in self.weight_dict
+                    )
 
                 # Do training
                 loss.backward()  # type: ignore
@@ -543,15 +565,15 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
 
         loss_components, _ = self._get_losses(x=x, y=y)
 
-        # Compute the gradient and return
-        loss = None
-        for loss_name in self.attack_losses:
-            if loss is None:
-                loss = loss_components[loss_name]
-            else:
-                loss = loss + loss_components[loss_name]
-
-        assert loss is not None
+        # Compute the loss
+        if self.weight_dict is None:
+            loss = sum(loss_components[loss_name] for loss_name in self.attack_losses if loss_name in loss_components)
+        else:
+            loss = sum(
+                loss_component * self.weight_dict[loss_name]
+                for loss_name, loss_component in loss_components.items()
+                if loss_name in self.weight_dict
+            )
 
         if isinstance(x, torch.Tensor):
             return loss
