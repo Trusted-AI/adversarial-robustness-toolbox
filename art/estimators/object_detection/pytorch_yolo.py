@@ -49,7 +49,7 @@ class PyTorchYolo(PyTorchObjectDetector):
         input_shape: Tuple[int, ...] = (3, 416, 416),
         optimizer: Optional["torch.optim.Optimizer"] = None,
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
-        channels_first: Optional[bool] = True,
+        channels_first: bool = True,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
         preprocessing: "PREPROCESSING_TYPE" = None,
