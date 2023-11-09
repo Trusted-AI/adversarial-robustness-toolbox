@@ -193,7 +193,9 @@ def test_classifier_type_check_fail(art_warning):
         art_warning(e)
 
 
-@pytest.mark.skip_framework("tensorflow1", "tensorflow2v1", "keras", "non_dl_frameworks", "mxnet", "kerastf")
+@pytest.mark.skip_framework(
+    "tensorflow1", "tensorflow2v1", "tensorflow2", "keras", "non_dl_frameworks", "mxnet", "kerastf"
+)
 def test_generate_parallel(art_warning, fix_get_mnist_subset, image_dl_estimator, framework):
     try:
         classifier, _ = image_dl_estimator(from_logits=True)
@@ -286,35 +288,12 @@ def test_generate_parallel(art_warning, fix_get_mnist_subset, image_dl_estimator
             parallel=False,
         )
 
-        from tensorflow.keras.utils import CustomObjectScope
-
-        # Copy
-        from tests.utils import _tf_weights_loader
-
-        _tf_initializer_W_CONV2D_MNIST = _tf_weights_loader("MNIST", "W", "CONV2D", 2)
-        # _tf_initializer_MNIST_W_CONV2D.__name__ = "_tf_initializer_MNIST_W_CONV2D"
-        _tf_initializer_B_CONV2D_MNIST = _tf_weights_loader("MNIST", "B", "CONV2D", 2)
-        # _tf_initializer_MNIST_B_CONV2D.__name__ = "_tf_initializer_MNIST_B_CONV2D"
-
-        _tf_initializer_W_DENSE_MNIST = _tf_weights_loader("MNIST", "W", "DENSE", 2)
-        # _tf_initializer_MNIST_W_DENSE.__name__ = "_tf_initializer_MNIST_W_DENSE"
-        _tf_initializer_B_DENSE_MNIST = _tf_weights_loader("MNIST", "B", "DENSE", 2)
-        # _tf_initializer_MNIST_B_DENSE.__name__ = "_tf_initializer_MNIST_B_DENSE"
-
-        custom_objects = {
-            "_tf_initializer_W_CONV2D_MNIST": _tf_initializer_W_CONV2D_MNIST,
-            "_tf_initializer_B_CONV2D_MNIST": _tf_initializer_B_CONV2D_MNIST,
-            "_tf_initializer_W_DENSE_MNIST": _tf_initializer_W_DENSE_MNIST,
-            "_tf_initializer_B_DENSE_MNIST": _tf_initializer_B_DENSE_MNIST,
-        }
-
-        with CustomObjectScope(custom_objects):
-            x_train_mnist_adv = attack.generate(x=x_train_mnist, y=y_train_mnist)
+        x_train_mnist_adv = attack.generate(x=x_train_mnist, y=y_train_mnist)
 
         x_train_mnist_adv_nop = attack_noparallel.generate(x=x_train_mnist, y=y_train_mnist)
 
-        assert np.mean(np.abs(x_train_mnist_adv - x_train_mnist)) == pytest.approx(0.0182, abs=0.105)
-        assert np.max(np.abs(x_train_mnist_adv - x_train_mnist)) == pytest.approx(0.3, abs=0.05)
+        assert np.mean(np.abs(x_train_mnist_adv - x_train_mnist)) == pytest.approx(expected=0.0182, abs=0.105)
+        assert np.max(np.abs(x_train_mnist_adv - x_train_mnist)) == pytest.approx(expected=0.3, abs=0.05)
 
         noparallel_perturbation = np.linalg.norm(x_train_mnist[[2]] - x_train_mnist_adv_nop[[2]])
         parallel_perturbation = np.linalg.norm(x_train_mnist[[2]] - x_train_mnist_adv[[2]])
@@ -334,10 +313,10 @@ def test_generate_parallel(art_warning, fix_get_mnist_subset, image_dl_estimator
             parallel=True,
         )
 
-        with CustomObjectScope(custom_objects):
-            x_train_mnist_adv = attack.generate(x=x_train_mnist, y=y_train_mnist)
+        x_train_mnist_adv = attack.generate(x=x_train_mnist, y=y_train_mnist)
 
-        assert np.mean(x_train_mnist_adv - x_train_mnist) == pytest.approx(0.0, abs=0.0075)
-        assert np.max(np.abs(x_train_mnist_adv - x_train_mnist)) == pytest.approx(eps, abs=0.005)
+        assert np.mean(x_train_mnist_adv - x_train_mnist) == pytest.approx(expected=0.0, abs=0.0075)
+        assert np.max(np.abs(x_train_mnist_adv - x_train_mnist)) == pytest.approx(expected=eps, abs=0.005)
+
     except ARTTestException as e:
         art_warning(e)

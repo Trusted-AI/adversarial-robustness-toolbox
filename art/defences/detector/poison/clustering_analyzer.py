@@ -328,7 +328,7 @@ class ClusteringAnalyzer:
                     logger.info("computed silhouette score: %s", silhouette_avg)
                     dict_i.update(suspicious=True)
                 else:
-                    poison_clusters = (np.array([[]]), )
+                    poison_clusters = (np.array([[]]),)
                     clean_clusters = np.where(percentages >= 0)
                     dict_i.update(suspicious=False)
             else:

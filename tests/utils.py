@@ -29,6 +29,7 @@ import unittest
 import warnings
 
 import numpy as np
+import tensorflow.python.keras.initializers.initializers_v2
 
 from art.estimators.classification.tensorflow import TensorFlowV2Classifier
 from art.estimators.encoding.tensorflow import TensorFlowEncoder
@@ -165,38 +166,61 @@ def is_valid_framework(framework):
     return True
 
 
-def _tf_weights_loader(dataset, weights_type, layer="DENSE", tf_version=1):
+class _tf_weights_loader(tensorflow.keras.initializers.Initializer):
 
-    filename = str(weights_type) + "_" + str(layer) + "_" + str(dataset) + ".npy"
+    import tensorflow as tf
 
-    # pylint: disable=W0613
-    # disable pylint because of API requirements for function
-    if tf_version == 1:
+    def __init__(self, dataset, weights_type, layer="DENSE", tf_version=1):
+        self.dataset = dataset
+        self.weights_type = weights_type
+        self.layer = layer
+        self.tf_version = tf_version
 
-        def _tf_initializer(_, dtype, partition_info):
-            import tensorflow as tf
+    def get_config(self):
+        return {
+            "dataset": self.dataset,
+            "weights_type": self.weights_type,
+            "layer": self.layer,
+            "tf_version": self.tf_version,
+        }
 
-            weights = np.load(
-                os.path.join(os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", filename)
-            )
-            return tf.constant(weights, dtype)
+    def __call__(self, shape, dtype=None, **kwargs):
 
-    elif tf_version == 2:
+        import tensorflow as tf
 
-        def _tf_initializer(_, dtype):
-            import tensorflow as tf
+        filename = str(self.weights_type) + "_" + str(self.layer) + "_" + str(self.dataset) + ".npy"
 
-            weights = np.load(
-                os.path.join(os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", filename)
-            )
-            return tf.constant(weights, dtype)
+        # pylint: disable=W0613
+        # disable pylint because of API requirements for function
+        # if self.tf_version == 1:
+        #
+        #     def _tf_initializer(_, dtype, partition_info):
+        #         import tensorflow as tf
+        #
+        #         weights = np.load(
+        #             os.path.join(os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", filename)
+        #         )
+        #         return tf.constant(weights, dtype)
 
-    else:
-        raise ValueError("The TensorFlow version tf_version has to be either 1 or 2.")
+        # elif self.tf_version == 2:
+        #
+        #     def _tf_initializer(_, dtype):
+        #         import tensorflow as tf
+        #
+        #         weights = np.load(
+        #             os.path.join(os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", filename)
+        #         )
+        #         return tf.constant(weights, dtype)
+        #
+        # else:
+        #     raise ValueError("The TensorFlow version tf_version has to be either 1 or 2.")
+        #
+        # _tf_initializer.__name__ = "_tf_initializer_" + str(self.weights_type) + "_" + str(self.layer) + "_" + str(self.dataset)
 
-    _tf_initializer.__name__ = "_tf_initializer_" + str(weights_type) + "_" + str(layer) + "_" + str(dataset)
+        weights = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", filename))
+        return tf.convert_to_tensor(weights, dtype)
 
-    return _tf_initializer
+        # return _tf_initializer
 
 
 def _kr_weights_loader(dataset, weights_type, layer="DENSE"):
@@ -467,6 +491,10 @@ def get_image_classifier_tf_v2(from_logits=False):
 
     _tf_initializer_W_DENSE_MNIST = _tf_weights_loader("MNIST", "W", "DENSE", 2)
     _tf_initializer_B_DENSE_MNIST = _tf_weights_loader("MNIST", "B", "DENSE", 2)
+
+    print("W", _tf_initializer_W_CONV2D_MNIST)
+    print("B", _tf_initializer_B_CONV2D_MNIST)
+    # sdf
 
     model = Sequential()
     model.add(
