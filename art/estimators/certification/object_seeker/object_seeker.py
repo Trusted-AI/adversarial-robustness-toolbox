@@ -94,22 +94,6 @@ class ObjectSeekerMixin(abc.ABC):
         self.epsilon = epsilon
         self.verbose = verbose
 
-    @property
-    @abc.abstractmethod
-    def channels_first(self) -> bool:
-        """
-        :return: Boolean to indicate index of the color channels in the sample `x`.
-        """
-        pass
-
-    @property
-    @abc.abstractmethod
-    def input_shape(self) -> Tuple[int, ...]:
-        """
-        :return: Shape of one input sample.
-        """
-        pass
-
     @abc.abstractmethod
     def _predict_classifier(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> List[Dict[str, np.ndarray]]:
         """
