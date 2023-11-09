@@ -544,7 +544,8 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
         loss_components, _ = self._get_losses(x=x, y=y)
         output = {}
         for key, value in loss_components.items():
-            output[key] = value.detach().cpu().numpy()
+            if key in self.attack_losses:
+                output[key] = value.detach().cpu().numpy()
         return output
 
     def compute_loss(  # type: ignore

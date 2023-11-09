@@ -67,7 +67,6 @@ def test_predict(art_warning, get_pytorch_yolo):
 
 @pytest.mark.only_with_platform("pytorch")
 def test_fit(art_warning, get_pytorch_yolo):
-
     try:
         object_detector, x_test, y_test = get_pytorch_yolo
 
