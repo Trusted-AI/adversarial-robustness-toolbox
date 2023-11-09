@@ -144,7 +144,6 @@ class PyTorchObjectSeeker(ObjectSeekerMixin, PyTorchObjectDetector):
             verbose=verbose,
         )
 
-        self._input_shape = input_shape
         self._optimizer = optimizer
         self._attack_losses = attack_losses
         self.detector_type = detector_type

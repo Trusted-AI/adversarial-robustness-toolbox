@@ -68,6 +68,8 @@ class ObjectSeekerMixin(abc.ABC):
     def __init__(
         self,
         *args,
+        input_shape: Tuple[int, ...] = (3, 416, 416),
+        channels_first: bool = True,
         num_lines: int = 3,
         confidence_threshold: float = 0.3,
         iou_threshold: float = 0.5,
@@ -79,6 +81,8 @@ class ObjectSeekerMixin(abc.ABC):
         """
         Create an ObjectSeeker wrapper.
 
+        :param input_shape: The shape of one input sample.
+        :param channels_first: Set channels first or last.
         :param num_lines: The number of divisions both vertically and horizontally to make masked predictions.
         :param confidence_threshold: The confidence threshold to discard bounding boxes.
         :param iou_threshold: The IoU threshold to discard overlapping bounding boxes.
@@ -87,6 +91,8 @@ class ObjectSeekerMixin(abc.ABC):
         :param verbose: Show progress bars.
         """
         super().__init__(*args, **kwargs)  # type: ignore
+        self.input_shape = input_shape
+        self.channels_first = channels_first
         self.num_lines = num_lines
         self.confidence_threshold = confidence_threshold
         self.iou_threshold = iou_threshold
