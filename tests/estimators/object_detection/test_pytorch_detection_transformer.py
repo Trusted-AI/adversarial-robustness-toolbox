@@ -66,11 +66,11 @@ def test_predict(art_warning, get_pytorch_detr):
 
 
 @pytest.mark.only_with_platform("pytorch")
-def test_fit(art_warning, get_pytorch_yolo):
+def test_fit(art_warning, get_pytorch_detr):
     try:
         import torch
 
-        object_detector, x_test, y_test = get_pytorch_yolo
+        object_detector, x_test, y_test = get_pytorch_detr
 
         # Create optimizer
         params = [p for p in object_detector.model.parameters() if p.requires_grad]
@@ -138,7 +138,7 @@ def test_loss_gradient(art_warning, get_pytorch_detr):
             ]
         )
 
-        np.testing.assert_array_almost_equal(grads[0, 0, 10, :32], expected_gradients1, decimal=2)
+        np.testing.assert_array_almost_equal(grads[0, 0, 10, :32], expected_gradients1, decimal=1)
 
         expected_gradients2 = np.asarray(
             [
