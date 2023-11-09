@@ -23,6 +23,8 @@ This module implements the task specific estimator for PyTorch YOLO v3 and v5 ob
 import logging
 from typing import List, Dict, Optional, Tuple, Union, TYPE_CHECKING
 
+import numpy as np
+
 from art.estimators.object_detection.pytorch_object_detector import PyTorchObjectDetector
 
 if TYPE_CHECKING:
@@ -142,7 +144,7 @@ class PyTorchYolo(PyTorchObjectDetector):
         labels_xcycwh = torch.vstack(labels_xcycwh_list)
         return labels_xcycwh
 
-    def _translate_predictions(self, predictions: "torch.Tensor") -> List[Dict[str, "torch.Tensor"]]:
+    def _translate_predictions(self, predictions: "torch.Tensor") -> List[Dict[str, np.ndarray]]:
         """
         Translate object detection predictions from the model format (YOLO) to ART format (torchvision) and
         convert tensors to numpy arrays.
@@ -159,7 +161,7 @@ class PyTorchYolo(PyTorchObjectDetector):
             height = self.input_shape[0]
             width = self.input_shape[1]
 
-        predictions_x1y1x2y2 = []
+        predictions_x1y1x2y2: List[Dict[str, np.ndarray]] = []
 
         for pred in predictions:
             boxes = torch.vstack(

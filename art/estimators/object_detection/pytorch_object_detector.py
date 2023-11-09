@@ -120,8 +120,8 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
         self._attack_losses = attack_losses
 
         # Parameters used for subclasses
-        self.weight_dict = None
-        self.criterion = None
+        self.weight_dict: Optional[Dict[str, float]] = None
+        self.criterion: Optional[torch.nn.Module] = None
 
         if self.clip_values is not None:
             if self.clip_values[0] != 0:
@@ -577,6 +577,6 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
             )
 
         if isinstance(x, torch.Tensor):
-            return loss
+            return loss  # type: ignore
 
-        return loss.detach().cpu().numpy()
+        return loss.detach().cpu().numpy()  # type: ignore
