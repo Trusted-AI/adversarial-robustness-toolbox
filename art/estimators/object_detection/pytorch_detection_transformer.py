@@ -23,6 +23,8 @@ This module implements the task specific estimator for DEtection TRansformer (DE
 import logging
 from typing import Any, Dict, List, Optional, Tuple, Union, TYPE_CHECKING
 
+import numpy as np
+
 from art.estimators.object_detection.pytorch_object_detector import PyTorchObjectDetector
 
 if TYPE_CHECKING:
@@ -161,7 +163,7 @@ class PyTorchDetectionTransformer(PyTorchObjectDetector):
 
         return labels_translated
 
-    def _translate_predictions(self, predictions: Dict[str, "torch.Tensor"]) -> List[Dict[str, "torch.Tensor"]]:
+    def _translate_predictions(self, predictions: Dict[str, "torch.Tensor"]) -> List[Dict[str, np.ndarray]]:
         """
         Translate object detection predictions from the model format (DETR) to ART format (torchvision) and
         convert tensors to numpy arrays.
@@ -181,7 +183,7 @@ class PyTorchDetectionTransformer(PyTorchObjectDetector):
         pred_boxes = predictions["pred_boxes"]
         pred_logits = predictions["pred_logits"]
 
-        predictions_x1y1x2y2 = []
+        predictions_x1y1x2y2: List[Dict[str, np.ndarray]] = []
 
         for pred_box, pred_logit in zip(pred_boxes, pred_logits):
             boxes = rescale_bboxes(pred_box.detach().cpu(), (height, width)).numpy()
