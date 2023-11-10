@@ -280,7 +280,7 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
 
             predictions_x1y1x2y2.append(prediction)
 
-        return predictions
+        return predictions_x1y1x2y2
 
     def _get_losses(
         self, x: Union[np.ndarray, "torch.Tensor"], y: List[Dict[str, Union[np.ndarray, "torch.Tensor"]]]

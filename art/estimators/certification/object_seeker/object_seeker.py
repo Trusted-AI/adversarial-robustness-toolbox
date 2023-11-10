@@ -91,14 +91,30 @@ class ObjectSeekerMixin(abc.ABC):
         :param verbose: Show progress bars.
         """
         super().__init__(*args, **kwargs)  # type: ignore
-        self.input_shape = input_shape
-        self.channels_first = channels_first
+        self._input_shape = input_shape
+        self._channels_first = channels_first
         self.num_lines = num_lines
         self.confidence_threshold = confidence_threshold
         self.iou_threshold = iou_threshold
         self.prune_threshold = prune_threshold
         self.epsilon = epsilon
         self.verbose = verbose
+
+    @property
+    def input_shape(self) -> Tuple[int, ...]:
+        """
+        Return the shape of one input sample.
+
+        :return: Shape of one input sample.
+        """
+        return self._input_shape
+
+    @property
+    def channels_first(self) -> bool:
+        """
+        :return: Boolean to indicate index of the color channels in the sample `x`.
+        """
+        return self._channels_first
 
     @abc.abstractmethod
     def _predict_classifier(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> List[Dict[str, np.ndarray]]:
