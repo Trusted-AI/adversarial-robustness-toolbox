@@ -286,7 +286,7 @@ class AutoAttack(EvasionAttack):
                     logger.warning("Error completing attack: %s}", str(error))
 
         if self.parallel:
-            with multiprocess.get_context("spawn").Pool(processes=1) as pool:
+            with multiprocess.get_context("spawn").Pool() as pool:
                 # Results come back in the order that they were issued
                 results = pool.starmap(run_attack, args)
             perturbations = []
@@ -393,7 +393,5 @@ def run_attack(
     x[sample_is_robust] = x_robust
 
     sample_is_robust[sample_is_robust] = np.invert(sample_is_not_robust)
-
-    print("Attack done:", attack)
 
     return x, sample_is_robust
