@@ -289,7 +289,6 @@ class AutoAttack(EvasionAttack):
             with multiprocess.get_context("spawn").Pool(processes=1) as pool:
                 # Results come back in the order that they were issued
                 results = pool.starmap(run_attack, args)
-                asdfdasd
             perturbations = []
             is_robust = []
             for img_idx in range(len(x)):
@@ -365,7 +364,6 @@ def run_attack(
     :param eps: Maximum perturbation that the attacker can introduce.
     :return: An array holding the adversarial examples.
     """
-    eeeeee
     # Attack only correctly classified samples
     x_robust = x[sample_is_robust]
     y_robust = y[sample_is_robust]

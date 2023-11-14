@@ -56,7 +56,6 @@ jobs:
           pip install protobuf==3.20.1
           pip install tensorflow==${{ matrix.tensorflow }}
           pip install keras==${{ matrix.keras }}
-          pip install jax[cpu]==0.3.25
           pip list
       - name: Run Tests
         run: ./run_tests.sh ${{ matrix.framework }}
