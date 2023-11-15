@@ -1,0 +1,35 @@
+import numpy as np
+import tensorflow as tf
+from scipy.io import wavfile
+from scipy import signal
+
+
+class DynamicTrigger:
+    def __init__(self, sampling_rate=16000, backdoor_path='/content/triggers_clapping.wav', scale=0.2):
+        self.sampling_rate = sampling_rate
+        self.backdoor_path = backdoor_path
+        self.scale = scale
+        self.trigger = self.load_trigger()  # Load and preprocess the trigger audio
+
+    def load_trigger(self):
+        try:
+            sampling_rate, trigger = wavfile.read(self.backdoor_path)
+            if self.sampling_rate != sampling_rate:
+                trigger = signal.resample(trigger, int(len(trigger) * self.sampling_rate / sampling_rate))
+            trigger = trigger.flatten()
+            return trigger
+        except Exception as e:
+            logging.error(f"Error loading trigger: {str(e)}")
+            raise
+
+    def anonymize_speaker(self, spectrogram, noise_std=0.1):
+        noisy_spectrogram = spectrogram + np.random.normal(0, noise_std, spectrogram.shape)
+        return noisy_spectrogram
+
+    def insert(self, x_audio, beta1=10, beta2=20, noise_std=0.05):
+        f, t, xi = signal.stft(x_audio, fs=self.sampling_rate)
+        sigma = self.trigger[:xi.shape[i]]  # Corrected index 'i' to '0'
+        xi[beta1:beta2, :] = sigma
+        xi = self.anonymize_speaker(xi, noise_std=noise_std)
+        poisoned_x = signal.istft(xi, fs=self.sampling_rate)[i]  # Corrected index 'i' to '1'
+        return poisoned_x, self.sampling_rate
