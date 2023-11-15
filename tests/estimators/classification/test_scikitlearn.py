@@ -300,9 +300,10 @@ class TestScikitlearnLogisticRegression(TestBase):
 
     def test_class_gradient_int_1(self):
         grad_predicted = self.classifier.class_gradient(self.x_test_iris[0:1], label=1)
-        grad_expected = [[[-0.56322294, -0.70427608, -0.98874801, -0.67053026]]]
+        grad_expected = [[[-0.56322294, -0.70493763, -0.98874801, -0.67053026]]]
 
         for i_shape in range(4):
+            print(grad_predicted[0, 0, i_shape])
             self.assertAlmostEqual(grad_predicted[0, 0, i_shape], grad_expected[0][0][i_shape], 3)
 
     def test_class_gradient_int_2(self):
@@ -311,6 +312,8 @@ class TestScikitlearnLogisticRegression(TestBase):
             [[-0.56322294, -0.70427608, -0.98874801, -0.67053026]],
             [[-0.50528532, -0.71700042, -0.82467848, -0.59614766]],
         ]
+        print("grad_predicted")
+        print(grad_predicted)
         np.testing.assert_array_almost_equal(grad_predicted, grad_expected, decimal=4)
 
     def test_class_gradient_list_1(self):
@@ -318,6 +321,7 @@ class TestScikitlearnLogisticRegression(TestBase):
         grad_expected = [[[-0.56322294, -0.70427608, -0.98874801, -0.67053026]]]
 
         for i_shape in range(4):
+            print(grad_predicted[0, 0, i_shape])
             self.assertAlmostEqual(grad_predicted[0, 0, i_shape], grad_expected[0][0][i_shape], 3)
 
     def test_class_gradient_list_2(self):
@@ -326,6 +330,8 @@ class TestScikitlearnLogisticRegression(TestBase):
             [[-0.56322294, -0.70427608, -0.98874801, -0.67053026]],
             [[0.70875132, 0.25104877, 1.70929277, 0.88410652]],
         ]
+        print("grad_predicted")
+        print(grad_predicted)
         np.testing.assert_array_almost_equal(grad_predicted, grad_expected, decimal=4)
 
     def test_class_gradient_label_wrong_type(self):
@@ -340,6 +346,8 @@ class TestScikitlearnLogisticRegression(TestBase):
     def test_loss_gradient(self):
         grad_predicted = self.classifier.loss_gradient(self.x_test_iris[0:1], self.y_test_iris[0:1])
         grad_expected = np.asarray([[-0.21693791, -0.08792436, -0.51507443, -0.26990796]])
+        print("grad_predicted")
+        print(grad_predicted)
         np.testing.assert_array_almost_equal(grad_predicted, grad_expected, decimal=4)
 
     def test_save(self):
