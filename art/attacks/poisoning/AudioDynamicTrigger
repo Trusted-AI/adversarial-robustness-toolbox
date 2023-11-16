@@ -1,35 +1,98 @@
+
+# MIT License
+#
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2022
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+# documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
+# rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit
+# persons to whom the Software is furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all copies or substantial portions of the
+# Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
+# WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+# TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+"""
+Adversarial perturbations designed to work for audio.
+Uses classes, rather than pure functions as in image_perturbations.py,
+because loading the audio trigger from disk (librosa.load()) is very slow
+and should be done only once.
+"""
+import librosa
 import numpy as np
 import tensorflow as tf
 from scipy.io import wavfile
 from scipy import signal
-
+import logging  # Import logging module for error handling
 
 class DynamicTrigger:
-    def __init__(self, sampling_rate=16000, backdoor_path='/content/triggers_clapping.wav', scale=0.2):
-        self.sampling_rate = sampling_rate
-        self.backdoor_path = backdoor_path
-        self.scale = scale
-        self.trigger = self.load_trigger()  # Load and preprocess the trigger audio
+	def __init__(self, sampling_rate=16000, backdoor_path='/content/triggers_clapping.wav', scale=0.2):
+    	"""
+    	Initialize DynamicTrigger object.
 
-    def load_trigger(self):
-        try:
-            sampling_rate, trigger = wavfile.read(self.backdoor_path)
-            if self.sampling_rate != sampling_rate:
-                trigger = signal.resample(trigger, int(len(trigger) * self.sampling_rate / sampling_rate))
-            trigger = trigger.flatten()
-            return trigger
-        except Exception as e:
-            logging.error(f"Error loading trigger: {str(e)}")
-            raise
+    	Parameters:
+    	- sampling_rate: Sampling rate of the audio data.
+    	- backdoor_path: Path to the trigger audio file.
+    	- scale: Scaling factor for trigger audio.
+    	"""
+    	self.sampling_rate = sampling_rate
+    	self.backdoor_path = backdoor_path
+    	self.scale = scale
+    	self.trigger = self.load_trigger()  # Load and preprocess the trigger audio
 
-    def anonymize_speaker(self, spectrogram, noise_std=0.1):
-        noisy_spectrogram = spectrogram + np.random.normal(0, noise_std, spectrogram.shape)
-        return noisy_spectrogram
+	def load_trigger(self):
+    	"""
+    	Load and preprocess the trigger audio.
 
-    def insert(self, x_audio, beta1=10, beta2=20, noise_std=0.05):
-        f, t, xi = signal.stft(x_audio, fs=self.sampling_rate)
-        sigma = self.trigger[:xi.shape[i]]  # Corrected index 'i' to '0'
-        xi[beta1:beta2, :] = sigma
-        xi = self.anonymize_speaker(xi, noise_std=noise_std)
-        poisoned_x = signal.istft(xi, fs=self.sampling_rate)[i]  # Corrected index 'i' to '1'
-        return poisoned_x, self.sampling_rate
+    	Returns:
+    	- trigger: Preprocessed trigger audio as a flattened array.
+    	"""
+    	try:
+        	sampling_rate, trigger = wavfile.read(self.backdoor_path)
+        	if self.sampling_rate != sampling_rate:
+            	# Resample trigger if sampling rates are different
+            	trigger = signal.resample(trigger, int(len(trigger) * self.sampling_rate / sampling_rate))
+        	trigger = trigger.flatten() * self.scale  # Flatten and scale trigger
+        	return trigger
+    	except Exception as e:
+        	logging.error(f"Error loading trigger: {str(e)}")
+        	raise
+
+	def anonymize_speaker(self, spectrogram, noise_std=0.1):
+    	"""
+    	Add random noise to the spectrogram for speaker anonymization.
+
+    	Parameters:
+    	- spectrogram: Input spectrogram.
+    	- noise_std: Standard deviation of the added random noise.
+
+    	Returns:
+    	- noisy_spectrogram: Anonymized spectrogram with added noise.
+    	"""
+    	noisy_spectrogram = spectrogram + np.random.normal(0, noise_std, spectrogram.shape)
+    	return noisy_spectrogram
+
+	def insert(self, x_audio, beta1=10, beta2=20, noise_std=0.05):
+    	"""
+    	Insert trigger into the audio signal.
+
+    	Parameters:
+    	- x_audio: Input audio signal.
+    	- beta1: Start index for trigger insertion.
+    	- beta2: End index for trigger insertion.
+    	- noise_std: Standard deviation of the added noise during insertion.
+
+    	Returns:
+    	- poisoned_x: Audio signal with inserted trigger and anonymized speaker.
+    	- self.sampling_rate: Sampling rate of the output audio.
+    	"""
+    	f, t, xi = signal.stft(x_audio, fs=self.sampling_rate)
+    	sigma = self.trigger[:xi.shape[0]]  # Corrected index from 'i' to '0'
+    	xi[beta1:beta2, :] = sigma
+    	xi = self.anonymize_speaker(xi, noise_std=noise_std)
+    	poisoned_x = signal.istft(xi, fs=self.sampling_rate)[1]  # Corrected index from 'i' to '1'
+    	return poisoned_x, self.sampling_rate
