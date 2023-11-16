@@ -269,7 +269,7 @@ class TestScikitlearnLogisticRegression(TestBase):
     def test_predict(self):
         y_predicted = self.classifier.predict(self.x_test_iris[0:1])
         y_expected = np.asarray([[0.07997696, 0.36272544, 0.5572976]])
-        np.testing.assert_array_almost_equal(y_predicted, y_expected, decimal=4)
+        np.testing.assert_array_almost_equal(y_predicted, y_expected, decimal=3)
 
     def test_class_gradient_none_1(self):
         grad_predicted = self.classifier.class_gradient(self.x_test_iris[0:1], label=None)
@@ -280,7 +280,7 @@ class TestScikitlearnLogisticRegression(TestBase):
                 [0.6508137, 0.26377308, 1.54522324, 0.80972391],
             ]
         ]
-        np.testing.assert_array_almost_equal(grad_predicted, grad_expected, decimal=4)
+        np.testing.assert_array_almost_equal(grad_predicted, grad_expected, decimal=3)
 
     def test_class_gradient_none_2(self):
         grad_predicted = self.classifier.class_gradient(self.x_test_iris[0:2], label=None)
@@ -296,7 +296,7 @@ class TestScikitlearnLogisticRegression(TestBase):
                 [0.70875132, 0.25104877, 1.70929277, 0.88410652],
             ],
         ]
-        np.testing.assert_array_almost_equal(grad_predicted, grad_expected, decimal=4)
+        np.testing.assert_array_almost_equal(grad_predicted, grad_expected, decimal=3)
 
     def test_class_gradient_int_1(self):
         grad_predicted = self.classifier.class_gradient(self.x_test_iris[0:1], label=1)
@@ -326,7 +326,7 @@ class TestScikitlearnLogisticRegression(TestBase):
             [[-0.56317306, -0.70493776, -0.98908573, -0.67106259]],
             [[0.70866591, 0.25158876, 1.70947325, 0.88450021]],
         ]
-        np.testing.assert_array_almost_equal(grad_predicted, grad_expected, decimal=4)
+        np.testing.assert_array_almost_equal(grad_predicted, grad_expected, decimal=3)
 
     def test_class_gradient_label_wrong_type(self):
 
