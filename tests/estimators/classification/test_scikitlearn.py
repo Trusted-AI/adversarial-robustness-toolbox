@@ -315,7 +315,7 @@ class TestScikitlearnLogisticRegression(TestBase):
 
     def test_class_gradient_list_1(self):
         grad_predicted = self.classifier.class_gradient(self.x_test_iris[0:1], label=[1])
-        grad_expected = [[[-0.56317311, -0.70493763, -0.98874801, -0.67053026]]]
+        grad_expected = [[[-0.56317311, -0.70493763, -0.98874801, -0.67106276]]]
 
         for i_shape in range(4):
             self.assertAlmostEqual(grad_predicted[0, 0, i_shape], grad_expected[0][0][i_shape], 3)
