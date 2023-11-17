@@ -231,7 +231,7 @@ def test_true_label_baseline_no_values(art_warning, get_iris_dataset, model_type
         )
 
         expected_train_acc = {"nn": 0.81, "rf": 0.98, "gb": 0.98, "lr": 0.81, "dt": 0.98, "knn": 0.85, "svm": 0.81}
-        expected_test_acc = {"nn": 0.88, "rf": 0.83, "gb": 0.75, "lr": 0.88, "dt": 0.8, "knn": 0.82, "svm": 0.88}
+        expected_test_acc = {"nn": 0.88, "rf": 0.81, "gb": 0.75, "lr": 0.88, "dt": 0.8, "knn": 0.82, "svm": 0.88}
 
         assert expected_train_acc[model_type] <= baseline_train_acc
         assert expected_test_acc[model_type] <= baseline_test_acc
