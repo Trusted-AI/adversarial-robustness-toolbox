@@ -64,9 +64,9 @@ class TestGroundTruth(unittest.TestCase):
         # print(json_object)
         for i in range(self.n_classes):
             res_class_i = json_object["class_" + str(i)]
-            self.assertEqual(res_class_i["TruePositive"]["rate"], "N/A")
+            self.assertEqual(res_class_i["TruePositive"]["rate"], -1)
             self.assertEqual(res_class_i["TrueNegative"]["rate"], 100)
-            self.assertEqual(res_class_i["FalseNegative"]["rate"], "N/A")
+            self.assertEqual(res_class_i["FalseNegative"]["rate"], -1)
             self.assertEqual(res_class_i["FalsePositive"]["rate"], 0)
 
             self.assertEqual(res_class_i["TruePositive"]["numerator"], 0)
@@ -99,9 +99,9 @@ class TestGroundTruth(unittest.TestCase):
         for i in range(self.n_classes):
             res_class_i = json_object["class_" + str(i)]
             self.assertEqual(res_class_i["TruePositive"]["rate"], 100)
-            self.assertEqual(res_class_i["TrueNegative"]["rate"], "N/A")
+            self.assertEqual(res_class_i["TrueNegative"]["rate"], -1)
             self.assertEqual(res_class_i["FalseNegative"]["rate"], 0)
-            self.assertEqual(res_class_i["FalsePositive"]["rate"], "N/A")
+            self.assertEqual(res_class_i["FalsePositive"]["rate"], -1)
 
             self.assertEqual(res_class_i["TruePositive"]["numerator"], self.n_dp)
             self.assertEqual(res_class_i["TruePositive"]["denominator"], self.n_dp)
@@ -166,9 +166,9 @@ class TestGroundTruth(unittest.TestCase):
         for i in range(self.n_classes):
             res_class_i = json_object["class_" + str(i)]
             self.assertEqual(res_class_i["TruePositive"]["rate"], 0)
-            self.assertEqual(res_class_i["TrueNegative"]["rate"], "N/A")
+            self.assertEqual(res_class_i["TrueNegative"]["rate"], -1)
             self.assertEqual(res_class_i["FalseNegative"]["rate"], 100)
-            self.assertEqual(res_class_i["FalsePositive"]["rate"], "N/A")
+            self.assertEqual(res_class_i["FalsePositive"]["rate"], -1)
 
             self.assertEqual(res_class_i["TruePositive"]["numerator"], 0)
             self.assertEqual(res_class_i["TruePositive"]["denominator"], self.n_dp)
@@ -200,9 +200,9 @@ class TestGroundTruth(unittest.TestCase):
         pprint.pprint(json_object)
         for i in range(self.n_classes):
             res_class_i = json_object["class_" + str(i)]
-            self.assertEqual(res_class_i["TruePositive"]["rate"], "N/A")
+            self.assertEqual(res_class_i["TruePositive"]["rate"], -1)
             self.assertEqual(res_class_i["TrueNegative"]["rate"], 0)
-            self.assertEqual(res_class_i["FalseNegative"]["rate"], "N/A")
+            self.assertEqual(res_class_i["FalseNegative"]["rate"], -1)
             self.assertEqual(res_class_i["FalsePositive"]["rate"], 100)
 
             self.assertEqual(res_class_i["TruePositive"]["numerator"], 0)

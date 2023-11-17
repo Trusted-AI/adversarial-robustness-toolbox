@@ -159,14 +159,17 @@ class FastGradientMethod(EvasionAttack):
             # Get current predictions
             active_indices = np.arange(len(batch))
 
+            current_eps: Union[int, float, np.ndarray]
+            partial_stop_condition: Union[bool, np.ndarray]
+
             if isinstance(self.eps, np.ndarray) and isinstance(self.eps_step, np.ndarray):
                 if len(self.eps.shape) == len(x.shape) and self.eps.shape[0] == x.shape[0]:
                     current_eps = self.eps_step[batch_index_1:batch_index_2]
-                    partial_stop_condition = (current_eps <= self.eps[batch_index_1:batch_index_2]).all()
+                    partial_stop_condition = bool((current_eps <= self.eps[batch_index_1:batch_index_2]).all())
 
                 else:
                     current_eps = self.eps_step
-                    partial_stop_condition = (current_eps <= self.eps).all()
+                    partial_stop_condition = bool((current_eps <= self.eps).all())
 
             else:
                 current_eps = self.eps_step
@@ -190,11 +193,11 @@ class FastGradientMethod(EvasionAttack):
                 if isinstance(self.eps, np.ndarray) and isinstance(self.eps_step, np.ndarray):
                     if len(self.eps.shape) == len(x.shape) and self.eps.shape[0] == x.shape[0]:
                         current_eps = current_eps + self.eps_step[batch_index_1:batch_index_2]
-                        partial_stop_condition = (current_eps <= self.eps[batch_index_1:batch_index_2]).all()
+                        partial_stop_condition = bool((current_eps <= self.eps[batch_index_1:batch_index_2]).all())
 
                     else:
                         current_eps = current_eps + self.eps_step
-                        partial_stop_condition = (current_eps <= self.eps).all()
+                        partial_stop_condition = bool((current_eps <= self.eps).all())
 
                 else:
                     current_eps = current_eps + self.eps_step
@@ -538,6 +541,9 @@ class FastGradientMethod(EvasionAttack):
 
             # Get perturbation
             perturbation = self._compute_perturbation(batch, batch_labels, mask_batch, decay, momentum)
+
+            batch_eps: Union[int, float, np.ndarray]
+            batch_eps_step: Union[int, float, np.ndarray]
 
             # Compute batch_eps and batch_eps_step
             if isinstance(eps, np.ndarray) and isinstance(eps_step, np.ndarray):

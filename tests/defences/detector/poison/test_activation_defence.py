@@ -20,7 +20,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import unittest
 
-from keras_preprocessing.image import ImageDataGenerator
+from keras.preprocessing.image import ImageDataGenerator
 import numpy as np
 
 from art.data_generators import KerasDataGenerator
@@ -118,7 +118,7 @@ class TestActivationDefence(unittest.TestCase):
             clusters_by_class, _ = self.defence.cluster_activations(nb_clusters=nb_clusters)
 
             # Verify expected number of classes
-            self.assertEqual(np.shape(clusters_by_class)[0], n_classes)
+            self.assertEqual(len(clusters_by_class), n_classes)
             # Check we get the expected number of clusters:
             found_clusters = len(np.unique(clusters_by_class[0]))
             self.assertEqual(found_clusters, nb_clusters)

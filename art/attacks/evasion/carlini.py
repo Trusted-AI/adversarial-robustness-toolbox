@@ -136,7 +136,7 @@ class CarliniL2Method(EvasionAttack):
         self._tanh_smoother = 0.999999
 
     def _loss(
-        self, x: np.ndarray, x_adv: np.ndarray, target: np.ndarray, c_weight: float
+        self, x: np.ndarray, x_adv: np.ndarray, target: np.ndarray, c_weight: np.ndarray
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         """
         Compute the objective function value.

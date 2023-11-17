@@ -435,10 +435,10 @@ def projection_l1_1(values: np.ndarray, eps: Union[int, float, np.ndarray]) -> n
         #    The vector of reductions
         delta_vec = np.transpose(np.array([delta] * (n - j - 1)))
         #   The sub-vectors:  a_sorted[:, (j+1):]
-        a_sub = a_sorted[:, (j + 1) :]
+        a_sub = a_sorted[:, int(j + 1) :]
         #   After reduction by delta_vec
         a_after = a_sub - delta_vec
-        after_vec[:, (j + 1) :] = a_after
+        after_vec[:, int(j + 1) :] = a_after
         proj += act_multiplier * (after_vec - proj)
         active = active * ind_set
         if sum(active) == 0:
@@ -983,7 +983,7 @@ def compute_success_array(
     x_adv: np.ndarray,
     targeted: bool = False,
     batch_size: int = 1,
-) -> float:
+) -> np.ndarray:
     """
     Compute the success rate of an attack based on clean samples, adversarial samples and targets or correct labels.
 
@@ -1304,12 +1304,12 @@ def load_stl() -> DATASET_TYPE:
     x_test = x_test.transpose((0, 2, 3, 1))
 
     with open(os.path.join(path, "train_y.bin"), "rb") as f_numpy:
-        y_train = np.fromfile(f_numpy, dtype=np.uint8)
-        y_train -= 1
+        y_train_uint = np.fromfile(f_numpy, dtype=np.uint8)
+        y_train = y_train_uint - 1
 
     with open(os.path.join(path, "test_y.bin"), "rb") as f_numpy:
-        y_test = np.fromfile(f_numpy, dtype=np.uint8)
-        y_test -= 1
+        y_test_uint = np.fromfile(f_numpy, dtype=np.uint8)
+        y_test = y_test_uint - 1
 
     x_train, y_train = preprocess(x_train, y_train)
     x_test, y_test = preprocess(x_test, y_test)

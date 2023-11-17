@@ -485,7 +485,7 @@ class HopSkipJump(EvasionAttack):
         """
         # First set upper and lower bounds as well as the threshold for the binary search
         if norm == 2:
-            (upper_bound, lower_bound) = (1, 0)
+            (upper_bound, lower_bound) = (np.array(1.0), np.array(0.0))
 
             if threshold is None:
                 threshold = self.theta
@@ -493,7 +493,7 @@ class HopSkipJump(EvasionAttack):
         else:
             (upper_bound, lower_bound) = (
                 np.max(abs(original_sample - current_sample)),
-                0,
+                np.array(0.0),
             )
 
             if threshold is None:
@@ -523,7 +523,7 @@ class HopSkipJump(EvasionAttack):
         result = self._interpolate(
             current_sample=current_sample,
             original_sample=original_sample,
-            alpha=upper_bound,
+            alpha=float(upper_bound),
             norm=norm,
         )
 
