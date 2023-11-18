@@ -192,7 +192,7 @@ def test_functional_model(art_warning, image_dl_estimator):
 
 
 @pytest.mark.skip_framework("mxnet", "non_dl_frameworks")
-def test_fit_kwargs(art_warning, image_dl_estimator, get_default_mnist_subset, default_batch_size):
+def test_fit_kwargs(art_warning, image_dl_estimator, get_default_mnist_subset, default_batch_size, framework):
     try:
         (x_train_mnist, y_train_mnist), (_, _) = get_default_mnist_subset
 
@@ -201,16 +201,27 @@ def test_fit_kwargs(art_warning, image_dl_estimator, get_default_mnist_subset, d
 
         # Test a valid callback
         classifier, _ = image_dl_estimator(from_logits=True)
-        kwargs = {"callbacks": [LearningRateScheduler(get_lr)],
-                  "display_progress_bar": True}
+
+        # Keras fit has its own kwarg arguments
+        if framework in ["kerastf", "keras"]:
+            kwargs = {"callbacks": [LearningRateScheduler(get_lr)]}
+        else:
+            kwargs = {"callbacks": [LearningRateScheduler(get_lr)], "display_progress_bar": True}
         classifier.fit(x_train_mnist, y_train_mnist, batch_size=default_batch_size, nb_epochs=1, **kwargs)
 
-        # Test failure for invalid parameters
-        kwargs = {"epochs": 1}
-        with pytest.raises(TypeError) as exception:
-            classifier.fit(x_train_mnist, y_train_mnist, batch_size=default_batch_size, nb_epochs=1, **kwargs)
+        # Test failure for invalid parameters: does not apply to many frameworks which allow arbitrary kwargs
+        if framework not in [
+            "tensorflow1",
+            "tensorflow2",
+            "tensorflow2v1",
+            "huggingface",
+            "pytorch",
+        ]:
+            kwargs = {"epochs": 1}
+            with pytest.raises(TypeError) as exception:
+                classifier.fit(x_train_mnist, y_train_mnist, batch_size=default_batch_size, nb_epochs=1, **kwargs)
 
-        assert "multiple values for keyword argument" in str(exception)
+            assert "multiple values for keyword argument" in str(exception)
 
     except ARTTestException as e:
         art_warning(e)
