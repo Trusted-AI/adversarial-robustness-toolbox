@@ -191,7 +191,7 @@ def test_functional_model(art_warning, image_dl_estimator):
         art_warning(e)
 
 
-@pytest.mark.skip_framework("mxnet", "tensorflow", "pytorch", "huggingface", "non_dl_frameworks")
+@pytest.mark.skip_framework("mxnet", "non_dl_frameworks")
 def test_fit_kwargs(art_warning, image_dl_estimator, get_default_mnist_subset, default_batch_size):
     try:
         (x_train_mnist, y_train_mnist), (_, _) = get_default_mnist_subset
@@ -201,7 +201,8 @@ def test_fit_kwargs(art_warning, image_dl_estimator, get_default_mnist_subset, d
 
         # Test a valid callback
         classifier, _ = image_dl_estimator(from_logits=True)
-        kwargs = {"callbacks": [LearningRateScheduler(get_lr)]}
+        kwargs = {"callbacks": [LearningRateScheduler(get_lr)],
+                  "display_progress_bar": True}
         classifier.fit(x_train_mnist, y_train_mnist, batch_size=default_batch_size, nb_epochs=1, **kwargs)
 
         # Test failure for invalid parameters
