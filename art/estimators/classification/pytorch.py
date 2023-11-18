@@ -500,10 +500,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                     if isinstance(o_batch, np.ndarray):
                         o_batch = torch.argmax(torch.from_numpy(o_batch).to(self._device), dim=1)
                     else:
-                        if o_batch.dim() > 1:
-                            o_batch = torch.argmax(o_batch.to(self._device), dim=1)
-                        else:
-                            o_batch = o_batch.to(self._device)
+                        o_batch = torch.argmax(o_batch.to(self._device), dim=1)
 
                     # Zero the parameter gradients
                     self._optimizer.zero_grad()
