@@ -16,7 +16,7 @@ on:
     branches:
       - main
       - dev*
-      - simple_pb_inclusion
+
   # Run scheduled CI flow daily
   schedule:
     - cron: '0 8 * * 0'
