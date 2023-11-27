@@ -29,7 +29,6 @@ import sys
 import tarfile
 import warnings
 import zipfile
-from collections import UserDict
 from functools import wraps
 from inspect import signature
 from typing import TYPE_CHECKING, Callable, List, Optional, Tuple, Union
@@ -558,18 +557,10 @@ def projection(values: np.ndarray, eps: Union[int, float, np.ndarray], norm_p: U
 
     elif norm_p in [np.inf, "inf"]:
         if isinstance(eps, np.ndarray):
-            if isinstance(values_tmp, UserDict):
-                eps = eps * np.ones_like(values["pixel_values"].cpu().detach().numpy())
-            else:
-                eps = eps * np.ones_like(values)
+            eps = eps * np.ones_like(values)
             eps = eps.reshape([eps.shape[0], -1])  # type: ignore
 
-        if isinstance(values_tmp, UserDict):
-            sign = np.sign(values_tmp["pixel_values"].cpu().detach().numpy())
-            mag = abs(values_tmp["pixel_values"].cpu().detach().numpy())
-            values_tmp["pixel_values"] = sign * np.minimum(mag, eps)
-        else:
-            values_tmp = np.sign(values_tmp) * np.minimum(abs(values_tmp), eps)
+        values_tmp = np.sign(values_tmp) * np.minimum(abs(values_tmp), eps)
 
     else:
         raise NotImplementedError(

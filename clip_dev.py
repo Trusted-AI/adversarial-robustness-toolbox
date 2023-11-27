@@ -81,7 +81,6 @@ def attack_clip_pgd():
     import requests
 
     from transformers import CLIPProcessor, CLIPModel
-    from art.experimental.estimators.huggingface_multimodal import HFMMPyTorch, HuggingFaceMultiModalInput
 
     model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
     loss_fn = torch.nn.CrossEntropyLoss()
@@ -138,7 +137,6 @@ def cifar_clip_pgd():
     import requests
 
     from transformers import CLIPProcessor, CLIPModel
-    from art.experimental.estimators.huggingface_multimodal import HFMMPyTorch, HuggingFaceMultiModalInput
     from art.experimental.attacks.evasion import CLIPProjectedGradientDescentNumpy
 
     text = ["a photo of a cat", "a photo of a bear", "a photo of a car", "a photo of a bus", "apples"]
@@ -192,7 +190,7 @@ def cifar_clip_pgd():
 def test_fit():
     from transformers import CLIPProcessor, CLIPModel
 
-    (x_train, y_train), (x_test, y_test) = get_cifar_data()
+    (x_train, y_train), (_, _) = get_cifar_data()
     model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
     processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
 
@@ -200,7 +198,7 @@ def test_fit():
     inputs = processor(text=text, images=x_train, return_tensors="pt", padding=True)
     original_image = inputs["pixel_values"][0].clone().cpu().detach().numpy()
 
-    inputs = MultiModalHuggingFaceInput(**inputs)
+    inputs = HuggingFaceMultiModalInput(**inputs)
     optimizer = torch.optim.SGD(model.parameters(), lr=0.01, momentum=0.9)
     art_classifier = HFMMPyTorch(
         model,
@@ -230,7 +228,7 @@ def test_predict():
         clip_values=(np.min(original_image), np.max(original_image)),
         input_shape=(3, 224, 224),
     )
-    inputs = MultiModalHuggingFaceInput(**inputs)
+    inputs = HuggingFaceMultiModalInput(**inputs)
 
     preds = art_classifier.predict(inputs)
     print("Pred shape is ", preds.shape)
@@ -240,10 +238,9 @@ def test_adv_train():
     import torch
     from transformers import CLIPProcessor, CLIPModel
     from art.defences.trainer import AdversarialTrainer
-    from art.experimental.estimators.huggingface_multimodal import HFMMPyTorch, HuggingFaceMultiModalInput
     from art.experimental.attacks.evasion import CLIPProjectedGradientDescentNumpy
 
-    (x_train, y_train), (x_test, y_test) = get_cifar_data()
+    (x_train, y_train), (_, _) = get_cifar_data()
 
     model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
     inputs, original_image, _, num_classes = get_and_process_input()
