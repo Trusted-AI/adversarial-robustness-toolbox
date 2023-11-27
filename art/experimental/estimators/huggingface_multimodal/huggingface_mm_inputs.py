@@ -44,13 +44,15 @@ class HuggingFaceMultiModalInput(UserDict):
     ndim: Optional[int] = None
 
     def __setitem__(self, key, value):
+        """
+        Allows setting key-value paris for HuggingFaceMultiModalInput
+        :param key: Either a slice, int, or numpy array for array like operations
+                    or a string for traditional dictionary setting.
+        :param value: Value to set, pixel_values are required for array like operations.
+        :return: None
+        """
         import torch
 
-        # if not isinstance(value, (torch.Tensor, np.ndarray, )):
-        #    print(type(value))
-        #    raise ValueError("Supplied values must be pytorch tensors or numpy arrays")
-        # print('key ', key)
-        # print('value ', value)
         if isinstance(key, slice):
             pixel_values = UserDict.__getitem__(self, "pixel_values")
             original_shape = pixel_values.shape
@@ -82,21 +84,19 @@ class HuggingFaceMultiModalInput(UserDict):
             super().__setitem__("pixel_values", pixel_values)
         else:
             raise ValueError(
-                f"Unsupported key {key} with type {type(key)}, " f"value {value} for __setitem__ in ARTInput"
+                f"Unsupported key {key} with type {type(key)}, "
+                f"value {value} for __setitem__ in HuggingFaceMultiModalInput"
             )
 
     def __getitem__(
         self, item: Union[slice, Tuple, int, str, np.ndarray]
     ) -> Union[HuggingFaceMultiModalInput, "torch.Tensor"]:
-        # print('__getitem__ key ', item)
-        # print('with type ', type(item))
-        if isinstance(item, (slice, tuple, int)):
-            pixel_values = UserDict.__getitem__(self, "pixel_values")
-            pixel_values = pixel_values[item]
-            output = HuggingFaceMultiModalInput(**self)
-            output["pixel_values"] = pixel_values
-            return output
-        if isinstance(item, np.ndarray):
+        """
+        Get value from HuggingFaceMultiModalInput
+        :param item: Item to get. If accessing via array like functionality (slice, int, etc) pixel_values are fetched.
+                     Else, if passing a string will fetch like a ordinary dictionary
+        """
+        if isinstance(item, (slice, tuple, int, np.ndarray)):
             pixel_values = UserDict.__getitem__(self, "pixel_values")
             pixel_values = pixel_values[item]
             output = HuggingFaceMultiModalInput(**self)
@@ -104,9 +104,16 @@ class HuggingFaceMultiModalInput(UserDict):
             return output
         if item in self.keys():
             return UserDict.__getitem__(self, item)
-        raise ValueError("Unsupported item for __getitem__ in ARTInput")
+        raise ValueError("Unsupported item for __getitem__ in HuggingFaceMultiModalInput")
 
     def __add__(self, other: Union[HuggingFaceMultiModalInput, np.ndarray]) -> HuggingFaceMultiModalInput:
+        """
+        Performs addition between either two instances of HuggingFaceMultiModalInput on the pixel_values or
+        adds a numpy array to the pixel_values if addition is performed between a HuggingFaceMultiModalInput
+        and a numpy array.
+        :param other: Other value which is being added to self.
+        :return: HuggingFaceMultiModalInput with updated "pixel_values".
+        """
         import torch
 
         pixel_values = UserDict.__getitem__(self, "pixel_values")
@@ -128,40 +135,57 @@ class HuggingFaceMultiModalInput(UserDict):
         return output
 
     def __sub__(self, other: HuggingFaceMultiModalInput) -> HuggingFaceMultiModalInput:
+        """
+        Performs subtraction between two instances of HuggingFaceMultiModalInput on the pixel_values.
+
+        :param other: Other value which is being subtracted from self.
+        :return: HuggingFaceMultiModalInput with updated "pixel_values".
+        """
         if isinstance(other, HuggingFaceMultiModalInput):
             pixel_values = UserDict.__getitem__(self, "pixel_values")
             pixel_values = pixel_values - other["pixel_values"]
             output = HuggingFaceMultiModalInput(**self)
             output["pixel_values"] = pixel_values
         else:
-            raise ValueError("Unsupported type for __sub__ in ARTInput")
+            raise ValueError("Unsupported type for __sub__ in HuggingFaceMultiModalInput")
         return output
 
     def __mul__(self, other: Union[HuggingFaceMultiModalInput, np.ndarray]) -> HuggingFaceMultiModalInput:
+        """
+        Performs multiplication between either two instances of HuggingFaceMultiModalInput on the pixel_values or
+        adds a numpy array to the pixel_values if addition is performed between a HuggingFaceMultiModalInput
+        and a numpy array.
+        :param other: Other value which is being multiplied with self.
+        :return: HuggingFaceMultiModalInput with updated "pixel_values".
+        """
         import torch
 
+        pixel_values = UserDict.__getitem__(self, "pixel_values")
+
         if isinstance(other, HuggingFaceMultiModalInput):
-            pixel_values = UserDict.__getitem__(self, "pixel_values")
             pixel_values = pixel_values * other["pixel_values"]
         elif isinstance(other, np.ndarray):
-            pixel_values = UserDict.__getitem__(self, "pixel_values")
             pixel_values = pixel_values * torch.tensor(other)
         else:
-            raise ValueError("Unsupported type for __mul__ in ARTInput")
+            raise ValueError("Unsupported type for __mul__ in HuggingFaceMultiModalInput")
 
         output = HuggingFaceMultiModalInput(**self)
         output["pixel_values"] = pixel_values
         return output
 
-    def __len__(self):
+    def __len__(self) -> int:
+        """
+        Fetched the length of the pixel_values
+        :return: length of the pixel_values tensor
+        """
         pixel_values = UserDict.__getitem__(self, "pixel_values")
         return len(pixel_values)
 
     def reshape(self, new_shape: Tuple) -> HuggingFaceMultiModalInput:
         """
-        Defines reshaping on the HF input.
+        Defines reshaping on the HuggingFaceMultiModalInput input.
         :param new_shape: The new shape for the input
-        :return: A ARTInput instance with the pixel values having their shape updated.
+        :return: A HuggingFaceMultiModalInput instance with the pixel values having their shape updated.
         """
         import torch
 
@@ -187,11 +211,11 @@ class HuggingFaceMultiModalInput(UserDict):
         """
         Enable mypy compatibility
         """
-        raise ValueError("Trying to acces is_leaf for the whole dictionay. Please use on individual tensors")
+        raise ValueError("Trying to access is_leaf for the whole dictionary. Please use on individual tensors")
 
     @staticmethod
     def grad():
         """
         Enable mypy compatibility
         """
-        raise ValueError("Trying to acces is_leaf for the whole dictionay. Please use on individual tensors")
+        raise ValueError("Trying to access is_leaf for the whole dictionary. Please use on individual tensors")
