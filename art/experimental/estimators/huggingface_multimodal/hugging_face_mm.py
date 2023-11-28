@@ -225,10 +225,7 @@ class HuggingFaceMulitModalPyTorch(PyTorchEstimator):
             grads = grads / self.clip_values[1]
 
         if not self.channels_first:
-            if isinstance(x, np.ndarray):
-                grads = np.transpose(grads, (0, 2, 3, 1))
-            else:
-                grads = torch.permute(grads, (0, 2, 3, 1))
+            grads = torch.permute(grads, (0, 2, 3, 1))
 
         assert grads.shape == x["pixel_values"].shape
         return grads.cpu().numpy()
@@ -243,7 +240,7 @@ class HuggingFaceMulitModalPyTorch(PyTorchEstimator):
         :param batch_size: Batch size.
         :return: Predictions over the supplied data.
         """
-        from art.experimental.estimators.huggingface_multimodal import HuggingFaceMultiModalInput
+        from art.experimental.estimators.huggingface_multimodal.hugging_face_mm_inputs import HuggingFaceMultiModalInput
 
         # Set model to evaluation mode
         self._model.eval()
