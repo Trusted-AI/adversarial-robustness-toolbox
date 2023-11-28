@@ -1,5 +1,5 @@
 """
 Module containing estimators for CLIP.
 """
-from art.experimental.estimators.huggingface_multimodal.huggingface_mm import HFMMPyTorch
-from art.experimental.estimators.huggingface_multimodal.huggingface_mm_inputs import HuggingFaceMultiModalInput
+from art.experimental.estimators.huggingface_multimodal.hugging_face_mm import HuggingFaceMulitModalPyTorch
+from art.experimental.estimators.huggingface_multimodal.hugging_face_mm_inputs import HuggingFaceMultiModalInput

@@ -40,7 +40,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class HFMMPyTorch(PyTorchEstimator):
+class HuggingFaceMulitModalPyTorch(PyTorchEstimator):
     """
     This module implements an estimator for attacking pre-trained CLIP by adversarial perturbations on the image.
     Currently only supports PGD attacks.
@@ -243,7 +243,7 @@ class HFMMPyTorch(PyTorchEstimator):
         :param batch_size: Batch size.
         :return: Predictions over the supplied data.
         """
-        from art.experimental.estimators.huggingface_multimodal.huggingface_mm_inputs import HuggingFaceMultiModalInput
+        from art.experimental.estimators.huggingface_multimodal import HuggingFaceMultiModalInput
 
         # Set model to evaluation mode
         self._model.eval()

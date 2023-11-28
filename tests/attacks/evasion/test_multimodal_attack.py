@@ -45,7 +45,10 @@ def test_grad_equivalence(max_iter):
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     from transformers import CLIPModel
-    from art.experimental.estimators.huggingface_multimodal import HFMMPyTorch, HuggingFaceMultiModalInput
+    from art.experimental.estimators.huggingface_multimodal import (
+        HuggingFaceMulitModalPyTorch,
+        HuggingFaceMultiModalInput,
+    )
 
     def grad_art():
         model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
@@ -53,7 +56,7 @@ def test_grad_equivalence(max_iter):
 
         my_input = HuggingFaceMultiModalInput(**inputs)
         for _ in range(max_iter):
-            art_classifier = HFMMPyTorch(
+            art_classifier = HuggingFaceMulitModalPyTorch(
                 model,
                 loss=torch.nn.CrossEntropyLoss(),
                 input_shape=(3, 224, 224),
@@ -96,7 +99,10 @@ def test_perturbation_equivalence(to_batch):
 
     from transformers import CLIPModel
 
-    from art.experimental.estimators.huggingface_multimodal import HFMMPyTorch, HuggingFaceMultiModalInput
+    from art.experimental.estimators.huggingface_multimodal import (
+        HuggingFaceMulitModalPyTorch,
+        HuggingFaceMultiModalInput,
+    )
     from art.experimental.attacks.evasion import CLIPProjectedGradientDescentNumpy
 
     def attack_clip():
@@ -107,7 +113,7 @@ def test_perturbation_equivalence(to_batch):
         original_image = inputs.pixel_values.clone().cpu().numpy()
 
         my_input = HuggingFaceMultiModalInput(**inputs)
-        art_classifier = HFMMPyTorch(
+        art_classifier = HuggingFaceMulitModalPyTorch(
             model,
             loss=loss_fn,
             clip_values=(np.min(original_image), np.max(original_image)),
@@ -168,7 +174,10 @@ def test_attack_functionality():
 
     from transformers import CLIPProcessor, CLIPModel
 
-    from art.experimental.estimators.huggingface_multimodal import HFMMPyTorch, HuggingFaceMultiModalInput
+    from art.experimental.estimators.huggingface_multimodal import (
+        HuggingFaceMulitModalPyTorch,
+        HuggingFaceMultiModalInput,
+    )
     from art.experimental.attacks.evasion import CLIPProjectedGradientDescentNumpy
 
     std = np.asarray([0.26862954, 0.26130258, 0.27577711])
@@ -199,7 +208,7 @@ def test_attack_functionality():
 
     original_images = np.stack(original_images)
 
-    art_classifier = HFMMPyTorch(
+    art_classifier = HuggingFaceMulitModalPyTorch(
         model,
         loss=loss_fn,
         clip_values=(np.min(original_images), np.max(original_images)),
@@ -244,12 +253,15 @@ def test_attack_functionality():
 def test_predict():
     import torch
     from transformers import CLIPModel
-    from art.experimental.estimators.huggingface_multimodal import HFMMPyTorch, HuggingFaceMultiModalInput
+    from art.experimental.estimators.huggingface_multimodal import (
+        HuggingFaceMulitModalPyTorch,
+        HuggingFaceMultiModalInput,
+    )
 
     model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
     inputs, original_image, labels, num_classes = get_and_process_input(return_batch=True)
 
-    art_classifier = HFMMPyTorch(
+    art_classifier = HuggingFaceMulitModalPyTorch(
         model,
         loss=torch.nn.CrossEntropyLoss(),
         clip_values=(np.min(original_image), np.max(original_image)),
