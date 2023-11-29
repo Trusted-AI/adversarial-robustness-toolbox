@@ -1,6 +1,6 @@
 import numpy as np
-from art.experimental.estimators.huggingface_multimodal import HFMMPyTorch, HuggingFaceMultiModalInput
-from art.attacks.evasion import ProjectedGradientDescent
+from art.experimental.estimators.huggingface_multimodal import HuggingFaceMulitModalPyTorch, HuggingFaceMultiModalInput
+from art.experimental.attacks.evasion import CLIPProjectedGradientDescentNumpy
 
 import torch
 from torchvision import datasets
@@ -76,6 +76,64 @@ def get_cifar_data():
     return (x_train[0:250], y_train[0:250]), (x_test[0:250], y_test[0:250])
 
 
+def attack_clip_plant_pgd():
+    from PIL import Image
+
+    from transformers import CLIPProcessor, CLIPModel
+
+    model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
+    loss_fn = torch.nn.CrossEntropyLoss()
+
+    processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
+    text = ["a photo of some plants", "a photo of a dog", "a photo of a car"]
+
+    # url = "http://images.cocodataset.org/val2017/000000039769.jpg"
+    image = Image.open("ART_Test_Image.jpg")
+    image = np.array(image)
+    np.save("ART_Test_Image.npy", image)
+    # make a batch
+    input_list = []
+    input_text = []
+    for _ in range(1):
+        input_list.append(image)
+        input_text.append(text)
+
+    inputs = processor(text=text, images=input_list, return_tensors="pt", padding=True)
+
+    original_image = inputs["pixel_values"][0].clone().cpu().detach().numpy()
+
+    art_classifier = HuggingFaceMulitModalPyTorch(
+        model, loss=loss_fn, clip_values=(np.min(original_image), np.max(original_image)), input_shape=(3, 224, 224)
+    )
+
+    my_input = HuggingFaceMultiModalInput(**inputs)
+
+    labels = torch.tensor(np.asarray([0, 0, 0, 0, 0, 0, 0, 0, 0, 0]))
+    # loss = art_classifier._get_losses(my_input, labels)
+    # grad = art_classifier.loss_gradient(my_input, labels)
+    clean_preds = art_classifier.predict(my_input)
+    print(clean_preds)
+
+    print("The max perturbation is", np.max(np.ones((3, 224, 224)) * np.reshape(norm_bound_eps(), (3, 1, 1))))
+
+    attack = CLIPProjectedGradientDescentNumpy(
+        art_classifier,
+        max_iter=10,
+        eps=np.ones((3, 224, 224)) * np.reshape(norm_bound_eps(), (3, 1, 1)),
+        eps_step=np.ones((3, 224, 224)) * 0.1,
+    )
+    x_adv = attack.generate(my_input, labels)
+    adv_preds = art_classifier.predict(x_adv)
+
+    eps = norm_bound_eps()
+
+    np.save("eps_mins.npy", original_image - eps.reshape((1, 3, 1, 1)))
+    np.save("eps_maxs.npy", original_image + eps.reshape((1, 3, 1, 1)))
+    np.save("original_image.npy", original_image)
+
+    print(adv_preds)
+
+
 def attack_clip_pgd():
     from PIL import Image
     import requests
@@ -101,7 +159,7 @@ def attack_clip_pgd():
 
     original_image = inputs["pixel_values"][0].clone().cpu().detach().numpy()
 
-    art_classifier = HFMMPyTorch(
+    art_classifier = HuggingFaceMulitModalPyTorch(
         model, loss=loss_fn, clip_values=(np.min(original_image), np.max(original_image)), input_shape=(3, 224, 224)
     )
 
@@ -113,7 +171,7 @@ def attack_clip_pgd():
     clean_preds = art_classifier.predict(my_input)
     print("The max perturbation is", np.max(np.ones((3, 224, 224)) * np.reshape(norm_bound_eps(), (3, 1, 1))))
 
-    attack = ProjectedGradientDescent(
+    attack = CLIPProjectedGradientDescentNumpy(
         art_classifier,
         max_iter=10,
         eps=np.ones((3, 224, 224)) * np.reshape(norm_bound_eps(), (3, 1, 1)),
@@ -139,6 +197,7 @@ def cifar_clip_pgd():
     from transformers import CLIPProcessor, CLIPModel
     from art.experimental.attacks.evasion import CLIPProjectedGradientDescentNumpy
 
+    """
     text = ["a photo of a cat", "a photo of a bear", "a photo of a car", "a photo of a bus", "apples"]
 
     labels = torch.tensor(np.asarray([0, 1, 3, 4]))
@@ -147,6 +206,24 @@ def cifar_clip_pgd():
     for fname in ["000000039769.jpg", "000000000285.jpg", "000000002006.jpg", "000000002149.jpg"]:
         url = "http://images.cocodataset.org/val2017/" + fname
         input_list.append(Image.open(requests.get(url, stream=True).raw))
+    """
+    text = [
+        "a photo of pink flowers",
+        "a photo of birds by the sea",
+        "a photo of a forest",
+        "a photo of a fern",
+        "a photo of a bus",
+    ]
+
+    input_list = []
+    for fname in ["flowers", "birds", "forest", "ferns"]:
+        image = Image.open(fname + ".jpg")
+        image = np.array(image)
+        np.save(fname + ".npy", image)
+        print("image shape is ", image.shape)
+        input_list.append(image)
+
+    labels = torch.tensor(np.asarray([0, 1, 2, 3]))
 
     model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
     processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
@@ -157,14 +234,14 @@ def cifar_clip_pgd():
     for i in range(3):
         original_images.append(inputs["pixel_values"][i].clone().cpu().detach().numpy())
 
-    original_images = np.concatenate(original_images)
+    original_images = np.stack(original_images)
+    print("input shape is ", original_images.shape)
 
-    art_classifier = HFMMPyTorch(
+    art_classifier = HuggingFaceMulitModalPyTorch(
         model,
         loss=loss_fn,
         clip_values=(np.min(original_images), np.max(original_images)),
         input_shape=(3, 224, 224),
-        nb_classes=5,
     )
 
     my_input = HuggingFaceMultiModalInput(**inputs)
@@ -200,7 +277,7 @@ def test_fit():
 
     inputs = HuggingFaceMultiModalInput(**inputs)
     optimizer = torch.optim.SGD(model.parameters(), lr=0.01, momentum=0.9)
-    art_classifier = HFMMPyTorch(
+    art_classifier = HuggingFaceMulitModalPyTorch(
         model,
         optimizer=optimizer,
         nb_classes=10,
@@ -221,7 +298,7 @@ def test_predict():
     model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
     inputs, original_image, labels, num_classes = get_and_process_input()
 
-    art_classifier = HFMMPyTorch(
+    art_classifier = HuggingFaceMulitModalPyTorch(
         model,
         nb_classes=num_classes,
         loss=torch.nn.CrossEntropyLoss(),
@@ -252,7 +329,7 @@ def test_adv_train():
     inputs = processor(text=text, images=x_train, return_tensors="pt", padding=True)
     original_image = inputs["pixel_values"][0].clone().cpu().detach().numpy()
 
-    art_classifier = HFMMPyTorch(
+    art_classifier = HuggingFaceMulitModalPyTorch(
         model.to(device),
         nb_classes=num_classes,
         optimizer=optimizer,
@@ -283,3 +360,4 @@ def test_adv_train():
 # test_fit()
 # attack_clip_pgd()
 cifar_clip_pgd()
+# attack_clip_plant_pgd()

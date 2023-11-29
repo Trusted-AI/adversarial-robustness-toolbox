@@ -1,19 +1,19 @@
+import os
 import numpy as np
 import pytest
 
 
 def get_and_process_input(to_one_hot=False, return_batch=False):
 
-    from PIL import Image
-    import requests
     import torch
     from transformers import CLIPProcessor
 
     processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
-    text = ["a photo of a cat", "a photo of a dog", "a photo of a bear"]
+    text = ["a photo of pink flowers", "a photo of a dog", "a photo of a bear"]
 
-    url = "http://images.cocodataset.org/val2017/000000039769.jpg"
-    image = Image.open(requests.get(url, stream=True).raw)
+    fpath = os.path.join(os.path.dirname(os.path.dirname(__file__)), "../../utils/data/images/flowers.npy")
+
+    image = np.load(fpath)
 
     if return_batch:
         input_list = []
@@ -75,7 +75,7 @@ def test_grad_equivalence(max_iter):
         lossfn = torch.nn.CrossEntropyLoss()
         for _ in range(max_iter):
             outputs = model(**inputs)
-            logits_per_image = outputs.logits_per_image  # image-text similarity score
+            logits_per_image = outputs.logits_per_image
 
             loss = lossfn(logits_per_image, labels.to(device))
             loss.backward()
@@ -123,7 +123,7 @@ def test_perturbation_equivalence(to_batch):
         attack = CLIPProjectedGradientDescentNumpy(
             art_classifier,
             max_iter=2,
-            eps=np.ones((3, 224, 224)) * 0.3,  # np.reshape(norm_bound_eps(), (3, 1, 1)),
+            eps=np.ones((3, 224, 224)) * 0.3,
             eps_step=np.ones((3, 224, 224)) * 0.1,
         )
 
@@ -169,8 +169,6 @@ def test_perturbation_equivalence(to_batch):
 def test_attack_functionality():
 
     import torch
-    import requests
-    from PIL import Image
 
     from transformers import CLIPProcessor, CLIPModel
 
@@ -188,14 +186,22 @@ def test_attack_functionality():
         eps_bound = np.abs(eps_bound / std)
         return eps_bound
 
-    text = ["a photo of a cat", "a photo of a bear", "a photo of a car", "a photo of a bus", "apples"]
+    fpath = os.path.join(os.path.dirname(os.path.dirname(__file__)), "../../utils/data/images/")
 
-    labels = torch.tensor(np.asarray([0, 1, 3, 4]))
+    text = [
+        "a photo of pink flowers",
+        "a photo of birds by the sea",
+        "a photo of a forest",
+        "a photo of a fern",
+        "a photo of a bus",
+    ]
 
     input_list = []
-    for fname in ["000000039769.jpg", "000000000285.jpg", "000000002006.jpg", "000000002149.jpg"]:
-        url = "http://images.cocodataset.org/val2017/" + fname
-        input_list.append(Image.open(requests.get(url, stream=True).raw))
+    for fname in ["flowers", "birds", "forest", "ferns"]:
+        image = np.load(os.path.join(fpath, fname + ".npy"))
+        input_list.append(image)
+
+    labels = torch.tensor(np.asarray([0, 1, 2, 3]))
 
     model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
     processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
@@ -203,7 +209,7 @@ def test_attack_functionality():
     loss_fn = torch.nn.CrossEntropyLoss()
     inputs = processor(text=text, images=input_list, return_tensors="pt", padding=True)
     original_images = []
-    for i in range(4):
+    for i in range(len(labels)):
         original_images.append(inputs["pixel_values"][i].clone().cpu().detach().numpy())
 
     original_images = np.stack(original_images)
@@ -229,8 +235,7 @@ def test_attack_functionality():
     adv_preds = art_classifier.predict(x_adv)
     adv_acc = np.sum(np.argmax(adv_preds, axis=1) == labels.cpu().detach().numpy()) / len(labels)
 
-    x_adv = x_adv["pixel_values"]
-    x_adv = x_adv.cpu().detach().numpy()
+    x_adv = x_adv["pixel_values"].cpu().detach().numpy()
 
     assert np.all(x_adv >= np.min(original_images))
     assert np.all(x_adv <= np.max(original_images))
