@@ -373,7 +373,7 @@ class KnockoffNets(ExtractionAttack):
 
         return reward
 
-    def _reward_all(self, y_output: np.ndarray, y_hat: np.ndarray, n: int) -> np.ndarray:
+    def _reward_all(self, y_output: np.ndarray, y_hat: np.ndarray, n: int) -> float:
         """
         Compute `all` reward value.
 
@@ -395,7 +395,7 @@ class KnockoffNets(ExtractionAttack):
         else:
             reward = [max(min(r, 1), 0) for r in reward]
 
-        return np.mean(reward)
+        return float(np.mean(reward))
 
     def _check_params(self) -> None:
         if not isinstance(self.batch_size_fit, int) or self.batch_size_fit <= 0:

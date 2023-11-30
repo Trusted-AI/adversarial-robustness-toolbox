@@ -76,7 +76,7 @@ jobs:
           pip install tqdm==4.64.1
           pip list
       - name: Run ${{ matrix.name }} Tests
-        run: ./run_tests.sh ${{ matrix.framework }}
+        run: pytest --cov-report=xml --cov=art --cov-append -q -vv tests/estimators/speech_recognition/test_tensorflow_lingvo.py --framework=${{ matrix.framework }} --durations=0
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
         with:

@@ -141,9 +141,8 @@ class LowProFool(EvasionAttack):
         :param perturbations: Perturbations of samples towards being adversarial.
         :return: Array with weighted Lp-norm of perturbations.
         """
-        return self.lambd * np.linalg.norm(
-            self.importance_vec * perturbations, axis=1, ord=(np.inf if self.norm == "inf" else self.norm)
-        ).reshape(-1, 1)
+        order: Union[int, float] = np.inf if self.norm == "inf" else float(self.norm)
+        return self.lambd * np.linalg.norm(self.importance_vec * perturbations, axis=1, ord=order).reshape(-1, 1)
 
     def __weighted_lp_norm_gradient(self, perturbations: np.ndarray) -> np.ndarray:
         """
