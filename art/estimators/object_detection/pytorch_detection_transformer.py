@@ -127,7 +127,7 @@ class PyTorchDetectionTransformer(PyTorchObjectDetector):
             num_classes, matcher=matcher, weight_dict=self.weight_dict, eos_coef=eos_coef, losses=losses
         )
 
-    def _translate_labels(self, labels: List[Dict[str, "torch.Tensor"]]) -> List[Any]:
+    def _translate_labels(self, labels: List[Dict[str, "torch.Tensor"]]) -> List[Dict[str, "torch.Tensor"]]:
         """
         Translate object detection labels from ART format (torchvision) to the model format (DETR) and
         move tensors to GPU, if applicable.
@@ -144,7 +144,7 @@ class PyTorchDetectionTransformer(PyTorchObjectDetector):
             height = self.input_shape[0]
             width = self.input_shape[1]
 
-        labels_translated = []
+        labels_translated: List[Dict[str, torch.Tensor]] = []
 
         for label_dict in labels:
             label_dict_translated = {}
