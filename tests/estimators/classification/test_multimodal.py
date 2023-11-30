@@ -3,6 +3,7 @@ import numpy as np
 import pytest
 
 from art.utils import load_dataset
+from tests.utils import ARTTestException
 
 
 @pytest.fixture()
@@ -21,90 +22,91 @@ def fix_get_cifar10_data():
     return x_test.astype(np.float32), y_test
 
 
-def get_and_process_input(to_one_hot=False, return_batch=False):
+@pytest.mark.only_with_platform("huggingface")
+def test_predict(art_warning):
+    """
+    Assert predictions function as expected.
+    """
+    try:
+        import torch
+        from transformers import CLIPModel, CLIPProcessor
+        from art.experimental.estimators.huggingface_multimodal import (
+            HuggingFaceMultiModalPyTorch,
+            HuggingFaceMultiModalInput,
+        )
 
-    import torch
-    from transformers import CLIPProcessor
+        model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
+        processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
 
-    processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
-    text = ["a photo of pink flowers", "a photo of a dog", "a photo of a bear"]
+        fpath = os.path.join(os.path.dirname(os.path.dirname(__file__)), "../../utils/data/images/")
 
-    fpath = os.path.join(os.path.dirname(os.path.dirname(__file__)), "../../utils/data/images/flowers.npy")
+        text = [
+            "a photo of pink flowers",
+            "a photo of birds by the sea",
+            "a photo of a forest",
+            "a photo of a fern",
+            "a photo of a bus",
+        ]
 
-    image = np.load(fpath)
-
-    if return_batch:
         input_list = []
-        for _ in range(10):
+        for fname in ["flowers", "birds", "forest", "ferns"]:
+            image = np.load(os.path.join(fpath, fname + ".npy"))
             input_list.append(image)
+
+        labels = np.asarray([0, 1, 2, 3])
         inputs = processor(text=text, images=input_list, return_tensors="pt", padding=True)
-        original_image = inputs["pixel_values"][0].clone().cpu().numpy()
-        if to_one_hot:
-            labels = np.zeros((10, 3))
-            labels = labels[0:10] + 1
-        else:
-            labels = np.zeros((10,))
+        original_images = []
+        for i in range(len(labels)):
+            original_images.append(inputs["pixel_values"][i].clone().cpu().detach().numpy())
 
-        labels = torch.tensor(labels).type(torch.LongTensor)
+        original_images = np.stack(original_images)
 
-    else:
-
-        inputs = processor(text=text, images=image, return_tensors="pt", padding=True)
-        original_image = inputs.pixel_values.clone().cpu().numpy()
-        labels = torch.tensor(np.asarray([0]))
-
-    return inputs, original_image, labels, len(text)
-
-
-@pytest.mark.only_with_platform("huggingface")
-def test_predict():
-    import torch
-    from transformers import CLIPModel
-    from art.experimental.estimators.huggingface_multimodal import (
-        HuggingFaceMultiModalPyTorch,
-        HuggingFaceMultiModalInput,
-    )
-
-    model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
-    inputs, original_image, labels, num_classes = get_and_process_input(return_batch=True)
-
-    art_classifier = HuggingFaceMultiModalPyTorch(
-        model,
-        loss=torch.nn.CrossEntropyLoss(),
-        clip_values=(np.min(original_image), np.max(original_image)),
-        input_shape=(3, 224, 224),
-    )
-    inputs = HuggingFaceMultiModalInput(**inputs)
-    _ = art_classifier.predict(inputs)
+        art_classifier = HuggingFaceMultiModalPyTorch(
+            model,
+            loss=torch.nn.CrossEntropyLoss(),
+            clip_values=(np.min(original_images), np.max(original_images)),
+            input_shape=(3, 224, 224),
+        )
+        inputs = HuggingFaceMultiModalInput(**inputs)
+        predictions = art_classifier.predict(inputs)
+        assert ((np.sum(np.argmax(predictions, axis=1) == labels) / len(labels)) == 1.0)
+    except ARTTestException as e:
+        art_warning(e)
 
 
 @pytest.mark.only_with_platform("huggingface")
-def test_fit(fix_get_cifar10_data):
-    import torch
-    from transformers import CLIPProcessor, CLIPModel
-    from art.experimental.estimators.huggingface_multimodal import (
-        HuggingFaceMultiModalPyTorch,
-        HuggingFaceMultiModalInput,
-    )
+def test_fit(art_warning, fix_get_cifar10_data):
+    """
+    Assert training loop executes.
+    """
+    try:
+        import torch
+        from transformers import CLIPProcessor, CLIPModel
+        from art.experimental.estimators.huggingface_multimodal import (
+            HuggingFaceMultiModalPyTorch,
+            HuggingFaceMultiModalInput,
+        )
 
-    x_train = fix_get_cifar10_data[0]
-    y_train = fix_get_cifar10_data[1]
+        x_train = fix_get_cifar10_data[0]
+        y_train = fix_get_cifar10_data[1]
 
-    model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
-    processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
+        model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
+        processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
 
-    text = ["plane", "car", "bird", "cat", "deer", "dog", "frog", "horse", "ship", "truck"]
-    inputs = processor(text=text, images=x_train, return_tensors="pt", padding=True)
-    original_image = inputs["pixel_values"][0].clone().cpu().detach().numpy()
+        text = ["plane", "car", "bird", "cat", "deer", "dog", "frog", "horse", "ship", "truck"]
+        inputs = processor(text=text, images=x_train, return_tensors="pt", padding=True)
+        original_image = inputs["pixel_values"][0].clone().cpu().detach().numpy()
 
-    inputs = HuggingFaceMultiModalInput(**inputs)
-    optimizer = torch.optim.SGD(model.parameters(), lr=0.01, momentum=0.9)
-    art_classifier = HuggingFaceMultiModalPyTorch(
-        model,
-        optimizer=optimizer,
-        loss=torch.nn.CrossEntropyLoss(),
-        clip_values=(np.min(original_image), np.max(original_image)),
-        input_shape=(3, 224, 224),
-    )
+        inputs = HuggingFaceMultiModalInput(**inputs)
+        optimizer = torch.optim.SGD(model.parameters(), lr=0.01, momentum=0.9)
+        art_classifier = HuggingFaceMultiModalPyTorch(
+            model,
+            optimizer=optimizer,
+            loss=torch.nn.CrossEntropyLoss(),
+            clip_values=(np.min(original_image), np.max(original_image)),
+            input_shape=(3, 224, 224),
+        )
 
-    art_classifier.fit(inputs, y_train, nb_epochs=1)
+        art_classifier.fit(inputs, y_train, nb_epochs=1)
+    except ARTTestException as e:
+        art_warning(e)
