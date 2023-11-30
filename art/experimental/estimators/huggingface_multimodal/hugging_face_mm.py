@@ -16,7 +16,8 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements ...
+This module implements an estimator for attacking pre-trained CLIP by adversarial perturbations on the image.
+| Paper link: https://arxiv.org/abs/2103.00020
 """
 import logging
 import random
@@ -202,6 +203,8 @@ class HuggingFaceMultiModalPyTorch(PyTorchEstimator):
 
         :param x: Dictionary inputs for the CLIP model.
         :param y: Labels for the loss
+        :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported
+                       and providing it takes no effect.
         :return: Loss gradients of the same shape as `x`.
         """
         import torch
@@ -238,6 +241,8 @@ class HuggingFaceMultiModalPyTorch(PyTorchEstimator):
 
         :param x: Dictionary inputs for the CLIP model.
         :param batch_size: Batch size.
+        :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported
+                       and providing it takes no effect.
         :return: Predictions over the supplied data.
         """
         from art.experimental.estimators.huggingface_multimodal.hugging_face_mm_inputs import HuggingFaceMultiModalInput
@@ -268,28 +273,27 @@ class HuggingFaceMultiModalPyTorch(PyTorchEstimator):
         batch_size: int = 128,
         nb_epochs: int = 10,
         scheduler: Optional["torch.optim.lr_scheduler._LRScheduler"] = None,
-        verbose: bool = True,
+        display_progress_bar: bool = True,
         **kwargs,
     ) -> None:
         """
         Fit the classifier on the training set `(x, y)`.
 
         :param x: Training data.
-        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or index labels of
-                  shape (nb_samples,).
+        :param y: Target values (class labels) in index labels style of shape (nb_samples,).
         :param batch_size: Size of batches.
         :param nb_epochs: Number of epochs to use for training.
         :param scheduler: Learning rate scheduler to run at the start of every epoch.
-        :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
+        :param display_progress_bar: Displays the training progress.
+        :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported
                        and providing it takes no effect.
         """
         import torch
-        from art.experimental.estimators.huggingface_multimodal.huggingface_mm_inputs import HuggingFaceMultiModalInput
+        from art.experimental.estimators.huggingface_multimodal.hugging_face_mm_inputs import HuggingFaceMultiModalInput
 
         self._model.train()
         if self._optimizer is None:
             raise ValueError("Please supply a optimizer")
-        # y_preprocessed = self.reduce_labels(y)
 
         y_tensor = torch.from_numpy(y)
 
@@ -302,7 +306,7 @@ class HuggingFaceMultiModalPyTorch(PyTorchEstimator):
             random.shuffle(ind)
 
             # Train for one epoch
-            pbar = tqdm(range(num_batch), disable=not verbose)
+            pbar = tqdm(range(num_batch), disable=not display_progress_bar)
             accs = []
             losses = []
 
@@ -345,7 +349,7 @@ class HuggingFaceMultiModalPyTorch(PyTorchEstimator):
                 ) / len(y_batch)
                 accs.append(acc)
 
-                if verbose:
+                if display_progress_bar:
                     pbar.set_description(f"Loss {np.mean(np.stack(losses)):.2f} " f"Acc {np.mean(np.stack(accs)):.2f} ")
 
             self.training_loss.append(losses)
@@ -367,6 +371,8 @@ class HuggingFaceMultiModalPyTorch(PyTorchEstimator):
 
         :param x: Dictionary inputs for the CLIP model.
         :param y: Target values
+        :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported
+                       and providing it takes no effect.
         :return: Loss.
         """
         import torch

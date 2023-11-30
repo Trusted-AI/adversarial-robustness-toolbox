@@ -159,7 +159,7 @@ def attack_clip_pgd():
 
     original_image = inputs["pixel_values"][0].clone().cpu().detach().numpy()
 
-    art_classifier = HuggingFaceMulitModalPyTorch(
+    art_classifier = HuggingFaceMultiModalPyTorch(
         model, loss=loss_fn, clip_values=(np.min(original_image), np.max(original_image)), input_shape=(3, 224, 224)
     )
 
@@ -279,7 +279,6 @@ def test_fit():
     art_classifier = HuggingFaceMultiModalPyTorch(
         model,
         optimizer=optimizer,
-        nb_classes=10,
         loss=torch.nn.CrossEntropyLoss(),
         clip_values=(np.min(original_image), np.max(original_image)),
         input_shape=(3, 224, 224),
@@ -356,7 +355,7 @@ def test_adv_train():
 
 # test_adv_train()
 # test_predict()
-# test_fit()
+test_fit()
 # attack_clip_pgd()
-cifar_clip_pgd()
+# cifar_clip_pgd()
 # attack_clip_plant_pgd()

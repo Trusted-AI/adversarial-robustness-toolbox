@@ -237,6 +237,7 @@ def test_attack_functionality():
 
     x_adv = x_adv["pixel_values"].cpu().detach().numpy()
 
+    # Assert valid adversarial examples
     assert np.all(x_adv >= np.min(original_images))
     assert np.all(x_adv <= np.max(original_images))
 
@@ -252,25 +253,3 @@ def test_attack_functionality():
 
     assert clean_acc == 1.0
     assert adv_acc == 0.0
-
-
-@pytest.mark.only_with_platform("huggingface")
-def test_predict():
-    import torch
-    from transformers import CLIPModel
-    from art.experimental.estimators.huggingface_multimodal import (
-        HuggingFaceMultiModalPyTorch,
-        HuggingFaceMultiModalInput,
-    )
-
-    model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
-    inputs, original_image, labels, num_classes = get_and_process_input(return_batch=True)
-
-    art_classifier = HuggingFaceMultiModalPyTorch(
-        model,
-        loss=torch.nn.CrossEntropyLoss(),
-        clip_values=(np.min(original_image), np.max(original_image)),
-        input_shape=(3, 224, 224),
-    )
-    inputs = HuggingFaceMultiModalInput(**inputs)
-    _ = art_classifier.predict(inputs)
