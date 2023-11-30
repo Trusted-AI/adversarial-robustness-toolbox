@@ -133,6 +133,7 @@ else
                            "tests/estimators/regression/test_scikitlearn.py" )
 
     declare -a defences=("tests/defences/test_adversarial_trainer.py" \
+                         "tests/defences/test_adversarial_trainer_madry_pgd.py" \
                          "tests/defences/test_class_labels.py" \
                          "tests/defences/test_defensive_distillation.py" \
                          "tests/defences/test_feature_squeezing.py" \
