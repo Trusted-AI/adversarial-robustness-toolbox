@@ -46,7 +46,7 @@ def test_grad_equivalence(max_iter, art_warning):
 
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         from transformers import CLIPModel
-        from art.experimental.estimators.huggingface_multimodal import (
+        from art.experimental.estimators.hugging_face_multimodal import (
             HuggingFaceMultiModalPyTorch,
             HuggingFaceMultiModalInput,
         )
@@ -103,7 +103,7 @@ def test_perturbation_equivalence(to_batch, art_warning):
 
         from transformers import CLIPModel
 
-        from art.experimental.estimators.huggingface_multimodal import (
+        from art.experimental.estimators.hugging_face_multimodal import (
             HuggingFaceMultiModalPyTorch,
             HuggingFaceMultiModalInput,
         )
@@ -183,7 +183,7 @@ def test_attack_functionality(art_warning, to_one_hot):
 
         from transformers import CLIPProcessor, CLIPModel
 
-        from art.experimental.estimators.huggingface_multimodal import (
+        from art.experimental.estimators.hugging_face_multimodal import (
             HuggingFaceMultiModalPyTorch,
             HuggingFaceMultiModalInput,
         )

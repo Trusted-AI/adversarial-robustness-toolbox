@@ -27,7 +27,7 @@ import numpy as np
 from art.attacks.evasion.fast_gradient import FastGradientMethod
 from art.attacks.attack import EvasionAttack
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
-from art.experimental.estimators.huggingface_multimodal import HuggingFaceMultiModalInput
+from art.experimental.estimators.hugging_face_multimodal import HuggingFaceMultiModalInput
 
 from art.summary_writer import SummaryWriter
 from art.config import ART_NUMPY_DTYPE

@@ -30,7 +30,7 @@ def test_predict(art_warning):
     try:
         import torch
         from transformers import CLIPModel, CLIPProcessor
-        from art.experimental.estimators.huggingface_multimodal import (
+        from art.experimental.estimators.hugging_face_multimodal import (
             HuggingFaceMultiModalPyTorch,
             HuggingFaceMultiModalInput,
         )
@@ -69,7 +69,7 @@ def test_predict(art_warning):
         )
         inputs = HuggingFaceMultiModalInput(**inputs)
         predictions = art_classifier.predict(inputs)
-        assert ((np.sum(np.argmax(predictions, axis=1) == labels) / len(labels)) == 1.0)
+        assert (np.sum(np.argmax(predictions, axis=1) == labels) / len(labels)) == 1.0
     except ARTTestException as e:
         art_warning(e)
 
@@ -82,7 +82,7 @@ def test_fit(art_warning, fix_get_cifar10_data):
     try:
         import torch
         from transformers import CLIPProcessor, CLIPModel
-        from art.experimental.estimators.huggingface_multimodal import (
+        from art.experimental.estimators.hugging_face_multimodal import (
             HuggingFaceMultiModalPyTorch,
             HuggingFaceMultiModalInput,
         )

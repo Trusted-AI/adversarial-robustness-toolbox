@@ -36,7 +36,7 @@ if TYPE_CHECKING:
     from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
     from art.defences.preprocessor.preprocessor import Preprocessor
     from art.defences.postprocessor.postprocessor import Postprocessor
-    from art.experimental.estimators.huggingface_multimodal.huggingface_mm_inputs import HuggingFaceMultiModalInput
+    from art.experimental.estimators.hugging_face_multimodal import HuggingFaceMultiModalInput
 
 logger = logging.getLogger(__name__)
 
@@ -245,7 +245,9 @@ class HuggingFaceMultiModalPyTorch(PyTorchEstimator):
                        and providing it takes no effect.
         :return: Predictions over the supplied data.
         """
-        from art.experimental.estimators.huggingface_multimodal.hugging_face_mm_inputs import HuggingFaceMultiModalInput
+        from art.experimental.estimators.hugging_face_multimodal.hugging_face_mm_inputs import (
+            HuggingFaceMultiModalInput,
+        )
 
         # Set model to evaluation mode
         self._model.eval()
@@ -289,7 +291,9 @@ class HuggingFaceMultiModalPyTorch(PyTorchEstimator):
                        and providing it takes no effect.
         """
         import torch
-        from art.experimental.estimators.huggingface_multimodal.hugging_face_mm_inputs import HuggingFaceMultiModalInput
+        from art.experimental.estimators.hugging_face_multimodal.hugging_face_mm_inputs import (
+            HuggingFaceMultiModalInput,
+        )
 
         self._model.train()
         if self._optimizer is None:
