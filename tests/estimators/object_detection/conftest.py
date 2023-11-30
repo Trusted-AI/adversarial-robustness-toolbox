@@ -250,6 +250,9 @@ def get_pytorch_yolo(get_default_cifar10_subset):
 
 @pytest.fixture()
 def get_pytorch_detr(get_default_cifar10_subset):
+    """
+    This class tests the PyTorchDetectionTransformer object detector.
+    """
     import cv2
 
     from art.estimators.object_detection.pytorch_detection_transformer import PyTorchDetectionTransformer

@@ -576,7 +576,9 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
                 if loss_name in self.weight_dict
             )
 
-        if isinstance(x, torch.Tensor):
-            return loss  # type: ignore
+        assert isinstance(loss, torch.Tensor)
 
-        return loss.detach().cpu().numpy()  # type: ignore
+        if isinstance(x, torch.Tensor):
+            return loss
+
+        return loss.detach().cpu().numpy()
