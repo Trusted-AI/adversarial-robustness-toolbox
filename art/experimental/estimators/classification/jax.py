@@ -192,7 +192,7 @@ class JaxClassifier(ClassGradientsMixin, ClassifierMixin, JaxEstimator):
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=True)
 
         num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
-        ind = np.arange(len(x_preprocessed))
+        ind = np.arange(len(x_preprocessed)).tolist()
 
         # Start training
         for _ in range(nb_epochs):
@@ -236,7 +236,7 @@ class JaxClassifier(ClassGradientsMixin, ClassifierMixin, JaxEstimator):
         raise NotImplementedError
 
     def class_gradient(  # pylint: disable=W0221
-        self, x: np.ndarray, label: Union[int, List[int], None] = None, **kwargs
+        self, x: np.ndarray, label: Optional[Union[int, List[int], np.ndarray]] = None, **kwargs
     ) -> np.ndarray:
         """
         Compute per-class derivatives w.r.t. `x`.

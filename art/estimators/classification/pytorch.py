@@ -561,7 +561,11 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         self.model.apply(weight_reset)
 
     def class_gradient(  # pylint: disable=W0221
-        self, x: np.ndarray, label: Union[int, List[int], None] = None, training_mode: bool = False, **kwargs
+        self,
+        x: np.ndarray,
+        label: Optional[Union[int, List[int], np.ndarray]] = None,
+        training_mode: bool = False,
+        **kwargs,
     ) -> np.ndarray:
         """
         Compute per-class derivatives w.r.t. `x`.
@@ -598,6 +602,8 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                 self.set_batchnorm(train=False)
                 self.set_dropout(train=False)
 
+        if isinstance(label, list):
+            label = np.array(label)
         if not (
             (label is None)
             or (isinstance(label, (int, np.integer)) and label in range(self.nb_classes))
