@@ -23,7 +23,7 @@ This module implements Randomized Smoothing applied to classifier predictions.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import List, Union, TYPE_CHECKING, Tuple
+from typing import List, Optional, Union, TYPE_CHECKING, Tuple
 
 import warnings
 import numpy as np
@@ -141,7 +141,11 @@ class NumpyRandomizedSmoothing(
         return self.classifier.loss_gradient(x=x, y=y, training_mode=training_mode, **kwargs)  # type: ignore
 
     def class_gradient(  # pylint: disable=W0221
-        self, x: np.ndarray, label: Union[int, List[int]] = None, training_mode: bool = False, **kwargs
+        self,
+        x: np.ndarray,
+        label: Optional[Union[int, List[int], np.ndarray]] = None,
+        training_mode: bool = False,
+        **kwargs
     ) -> np.ndarray:
         """
         Compute per-class derivatives of the given classifier w.r.t. `x` of original classifier.

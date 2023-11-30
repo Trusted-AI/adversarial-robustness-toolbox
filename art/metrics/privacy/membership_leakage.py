@@ -131,7 +131,7 @@ def PDTP(  # pylint: disable=C0103
                     # get max value
                     max_value: float = max(ratio_1.max(), ratio_2.max())
                 elif comparison_type == ComparisonType.DIFFERENCE:
-                    max_value = np.max(abs(pred_bin - alt_pred_bin))
+                    max_value = float(np.max(abs(pred_bin - alt_pred_bin)))
                 else:
                     raise ValueError("Unsupported comparison type.")
                 iter_results.append(max_value)

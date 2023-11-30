@@ -294,7 +294,7 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
             y_preprocessed = np.argmax(y_preprocessed, axis=1)
 
         num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
-        ind = np.arange(len(x_preprocessed))
+        ind = np.arange(len(x_preprocessed)).tolist()
 
         # Start training
         for _ in range(nb_epochs):
@@ -359,7 +359,11 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
             super().fit_generator(generator, nb_epochs=nb_epochs, **kwargs)
 
     def class_gradient(  # pylint: disable=W0221
-        self, x: np.ndarray, label: Union[int, List[int], None] = None, training_mode: bool = False, **kwargs
+        self,
+        x: np.ndarray,
+        label: Optional[Union[int, List[int], np.ndarray]] = None,
+        training_mode: bool = False,
+        **kwargs,
     ) -> np.ndarray:
         """
         Compute per-class derivatives w.r.t. `x`.
@@ -1072,7 +1076,11 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
             super().fit_generator(generator, nb_epochs=nb_epochs)
 
     def class_gradient(  # pylint: disable=W0221
-        self, x: np.ndarray, label: Union[int, List[int], None] = None, training_mode: bool = False, **kwargs
+        self,
+        x: np.ndarray,
+        label: Optional[Union[int, List[int], np.ndarray]] = None,
+        training_mode: bool = False,
+        **kwargs,
     ) -> np.ndarray:
         """
         Compute per-class derivatives w.r.t. `x`.

@@ -24,7 +24,7 @@ predictions.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional, Tuple, TYPE_CHECKING
+from typing import List, Optional, Tuple, TYPE_CHECKING
 
 import numpy as np
 from tqdm.auto import tqdm, trange
@@ -268,14 +268,14 @@ class BoundaryAttack(EvasionAttack):
         for _ in trange(self.max_iter, desc="Boundary attack - iterations", disable=not self.verbose):
             # Trust region method to adjust delta
             for _ in range(self.num_trial):
-                potential_advs = []
+                potential_advs_list: List[np.ndarray] = []
                 for _ in range(self.sample_size):
                     potential_adv = x_adv + self._orthogonal_perturb(self.curr_delta, x_adv, original_sample)
                     potential_adv = np.clip(potential_adv, clip_min, clip_max)
-                    potential_advs.append(potential_adv)
+                    potential_advs_list.append(potential_adv)
 
                 preds = np.argmax(
-                    self.estimator.predict(np.array(potential_advs), batch_size=self.batch_size),
+                    self.estimator.predict(np.array(potential_advs_list), batch_size=self.batch_size),
                     axis=1,
                 )
 
@@ -292,7 +292,7 @@ class BoundaryAttack(EvasionAttack):
                     self.curr_delta /= self.step_adapt
 
                 if delta_ratio > 0:
-                    x_advs = np.array(potential_advs)[np.where(satisfied)[0]]
+                    x_advs = np.array(potential_advs_list)[np.where(satisfied)[0]]
                     break
             else:  # pragma: no cover
                 logger.warning("Adversarial example found but not optimal.")

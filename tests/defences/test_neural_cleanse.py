@@ -64,7 +64,7 @@ class TestNeuralCleanse(unittest.TestCase):
         from tensorflow.keras.models import Sequential
         from tensorflow.keras.layers import Dense, Flatten, Conv2D
         from tensorflow.keras.losses import CategoricalCrossentropy
-        from tensorflow.keras.optimizers import Adam
+        from tensorflow.keras.optimizers.legacy import Adam
 
         model = Sequential()
         model.add(Conv2D(filters=4, kernel_size=(5, 5), strides=1, activation="relu", input_shape=(28, 28, 1)))

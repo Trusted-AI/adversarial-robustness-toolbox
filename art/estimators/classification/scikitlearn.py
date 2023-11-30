@@ -785,7 +785,9 @@ class ScikitlearnLogisticRegression(ClassGradientsMixin, LossGradientsMixin, Sci
             preprocessing=preprocessing,
         )
 
-    def class_gradient(self, x: np.ndarray, label: Union[int, List[int], None] = None, **kwargs) -> np.ndarray:
+    def class_gradient(
+        self, x: np.ndarray, label: Optional[Union[int, List[int], np.ndarray]] = None, **kwargs
+    ) -> np.ndarray:
         """
         Compute per-class derivatives w.r.t. `x`.
 
@@ -1025,7 +1027,9 @@ class ScikitlearnSVC(ClassGradientsMixin, LossGradientsMixin, ScikitlearnClassif
         )
         self._kernel = self._kernel_func()
 
-    def class_gradient(self, x: np.ndarray, label: Union[int, List[int], None] = None, **kwargs) -> np.ndarray:
+    def class_gradient(
+        self, x: np.ndarray, label: Optional[Union[int, List[int], np.ndarray]] = None, **kwargs
+    ) -> np.ndarray:
         """
         Compute per-class derivatives w.r.t. `x`.
 

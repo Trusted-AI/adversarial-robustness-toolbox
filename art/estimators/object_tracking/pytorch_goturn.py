@@ -353,8 +353,8 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
             mean_np = self.preprocessing.mean
             std_np = self.preprocessing.std
         else:
-            mean_np = np.ones((3, 1, 1))
-            std_np = np.ones((3, 1, 1))
+            mean_np = np.ones(shape=(3, 1, 1), dtype=float)
+            std_np = np.ones(shape=(3, 1, 1), dtype=float)
         mean = torch.from_numpy(mean_np).reshape((3, 1, 1))
         std = torch.from_numpy(std_np).reshape((3, 1, 1))
         img = img.permute(2, 0, 1)

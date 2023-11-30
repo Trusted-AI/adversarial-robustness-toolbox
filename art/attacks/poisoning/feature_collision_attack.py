@@ -239,7 +239,9 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
         num_features = base_image.size
         num_activations = poison_feature_rep.size
         beta = self.similarity_coeff * (num_activations / num_features) ** 2
-        return np.linalg.norm(poison_feature_rep - target_feature_rep) + beta * np.linalg.norm(poison - base_image)
+        return float(
+            np.linalg.norm(poison_feature_rep - target_feature_rep) + beta * np.linalg.norm(poison - base_image)
+        )
 
     def _check_params(self) -> None:
         if self.learning_rate <= 0:
@@ -293,7 +295,11 @@ def tensor_norm(tensor, norm_type: Union[int, float, str] = 2):  # pylint: disab
     :param norm_type: Order of the norm.
     :return: A tensor with the norm applied.
     """
-    tf_tensor_types = ("tensorflow.python.framework.ops.Tensor", "tensorflow.python.framework.ops.EagerTensor")
+    tf_tensor_types = (
+        "tensorflow.python.framework.ops.Tensor",
+        "tensorflow.python.framework.ops.EagerTensor",
+        "tensorflow.python.framework.ops.SymbolicTensor",
+    )
     torch_tensor_types = ("torch.Tensor", "torch.float", "torch.double", "torch.long")
     mxnet_tensor_types = ()
     supported_types = tf_tensor_types + torch_tensor_types + mxnet_tensor_types
