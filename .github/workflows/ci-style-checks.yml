@@ -16,8 +16,6 @@ on:
     branches:
       - main
       - dev*
-      - clip_1.17_dev
-
 
   # Run scheduled CI flow daily
   schedule:
