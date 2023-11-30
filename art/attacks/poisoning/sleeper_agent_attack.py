@@ -101,10 +101,10 @@ class SleeperAgentAttack(GradientMatchingAttack):
         """
         if isinstance(classifier.preprocessing, (StandardisationMeanStdPyTorch, StandardisationMeanStdTensorFlow)):
             clip_values_normalised = (
-                classifier.clip_values - classifier.preprocessing.mean
+                classifier.clip_values - classifier.preprocessing.mean  # type: ignore
             ) / classifier.preprocessing.std
             clip_values_normalised = (clip_values_normalised[0], clip_values_normalised[1])
-            epsilon_normalised = epsilon * (clip_values_normalised[1] - clip_values_normalised[0])
+            epsilon_normalised = epsilon * (clip_values_normalised[1] - clip_values_normalised[0])  # type: ignore
             patch_normalised = (patch - classifier.preprocessing.mean) / classifier.preprocessing.std
         else:
             raise ValueError("classifier.preprocessing not an instance of pytorch/tensorflow")

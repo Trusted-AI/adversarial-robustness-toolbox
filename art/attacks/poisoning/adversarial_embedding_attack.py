@@ -113,7 +113,7 @@ class PoisoningAttackAdversarialEmbedding(PoisoningAttackTransformer):
                     BatchNormalization,
                     LeakyReLU,
                 )
-                from tensorflow.keras.optimizers import Adam  # pylint: disable=E0611
+                from tensorflow.keras.optimizers.legacy import Adam  # pylint: disable=E0611
 
                 opt = Adam(lr=self.learning_rate)
 
@@ -123,7 +123,7 @@ class PoisoningAttackAdversarialEmbedding(PoisoningAttackTransformer):
                 from keras.layers import GaussianNoise, Dense, BatchNormalization, LeakyReLU
 
                 try:
-                    from keras.optimizers import Adam
+                    from keras.optimizers.legacy import Adam
 
                     opt = Adam(lr=self.learning_rate)
                 except ImportError:

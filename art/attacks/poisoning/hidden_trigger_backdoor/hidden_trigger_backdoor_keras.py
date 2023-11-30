@@ -234,7 +234,7 @@ class HiddenTriggerBackdoorKeras(PoisoningAttackWhiteBox):
                     dist[min_index[0], min_index[1]] = 1e5
 
                 loss = np.linalg.norm(feat1 - feat2) ** 2
-                losses.update(loss, len(trigger_samples))
+                losses.update(float(loss), len(trigger_samples))
 
                 # loss gradient computation for KerasClassifier
                 if isinstance(self.estimator, KerasClassifier):

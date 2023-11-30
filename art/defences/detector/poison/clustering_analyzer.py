@@ -235,7 +235,7 @@ class ClusteringAnalyzer:
             for c_id in clean_clusters[0]:
                 summary_poison_clusters[i][c_id] = 0
 
-            assigned_clean = self.assign_class(clusters, clean_clusters, poison_clusters)
+            assigned_clean = self.assign_class(clusters, clean_clusters[0], poison_clusters[0])
             all_assigned_clean.append(assigned_clean)
 
             # Generate report for this class:
@@ -251,7 +251,7 @@ class ClusteringAnalyzer:
             report["Class_" + str(i)] = report_class
 
         report["suspicious_clusters"] = report["suspicious_clusters"] + np.sum(summary_poison_clusters).item()
-        return np.asarray(all_assigned_clean), summary_poison_clusters, report
+        return np.asarray(all_assigned_clean, dtype=object), summary_poison_clusters, report
 
     def analyze_by_silhouette_score(
         self,
@@ -328,7 +328,7 @@ class ClusteringAnalyzer:
                     logger.info("computed silhouette score: %s", silhouette_avg)
                     dict_i.update(suspicious=True)
                 else:
-                    poison_clusters = [[]]
+                    poison_clusters = (np.array([[]]),)
                     clean_clusters = np.where(percentages >= 0)
                     dict_i.update(suspicious=False)
             else:
@@ -342,8 +342,8 @@ class ClusteringAnalyzer:
             for c_id in clean_clusters[0]:
                 summary_poison_clusters[i][c_id] = 0
 
-            assigned_clean = self.assign_class(clusters, clean_clusters, poison_clusters)
+            assigned_clean = self.assign_class(clusters, clean_clusters[0], poison_clusters[0])
             all_assigned_clean.append(assigned_clean)
             report.update(report_class)
 
-        return np.asarray(all_assigned_clean), summary_poison_clusters, report
+        return np.asarray(all_assigned_clean, dtype=object), summary_poison_clusters, report

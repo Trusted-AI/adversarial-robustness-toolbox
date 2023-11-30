@@ -128,7 +128,9 @@ class ClassGradientsMixin(ABC):
     """
 
     @abstractmethod
-    def class_gradient(self, x: np.ndarray, label: Optional[Union[int, List[int]]] = None, **kwargs) -> np.ndarray:
+    def class_gradient(
+        self, x: np.ndarray, label: Optional[Union[int, List[int], np.ndarray]] = None, **kwargs
+    ) -> np.ndarray:
         """
         Compute per-class derivatives w.r.t. `x`.
 

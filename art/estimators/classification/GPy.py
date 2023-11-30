@@ -92,7 +92,7 @@ class GPyGaussianProcessClassifier(ClassifierClassLossGradients):
 
     # pylint: disable=W0221
     def class_gradient(  # type: ignore
-        self, x: np.ndarray, label: Union[int, List[int], None] = None, eps: float = 0.0001, **kwargs
+        self, x: np.ndarray, label: Optional[Union[int, List[int], np.ndarray]] = None, eps: float = 0.0001, **kwargs
     ) -> np.ndarray:
         """
         Compute per-class derivatives w.r.t. `x`.
