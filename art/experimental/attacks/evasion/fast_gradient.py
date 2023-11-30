@@ -155,8 +155,10 @@ class FastGradientMethodCLIP(FastGradientMethod):
         :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes).
         :return: An array holding the adversarial examples.
         """
-        adv_x = copy.deepcopy(x)
+        partial_stop_condition: Union[bool, np.ndarray, np.bool_]
+        current_eps: Union[int, float, np.ndarray]
 
+        adv_x = copy.deepcopy(x)
         # Compute perturbation with implicit batching
         for batch_id in range(int(np.ceil(adv_x.shape[0] / float(self.batch_size)))):
             batch_index_1, batch_index_2 = (
@@ -268,6 +270,10 @@ class FastGradientMethodCLIP(FastGradientMethod):
         decay: Optional[float] = None,
         momentum: Optional[np.ndarray] = None,
     ) -> np.ndarray:
+
+        batch_eps: Union[int, float, np.ndarray]
+        batch_eps_step: Union[int, float, np.ndarray]
+
         if random_init:
             n = x.shape[0]
             m = np.prod(x.shape[1:]).item()
