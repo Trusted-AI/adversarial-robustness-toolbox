@@ -1,5 +1,5 @@
 import numpy as np
-from art.experimental.estimators.huggingface_multimodal import HuggingFaceMulitModalPyTorch, HuggingFaceMultiModalInput
+from art.experimental.estimators.huggingface_multimodal import HuggingFaceMultiModalPyTorch, HuggingFaceMultiModalInput
 from art.experimental.attacks.evasion import CLIPProjectedGradientDescentNumpy
 
 import torch
@@ -102,7 +102,7 @@ def attack_clip_plant_pgd():
 
     original_image = inputs["pixel_values"][0].clone().cpu().detach().numpy()
 
-    art_classifier = HuggingFaceMulitModalPyTorch(
+    art_classifier = HuggingFaceMultiModalPyTorch(
         model, loss=loss_fn, clip_values=(np.min(original_image), np.max(original_image)), input_shape=(3, 224, 224)
     )
 
@@ -192,7 +192,6 @@ def attack_clip_pgd():
 
 def cifar_clip_pgd():
     from PIL import Image
-    import requests
 
     from transformers import CLIPProcessor, CLIPModel
     from art.experimental.attacks.evasion import CLIPProjectedGradientDescentNumpy
@@ -237,7 +236,7 @@ def cifar_clip_pgd():
     original_images = np.stack(original_images)
     print("input shape is ", original_images.shape)
 
-    art_classifier = HuggingFaceMulitModalPyTorch(
+    art_classifier = HuggingFaceMultiModalPyTorch(
         model,
         loss=loss_fn,
         clip_values=(np.min(original_images), np.max(original_images)),
@@ -277,7 +276,7 @@ def test_fit():
 
     inputs = HuggingFaceMultiModalInput(**inputs)
     optimizer = torch.optim.SGD(model.parameters(), lr=0.01, momentum=0.9)
-    art_classifier = HuggingFaceMulitModalPyTorch(
+    art_classifier = HuggingFaceMultiModalPyTorch(
         model,
         optimizer=optimizer,
         nb_classes=10,
@@ -298,7 +297,7 @@ def test_predict():
     model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
     inputs, original_image, labels, num_classes = get_and_process_input()
 
-    art_classifier = HuggingFaceMulitModalPyTorch(
+    art_classifier = HuggingFaceMultiModalPyTorch(
         model,
         nb_classes=num_classes,
         loss=torch.nn.CrossEntropyLoss(),
@@ -329,7 +328,7 @@ def test_adv_train():
     inputs = processor(text=text, images=x_train, return_tensors="pt", padding=True)
     original_image = inputs["pixel_values"][0].clone().cpu().detach().numpy()
 
-    art_classifier = HuggingFaceMulitModalPyTorch(
+    art_classifier = HuggingFaceMultiModalPyTorch(
         model.to(device),
         nb_classes=num_classes,
         optimizer=optimizer,

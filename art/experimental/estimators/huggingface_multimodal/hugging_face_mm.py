@@ -40,7 +40,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class HuggingFaceMulitModalPyTorch(PyTorchEstimator):
+class HuggingFaceMultiModalPyTorch(PyTorchEstimator):
     """
     This module implements an estimator for attacking pre-trained CLIP by adversarial perturbations on the image.
     Currently only supports PGD attacks.
