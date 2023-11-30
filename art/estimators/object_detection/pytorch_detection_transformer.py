@@ -21,7 +21,7 @@ This module implements the task specific estimator for DEtection TRansformer (DE
 | Paper link: https://arxiv.org/abs/2005.12872
 """
 import logging
-from typing import Any, Dict, List, Optional, Tuple, Union, TYPE_CHECKING
+from typing import Dict, List, Optional, Tuple, Union, TYPE_CHECKING
 
 import numpy as np
 
@@ -144,7 +144,7 @@ class PyTorchDetectionTransformer(PyTorchObjectDetector):
             height = self.input_shape[0]
             width = self.input_shape[1]
 
-        labels_translated: List[Dict[str, torch.Tensor]] = []
+        labels_translated: List[Dict[str, "torch.Tensor"]] = []
 
         for label_dict in labels:
             label_dict_translated = {}
