@@ -35,6 +35,7 @@ from art.estimators.object_detection import (
     PyTorchYolo,
     PyTorchDetectionTransformer,
 )
+from art.utils import non_maximum_suppression
 
 if sys.version_info >= (3, 8):
     from typing import Literal
@@ -144,6 +145,8 @@ class PyTorchObjectSeeker(ObjectSeekerMixin, PyTorchObjectDetector):
             verbose=verbose,
         )
 
+        self._input_shape = input_shape
+        self._channels_first = channels_first
         self._optimizer = optimizer
         self._attack_losses = attack_losses
         self.detector_type = detector_type
@@ -171,20 +174,94 @@ class PyTorchObjectSeeker(ObjectSeekerMixin, PyTorchObjectDetector):
             device_type=device_type,
         )
 
-    def _predict_classifier(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> List[Dict[str, np.ndarray]]:
+    def _image_dimensions(self) -> Tuple[int, int]:
         """
-        Perform prediction for a batch of inputs.
+        Return the height and width of a sample input image.
 
-        :param x: Samples of shape NCHW or NHWC.
-        :param batch_size: Batch size.
-        :return: Predictions of format `List[Dict[str, np.ndarray]]`, one for each input image. The fields of the Dict
-                 are as follows:
-
-                 - boxes [N, 4]: the boxes in [x1, y1, x2, y2] format, with 0 <= x1 < x2 <= W and 0 <= y1 < y2 <= H.
-                 - labels [N]: the labels for each image
-                 - scores [N]: the scores or each prediction.
+        :return: Tuple containing the height and width of a sample input image.
         """
-        return self.detector.predict(x=x, batch_size=batch_size, **kwargs)
+        if self.channels_first:
+            _, height, width = self.input_shape
+        else:
+            height, width, _ = self.input_shape
+
+        return height, width
+
+    def _masked_predictions(
+        self, x_i: np.ndarray, batch_size: int = 128, **kwargs
+    ) -> Tuple[Dict[str, np.ndarray], Dict[str, np.ndarray]]:
+        """
+        Create masked copies of the image for each of lines following the ObjectSeeker algorithm. Then creates
+        predictions on the base unmasked image and each of the masked image.
+
+        :param x_i: A single image of shape CHW or HWC.
+        :batch_size: Batch size.
+        :return: Predictions for the base unmasked image and merged predictions for the masked image.
+        """
+        x_mask = np.repeat(x_i[np.newaxis], self.num_lines * 4 + 1, axis=0)
+
+        if self.channels_first:
+            height = self.input_shape[1]
+            width = self.input_shape[2]
+        else:
+            height = self.input_shape[0]
+            width = self.input_shape[1]
+            x_mask = np.transpose(x_mask, (0, 3, 1, 2))
+
+        idx = 1
+
+        # Left masks
+        for k in range(1, self.num_lines + 1):
+            boundary = int(width / (self.num_lines + 1) * k)
+            x_mask[idx, :, :, :boundary] = 0
+            idx += 1
+
+        # Right masks
+        for k in range(1, self.num_lines + 1):
+            boundary = width - int(width / (self.num_lines + 1) * k)
+            x_mask[idx, :, :, boundary:] = 0
+            idx += 1
+
+        # Top masks
+        for k in range(1, self.num_lines + 1):
+            boundary = int(height / (self.num_lines + 1) * k)
+            x_mask[idx, :, :boundary, :] = 0
+            idx += 1
+
+        # Bottom masks
+        for k in range(1, self.num_lines + 1):
+            boundary = height - int(height / (self.num_lines + 1) * k)
+            x_mask[idx, :, boundary:, :] = 0
+            idx += 1
+
+        if not self.channels_first:
+            x_mask = np.transpose(x_mask, (0, 2, 3, 1))
+
+        predictions = self.detector.predict(x=x_mask, batch_size=batch_size, **kwargs)
+        filtered_predictions = [
+            non_maximum_suppression(
+                pred, iou_threshold=self.iou_threshold, confidence_threshold=self.confidence_threshold
+            )
+            for pred in predictions
+        ]
+
+        # Extract base predictions
+        base_predictions = filtered_predictions[0]
+
+        # Extract and merge masked predictions
+        boxes = np.concatenate([pred["boxes"] for pred in filtered_predictions[1:]])
+        labels = np.concatenate([pred["labels"] for pred in filtered_predictions[1:]])
+        scores = np.concatenate([pred["scores"] for pred in filtered_predictions[1:]])
+        merged_predictions = {
+            "boxes": boxes,
+            "labels": labels,
+            "scores": scores,
+        }
+        masked_predictions = non_maximum_suppression(
+            merged_predictions, iou_threshold=self.iou_threshold, confidence_threshold=self.confidence_threshold
+        )
+
+        return base_predictions, masked_predictions
 
     def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> List[Dict[str, np.ndarray]]:
         """
