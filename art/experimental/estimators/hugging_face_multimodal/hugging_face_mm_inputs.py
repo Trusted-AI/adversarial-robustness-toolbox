@@ -105,7 +105,7 @@ class HuggingFaceMultiModalInput(UserDict):
             output = HuggingFaceMultiModalInput(**self)
             output["pixel_values"] = pixel_values
             return output
-        elif item in self.keys():
+        if item in self.keys():
             return UserDict.__getitem__(self, item)
         raise ValueError("Unsupported item for __getitem__ in HuggingFaceMultiModalInput")
 

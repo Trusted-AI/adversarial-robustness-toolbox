@@ -157,6 +157,7 @@ class FastGradientMethodCLIP(FastGradientMethod):
         """
         partial_stop_condition: Union[bool, np.ndarray, np.bool_]
         current_eps: Union[int, float, np.ndarray]
+        sentinel = object()
 
         adv_x = copy.deepcopy(x)
         # Compute perturbation with implicit batching
@@ -165,7 +166,9 @@ class FastGradientMethodCLIP(FastGradientMethod):
                 batch_id * self.batch_size,
                 (batch_id + 1) * self.batch_size,
             )
-            batch = adv_x[batch_index_1:batch_index_2]
+            batch = sentinel
+            if batch is sentinel:
+                batch = adv_x[batch_index_1:batch_index_2]
             batch_labels = y[batch_index_1:batch_index_2]
 
             mask_batch = mask
@@ -287,7 +290,7 @@ class FastGradientMethodCLIP(FastGradientMethod):
                 x_adv = np.clip(x_adv, clip_min, clip_max)
         else:
             if x.dtype == object:
-                x_adv = copy.copy(x)
+                x_adv = copy.deepcopy(x)
             else:
                 x_adv = x.astype(ART_NUMPY_DTYPE)
 
