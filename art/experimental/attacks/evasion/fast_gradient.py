@@ -274,6 +274,7 @@ class FastGradientMethodCLIP(FastGradientMethod):
         import torch
         batch_eps: Union[int, float, np.ndarray]
         batch_eps_step: Union[int, float, np.ndarray]
+        original_type = x['pixel_values'].dtype
 
         if random_init:
             n = x.shape[0]
@@ -354,7 +355,9 @@ class FastGradientMethodCLIP(FastGradientMethod):
                         x_adv_batch - x_init[batch_index_1:batch_index_2], batch_eps, self.norm
                     )
                     x_adv_batch = x_init[batch_index_1:batch_index_2] + perturbation
-            x_adv_result.append(x_adv_batch)
-        x_adv_result = torch.stack(x_adv_result)
-        x_adv['pixel_values'] = x_adv_result
+            x_adv_result.append(x_adv_batch['pixel_values'])
+
+        x_adv_result = torch.concatenate(x_adv_result)
+        x_adv['pixel_values'] = x_adv_result.type(original_type)
+
         return x_adv
