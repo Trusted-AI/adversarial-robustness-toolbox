@@ -271,7 +271,7 @@ class FastGradientMethodCLIP(FastGradientMethod):
         decay: Optional[float] = None,
         momentum: Optional[np.ndarray] = None,
     ) -> np.ndarray:
-
+        import torch
         batch_eps: Union[int, float, np.ndarray]
         batch_eps_step: Union[int, float, np.ndarray]
 
@@ -293,6 +293,7 @@ class FastGradientMethodCLIP(FastGradientMethod):
                 x_adv = x.astype(ART_NUMPY_DTYPE)
 
         # Compute perturbation with implicit batching
+        x_adv_result = []
         for batch_id in range(int(np.ceil(x.shape[0] / float(self.batch_size)))):
             if batch_id_ext is None:
                 self._batch_id = batch_id
@@ -329,7 +330,7 @@ class FastGradientMethodCLIP(FastGradientMethod):
                 batch_eps_step = eps_step
 
             # Apply perturbation and clip
-            x_adv[batch_index_1:batch_index_2] = self._apply_perturbation(
+            x_adv_batch = self._apply_perturbation(
                 x_adv[batch_index_1:batch_index_2], perturbation, batch_eps_step
             )
 
@@ -338,20 +339,22 @@ class FastGradientMethodCLIP(FastGradientMethod):
                     for i_sample in range(batch_index_1, batch_index_2):
                         if isinstance(batch_eps, np.ndarray) and batch_eps.shape[0] == x_adv.shape[0]:
                             perturbation = multimodal_projection(
-                                x_adv[i_sample] - x_init[i_sample], batch_eps[i_sample], self.norm
+                                x_adv_batch[i_sample - batch_index_1] - x_init[i_sample], batch_eps[i_sample], self.norm
                             )
 
                         else:
                             perturbation = multimodal_projection(
-                                x_adv[i_sample] - x_init[i_sample], batch_eps, self.norm
+                                x_adv_batch[i_sample - batch_index_1] - x_init[i_sample], batch_eps, self.norm
                             )
 
-                        x_adv[i_sample] = x_init[i_sample] + perturbation
+                        x_adv_batch[i_sample - batch_index_1] = x_init[i_sample] + perturbation
 
                 else:
                     perturbation = multimodal_projection(
-                        x_adv[batch_index_1:batch_index_2] - x_init[batch_index_1:batch_index_2], batch_eps, self.norm
+                        x_adv_batch - x_init[batch_index_1:batch_index_2], batch_eps, self.norm
                     )
-                    x_adv[batch_index_1:batch_index_2] = x_init[batch_index_1:batch_index_2] + perturbation
-
+                    x_adv_batch = x_init[batch_index_1:batch_index_2] + perturbation
+            x_adv_result.append(x_adv_batch)
+        x_adv_result = torch.stack(x_adv_result)
+        x_adv['pixel_values'] = x_adv_result
         return x_adv
