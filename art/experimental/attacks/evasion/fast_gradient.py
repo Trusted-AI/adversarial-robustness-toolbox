@@ -287,7 +287,7 @@ class FastGradientMethodCLIP(FastGradientMethod):
                 x_adv = np.clip(x_adv, clip_min, clip_max)
         else:
             if x.dtype == object:
-                x_adv = copy.deepcopy(x)
+                x_adv = copy.copy(x)
             else:
                 x_adv = x.astype(ART_NUMPY_DTYPE)
 

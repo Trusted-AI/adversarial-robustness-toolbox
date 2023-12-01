@@ -107,8 +107,7 @@ class HuggingFaceMultiModalInput(UserDict):
             return output
         elif item in self.keys():
             return UserDict.__getitem__(self, item)
-        else:
-            raise ValueError("Unsupported item for __getitem__ in HuggingFaceMultiModalInput")
+        raise ValueError("Unsupported item for __getitem__ in HuggingFaceMultiModalInput")
 
     def __add__(self, other: Union[HuggingFaceMultiModalInput, np.ndarray]) -> HuggingFaceMultiModalInput:
         """
