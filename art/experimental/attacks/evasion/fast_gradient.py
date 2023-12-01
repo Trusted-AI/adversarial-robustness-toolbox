@@ -358,6 +358,12 @@ class FastGradientMethodCLIP(FastGradientMethod):
             x_adv_result.append(x_adv_batch['pixel_values'])
 
         x_adv_result = torch.concatenate(x_adv_result)
-        x_adv['pixel_values'] = x_adv_result.type(original_type)
+        sentinel = object()
 
-        return x_adv
+        def myfunc(adv, x_sample=sentinel):
+            if x_sample is sentinel:
+                x_sample = x_adv
+            x_sample['pixel_values'] = adv.type(original_type)
+            return x_sample
+
+        return myfunc(x_adv_result, x_sample=x_adv)
