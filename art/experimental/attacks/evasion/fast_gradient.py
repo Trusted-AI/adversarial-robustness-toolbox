@@ -20,7 +20,7 @@ This module contains an experimental FGSM attack for multimodal models.
 """
 import copy
 from collections import UserDict
-from typing import Optional, Union, TYPE_CHECKING
+from typing import List, Optional, Union, TYPE_CHECKING
 
 import numpy as np
 
@@ -198,7 +198,10 @@ class FastGradientMethodCLIP(FastGradientMethod):
                 current_x = self._apply_perturbation(x[batch_index_1:batch_index_2], perturbation, current_eps)
 
                 # Update
-                adv_x[active_indices] = current_x[active_indices]
+                if isinstance(adv_x, HuggingFaceMultiModalInput):
+                    adv_x[active_indices] = current_x[active_indices]
+                else:
+                    raise ValueError("Compatibility supported for HF style inputs")
 
                 adv_preds = self.estimator.predict(adv_x[batch_index_1:batch_index_2])
                 # If targeted active check to see whether we have hit the target, otherwise head to anything but
@@ -274,7 +277,10 @@ class FastGradientMethodCLIP(FastGradientMethod):
         import torch
         batch_eps: Union[int, float, np.ndarray]
         batch_eps_step: Union[int, float, np.ndarray]
-        original_type = x['pixel_values'].dtype
+        if isinstance(x, HuggingFaceMultiModalInput):
+            original_type = x['pixel_values'].dtype
+        else:
+            original_type = x.dtype
 
         if random_init:
             n = x.shape[0]
@@ -294,7 +300,8 @@ class FastGradientMethodCLIP(FastGradientMethod):
                 x_adv = x.astype(ART_NUMPY_DTYPE)
 
         # Compute perturbation with implicit batching
-        x_adv_result = []
+        x_adv_result_list: List[torch.Tensor] = []
+        x_adv_np_result_list: List[np.ndarray] = []
         for batch_id in range(int(np.ceil(x.shape[0] / float(self.batch_size)))):
             if batch_id_ext is None:
                 self._batch_id = batch_id
@@ -355,7 +362,12 @@ class FastGradientMethodCLIP(FastGradientMethod):
                         x_adv_batch - x_init[batch_index_1:batch_index_2], batch_eps, self.norm
                     )
                     x_adv_batch = x_init[batch_index_1:batch_index_2] + perturbation
-            x_adv_result.append(x_adv_batch['pixel_values'])
+            if isinstance(x_adv, HuggingFaceMultiModalInput):
+                x_adv_result_list.append(x_adv_batch['pixel_values'])
+            if isinstance(x_adv, np.ndarray):
+                x_adv_np_result_list.append(x_adv_batch)
 
-        x_adv_result = torch.concatenate(x_adv_result)
-        return x_adv.update_pixels(x_adv_result)
+        if isinstance(original_type, str) or isinstance(original_type, torch.dtype):
+            x_adv_result = torch.concatenate(x_adv_result_list).type(original_type)
+            return x_adv.update_pixels(x_adv_result)  # type: ignore
+        return np.concatenate(x_adv_np_result_list)

@@ -184,8 +184,21 @@ class HuggingFaceMultiModalInput(UserDict):
         pixel_values = UserDict.__getitem__(self, "pixel_values")
         return len(pixel_values)
 
-    def update_pixels(self, pixel_values: torch.Tensor) -> None:
-        super().__setitem__("pixel_values", pixel_values)
+    def update_pixels(self, updated_pixel_values: torch.Tensor,
+                      indices: Optional[np.ndarray] = None) -> HuggingFaceMultiModalInput:
+        """
+        Helper method to set pixel values
+        :param updated_pixel_values: pixel values to set.
+        :param indices: If to partially update the values based on indices
+        """
+        if indices is None:
+            super().__setitem__("pixel_values", updated_pixel_values)
+        else:
+            indices_list = indices.tolist()
+            pixel_values = UserDict.__getitem__(self, "pixel_values")
+            pixel_values[indices_list] = updated_pixel_values[indices_list]
+            super().__setitem__("pixel_values", pixel_values)
+        return self
 
     def reshape(self, new_shape: Tuple) -> HuggingFaceMultiModalInput:
         """
