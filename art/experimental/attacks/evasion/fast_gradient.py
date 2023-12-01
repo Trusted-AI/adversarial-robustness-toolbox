@@ -166,9 +166,9 @@ class FastGradientMethodCLIP(FastGradientMethod):
                 batch_id * self.batch_size,
                 (batch_id + 1) * self.batch_size,
             )
-            batch = sentinel
-            if batch is sentinel:
-                batch = adv_x[batch_index_1:batch_index_2]
+            # batch = sentinel
+            # if batch is sentinel:
+            #    batch = adv_x[batch_index_1:batch_index_2]
             batch_labels = y[batch_index_1:batch_index_2]
 
             mask_batch = mask
@@ -179,10 +179,10 @@ class FastGradientMethodCLIP(FastGradientMethod):
                     mask_batch = mask[batch_index_1:batch_index_2]
 
             # Get perturbation
-            perturbation = self._compute_perturbation(batch, batch_labels, mask_batch)
+            perturbation = self._compute_perturbation(adv_x[batch_index_1:batch_index_2], batch_labels, mask_batch)
 
             # Get current predictions
-            active_indices = np.arange(len(batch))
+            active_indices = np.arange(len(adv_x[batch_index_1:batch_index_2])) + batch_index_1
 
             if isinstance(self.eps, np.ndarray) and isinstance(self.eps_step, np.ndarray):
                 if len(self.eps.shape) == len(x.shape) and self.eps.shape[0] == x.shape[0]:
@@ -202,14 +202,14 @@ class FastGradientMethodCLIP(FastGradientMethod):
                 current_x = self._apply_perturbation(x[batch_index_1:batch_index_2], perturbation, current_eps)
 
                 # Update
-                batch[active_indices] = current_x[active_indices]
-                adv_preds = self.estimator.predict(batch)
+                adv_x[active_indices] = current_x[active_indices]
 
+                adv_preds = self.estimator.predict(adv_x[batch_index_1:batch_index_2])
                 # If targeted active check to see whether we have hit the target, otherwise head to anything but
                 if self.targeted:
-                    active_indices = np.where(np.argmax(batch_labels, axis=1) != np.argmax(adv_preds, axis=1))[0]
+                    active_indices = np.where(np.argmax(batch_labels, axis=1) != np.argmax(adv_preds, axis=1))[0] + batch_index_1
                 else:
-                    active_indices = np.where(np.argmax(batch_labels, axis=1) == np.argmax(adv_preds, axis=1))[0]
+                    active_indices = np.where(np.argmax(batch_labels, axis=1) == np.argmax(adv_preds, axis=1))[0] + batch_index_1
 
                 # Update current eps and check the stop condition
                 if isinstance(self.eps, np.ndarray) and isinstance(self.eps_step, np.ndarray):
