@@ -488,7 +488,7 @@ class PyTorchDeRandomizedSmoothing(DeRandomizedSmoothingMixin, PyTorchClassifier
 
         num_batch = len(x_preprocessed) / float(batch_size)
         num_batch = int(np.floor(num_batch)) if drop_last else int(np.ceil(num_batch))
-        ind = np.arange(len(x_preprocessed))
+        ind = np.arange(len(x_preprocessed)).tolist()
 
         # Start training
         for _ in tqdm(range(nb_epochs)):

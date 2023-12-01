@@ -142,7 +142,7 @@ class DetectorClassifier(ClassifierNeuralNetwork):
     def class_gradient(  # pylint: disable=W0221
         self,
         x: np.ndarray,
-        label: Union[int, List[int], np.ndarray, None] = None,
+        label: Optional[Union[int, List[int], np.ndarray]] = None,
         training_mode: bool = False,
         **kwargs,
     ) -> np.ndarray:
@@ -216,7 +216,7 @@ class DetectorClassifier(ClassifierNeuralNetwork):
             # First compute the classifier gradients for classifier_idx
             if classifier_idx:
                 combined_grads[classifier_idx] = self.classifier.class_gradient(
-                    x=x[classifier_idx], label=label[classifier_idx], training_mode=training_mode, **kwargs
+                    x=x[classifier_idx], label=label[classifier_idx].tolist(), training_mode=training_mode, **kwargs
                 )
 
             # Then compute the detector gradients for detector_idx

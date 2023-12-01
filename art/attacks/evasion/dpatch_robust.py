@@ -409,8 +409,8 @@ class RobustDPatch(EvasionAttack):
         gradients = transforms["brightness"] * gradients
 
         # Undo rotations:
-        rot90 = (4 - transforms["rot90"]) % 4
-        gradients = np.rot90(gradients, rot90, (1, 2))
+        rot90 = int((4 - transforms["rot90"]) % 4)
+        gradients = np.rot90(gradients, k=rot90, axes=(1, 2))
 
         # Account for cropping when considering the upper left point of the patch:
         x_1 = self.patch_location[0] - int(transforms["crop_x"])

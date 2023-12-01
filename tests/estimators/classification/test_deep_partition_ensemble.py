@@ -27,7 +27,7 @@ import tensorflow as tf
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
 from tensorflow.keras.losses import categorical_crossentropy
-from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.optimizers.legacy import Adam
 
 import torch.nn as nn
 import torch.nn.functional as F
@@ -112,6 +112,7 @@ class TestDeepPartitionEnsemble(unittest.TestCase):
             model = TensorFlowModel()
             loss_object = tf.keras.losses.CategoricalCrossentropy(from_logits=True)
             optimizer = Adam(learning_rate=0.01)
+            model.compile(loss=loss_object, optimizer=optimizer)
 
             classifier = TensorFlowV2Classifier(
                 model=model,

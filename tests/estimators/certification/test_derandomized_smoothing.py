@@ -164,7 +164,7 @@ def test_tf2_training(art_warning, fix_get_mnist_data, fix_get_cifar10_data):
         return tf.keras.Model(inputs=img_inputs, outputs=x)
 
     loss_object = tf.keras.losses.CategoricalCrossentropy(from_logits=True)
-    optimizer = tf.keras.optimizers.SGD(learning_rate=0.01)
+    optimizer = tf.keras.optimizers.legacy.SGD(learning_rate=0.01)
 
     for dataset, dataset_name in zip([fix_get_mnist_data, fix_get_cifar10_data], ["mnist", "cifar"]):
         if dataset_name == "mnist":
@@ -328,7 +328,7 @@ def test_tf2_mnist_certification(art_warning, fix_get_mnist_data):
     net.set_weights(get_weights())
 
     loss_object = tf.keras.losses.CategoricalCrossentropy(from_logits=True)
-    optimizer = tf.keras.optimizers.SGD(learning_rate=0.01)
+    optimizer = tf.keras.optimizers.legacy.SGD(learning_rate=0.01)
 
     try:
         for ablation_type in ["column", "block"]:

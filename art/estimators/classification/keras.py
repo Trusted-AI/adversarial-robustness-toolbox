@@ -459,7 +459,11 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         return gradients
 
     def class_gradient(  # pylint: disable=W0221
-        self, x: np.ndarray, label: Optional[Union[int, List[int]]] = None, training_mode: bool = False, **kwargs
+        self,
+        x: np.ndarray,
+        label: Optional[Union[int, List[int], np.ndarray]] = None,
+        training_mode: bool = False,
+        **kwargs,
     ) -> np.ndarray:
         """
         Compute per-class derivatives w.r.t. `x`.
@@ -757,7 +761,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
             if isinstance(label, int):
                 unique_labels = [label]
             else:
-                unique_labels = np.unique(label)
+                unique_labels = np.unique(label).tolist()
             logger.debug("Computing class gradients for classes %s.", str(unique_labels))
 
             if not hasattr(self, "_class_gradients_idx"):

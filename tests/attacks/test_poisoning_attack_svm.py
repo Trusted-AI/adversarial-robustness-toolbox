@@ -85,7 +85,7 @@ class TestSVMAttack(unittest.TestCase):
 
         order = np.random.permutation(n_sample)
         x_train = x_train[order]
-        y_train = y_train[order].astype(np.float)
+        y_train = y_train[order].astype(float)
 
         x_train = x_train[: int(0.9 * n_sample)]
         y_train = y_train[: int(0.9 * n_sample)]
@@ -159,7 +159,9 @@ class TestSVMAttack(unittest.TestCase):
             clean.fit(x_train, y_train)
             poison = SklearnClassifier(model=SVC(kernel=kernel, gamma="auto"), clip_values=clip_values)
             poison.fit(x_train, y_train)
-            attack = PoisoningAttackSVM(poison, 0.01, 1.0, x_train, y_train, x_test, y_test, 100)
+            attack = PoisoningAttackSVM(
+                poison, step=0.01, eps=1.0, x_train=x_train, y_train=y_train, x_val=x_test, y_val=y_test, max_iter=100
+            )
             attack_y = np.array([1, 1]) - y_train[0]
             attack_point, _ = attack.poison(np.array([x_train[0]]), y=np.array([attack_y]))
             poison.fit(
@@ -177,7 +179,18 @@ class TestSVMAttack(unittest.TestCase):
             self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
 
     def test_classifier_type_check_fail(self):
-        backend_test_classifier_type_check_fail(PoisoningAttackSVM, [ScikitlearnSVC])
+        (x_train, y_train), (x_test, y_test), min_, max_ = self.iris
+        backend_test_classifier_type_check_fail(
+            PoisoningAttackSVM,
+            [ScikitlearnSVC],
+            step=0.01,
+            eps=1.0,
+            x_train=x_train,
+            y_train=y_train,
+            x_val=x_test,
+            y_val=y_test,
+            max_iter=100,
+        )
 
     def test_check_params(self):
         (x_train, y_train), (x_test, y_test), min_, max_ = self.iris

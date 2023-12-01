@@ -124,7 +124,7 @@ def test_adversarial_trainer_awppgd_pytorch_fit_and_predict(get_adv_trainer_awpp
     else:
         accuracy = np.sum(predictions == y_test_mnist) / x_test_mnist.shape[0]
 
-    trainer.fit(x_train_mnist, y_train_mnist, nb_epochs=20)
+    trainer.fit(x_train_mnist, y_train_mnist, nb_epochs=40)
     predictions_new = np.argmax(trainer.predict(x_test_mnist), axis=1)
 
     if label_format == "one_hot":

@@ -237,7 +237,7 @@ class GradientMatchingAttack(Attack):
                 """
                 return {"schedule": self.schedule}
 
-        self.optimizer = tf.keras.optimizers.Adam(
+        self.optimizer = tf.keras.optimizers.legacy.Adam(
             gradient_transformers=[lambda grads_and_vars: [(tf.sign(g), v) for (g, v) in grads_and_vars]]
         )
         self.lr_schedule = tf.keras.callbacks.LearningRateScheduler(PredefinedLRSchedule(*self.learning_rate_schedule))
@@ -314,11 +314,11 @@ class GradientMatchingAttack(Attack):
                 self,
                 gradient_matching: GradientMatchingAttack,
                 classifier: PyTorchClassifier,
-                epsilon: float,
-                num_poison: int,
-                len_noise: int,
-                min_: float,
-                max_: float,
+                epsilon,
+                num_poison,
+                len_noise,
+                min_,
+                max_,
             ):
                 super().__init__()
                 self.gradient_matching = gradient_matching
