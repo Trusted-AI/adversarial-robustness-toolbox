@@ -184,6 +184,9 @@ class HuggingFaceMultiModalInput(UserDict):
         pixel_values = UserDict.__getitem__(self, "pixel_values")
         return len(pixel_values)
 
+    def update_pixels(self, pixel_values: torch.Tensor) -> None:
+        super().__setitem__("pixel_values", pixel_values)
+
     def reshape(self, new_shape: Tuple) -> HuggingFaceMultiModalInput:
         """
         Defines reshaping on the HuggingFaceMultiModalInput input.
