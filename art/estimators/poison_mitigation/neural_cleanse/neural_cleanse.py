@@ -200,7 +200,7 @@ class NeuralCleanseMixin(AbstainPredictorMixin):
 
                 # get indices of top 1% of ranked neurons
                 num_top = int(np.ceil(len(ranked_indices) * 0.01))
-                self.top_indices = ranked_indices[:num_top]
+                self.top_indices = ranked_indices[:num_top].tolist()
 
                 # measure average activation for clean images and backdoor images
                 avg_clean_activation = np.average(clean_activations[:, self.top_indices], axis=0)

@@ -29,7 +29,7 @@ import random
 import numpy as np
 from tqdm.auto import trange
 
-from art.attacks.poisoning import GradientMatchingAttack
+from art.attacks.poisoning.gradient_matching_attack import GradientMatchingAttack
 from art.estimators.classification.pytorch import PyTorchClassifier
 from art.estimators.classification import TensorFlowV2Classifier
 from art.preprocessing.standardisation_mean_std.pytorch import StandardisationMeanStdPyTorch
@@ -101,10 +101,10 @@ class SleeperAgentAttack(GradientMatchingAttack):
         """
         if isinstance(classifier.preprocessing, (StandardisationMeanStdPyTorch, StandardisationMeanStdTensorFlow)):
             clip_values_normalised = (
-                classifier.clip_values - classifier.preprocessing.mean
+                classifier.clip_values - classifier.preprocessing.mean  # type: ignore
             ) / classifier.preprocessing.std
             clip_values_normalised = (clip_values_normalised[0], clip_values_normalised[1])
-            epsilon_normalised = epsilon * (clip_values_normalised[1] - clip_values_normalised[0])
+            epsilon_normalised = epsilon * (clip_values_normalised[1] - clip_values_normalised[0])  # type: ignore
             patch_normalised = (patch - classifier.preprocessing.mean) / classifier.preprocessing.std
         else:
             raise ValueError("classifier.preprocessing not an instance of pytorch/tensorflow")

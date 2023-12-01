@@ -118,10 +118,10 @@ def test_pytorch_training(art_warning, fix_get_mnist_data, fix_get_cifar10_data)
     for dataset, dataset_name in zip([fix_get_mnist_data, fix_get_cifar10_data], ["mnist", "cifar"]):
         if dataset_name == "mnist":
             ptc = SmallMNISTModel().to(device)
-            input_shape = (2, 28, 28)
+            input_shape = (1, 28, 28)
         else:
             ptc = SmallCIFARModel().to(device)
-            input_shape = (6, 32, 32)
+            input_shape = (3, 32, 32)
 
         criterion = nn.CrossEntropyLoss()
         optimizer = optim.SGD(ptc.parameters(), lr=0.01, momentum=0.9)
@@ -137,6 +137,7 @@ def test_pytorch_training(art_warning, fix_get_mnist_data, fix_get_cifar10_data)
                     ablation_type=ablation_type,
                     ablation_size=5,
                     threshold=0.3,
+                    algorithm="levine2020",
                     logits=True,
                 )
                 classifier.fit(x=dataset[0], y=dataset[1], nb_epochs=1)
@@ -152,7 +153,7 @@ def test_tf2_training(art_warning, fix_get_mnist_data, fix_get_cifar10_data):
     import tensorflow as tf
 
     def build_model(input_shape):
-        img_inputs = tf.keras.Input(shape=input_shape)
+        img_inputs = tf.keras.Input(shape=(input_shape[0], input_shape[1], input_shape[2] * 2))
         x = tf.keras.layers.Conv2D(filters=32, kernel_size=(4, 4), strides=(2, 2), activation="relu")(img_inputs)
         x = tf.keras.layers.MaxPool2D(pool_size=(2, 2), strides=2)(x)
         # tensorflow uses channels last and we are loading weights from an originally trained pytorch model
@@ -162,21 +163,14 @@ def test_tf2_training(art_warning, fix_get_mnist_data, fix_get_cifar10_data):
         x = tf.keras.layers.Dense(10)(x)
         return tf.keras.Model(inputs=img_inputs, outputs=x)
 
-    optimizer = tf.keras.optimizers.SGD(learning_rate=0.01)
     loss_object = tf.keras.losses.CategoricalCrossentropy(from_logits=True)
-
-    def train_step(model, images, labels):
-        with tf.GradientTape() as tape:
-            predictions = model(images, training=True)
-            loss = loss_object(labels, predictions)
-        gradients = tape.gradient(loss, model.trainable_variables)
-        optimizer.apply_gradients(zip(gradients, model.trainable_variables))
+    optimizer = tf.keras.optimizers.legacy.SGD(learning_rate=0.01)
 
     for dataset, dataset_name in zip([fix_get_mnist_data, fix_get_cifar10_data], ["mnist", "cifar"]):
         if dataset_name == "mnist":
-            input_shape = (28, 28, 2)
+            input_shape = (28, 28, 1)
         else:
-            input_shape = (32, 32, 6)
+            input_shape = (32, 32, 3)
         net = build_model(input_shape=input_shape)
 
         try:
@@ -186,7 +180,7 @@ def test_tf2_training(art_warning, fix_get_mnist_data, fix_get_cifar10_data):
                     model=net,
                     clip_values=(0, 1),
                     loss_object=loss_object,
-                    train_step=train_step,
+                    optimizer=optimizer,
                     input_shape=input_shape,
                     nb_classes=10,
                     ablation_type=ablation_type,
@@ -233,7 +227,6 @@ def test_pytorch_mnist_certification(art_warning, fix_get_mnist_data):
             return self.fc2(x)
 
         def load_weights(self):
-
             fpath = os.path.join(
                 os.path.dirname(os.path.dirname(__file__)), "../../utils/resources/models/certification/derandomized/"
             )
@@ -269,21 +262,23 @@ def test_pytorch_mnist_certification(art_warning, fix_get_mnist_data):
                 clip_values=(0, 1),
                 loss=criterion,
                 optimizer=optimizer,
-                input_shape=(2, 28, 28),
+                input_shape=(1, 28, 28),
                 nb_classes=10,
                 ablation_type=ablation_type,
                 ablation_size=ablation_size,
                 threshold=0.3,
+                algorithm="levine2020",
                 logits=True,
             )
 
             preds = classifier.predict(np.copy(fix_get_mnist_data[0]))
-            num_certified = classifier.ablator.certify(preds, size_to_certify=size_to_certify)
-
+            cert, cert_and_correct, top_predicted_class_argmax = classifier.ablator.certify(
+                preds, label=fix_get_mnist_data[1], size_to_certify=size_to_certify
+            )
             if ablation_type == "column":
-                assert np.sum(num_certified) == 52
+                assert np.sum(cert.cpu().numpy()) == 52
             else:
-                assert np.sum(num_certified) == 22
+                assert np.sum(cert.cpu().numpy()) == 22
     except ARTTestException as e:
         art_warning(e)
 
@@ -297,7 +292,7 @@ def test_tf2_mnist_certification(art_warning, fix_get_mnist_data):
     import tensorflow as tf
 
     def build_model(input_shape):
-        img_inputs = tf.keras.Input(shape=input_shape)
+        img_inputs = tf.keras.Input(shape=(input_shape[0], input_shape[1], input_shape[2] * 2))
         x = tf.keras.layers.Conv2D(filters=32, kernel_size=(4, 4), strides=(2, 2), activation="relu")(img_inputs)
         x = tf.keras.layers.MaxPool2D(pool_size=(2, 2), strides=2)(x)
         # tensorflow uses channels last and we are loading weights from an originally trained pytorch model
@@ -329,18 +324,11 @@ def test_tf2_mnist_certification(art_warning, fix_get_mnist_data):
             weight_list.append(w)
         return weight_list
 
-    net = build_model(input_shape=(28, 28, 2))
+    net = build_model(input_shape=(28, 28, 1))
     net.set_weights(get_weights())
 
-    optimizer = tf.keras.optimizers.SGD(learning_rate=0.01)
     loss_object = tf.keras.losses.CategoricalCrossentropy(from_logits=True)
-
-    def train_step(model, images, labels):
-        with tf.GradientTape() as tape:
-            predictions = model(images, training=True)
-            loss = loss_object(labels, predictions)
-        gradients = tape.gradient(loss, model.trainable_variables)
-        optimizer.apply_gradients(zip(gradients, model.trainable_variables))
+    optimizer = tf.keras.optimizers.legacy.SGD(learning_rate=0.01)
 
     try:
         for ablation_type in ["column", "block"]:
@@ -359,8 +347,8 @@ def test_tf2_mnist_certification(art_warning, fix_get_mnist_data):
                 model=net,
                 clip_values=(0, 1),
                 loss_object=loss_object,
-                train_step=train_step,
-                input_shape=(28, 28, 2),
+                optimizer=optimizer,
+                input_shape=(28, 28, 1),
                 nb_classes=10,
                 ablation_type=ablation_type,
                 ablation_size=ablation_size,
@@ -372,12 +360,14 @@ def test_tf2_mnist_certification(art_warning, fix_get_mnist_data):
             x = np.squeeze(x)
             x = np.expand_dims(x, axis=-1)
             preds = classifier.predict(x)
-            num_certified = classifier.ablator.certify(preds, size_to_certify=size_to_certify)
+            cert, cert_and_correct, top_predicted_class_argmax = classifier.ablator.certify(
+                preds, label=fix_get_mnist_data[1], size_to_certify=size_to_certify
+            )
 
             if ablation_type == "column":
-                assert np.sum(num_certified) == 52
+                assert np.sum(cert) == 52
             else:
-                assert np.sum(num_certified) == 22
+                assert np.sum(cert) == 22
 
     except ARTTestException as e:
         art_warning(e)

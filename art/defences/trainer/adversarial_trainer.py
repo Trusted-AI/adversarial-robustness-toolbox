@@ -111,11 +111,10 @@ class AdversarialTrainer(Trainer):
                the target classifier.
         """
         logger.info("Performing adversarial training using %i attacks.", len(self.attacks))
-        size = generator.size
-        if size is None:
+        if generator.size is None:
             raise ValueError("Generator size is required and cannot be None.")
         batch_size = generator.batch_size
-        nb_batches = int(np.ceil(size / batch_size))  # type: ignore
+        nb_batches = int(np.ceil(generator.size / batch_size))  # type: ignore
         ind = np.arange(generator.size)
         attack_id = 0
 
@@ -123,7 +122,8 @@ class AdversarialTrainer(Trainer):
         logged = False
         self._precomputed_adv_samples = []
         for attack in tqdm(self.attacks, desc="Precompute adversarial examples."):
-            attack.set_params(verbose=False)
+            if "verbose" in attack.attack_params:
+                attack.set_params(verbose=False)
             if "targeted" in attack.attack_params and attack.targeted:  # type: ignore
                 raise NotImplementedError("Adversarial training with targeted attacks is currently not implemented")
 
@@ -155,7 +155,8 @@ class AdversarialTrainer(Trainer):
 
                 # Choose indices to replace with adversarial samples
                 attack = self.attacks[attack_id]
-                attack.set_params(verbose=False)
+                if "verbose" in attack.attack_params:
+                    attack.set_params(verbose=False)
 
                 # If source and target models are the same, craft fresh adversarial samples
                 if attack.estimator == self._classifier:
@@ -171,7 +172,7 @@ class AdversarialTrainer(Trainer):
 
                 # Otherwise, use precomputed adversarial samples
                 else:
-                    batch_size_current = min(batch_size, size - batch_id * batch_size)
+                    batch_size_current = min(batch_size, generator.size - batch_id * batch_size)
                     nb_adv = int(np.ceil(self.ratio * batch_size_current))
                     if self.ratio < 1:
                         adv_ids = np.random.choice(batch_size_current, size=nb_adv, replace=False)
@@ -181,7 +182,9 @@ class AdversarialTrainer(Trainer):
 
                     x_adv = self._precomputed_adv_samples[attack_id]
                     if x_adv is not None:
-                        x_adv = x_adv[ind[batch_id * batch_size : min((batch_id + 1) * batch_size, size)]][adv_ids]
+                        x_adv = x_adv[ind[batch_id * batch_size : min((batch_id + 1) * batch_size, generator.size)]][
+                            adv_ids
+                        ]
                     x_batch[adv_ids] = x_adv
 
                 # Fit batch
@@ -210,7 +213,8 @@ class AdversarialTrainer(Trainer):
         logged = False
         self._precomputed_adv_samples = []
         for attack in tqdm(self.attacks, desc="Precompute adv samples"):
-            attack.set_params(verbose=False)
+            if "verbose" in attack.attack_params:
+                attack.set_params(verbose=False)
             if "targeted" in attack.attack_params and attack.targeted:  # type: ignore
                 raise NotImplementedError("Adversarial training with targeted attacks is currently not implemented")
 
@@ -234,7 +238,8 @@ class AdversarialTrainer(Trainer):
                 # Choose indices to replace with adversarial samples
                 nb_adv = int(np.ceil(self.ratio * x_batch.shape[0]))
                 attack = self.attacks[attack_id]
-                attack.set_params(verbose=False)
+                if "verbose" in attack.attack_params:
+                    attack.set_params(verbose=False)
                 if self.ratio < 1:
                     adv_ids = np.random.choice(x_batch.shape[0], size=nb_adv, replace=False)
                 else:

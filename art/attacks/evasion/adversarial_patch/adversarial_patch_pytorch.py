@@ -25,7 +25,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 import math
-from typing import Optional, Tuple, Union, TYPE_CHECKING
+from typing import Any, Optional, Tuple, Union, TYPE_CHECKING
 
 import numpy as np
 from tqdm.auto import trange
@@ -123,7 +123,9 @@ class AdversarialPatchPyTorch(EvasionAttack):
 
         torch_version = list(map(int, torch.__version__.lower().split("+", maxsplit=1)[0].split(".")))
         torchvision_version = list(map(int, torchvision.__version__.lower().split("+", maxsplit=1)[0].split(".")))
-        assert torch_version[0] >= 1 and torch_version[1] >= 7, "AdversarialPatchPyTorch requires torch>=1.7.0"
+        assert (
+            torch_version[0] >= 1 and torch_version[1] >= 7 or (torch_version[0] >= 2)
+        ), "AdversarialPatchPyTorch requires torch>=1.7.0"
         assert (
             torchvision_version[0] >= 0 and torchvision_version[1] >= 8
         ), "AdversarialPatchPyTorch requires torchvision>=0.8.0"
@@ -268,15 +270,15 @@ class AdversarialPatchPyTorch(EvasionAttack):
             y = np.linspace(-1, 1, diameter)
             x_grid, y_grid = np.meshgrid(x, y, sparse=True)
             z_grid = (x_grid ** 2 + y_grid ** 2) ** sharpness
-            image_mask = 1 - np.clip(z_grid, -1, 1)
+            image_mask: Union[int, np.ndarray[Any, np.dtype[Any]]] = 1 - np.clip(z_grid, -1, 1)
         elif self.patch_type == "square":
             image_mask = np.ones((diameter, diameter))
 
         image_mask = np.expand_dims(image_mask, axis=0)
         image_mask = np.broadcast_to(image_mask, self.patch_shape)
-        image_mask = torch.Tensor(np.array(image_mask)).to(self.estimator.device)
-        image_mask = torch.stack([image_mask] * nb_samples, dim=0)
-        return image_mask
+        image_mask_tensor = torch.Tensor(np.array(image_mask)).to(self.estimator.device)
+        image_mask_tensor = torch.stack([image_mask_tensor] * nb_samples, dim=0)
+        return image_mask_tensor
 
     def _random_overlay(
         self,
@@ -573,9 +575,9 @@ class AdversarialPatchPyTorch(EvasionAttack):
                     img = torch.from_numpy(self.x[idx])
 
                     target = {}
-                    target["boxes"] = torch.from_numpy(y[idx]["boxes"])
-                    target["labels"] = torch.from_numpy(y[idx]["labels"])
-                    target["scores"] = torch.from_numpy(y[idx]["scores"])
+                    target["boxes"] = torch.from_numpy(self.y[idx]["boxes"])
+                    target["labels"] = torch.from_numpy(self.y[idx]["labels"])
+                    target["scores"] = torch.from_numpy(self.y[idx]["scores"])
                     mask_i = torch.from_numpy(self.mask[idx])
 
                     return img, target, mask_i
@@ -600,9 +602,16 @@ class AdversarialPatchPyTorch(EvasionAttack):
                     if isinstance(target, torch.Tensor):
                         target = target.to(self.estimator.device)
                     else:
-                        target["boxes"] = target["boxes"].to(self.estimator.device)
-                        target["labels"] = target["labels"].to(self.estimator.device)
-                        target["scores"] = target["scores"].to(self.estimator.device)
+                        targets = []
+                        for idx in range(target["boxes"].shape[0]):
+                            targets.append(
+                                {
+                                    "boxes": target["boxes"][idx].to(self.estimator.device),
+                                    "labels": target["labels"][idx].to(self.estimator.device),
+                                    "scores": target["scores"][idx].to(self.estimator.device),
+                                }
+                            )
+                        target = targets
                     _ = self._train_step(images=images, target=target, mask=None)
             else:
                 for images, target, mask_i in data_loader:
@@ -610,9 +619,16 @@ class AdversarialPatchPyTorch(EvasionAttack):
                     if isinstance(target, torch.Tensor):
                         target = target.to(self.estimator.device)
                     else:
-                        target["boxes"] = target["boxes"].to(self.estimator.device)
-                        target["labels"] = target["labels"].to(self.estimator.device)
-                        target["scores"] = target["scores"].to(self.estimator.device)
+                        targets = []
+                        for idx in range(target["boxes"].shape[0]):
+                            targets.append(
+                                {
+                                    "boxes": target["boxes"][idx].to(self.estimator.device),
+                                    "labels": target["labels"][idx].to(self.estimator.device),
+                                    "scores": target["scores"][idx].to(self.estimator.device),
+                                }
+                            )
+                        target = targets
                     mask_i = mask_i.to(self.estimator.device)
                     _ = self._train_step(images=images, target=target, mask=mask_i)
 

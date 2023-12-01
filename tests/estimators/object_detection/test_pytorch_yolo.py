@@ -27,82 +27,6 @@ from tests.utils import ARTTestException
 logger = logging.getLogger(__name__)
 
 
-@pytest.fixture()
-def get_pytorch_yolo(get_default_cifar10_subset):
-    """
-    This class tests the PyTorchYolo object detector.
-    """
-    import cv2
-    import torch
-
-    from pytorchyolo import models
-    from pytorchyolo.utils.loss import compute_loss
-
-    from art.estimators.object_detection.pytorch_yolo import PyTorchYolo
-
-    model_path = "/tmp/PyTorch-YOLOv3/config/yolov3.cfg"
-    weights_path = "/tmp/PyTorch-YOLOv3/weights/yolov3.weights"
-    model = models.load_model(model_path=model_path, weights_path=weights_path)
-
-    class YoloV3(torch.nn.Module):
-        def __init__(self, model):
-            super().__init__()
-            self.model = model
-
-        def forward(self, x, targets=None):
-            if self.training:
-                outputs = self.model(x)
-                # loss is averaged over a batch. Thus, for patch generation use batch_size = 1
-                loss, _ = compute_loss(outputs, targets, self.model)
-
-                loss_components = {"loss_total": loss}
-
-                return loss_components
-            else:
-                return self.model(x)
-
-    model = YoloV3(model)
-
-    params = [p for p in model.parameters() if p.requires_grad]
-    optimizer = torch.optim.SGD(params, lr=0.01)
-
-    object_detector = PyTorchYolo(
-        model=model,
-        input_shape=(3, 416, 416),
-        optimizer=optimizer,
-        clip_values=(0, 1),
-        channels_first=True,
-        attack_losses=("loss_total",),
-    )
-
-    (_, _), (x_test_cifar10, _) = get_default_cifar10_subset
-
-    x_test = cv2.resize(
-        x_test_cifar10[0].transpose((1, 2, 0)), dsize=(416, 416), interpolation=cv2.INTER_CUBIC
-    ).transpose((2, 0, 1))
-    x_test = np.expand_dims(x_test, axis=0)
-    x_test = np.repeat(x_test, repeats=2, axis=0)
-
-    # Create labels
-
-    result = object_detector.predict(x=x_test)
-
-    y_test = [
-        {
-            "boxes": result[0]["boxes"],
-            "labels": result[0]["labels"],
-            "scores": np.ones_like(result[0]["labels"]),
-        },
-        {
-            "boxes": result[1]["boxes"],
-            "labels": result[1]["labels"],
-            "scores": np.ones_like(result[1]["labels"]),
-        },
-    ]
-
-    yield object_detector, x_test, y_test
-
-
 @pytest.mark.only_with_platform("pytorch")
 def test_predict(art_warning, get_pytorch_yolo):
     try:
@@ -173,116 +97,116 @@ def test_loss_gradient(art_warning, get_pytorch_yolo):
 
         expected_gradients1 = np.asarray(
             [
-                1.28398424e-05,
-                -2.95201448e-06,
-                1.99362366e-05,
-                -1.69057967e-05,
-                2.65632730e-06,
-                -9.32226249e-06,
-                -9.81486028e-06,
-                1.72775799e-05,
-                9.19622835e-07,
-                1.65521160e-05,
-                1.52651919e-05,
-                -4.03170270e-06,
-                8.10160145e-06,
-                1.99810020e-05,
-                1.70234252e-05,
-                -1.04990377e-05,
-                -2.20760157e-05,
-                2.89993841e-05,
-                2.43352024e-05,
-                5.40295805e-05,
-                -3.54345357e-05,
-                1.49476218e-05,
-                -1.83201955e-05,
-                -4.52892618e-06,
-                -2.10271646e-05,
-                -1.38741379e-05,
-                1.19676406e-06,
-                1.44154410e-05,
-                -1.16514025e-06,
-                -2.48137949e-05,
-                -4.98828103e-06,
-                1.53667770e-05,
-                3.29377417e-06,
-                2.14245338e-05,
-                1.82093459e-06,
-                2.11810093e-05,
-                1.19740625e-05,
-                1.71546981e-06,
-                -1.24681810e-05,
-                -7.98507535e-05,
-                -3.12026459e-05,
-                1.01383330e-05,
-                -3.08082854e-05,
-                -2.56484091e-05,
-                -6.88045111e-05,
-                1.62506112e-05,
-                -1.15138228e-05,
-                -9.07951107e-06,
-                1.25368360e-05,
-                -1.09746734e-05,
+                0.012576922,
+                -0.005133151,
+                -0.0028872574,
+                -0.0029357928,
+                -0.008929219,
+                0.012767567,
+                -0.00715934,
+                0.00987368,
+                -0.0014089097,
+                -0.004765472,
+                -0.007845592,
+                -0.0065127434,
+                -0.00047654763,
+                -0.018194549,
+                0.00025652442,
+                -0.01420591,
+                0.03873131,
+                0.080963746,
+                -0.009225381,
+                0.026824722,
+                0.005942673,
+                -0.025760904,
+                0.008754236,
+                -0.037260942,
+                0.027838552,
+                0.0485742,
+                0.020763855,
+                -0.013568859,
+                -0.0071423287,
+                0.000802512,
+                0.012983642,
+                0.006466129,
+                0.0025194373,
+                -0.012298459,
+                -0.01168492,
+                -0.0013298508,
+                -0.007176587,
+                0.01996972,
+                -0.004173076,
+                0.029163878,
+                0.022482246,
+                0.008151911,
+                0.025543496,
+                0.0007374112,
+                0.0008220682,
+                -0.005740379,
+                0.009537468,
+                -0.01116704,
+                0.0010225883,
+                0.00026052812,
             ]
         )
 
-        np.testing.assert_array_almost_equal(grads[0, 0, 208, 175:225], expected_gradients1, decimal=2)
+        np.testing.assert_array_almost_equal(grads[0, 0, 208, 175:225], expected_gradients1, decimal=1)
 
         expected_gradients2 = np.asarray(
             [
-                1.28398424e-05,
-                -2.95201448e-06,
-                1.99362366e-05,
-                -1.69057967e-05,
-                2.65632730e-06,
-                -9.32226249e-06,
-                -9.81486028e-06,
-                1.72775799e-05,
-                9.19622835e-07,
-                1.65521160e-05,
-                1.52651919e-05,
-                -4.03170270e-06,
-                8.10160145e-06,
-                1.99810020e-05,
-                1.70234252e-05,
-                -1.04990377e-05,
-                -2.20760157e-05,
-                2.89993841e-05,
-                2.43352024e-05,
-                5.40295805e-05,
-                -3.54345357e-05,
-                1.49476218e-05,
-                -1.83201955e-05,
-                -4.52892618e-06,
-                -2.10271646e-05,
-                -1.38741379e-05,
-                1.19676406e-06,
-                1.44154410e-05,
-                -1.16514025e-06,
-                -2.48137949e-05,
-                -4.98828103e-06,
-                1.53667770e-05,
-                3.29377417e-06,
-                2.14245338e-05,
-                1.82093459e-06,
-                2.11810093e-05,
-                1.19740625e-05,
-                1.71546981e-06,
-                -1.24681810e-05,
-                -7.98507535e-05,
-                -3.12026459e-05,
-                1.01383330e-05,
-                -3.08082854e-05,
-                -2.56484091e-05,
-                -6.88045111e-05,
-                1.62506112e-05,
-                -1.15138228e-05,
-                -9.07951107e-06,
-                1.25368360e-05,
-                -1.09746734e-05,
+                0.0049910736,
+                -0.008941505,
+                -0.013645802,
+                0.0060615,
+                0.0021073571,
+                -0.0022195925,
+                -0.006654369,
+                0.010533731,
+                0.0013077373,
+                -0.010422451,
+                -0.00034834983,
+                -0.0040517827,
+                -0.0001514384,
+                -0.031307846,
+                -0.008412821,
+                -0.044170827,
+                0.055609763,
+                0.0220191,
+                -0.019813634,
+                -0.035893522,
+                0.023970673,
+                -0.08727841,
+                0.0411198,
+                0.0072751334,
+                0.01716753,
+                0.0391037,
+                0.020182624,
+                0.021557821,
+                0.011461802,
+                0.0046976856,
+                -0.00304008,
+                -0.010215744,
+                -0.0074639097,
+                -0.020115864,
+                -0.05325762,
+                -0.006238129,
+                -0.006486116,
+                0.09806269,
+                0.03115965,
+                0.066279344,
+                0.05367205,
+                -0.042338565,
+                0.04456845,
+                0.040167376,
+                0.03357561,
+                0.01510548,
+                0.0006220075,
+                -0.027102726,
+                -0.020182101,
+                -0.04347762,
             ]
         )
-        np.testing.assert_array_almost_equal(grads[1, 0, 208, 175:225], expected_gradients2, decimal=2)
+        np.testing.assert_array_almost_equal(grads[1, 0, 208, 175:225], expected_gradients2, decimal=1)
 
     except ARTTestException as e:
         art_warning(e)
@@ -367,7 +291,7 @@ def test_compute_loss(art_warning, get_pytorch_yolo):
         # Compute loss
         loss = object_detector.compute_loss(x=x_test, y=y_test)
 
-        assert pytest.approx(0.0078019718, abs=0.01) == float(loss)
+        assert pytest.approx(11.20741, abs=1.5) == float(loss)
 
     except ARTTestException as e:
         art_warning(e)
@@ -383,6 +307,69 @@ def test_pgd(art_warning, get_pytorch_yolo):
         attack = ProjectedGradientDescent(estimator=object_detector, max_iter=2)
         x_test_adv = attack.generate(x=x_test, y=y_test)
         np.testing.assert_raises(AssertionError, np.testing.assert_array_equal, x_test_adv, x_test)
+
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.only_with_platform("pytorch")
+def test_patch(art_warning, get_pytorch_yolo):
+    try:
+
+        from art.attacks.evasion import AdversarialPatchPyTorch
+
+        rotation_max = 0.0
+        scale_min = 0.1
+        scale_max = 0.3
+        distortion_scale_max = 0.0
+        learning_rate = 1.99
+        max_iter = 2
+        batch_size = 16
+        patch_shape = (3, 5, 5)
+        patch_type = "circle"
+        optimizer = "pgd"
+
+        object_detector, x_test, y_test = get_pytorch_yolo
+
+        ap = AdversarialPatchPyTorch(
+            estimator=object_detector,
+            rotation_max=rotation_max,
+            scale_min=scale_min,
+            scale_max=scale_max,
+            optimizer=optimizer,
+            distortion_scale_max=distortion_scale_max,
+            learning_rate=learning_rate,
+            max_iter=max_iter,
+            batch_size=batch_size,
+            patch_shape=patch_shape,
+            patch_type=patch_type,
+            verbose=True,
+            targeted=False,
+        )
+
+        _, _ = ap.generate(x=x_test, y=y_test)
+
+        patched_images = ap.apply_patch(x_test, scale=0.4)
+        result = object_detector.predict(patched_images)
+
+        assert result[0]["scores"].shape == (10647,)
+        expected_detection_scores = np.asarray(
+            [
+                4.3653536e-08,
+                3.3987994e-06,
+                2.5681820e-06,
+                3.9782722e-06,
+                2.1766680e-05,
+                2.6138965e-05,
+                6.3377396e-05,
+                7.6248516e-06,
+                4.3447722e-06,
+                3.6515078e-06,
+            ]
+        )
+        np.testing.assert_raises(
+            AssertionError, np.testing.assert_array_almost_equal, result[0]["scores"][:10], expected_detection_scores, 6
+        )
 
     except ARTTestException as e:
         art_warning(e)

@@ -253,7 +253,7 @@ def test_pytorch_binary_pgd(art_warning, get_mnist_dataset):
             n_samples=10000, n_features=20, n_informative=5, n_redundant=2, n_repeated=0, n_classes=2
         )
         train_x, test_x, train_y, test_y = sklearn.model_selection.train_test_split(x, y, test_size=0.2)
-        train_x = test_x.astype(np.float32)
+        train_x = train_x.astype(np.float32)
         train_y = train_y.astype(np.float32)
         test_x = test_x.astype(np.float32)
         model = BasicModel()

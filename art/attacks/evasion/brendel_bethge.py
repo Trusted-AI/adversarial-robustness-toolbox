@@ -2055,7 +2055,8 @@ class BrendelBethgeAttack(EvasionAttack):
                 nb_classes=estimator.nb_classes,
                 input_shape=estimator.input_shape,
                 loss_object=self._loss_object,
-                train_step=estimator._train_step,
+                optimizer=estimator.optimizer,
+                train_step=estimator.train_step,
                 channels_first=estimator.channels_first,
                 clip_values=estimator.clip_values,
                 preprocessing_defences=estimator.preprocessing_defences,
@@ -2377,7 +2378,7 @@ class BrendelBethgeAttack(EvasionAttack):
         return best_advs.astype(config.ART_NUMPY_DTYPE)
 
     def norms(self, x: np.ndarray) -> np.ndarray:
-        order = self.norm if self.norm != "inf" else np.inf
+        order = float(self.norm) if self.norm != "inf" else np.inf
         norm = np.linalg.norm(x=x.reshape(x.shape[0], -1), ord=order, axis=1)
         return norm
 
@@ -2541,7 +2542,7 @@ class BrendelBethgeAttack(EvasionAttack):
         """
         # First set upper and lower bounds as well as the threshold for the binary search
         if norm == 2:
-            (upper_bound, lower_bound) = (1, 0)
+            (upper_bound, lower_bound) = (np.array(1.0), np.array(0.0))
 
             if threshold is None:
                 threshold = self.theta
@@ -2549,7 +2550,7 @@ class BrendelBethgeAttack(EvasionAttack):
         else:
             (upper_bound, lower_bound) = (
                 np.max(abs(original_sample - current_sample)),
-                0,
+                np.array(0.0),
             )
 
             if threshold is None:
@@ -2579,7 +2580,7 @@ class BrendelBethgeAttack(EvasionAttack):
         result = self._interpolate(
             current_sample=current_sample,
             original_sample=original_sample,
-            alpha=upper_bound,
+            alpha=float(upper_bound),
             norm=norm,
         )
 

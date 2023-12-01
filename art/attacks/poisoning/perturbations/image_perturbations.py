@@ -21,7 +21,6 @@ Adversarial perturbations designed to work for images.
 from typing import Optional, Tuple
 
 import numpy as np
-from PIL import Image
 
 
 def add_single_bd(x: np.ndarray, distance: int = 2, pixel_value: int = 1) -> np.ndarray:
@@ -50,7 +49,7 @@ def add_single_bd(x: np.ndarray, distance: int = 2, pixel_value: int = 1) -> np.
     return x
 
 
-def add_pattern_bd(x: np.ndarray, distance: int = 2, pixel_value: int = 1) -> np.ndarray:
+def add_pattern_bd(x: np.ndarray, distance: int = 2, pixel_value: int = 1, channels_first: bool = False) -> np.ndarray:
     """
     Augments a matrix by setting a checkerboard-like pattern of values some `distance` away from the bottom-right
     edge to 1. Works for single images or a batch of images.
@@ -58,10 +57,21 @@ def add_pattern_bd(x: np.ndarray, distance: int = 2, pixel_value: int = 1) -> np
     :param x: A single image or batch of images of shape NWHC, NHW, or HC. Pixels will be added to all channels.
     :param distance: Distance from bottom-right walls.
     :param pixel_value: Value used to replace the entries of the image matrix.
+    :param channels_first: If the data is provided in channels first format we transpose to NWHC or HC depending on
+                           input shape
     :return: Backdoored image.
     """
     x = np.copy(x)
+    original_dtype = x.dtype
     shape = x.shape
+    if channels_first:
+        if len(shape) == 4:
+            # Transpose the image putting channels last
+            x = np.transpose(x, (0, 2, 3, 1))
+        if len(shape) == 2:
+            # HC to CH
+            x = np.transpose(x)
+
     if len(shape) == 4:
         height, width = x.shape[1:3]
         x[:, height - distance, width - distance, :] = pixel_value
@@ -82,7 +92,15 @@ def add_pattern_bd(x: np.ndarray, distance: int = 2, pixel_value: int = 1) -> np
         x[height - distance - 2, width - distance] = pixel_value
     else:
         raise ValueError(f"Invalid array shape: {shape}")
-    return x
+
+    if channels_first:
+        if len(shape) == 4:
+            # Putting channels first again
+            x = np.transpose(x, (0, 3, 1, 2))
+        if len(shape) == 2:
+            x = np.transpose(x)
+
+    return x.astype(original_dtype)
 
 
 def insert_image(
@@ -112,6 +130,8 @@ def insert_image(
     :param blend: The blending factor
     :return: Backdoored image.
     """
+    from PIL import Image
+
     n_dim = len(x.shape)
     if n_dim == 4:
         return np.array(
@@ -127,7 +147,7 @@ def insert_image(
     original_dtype = x.dtype
     data = np.copy(x)
     if channels_first:
-        data = data.transpose([1, 2, 0])
+        data = np.transpose(data, (1, 2, 0))
 
     height, width, num_channels = data.shape
 
@@ -136,15 +156,15 @@ def insert_image(
     backdoored_img = Image.new("RGBA", (width, height), 0)  # height and width are swapped for PIL
 
     if no_color:
-        backdoored_input = Image.fromarray((data * 255).astype("uint8").squeeze(axis=2), mode=mode)
+        backdoored_input = Image.fromarray((data * 255).astype(np.uint8).squeeze(axis=2), mode=mode)
     else:
-        backdoored_input = Image.fromarray((data * 255).astype("uint8"), mode=mode)
+        backdoored_input = Image.fromarray((data * 255).astype(np.uint8), mode=mode)
 
     orig_img.paste(backdoored_input)
 
     trigger = Image.open(backdoor_path).convert("RGBA")
-    if size:
-        trigger = trigger.resize(size)
+    if size is not None:
+        trigger = trigger.resize((size[1], size[0]))  # height and width are swapped for PIL
 
     backdoor_width, backdoor_height = trigger.size  # height and width are swapped for PIL
 
@@ -152,21 +172,20 @@ def insert_image(
         raise ValueError("Backdoor does not fit inside original image")
 
     if random:
-        x_shift = np.random.randint(width - backdoor_width)
-        y_shift = np.random.randint(height - backdoor_height)
+        x_shift = np.random.randint(width - backdoor_width + 1)
+        y_shift = np.random.randint(height - backdoor_height + 1)
 
     backdoored_img.paste(trigger, (x_shift, y_shift), mask=trigger)
     composite = Image.alpha_composite(orig_img, backdoored_img)
     backdoored_img = Image.blend(orig_img, composite, blend)
-
     backdoored_img = backdoored_img.convert(mode)
 
-    res = np.array(backdoored_img) / 255.0
+    res = np.asarray(backdoored_img) / 255.0
 
     if no_color:
         res = np.expand_dims(res, 2)
 
     if channels_first:
-        res = res.transpose([2, 0, 1])
+        res = np.transpose(res, (2, 0, 1))
 
     return res.astype(original_dtype)

@@ -23,7 +23,7 @@ This module implements the BadDet Object Generation Attack (OGA) on object detec
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Union
 
 import numpy as np
 from tqdm.auto import tqdm
@@ -85,35 +85,39 @@ class BadDetObjectGenerationAttack(PoisoningAttackObjectDetector):
 
     def poison(  # pylint: disable=W0221
         self,
-        x: np.ndarray,
+        x: Union[np.ndarray, List[np.ndarray]],
         y: List[Dict[str, np.ndarray]],
         **kwargs,
-    ) -> Tuple[np.ndarray, List[Dict[str, np.ndarray]]]:
+    ) -> Tuple[Union[np.ndarray, List[np.ndarray]], List[Dict[str, np.ndarray]]]:
         """
         Generate poisoning examples by inserting the backdoor onto the input `x` and changing the classification
         for labels `y`.
 
-        :param x: Sample images of shape `NCHW` or `NHWC`.
+        :param x: Sample images of shape `NCHW` or `NHWC` or a list of sample images of any size.
         :param y: True labels of type `List[Dict[np.ndarray]]`, one dictionary per input image. The keys and values
                   of the dictionary are:
+
                   - boxes [N, 4]: the boxes in [x1, y1, x2, y2] format, with 0 <= x1 < x2 <= W and 0 <= y1 < y2 <= H.
                   - labels [N]: the labels for each image.
-                  - scores [N]: the scores or each prediction.
         :return: An tuple holding the `(poisoning_examples, poisoning_labels)`.
         """
-        x_ndim = len(x.shape)
+        if isinstance(x, np.ndarray):
+            x_ndim = len(x.shape)
+        else:
+            x_ndim = len(x[0].shape) + 1
 
         if x_ndim != 4:
             raise ValueError("Unrecognized input dimension. BadDet OGA can only be applied to image data.")
 
-        if self.channels_first:
-            # NCHW --> NHWC
-            x = np.transpose(x, (0, 2, 3, 1))
-
-        x_poison = x.copy()
-        y_poison: List[Dict[str, np.ndarray]] = []
+        # copy images
+        x_poison: Union[np.ndarray, List[np.ndarray]]
+        if isinstance(x, np.ndarray):
+            x_poison = x.copy()
+        else:
+            x_poison = [x_i.copy() for x_i in x]
 
         # copy labels
+        y_poison: List[Dict[str, np.ndarray]] = []
         for y_i in y:
             target_dict = {k: v.copy() for k, v in y_i.items()}
             y_poison.append(target_dict)
@@ -123,13 +127,14 @@ class BadDetObjectGenerationAttack(PoisoningAttackObjectDetector):
         num_poison = int(self.percent_poison * len(all_indices))
         selected_indices = np.random.choice(all_indices, num_poison, replace=False)
 
-        _, height, width, _ = x_poison.shape
-
         for i in tqdm(selected_indices, desc="BadDet OGA iteration", disable=not self.verbose):
             image = x_poison[i]
-
             boxes = y_poison[i]["boxes"]
             labels = y_poison[i]["labels"]
+
+            if self.channels_first:
+                image = np.transpose(image, (1, 2, 0))
+            height, width, _ = image.shape
 
             # generate the fake bounding box
             y_1 = np.random.randint(0, height - self.bbox_height)
@@ -145,6 +150,11 @@ class BadDetObjectGenerationAttack(PoisoningAttackObjectDetector):
             poisoned_input, _ = self.backdoor.poison(bounding_box[np.newaxis], labels)
             image[y_1:y_2, x_1:x_2, :] = poisoned_input[0]
 
+            # replace the original image with the poisoned image
+            if self.channels_first:
+                image = np.transpose(image, (2, 0, 1))
+            x_poison[i] = image
+
             # insert the fake bounding box and label
             y_poison[i]["boxes"] = np.concatenate((boxes, [[x_1, y_1, x_2, y_2]]))
             y_poison[i]["labels"] = np.concatenate((labels, [self.class_target]))
@@ -154,10 +164,6 @@ class BadDetObjectGenerationAttack(PoisoningAttackObjectDetector):
                 mask = np.zeros_like(image)
                 mask[y_1:y_2, x_1:x_2, :] = 1
                 y_poison[i]["masks"] = np.concatenate((y_poison[i]["masks"], [mask]))
-
-        if self.channels_first:
-            # NHWC --> NCHW
-            x_poison = np.transpose(x_poison, (0, 3, 1, 2))
 
         return x_poison, y_poison
 

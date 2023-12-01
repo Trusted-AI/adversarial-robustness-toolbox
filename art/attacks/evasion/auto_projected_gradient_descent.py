@@ -203,7 +203,8 @@ class AutoProjectedGradientDescent(EvasionAttack):
                     nb_classes=estimator.nb_classes,
                     input_shape=estimator.input_shape,
                     loss_object=_loss_object_tf,
-                    train_step=estimator._train_step,
+                    optimizer=estimator.optimizer,
+                    train_step=estimator.train_step,
                     channels_first=estimator.channels_first,
                     clip_values=estimator.clip_values,
                     preprocessing_defences=estimator.preprocessing_defences,
@@ -231,13 +232,13 @@ class AutoProjectedGradientDescent(EvasionAttack):
                             self.ce_loss = torch.nn.CrossEntropyLoss(reduction="none")
                             self.reduction = reduction
 
-                        def __call__(self, y_true: torch.Tensor, y_pred: torch.Tensor) -> torch.Tensor:
+                        def __call__(self, y_pred: torch.Tensor, y_true: torch.Tensor) -> torch.Tensor:
                             if self.reduction == "mean":
-                                return self.ce_loss(y_true, y_pred).mean()
+                                return self.ce_loss(y_pred, y_true).mean()
                             if self.reduction == "sum":
-                                return self.ce_loss(y_true, y_pred).sum()
+                                return self.ce_loss(y_pred, y_true).sum()
                             if self.reduction == "none":
-                                return self.ce_loss(y_true, y_pred)
+                                return self.ce_loss(y_pred, y_true)
                             raise NotImplementedError()
 
                         def forward(
@@ -245,13 +246,18 @@ class AutoProjectedGradientDescent(EvasionAttack):
                         ) -> torch.Tensor:
                             """
                             Forward method.
+
                             :param input: Predicted labels of shape (nb_samples, nb_classes).
                             :param target: Target labels of shape (nb_samples, nb_classes).
                             :return: Difference Logits Ratio Loss.
                             """
-                            return self.__call__(y_true=target, y_pred=input)
+                            return self.__call__(y_pred=input, y_true=target)
 
                     _loss_object_pt: torch.nn.modules.loss._Loss = CrossEntropyLossTorch(reduction="mean")
+
+                    reduce_labels = True
+                    int_labels = True
+                    probability_labels = True
 
                 elif loss_type == "difference_logits_ratio":
                     if is_probability(
@@ -316,6 +322,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
                         ) -> torch.Tensor:
                             """
                             Forward method.
+
                             :param input: Predicted labels of shape (nb_samples, nb_classes).
                             :param target: Target labels of shape (nb_samples, nb_classes).
                             :return: Difference Logits Ratio Loss.
@@ -323,6 +330,10 @@ class AutoProjectedGradientDescent(EvasionAttack):
                             return self.__call__(y_true=target, y_pred=input)
 
                     _loss_object_pt = DifferenceLogitsRatioPyTorch()
+
+                    reduce_labels = False
+                    int_labels = False
+                    probability_labels = False
                 else:
                     raise NotImplementedError()
 
@@ -339,6 +350,10 @@ class AutoProjectedGradientDescent(EvasionAttack):
                     preprocessing=estimator.preprocessing,
                     device_type=str(estimator._device),
                 )
+
+                estimator_apgd._reduce_labels = reduce_labels
+                estimator_apgd._int_labels = int_labels
+                estimator_apgd._probability_labels = probability_labels
 
             else:  # pragma: no cover
                 raise ValueError(f"The loss type {loss_type} is not supported for the provided estimator.")
@@ -443,7 +458,9 @@ class AutoProjectedGradientDescent(EvasionAttack):
 
                 # modification for image-wise stepsize update
                 _batch_size = x_k.shape[0]
-                eta = np.full((_batch_size, 1, 1, 1), self.eps_step).astype(ART_NUMPY_DTYPE)
+                eta = np.full((_batch_size,) + (1,) * len(self.estimator.input_shape), self.eps_step).astype(
+                    ART_NUMPY_DTYPE
+                )
                 self.count_condition_1 = np.zeros(shape=(_batch_size,))
 
                 for k_iter in trange(self.max_iter, desc="AutoPGD - iteration", leave=False, disable=not self.verbose):

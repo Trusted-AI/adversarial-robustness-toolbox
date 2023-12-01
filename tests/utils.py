@@ -39,7 +39,7 @@ from art.utils import load_dataset
 logger = logging.getLogger(__name__)
 
 # ----------------------------------------------------------------------------------------------------- TEST BASE CLASS
-art_supported_frameworks = ["keras", "tensorflow", "tensorflow2v1", "pytorch", "scikitlearn"]
+art_supported_frameworks = ["keras", "tensorflow", "tensorflow2v1", "pytorch", "scikitlearn", "huggingface"]
 
 
 class TestBase(unittest.TestCase):
@@ -459,15 +459,6 @@ def get_image_classifier_tf_v2(from_logits=False):
     if tf.__version__[0] != "2":
         raise ImportError("This function requires TensorFlow v2.")
 
-    optimizer = tf.keras.optimizers.Adam(learning_rate=0.01)
-
-    def train_step(model, images, labels):
-        with tf.GradientTape() as tape:
-            predictions = model(images, training=True)
-            loss = loss_object(labels, predictions)
-        gradients = tape.gradient(loss, model.trainable_variables)
-        optimizer.apply_gradients(zip(gradients, model.trainable_variables))
-
     model = Sequential()
     model.add(
         Conv2D(
@@ -504,13 +495,15 @@ def get_image_classifier_tf_v2(from_logits=False):
         from_logits=from_logits, reduction=tf.keras.losses.Reduction.SUM
     )
 
+    optimizer = tf.keras.optimizers.legacy.Adam(learning_rate=0.01)
+
     model.compile(optimizer=optimizer, loss=loss_object)
 
     # Create the classifier
     tfc = TensorFlowV2Classifier(
         model=model,
         loss_object=loss_object,
-        train_step=train_step,
+        optimizer=optimizer,
         nb_classes=10,
         input_shape=(28, 28, 1),
         clip_values=(0, 1),
@@ -648,7 +641,7 @@ def get_image_classifier_kr(
                 loss = loss_name
         elif loss_type == "function_losses":
             if from_logits:
-                if int(keras.__version__.split(".")[0]) == 2 and int(keras.__version__.split(".")[1]) >= 3:
+                if is_tf23_keras24:
 
                     def categorical_crossentropy(y_true, y_pred):
                         return keras.losses.categorical_crossentropy(y_true, y_pred, from_logits=True)
@@ -712,7 +705,7 @@ def get_image_classifier_kr(
     else:
         raise ValueError("Loss name not recognised.")
 
-    model.compile(loss=loss, optimizer=keras.optimizers.Adam(lr=0.01), metrics=["accuracy"])
+    model.compile(loss=loss, optimizer=keras.optimizers.legacy.Adam(lr=0.01), metrics=["accuracy"])
 
     # Get classifier
     krc = KerasClassifier(model, clip_values=(0, 1), use_logits=from_logits)
@@ -970,7 +963,7 @@ def get_image_classifier_kr_tf(loss_name="categorical_crossentropy", loss_type="
     else:
         raise ValueError("Loss name not recognised.")
 
-    model.compile(loss=loss, optimizer=tf.keras.optimizers.Adam(lr=0.01), metrics=["accuracy"])
+    model.compile(loss=loss, optimizer=tf.keras.optimizers.legacy.Adam(lr=0.01), metrics=["accuracy"])
 
     # Get classifier
     krc = KerasClassifier(model, clip_values=(0, 1), use_logits=from_logits)
@@ -1008,7 +1001,7 @@ def get_image_classifier_kr_tf_binary():
         [_kr_tf_weights_loader("MNIST_BINARY", "W", "DENSE"), _kr_tf_weights_loader("MNIST_BINARY", "B", "DENSE")]
     )
 
-    model.compile(loss="binary_crossentropy", optimizer=tf.keras.optimizers.Adam(lr=0.01), metrics=["accuracy"])
+    model.compile(loss="binary_crossentropy", optimizer=tf.keras.optimizers.legacy.Adam(lr=0.01), metrics=["accuracy"])
 
     # Get classifier
     krc = KerasClassifier(model, clip_values=(0, 1), use_logits=False)
@@ -1043,6 +1036,113 @@ def get_image_classifier_kr_tf_with_wildcard():
     krc = KerasClassifier(model)
 
     return krc
+
+
+def get_image_classifier_hf(from_logits=False, load_init=True, use_maxpool=True):
+    """
+    Standard HF classifier for testing.
+
+    :param from_logits: Flag if model should predict logits (True) or probabilities (False).
+    :type from_logits: `bool`
+    :param load_init: Load the initial weights if True.
+    :type load_init: `bool`
+    :param use_maxpool: If to use a classifier with maxpool or not
+    :type use_maxpool: `bool`
+    :return: HuggingFaceClassifierPyTorch
+    """
+
+    import torch
+    from transformers.modeling_utils import PreTrainedModel
+    from transformers.configuration_utils import PretrainedConfig
+    from transformers.modeling_outputs import ImageClassifierOutput
+    from art.estimators.classification.hugging_face import HuggingFaceClassifierPyTorch
+
+    class ModelConfig(PretrainedConfig):
+        def __init__(
+            self,
+            **kwargs,
+        ):
+            super().__init__(**kwargs)
+            self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+    class Model(PreTrainedModel):
+        """
+        Create model for pytorch.
+
+        The weights and biases are identical to the TensorFlow model in get_classifier_tf().
+        """
+
+        def __init__(self, config):
+            super().__init__(config)
+
+            self.conv = torch.nn.Conv2d(in_channels=1, out_channels=1, kernel_size=7)
+            self.relu = torch.nn.ReLU()
+            self.pool = torch.nn.MaxPool2d(4, 4)
+            self.fullyconnected = torch.nn.Linear(25, 10)
+
+            if load_init:
+                w_conv2d = np.load(
+                    os.path.join(
+                        os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "W_CONV2D_MNIST.npy"
+                    )
+                )
+                b_conv2d = np.load(
+                    os.path.join(
+                        os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "B_CONV2D_MNIST.npy"
+                    )
+                )
+                w_dense = np.load(
+                    os.path.join(
+                        os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "W_DENSE_MNIST.npy"
+                    )
+                )
+                b_dense = np.load(
+                    os.path.join(
+                        os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "B_DENSE_MNIST.npy"
+                    )
+                )
+
+                w_conv2d_pt = w_conv2d.reshape((1, 1, 7, 7))
+
+                self.conv.weight = torch.nn.Parameter(torch.Tensor(w_conv2d_pt))
+                self.conv.bias = torch.nn.Parameter(torch.Tensor(b_conv2d))
+                self.fullyconnected.weight = torch.nn.Parameter(torch.Tensor(np.transpose(w_dense)))
+                self.fullyconnected.bias = torch.nn.Parameter(torch.Tensor(b_dense))
+
+        # pylint: disable=W0221
+        # disable pylint because of API requirements for function
+        def forward(self, x):
+            """
+            Forward function to evaluate the model
+            :param x: Input to the model
+            :return: Prediction of the model
+            """
+            x = self.conv(x)
+            x = self.relu(x)
+            x = self.pool(x)
+            x = x.reshape(-1, 25)
+            x = self.fullyconnected(x)
+            if not from_logits:
+                x = torch.nn.functional.softmax(x, dim=1)
+            return ImageClassifierOutput(
+                logits=x,
+            )
+
+    config = ModelConfig()
+    pt_model = Model(config=config)
+    optimizer = torch.optim.Adam(pt_model.parameters(), lr=0.01)
+
+    hf_classifier = HuggingFaceClassifierPyTorch(
+        pt_model,
+        loss=torch.nn.CrossEntropyLoss(reduction="sum"),
+        optimizer=optimizer,
+        input_shape=(1, 28, 28),
+        nb_classes=10,
+        clip_values=(0, 1),
+        processor=None,
+    )
+
+    return hf_classifier
 
 
 def get_image_classifier_pt(from_logits=False, load_init=True, use_maxpool=True):
@@ -1622,21 +1722,13 @@ def get_tabular_classifier_tf_v2():
             x = self.logits(x)
             return x
 
-    optimizer = tf.keras.optimizers.Adam(learning_rate=0.01)
-
-    def train_step(model, images, labels):
-        with tf.GradientTape() as tape:
-            predictions = model(images, training=True)
-            loss = loss_object(labels, predictions)
-        gradients = tape.gradient(loss, model.trainable_variables)
-        optimizer.apply_gradients(zip(gradients, model.trainable_variables))
-
     model = TensorFlowModel()
     loss_object = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
+    optimizer = tf.keras.optimizers.legacy.Adam(learning_rate=0.01)
 
     # Create the classifier
     tfc = TensorFlowV2Classifier(
-        model=model, loss_object=loss_object, train_step=train_step, nb_classes=3, input_shape=(4,), clip_values=(0, 1)
+        model=model, loss_object=loss_object, optimizer=optimizer, nb_classes=3, input_shape=(4,), clip_values=(0, 1)
     )
 
     return tfc
@@ -1794,7 +1886,9 @@ def get_tabular_classifier_kr(load_init=True):
         model.add(Dense(10, activation="relu"))
         model.add(Dense(3, activation="softmax"))
 
-    model.compile(loss="categorical_crossentropy", optimizer=keras.optimizers.Adam(lr=0.001), metrics=["accuracy"])
+    model.compile(
+        loss="categorical_crossentropy", optimizer=keras.optimizers.legacy.Adam(lr=0.001), metrics=["accuracy"]
+    )
 
     # Get classifier
     krc = KerasClassifier(model, clip_values=(0, 1), use_logits=False, channels_first=True)
@@ -1887,7 +1981,7 @@ def get_tabular_regressor_kr(load_init=True):
         model.add(Dense(10, activation="relu"))
         model.add(Dense(1))
 
-    model.compile(loss="mean_squared_error", optimizer=keras.optimizers.Adam(lr=0.001), metrics=["accuracy"])
+    model.compile(loss="mean_squared_error", optimizer=keras.optimizers.legacy.Adam(lr=0.001), metrics=["accuracy"])
 
     # Get regressor
     krc = KerasRegressor(model)
@@ -1906,6 +2000,107 @@ class ARTTestFixtureNotImplemented(ARTTestException):
             "Could NOT run test for framework: {0} due to fixture: {1}. Message was: '"
             "{2}' for the following parameters: {3}".format(framework, fixture_name, message, parameters_dict)
         )
+
+
+def get_tabular_classifier_hf(load_init=True):
+    """
+    Standard Huggingface classifier for unit testing on Iris dataset.
+
+    :param load_init: Load the initial weights if True.
+    :type load_init: `bool`
+    :return: Huggingface model for Iris dataset.
+    :rtype: :class:`.HuggingFaceClassifierPyTorch`
+    """
+    import torch
+    from transformers.modeling_utils import PreTrainedModel
+    from transformers.configuration_utils import PretrainedConfig
+    from transformers.modeling_outputs import ImageClassifierOutput
+    from art.estimators.classification.hugging_face import HuggingFaceClassifierPyTorch
+
+    class ModelConfig(PretrainedConfig):
+        def __init__(
+            self,
+            **kwargs,
+        ):
+            super().__init__(**kwargs)
+            self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+    class Model(PreTrainedModel):
+        """
+        Create Iris model.
+
+        The weights and biases are identical to the TensorFlow model in `get_iris_classifier_tf`.
+        """
+
+        def __init__(self, config):
+            super().__init__(config)
+
+            self.fully_connected1 = torch.nn.Linear(4, 10)
+            self.fully_connected2 = torch.nn.Linear(10, 10)
+            self.fully_connected3 = torch.nn.Linear(10, 3)
+
+            if load_init:
+                w_dense1 = np.load(
+                    os.path.join(
+                        os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "W_DENSE1_IRIS.npy"
+                    )
+                )
+                b_dense1 = np.load(
+                    os.path.join(
+                        os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "B_DENSE1_IRIS.npy"
+                    )
+                )
+                w_dense2 = np.load(
+                    os.path.join(
+                        os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "W_DENSE2_IRIS.npy"
+                    )
+                )
+                b_dense2 = np.load(
+                    os.path.join(
+                        os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "B_DENSE2_IRIS.npy"
+                    )
+                )
+                w_dense3 = np.load(
+                    os.path.join(
+                        os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "W_DENSE3_IRIS.npy"
+                    )
+                )
+                b_dense3 = np.load(
+                    os.path.join(
+                        os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "B_DENSE3_IRIS.npy"
+                    )
+                )
+
+                self.fully_connected1.weight = torch.nn.Parameter(torch.Tensor(np.transpose(w_dense1)))
+                self.fully_connected1.bias = torch.nn.Parameter(torch.Tensor(b_dense1))
+                self.fully_connected2.weight = torch.nn.Parameter(torch.Tensor(np.transpose(w_dense2)))
+                self.fully_connected2.bias = torch.nn.Parameter(torch.Tensor(b_dense2))
+                self.fully_connected3.weight = torch.nn.Parameter(torch.Tensor(np.transpose(w_dense3)))
+                self.fully_connected3.bias = torch.nn.Parameter(torch.Tensor(b_dense3))
+
+        # pylint: disable=W0221
+        # disable pylint because of API requirements for function
+        def forward(self, x):
+            x = self.fully_connected1(x)
+            x = self.fully_connected2(x)
+            logit_output = self.fully_connected3(x)
+            return ImageClassifierOutput(logits=logit_output)
+
+    config = ModelConfig()
+    pt_model = Model(config=config)
+    optimizer = torch.optim.Adam(pt_model.parameters(), lr=0.01)
+
+    hf_classifier = HuggingFaceClassifierPyTorch(
+        pt_model,
+        loss=torch.nn.CrossEntropyLoss(),
+        optimizer=optimizer,
+        input_shape=(4,),
+        nb_classes=3,
+        clip_values=(0, 1),
+        processor=None,
+    )
+
+    return hf_classifier
 
 
 def get_tabular_classifier_pt(load_init=True):

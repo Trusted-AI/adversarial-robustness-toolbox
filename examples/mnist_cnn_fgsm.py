@@ -2,6 +2,10 @@
 """Trains a convolutional neural network on the MNIST dataset, then attacks it with the FGSM attack."""
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import tensorflow as tf
+
+tf.compat.v1.disable_eager_execution()
+
 from keras.models import Sequential
 from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D, Dropout
 import numpy as np
@@ -35,12 +39,16 @@ preds = np.argmax(classifier.predict(x_test), axis=1)
 acc = np.sum(preds == np.argmax(y_test, axis=1)) / y_test.shape[0]
 print("\nTest accuracy: %.2f%%" % (acc * 100))
 
-# Craft adversarial samples with FGSM
-epsilon = 0.1  # Maximum perturbation
-adv_crafter = FastGradientMethod(classifier, eps=epsilon)
-x_test_adv = adv_crafter.generate(x=x_test)
+# Define epsilon values
+epsilon_values = [0.01, 0.1, 0.15, 0.2, 0.25, 0.3]
 
-# Evaluate the classifier on the adversarial examples
-preds = np.argmax(classifier.predict(x_test_adv), axis=1)
-acc = np.sum(preds == np.argmax(y_test, axis=1)) / y_test.shape[0]
-print("\nTest accuracy on adversarial sample: %.2f%%" % (acc * 100))
+# Iterate over epsilon values
+for epsilon in epsilon_values:
+    # Craft adversarial samples with FGSM
+    adv_crafter = FastGradientMethod(classifier, eps=epsilon)
+    x_test_adv = adv_crafter.generate(x=x_test, y=y_test)
+
+    # Evaluate the classifier on the adversarial examples
+    preds = np.argmax(classifier.predict(x_test_adv), axis=1)
+    acc = np.sum(preds == np.argmax(y_test, axis=1)) / y_test.shape[0]
+    print("Test accuracy on adversarial sample (epsilon = %.2f): %.2f%%" % (epsilon, acc * 100))

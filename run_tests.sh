@@ -37,6 +37,9 @@ then
     pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/preprocessing/audio --framework=$framework --durations=0
     if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed preprocessing/audio tests"; fi
 
+    pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/preprocessing/image --framework=$framework --durations=0
+    if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed preprocessing/image tests"; fi
+
     pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/preprocessing/expectation_over_transformation --framework=$framework --durations=0
     if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed preprocessing/expectation_over_transformation tests"; fi
 
@@ -115,9 +118,7 @@ else
                           "tests/attacks/test_targeted_universal_perturbation.py" \
                           "tests/attacks/test_simba.py" )
 
-    declare -a estimators=("tests/estimators/certification/test_randomized_smoothing.py" \
-                           "tests/estimators/certification/test_derandomized_smoothing.py" \
-                           "tests/estimators/classification/test_blackbox.py" \
+    declare -a estimators=("tests/estimators/classification/test_blackbox.py" \
                            "tests/estimators/classification/test_catboost.py" \
                            "tests/estimators/classification/test_classifier.py" \
                            "tests/estimators/classification/test_deep_partition_ensemble.py" \
@@ -132,7 +133,6 @@ else
                            "tests/estimators/regression/test_scikitlearn.py" )
 
     declare -a defences=("tests/defences/test_adversarial_trainer.py" \
-                         "tests/defences/test_adversarial_trainer_madry_pgd.py" \
                          "tests/defences/test_class_labels.py" \
                          "tests/defences/test_defensive_distillation.py" \
                          "tests/defences/test_feature_squeezing.py" \

@@ -116,7 +116,7 @@ def test_spatial_smoothing_video_data(art_warning, video_batch, channels_first):
         art_warning(e)
 
 
-@pytest.mark.only_with_platform("tensorflow", "tensorflow2v1")
+@pytest.mark.only_with_platform("tensorflow")
 def test_non_spatial_data_error(art_warning, tabular_batch):
     try:
         test_input = tabular_batch

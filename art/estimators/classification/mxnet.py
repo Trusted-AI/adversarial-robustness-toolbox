@@ -300,7 +300,11 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):
         return predictions
 
     def class_gradient(  # pylint: disable=W0221
-        self, x: np.ndarray, label: Union[int, List[int], None] = None, training_mode: bool = False, **kwargs
+        self,
+        x: np.ndarray,
+        label: Optional[Union[int, List[int], np.ndarray]] = None,
+        training_mode: bool = False,
+        **kwargs,
     ) -> np.ndarray:
         """
         Compute per-class derivatives w.r.t. `x`.

@@ -109,11 +109,12 @@ setup(
             "pytest-flake8",
             "pytest-mock",
             "pytest-cov",
-            "codecov",
             "requests",
             "sortedcontainers",
             "numba",
-        ],
+            "timm",
+            "multiprocess",
+        ]
     },
     classifiers=[
         "Development Status :: 3 - Alpha",

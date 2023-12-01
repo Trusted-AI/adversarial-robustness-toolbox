@@ -26,7 +26,7 @@ import logging
 from typing import Callable, List, Optional, Tuple, Union, TYPE_CHECKING
 
 import warnings
-from tqdm import tqdm
+from tqdm.auto import trange
 import numpy as np
 
 from art.estimators.classification.tensorflow import TensorFlowV2Classifier
@@ -60,6 +60,7 @@ class TensorFlowV2RandomizedSmoothing(RandomizedSmoothingMixin, TensorFlowV2Clas
         nb_classes: int,
         input_shape: Tuple[int, ...],
         loss_object: Optional["tf.Tensor"] = None,
+        optimizer: Optional["tf.keras.optimizers.Optimizer"] = None,
         train_step: Optional[Callable] = None,
         channels_first: bool = False,
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
@@ -69,6 +70,7 @@ class TensorFlowV2RandomizedSmoothing(RandomizedSmoothingMixin, TensorFlowV2Clas
         sample_size: int = 32,
         scale: float = 0.1,
         alpha: float = 0.001,
+        verbose: bool = False,
     ):
         """
         Create a randomized smoothing classifier.
@@ -78,8 +80,12 @@ class TensorFlowV2RandomizedSmoothing(RandomizedSmoothingMixin, TensorFlowV2Clas
         :param nb_classes: the number of classes in the classification task.
         :param input_shape: Shape of one input for the classifier, e.g. for MNIST input_shape=(28, 28, 1).
         :param loss_object: The loss function for which to compute gradients. This parameter is applied for training
-            the model and computing gradients of the loss w.r.t. the input.
-        :param train_step: A function that applies a gradient update to the trainable variables.
+               the model and computing gradients of the loss w.r.t. the input.
+        :param optimizer: The optimizer used to train the classifier.
+        :param train_step: A function that applies a gradient update to the trainable variables with signature
+               `train_step(model, images, labels)`. This will override the default training loop that uses the
+               provided `loss_object` and `optimizer` parameters. It is recommended to use the `@tf.function`
+               decorator, if possible, for efficient training.
         :param channels_first: Set channels first or last.
         :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
                maximum values allowed for features. If floats are provided, these will be used as the range of all
@@ -93,6 +99,7 @@ class TensorFlowV2RandomizedSmoothing(RandomizedSmoothingMixin, TensorFlowV2Clas
         :param sample_size: Number of samples for smoothing.
         :param scale: Standard deviation of Gaussian noise added.
         :param alpha: The failure probability of smoothing.
+        :param verbose: Show progress bars.
         """
         if preprocessing_defences is not None:
             warnings.warn(
@@ -105,6 +112,7 @@ class TensorFlowV2RandomizedSmoothing(RandomizedSmoothingMixin, TensorFlowV2Clas
             nb_classes=nb_classes,
             input_shape=input_shape,
             loss_object=loss_object,
+            optimizer=optimizer,
             train_step=train_step,
             channels_first=channels_first,
             clip_values=clip_values,
@@ -114,6 +122,7 @@ class TensorFlowV2RandomizedSmoothing(RandomizedSmoothingMixin, TensorFlowV2Clas
             sample_size=sample_size,
             scale=scale,
             alpha=alpha,
+            verbose=verbose,
         )
 
     def _predict_classifier(self, x: np.ndarray, batch_size: int, training_mode: bool, **kwargs) -> np.ndarray:
@@ -131,15 +140,36 @@ class TensorFlowV2RandomizedSmoothing(RandomizedSmoothingMixin, TensorFlowV2Clas
                   shape (nb_samples,).
         :param batch_size: Size of batches.
         :param nb_epochs: Number of epochs to use for training.
-        :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for
-               TensorFlow and providing it takes no effect.
+        :param kwargs: Dictionary of framework-specific arguments. This parameter currently only supports
+                       "scheduler" which is an optional function that will be called at the end of every
+                       epoch to adjust the learning rate.
         """
         import tensorflow as tf
 
         if self._train_step is None:  # pragma: no cover
-            raise TypeError(
-                "The training function `train_step` is required for fitting a model but it has not been " "defined."
-            )
+            if self._loss_object is None:  # pragma: no cover
+                raise TypeError(
+                    "A loss function `loss_object` or training function `train_step` is required for fitting the "
+                    "model, but it has not been defined."
+                )
+            if self._optimizer is None:  # pragma: no cover
+                raise ValueError(
+                    "An optimizer `optimizer` or training function `train_step` is required for fitting the "
+                    "model, but it has not been defined."
+                )
+
+            @tf.function
+            def train_step(model, images, labels):
+                with tf.GradientTape() as tape:
+                    predictions = model(images, training=True)
+                    loss = self.loss_object(labels, predictions)
+                gradients = tape.gradient(loss, model.trainable_variables)
+                self.optimizer.apply_gradients(zip(gradients, model.trainable_variables))
+
+        else:
+            train_step = self._train_step
+
+        scheduler = kwargs.get("scheduler")
 
         y = check_and_transform_label_format(y, nb_classes=self.nb_classes)
 
@@ -152,11 +182,14 @@ class TensorFlowV2RandomizedSmoothing(RandomizedSmoothingMixin, TensorFlowV2Clas
 
         train_ds = tf.data.Dataset.from_tensor_slices((x_preprocessed, y_preprocessed)).shuffle(10000).batch(batch_size)
 
-        for _ in tqdm(range(nb_epochs)):
+        for epoch in trange(nb_epochs, disable=not self.verbose):
             for images, labels in train_ds:
                 # Add random noise for randomized smoothing
                 images += tf.random.normal(shape=images.shape, mean=0.0, stddev=self.scale)
-                self._train_step(self.model, images, labels)
+                train_step(self.model, images, labels)
+
+            if scheduler is not None:
+                scheduler(epoch)
 
     def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> np.ndarray:  # type: ignore
         """
@@ -239,7 +272,11 @@ class TensorFlowV2RandomizedSmoothing(RandomizedSmoothingMixin, TensorFlowV2Clas
         return gradients
 
     def class_gradient(
-        self, x: np.ndarray, label: Union[int, List[int], None] = None, training_mode: bool = False, **kwargs
+        self,
+        x: np.ndarray,
+        label: Optional[Union[int, List[int], np.ndarray]] = None,
+        training_mode: bool = False,
+        **kwargs
     ) -> np.ndarray:
         """
         Compute per-class derivatives of the given classifier w.r.t. `x` of original classifier.

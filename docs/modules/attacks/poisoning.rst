@@ -26,12 +26,6 @@ Backdoor Poisoning Attack
    :members:
    :special-members:
 
-Gradient Matching Attack
-------------------------------
-.. autoclass:: GradientMatchingAttack
-   :members:
-   :special-members:
-
 Hidden Trigger Backdoor Attack
 ------------------------------
 .. autoclass:: HiddenTriggerBackdoor
@@ -56,8 +50,20 @@ Feature Collision Attack
    :members:
    :special-members:
 
+Gradient Matching Attack
+------------------------
+.. autoclass:: GradientMatchingAttack
+   :members:
+   :special-members:
+
 Poisoning SVM Attack
 --------------------
 .. autoclass:: PoisoningAttackSVM
+   :members:
+   :special-members:
+
+Sleeper Agent Attack
+--------------------
+.. autoclass:: SleeperAgentAttack
    :members:
    :special-members:

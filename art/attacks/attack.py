@@ -159,6 +159,8 @@ class Attack(abc.ABC):
         for key, value in kwargs.items():
             if key in self.attack_params:
                 setattr(self, key, value)
+            else:
+                raise ValueError(f'The attribute "{key}" cannot be set for this attack.')
         self._check_params()
 
     def _check_params(self) -> None:
@@ -185,6 +187,19 @@ class Attack(abc.ABC):
             elif req not in type(estimator).__mro__:
                 return False
         return True
+
+    def __repr__(self):
+        """
+        Returns a string describing the attack class and attack_params
+        """
+        param_str = ""
+        for param in self.attack_params:
+            if hasattr(self, param):
+                param_str += f"{param}={getattr(self, param)}, "
+            elif hasattr(self, "_attack"):
+                if hasattr(self._attack, param):
+                    param_str += f"{param}={getattr(self._attack, param)}, "
+        return f"{type(self).__name__}({param_str})"
 
 
 class EvasionAttack(Attack):
@@ -339,10 +354,10 @@ class PoisoningAttackObjectDetector(Attack):
     @abc.abstractmethod
     def poison(
         self,
-        x: np.ndarray,
+        x: Union[np.ndarray, List[np.ndarray]],
         y: List[Dict[str, np.ndarray]],
         **kwargs,
-    ) -> Tuple[np.ndarray, List[Dict[str, np.ndarray]]]:
+    ) -> Tuple[Union[np.ndarray, List[np.ndarray]], List[Dict[str, np.ndarray]]]:
         """
         Generate poisoning examples and return them as an array. This method should be overridden by all concrete
         poisoning attack implementations.

@@ -28,15 +28,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: PyTorch 1.11.0 (Python 3.9)
-            framework: pytorch
-            python: 3.8
-            torch: 1.11.0+cpu
-            torchvision: 0.12.0+cpu
-            torchaudio: 0.11.0
           - name: PyTorch 1.12.1 (Python 3.9)
             framework: pytorch
-            python: 3.8
+            python: 3.9
             torch: 1.12.1+cpu
             torchvision: 0.13.1+cpu
             torchaudio: 0.12.1
@@ -67,8 +61,6 @@ jobs:
           sudo apt-get -y -q install ffmpeg libavcodec-extra
           python -m pip install --upgrade pip setuptools wheel
           pip3 install -r requirements_test.txt
-          pip install tensorflow==2.10.1
-          pip install keras==2.10.0
           pip install torch==${{ matrix.torch }} -f https://download.pytorch.org/whl/cpu/torch_stable.html
           pip install torchvision==${{ matrix.torchvision }} -f https://download.pytorch.org/whl/cpu/torch_stable.html
           pip install torchaudio==${{ matrix.torchaudio }} -f https://download.pytorch.org/whl/cpu/torch_stable.html

@@ -31,7 +31,7 @@ import warnings
 import zipfile
 from functools import wraps
 from inspect import signature
-from typing import TYPE_CHECKING, Callable, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Callable, List, Dict, Optional, Tuple, Union
 
 import numpy as np
 import six
@@ -435,10 +435,10 @@ def projection_l1_1(values: np.ndarray, eps: Union[int, float, np.ndarray]) -> n
         #    The vector of reductions
         delta_vec = np.transpose(np.array([delta] * (n - j - 1)))
         #   The sub-vectors:  a_sorted[:, (j+1):]
-        a_sub = a_sorted[:, (j + 1) :]
+        a_sub = a_sorted[:, int(j + 1) :]
         #   After reduction by delta_vec
         a_after = a_sub - delta_vec
-        after_vec[:, (j + 1) :] = a_after
+        after_vec[:, int(j + 1) :] = a_after
         proj += act_multiplier * (after_vec - proj)
         active = active * ind_set
         if sum(active) == 0:
@@ -983,7 +983,7 @@ def compute_success_array(
     x_adv: np.ndarray,
     targeted: bool = False,
     batch_size: int = 1,
-) -> float:
+) -> np.ndarray:
     """
     Compute the success rate of an attack based on clean samples, adversarial samples and targets or correct labels.
 
@@ -1060,6 +1060,115 @@ def compute_accuracy(preds: np.ndarray, labels: np.ndarray, abstain: bool = True
         acc_rate = num_correct / preds.shape[0]
 
     return acc_rate, coverage_rate
+
+
+def intersection_over_union(bbox_1: np.ndarray, bbox_2: np.ndarray) -> float:
+    """
+    Compute the intersection over union (IoU) of two bounding boxes.
+    Both bounding boxes are expected to be in torchvision format [x1, y1, x2, y2].
+
+    param bbox_1: Bounding box 1 in torchvision format [x1, y1, x2, y2].
+    param bbox_2: Bounding box 2 in torchvision format [x1, y2, x2, y2].
+    return: The intersection over union (IoU) of the two bounding boxes.
+    """
+    # Calculate area of the intersection
+    x_1 = max(bbox_1[0], bbox_2[0])
+    y_1 = max(bbox_1[1], bbox_2[1])
+    x_2 = min(bbox_1[2], bbox_2[2])
+    y_2 = min(bbox_1[3], bbox_2[3])
+    intersection = max(0, x_2 - x_1 + 1) * max(0, y_2 - y_1 + 1)
+
+    # Calculate the area of the union
+    bbox_1_area = (bbox_1[2] - bbox_1[0] + 1) * (bbox_1[3] - bbox_1[1] + 1)
+    bbox_2_area = (bbox_2[2] - bbox_2[0] + 1) * (bbox_2[3] - bbox_2[1] + 1)
+    union = bbox_1_area + bbox_2_area - intersection
+
+    return intersection / union
+
+
+def intersection_over_area(bbox_1: np.ndarray, bbox_2: np.ndarray) -> float:
+    """
+    Compute the intersection over area (IoA) of two bounding boxes.
+    Both bounding boxes are expected to be in torchvision format [x1, y1, x2, y2].
+
+    param bbox_1: Bounding box 1 in torchvision format [x1, y1, x2, y2].
+    param bbox_2: Bounding box 2 in torchvision format [x1, y2, x2, y2].
+    return: The intersection over area (IoA) of the two bounding boxes.
+    """
+    # Calculate area of the intersection
+    x_1 = max(bbox_1[0], bbox_2[0])
+    y_1 = max(bbox_1[1], bbox_2[1])
+    x_2 = min(bbox_1[2], bbox_2[2])
+    y_2 = min(bbox_1[3], bbox_2[3])
+    intersection = max(0, x_2 - x_1 + 1) * max(0, y_2 - y_1 + 1)
+
+    # Calculate the area of bbox_1
+    bbox_1_area = (bbox_1[2] - bbox_1[0] + 1) * (bbox_1[3] - bbox_1[1] + 1)
+
+    return intersection / bbox_1_area
+
+
+def non_maximum_suppression(
+    preds: Dict[str, np.ndarray], iou_threshold: float, confidence_threshold: Optional[float] = None
+) -> Dict[str, np.ndarray]:
+    """
+    Perform non-maximum suppression on the predicted object detection labels of a single image.
+
+    :param preds: Predicted labels of format `Dict[str, np.ndarray]` for a single image. The fields of the Dict are
+                  as follows:
+
+                  - boxes [N, 4]: the boxes in [x1, y1, x2, y2] format, with 0 <= x1 < x2 <= W and 0 <= y1 < y2 <= H.
+                  - labels [N]: the labels for each image.
+                  - scores [N]: the scores of each prediction.
+    :param iou_threshold: The IoU threshold to discard overlapping bounding boxes.
+    :param confidence_threshold: The confidence threshold to discard bounding boxes.
+    return: Filtered predicted labels of the single image in the same format as the input.
+    """
+    boxes = preds["boxes"]
+    labels = preds["labels"]
+    scores = preds["scores"]
+
+    # Filter out bounding boxes below confidence threshold
+    if confidence_threshold is not None:
+        mask = scores >= confidence_threshold
+        boxes = boxes[mask]
+        labels = labels[mask]
+        scores = scores[mask]
+
+    # Candidate bounding boxes
+    keep_indices = []
+    indices = np.argsort(scores)[::-1]
+
+    while len(indices) > 0:
+        # Get first bounding box
+        current_idx = indices[0]
+        box_1 = boxes[current_idx]
+        label_1 = labels[current_idx]
+
+        keep_indices.append(current_idx)
+        remove_indices = [0]
+
+        # Find overlapping bounding boxes above IoU threshold
+        for i, idx in enumerate(indices[1:], start=1):
+            box_2 = boxes[idx]
+            label_2 = labels[idx]
+
+            if label_1 != label_2:
+                continue
+
+            iou = intersection_over_union(box_1, box_2)
+            if iou >= iou_threshold:
+                remove_indices.append(i)
+
+        # Remove overlapping bounding boxes from candidates
+        indices = np.delete(indices, remove_indices)
+
+    filtered_preds = {
+        "boxes": boxes[keep_indices],
+        "labels": labels[keep_indices],
+        "scores": scores[keep_indices],
+    }
+    return filtered_preds
 
 
 # -------------------------------------------------------------------------------------------------- DATASET OPERATIONS
@@ -1195,12 +1304,12 @@ def load_stl() -> DATASET_TYPE:
     x_test = x_test.transpose((0, 2, 3, 1))
 
     with open(os.path.join(path, "train_y.bin"), "rb") as f_numpy:
-        y_train = np.fromfile(f_numpy, dtype=np.uint8)
-        y_train -= 1
+        y_train_uint = np.fromfile(f_numpy, dtype=np.uint8)
+        y_train = y_train_uint - 1
 
     with open(os.path.join(path, "test_y.bin"), "rb") as f_numpy:
-        y_test = np.fromfile(f_numpy, dtype=np.uint8)
-        y_test -= 1
+        y_test_uint = np.fromfile(f_numpy, dtype=np.uint8)
+        y_test = y_test_uint - 1
 
     x_train, y_train = preprocess(x_train, y_train)
     x_test, y_test = preprocess(x_test, y_test)
@@ -1324,7 +1433,6 @@ def load_nursery(
         path=config.ART_DATA_PATH,
         extract=False,
         url=[
-            "https://archive.ics.uci.edu/ml/machine-learning-databases/nursery/nursery.data",
             "https://www.dropbox.com/s/l24hwvkuueor6lp/nursery.data?dl=1",
         ],
     )
@@ -1509,7 +1617,6 @@ def get_file(
 
     if download:
         logger.info("Downloading data from %s", url)
-        error_msg = "URL fetch failure on {}: {} -- {}"
         try:
             for url_i in url_list:
                 try:
@@ -1545,13 +1652,9 @@ def get_file(
                         urlretrieve(url_i, full_path)
 
                 except HTTPError as exception:  # pragma: no cover
-                    raise Exception(
-                        error_msg.format(url_i, exception.code, exception.msg)  # type: ignore
-                    ) from HTTPError  # type: ignore
+                    logger.error(url_i, exception)
                 except URLError as exception:  # pragma: no cover
-                    raise Exception(
-                        error_msg.format(url_i, exception.errno, exception.reason)  # type: ignore
-                    ) from HTTPError  # type: ignore
+                    logger.error(url_i, exception)
         except (Exception, KeyboardInterrupt):  # pragma: no cover
             if os.path.exists(full_path):
                 os.remove(full_path)

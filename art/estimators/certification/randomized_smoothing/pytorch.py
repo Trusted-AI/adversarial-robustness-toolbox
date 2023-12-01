@@ -23,11 +23,10 @@ This module implements Randomized Smoothing applied to classifier predictions.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import List, Optional, Tuple, Union, Any, TYPE_CHECKING
+from typing import List, Optional, Tuple, Union, TYPE_CHECKING
 
 import warnings
-import random
-from tqdm import tqdm
+from tqdm.auto import trange
 import numpy as np
 
 from art.config import ART_NUMPY_DTYPE
@@ -62,7 +61,7 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
         loss: "torch.nn.modules.loss._Loss",
         input_shape: Tuple[int, ...],
         nb_classes: int,
-        optimizer: Optional["torch.optim.Optimizer"] = None,  # type: ignore
+        optimizer: Optional["torch.optim.Optimizer"] = None,
         channels_first: bool = True,
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
@@ -72,6 +71,7 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
         sample_size: int = 32,
         scale: float = 0.1,
         alpha: float = 0.001,
+        verbose: bool = False,
     ):
         """
         Create a randomized smoothing classifier.
@@ -97,6 +97,7 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
         :param sample_size: Number of samples for smoothing.
         :param scale: Standard deviation of Gaussian noise added.
         :param alpha: The failure probability of smoothing.
+        :param verbose: Show progress bars.
         """
         if preprocessing_defences is not None:
             warnings.warn(
@@ -119,6 +120,7 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
             sample_size=sample_size,
             scale=scale,
             alpha=alpha,
+            verbose=verbose,
         )
 
     def _predict_classifier(self, x: np.ndarray, batch_size: int, training_mode: bool, **kwargs) -> np.ndarray:
@@ -137,7 +139,7 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
         nb_epochs: int = 10,
         training_mode: bool = True,
         drop_last: bool = False,
-        scheduler: Optional[Any] = None,
+        scheduler: Optional["torch.optim.lr_scheduler._LRScheduler"] = None,
         **kwargs,
     ) -> None:
         """
@@ -157,6 +159,7 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
                and providing it takes no effect.
         """
         import torch
+        from torch.utils.data import TensorDataset, DataLoader
 
         # Set model mode
         self._model.train(mode=training_mode)
@@ -172,36 +175,28 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
         # Check label shape
         y_preprocessed = self.reduce_labels(y_preprocessed)
 
-        num_batch = len(x_preprocessed) / float(batch_size)
-        if drop_last:
-            num_batch = int(np.floor(num_batch))
-        else:
-            num_batch = int(np.ceil(num_batch))
-        ind = np.arange(len(x_preprocessed))
-        std = torch.tensor(self.scale).to(self._device)
-
-        x_preprocessed = torch.from_numpy(x_preprocessed).to(self._device)
-        y_preprocessed = torch.from_numpy(y_preprocessed).to(self._device)
+        # Create dataloader
+        x_tensor = torch.from_numpy(x_preprocessed)
+        y_tensor = torch.from_numpy(y_preprocessed)
+        dataset = TensorDataset(x_tensor, y_tensor)
+        dataloader = DataLoader(dataset=dataset, batch_size=batch_size, shuffle=True, drop_last=drop_last)
 
         # Start training
-        for _ in tqdm(range(nb_epochs)):
-            # Shuffle the examples
-            random.shuffle(ind)
-
-            # Train for one epoch
-            for m in range(num_batch):
-                i_batch = x_preprocessed[ind[m * batch_size : (m + 1) * batch_size]]
-                o_batch = y_preprocessed[ind[m * batch_size : (m + 1) * batch_size]]
+        for _ in trange(nb_epochs, disable=not self.verbose):
+            for x_batch, y_batch in dataloader:
+                # Move inputs to device
+                x_batch = x_batch.to(self._device)
+                y_batch = y_batch.to(self._device)
 
                 # Add random noise for randomized smoothing
-                i_batch = i_batch + torch.randn_like(i_batch, device=self._device) * std
+                x_batch += torch.randn_like(x_batch) * self.scale
 
                 # Zero the parameter gradients
                 self._optimizer.zero_grad()
 
                 # Perform prediction
                 try:
-                    model_outputs = self._model(i_batch)
+                    model_outputs = self._model(x_batch)
                 except ValueError as err:
                     if "Expected more than 1 value per channel when training" in str(err):
                         logger.exception(
@@ -211,7 +206,7 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
                     raise err
 
                 # Form the loss function
-                loss = self._loss(model_outputs[-1], o_batch)
+                loss = self._loss(model_outputs[-1], y_batch)
 
                 # Do training
                 if self._use_amp:  # pragma: no cover
@@ -307,7 +302,11 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
         return gradients
 
     def class_gradient(
-        self, x: np.ndarray, label: Union[int, List[int], None] = None, training_mode: bool = False, **kwargs
+        self,
+        x: np.ndarray,
+        label: Optional[Union[int, List[int], np.ndarray]] = None,
+        training_mode: bool = False,
+        **kwargs,
     ) -> np.ndarray:
         """
         Compute per-class derivatives of the given classifier w.r.t. `x` of original classifier.

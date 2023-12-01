@@ -27,7 +27,7 @@ import tensorflow as tf
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
 from tensorflow.keras.losses import categorical_crossentropy
-from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.optimizers.legacy import Adam
 
 import torch.nn as nn
 import torch.nn.functional as F
@@ -109,22 +109,15 @@ class TestDeepPartitionEnsemble(unittest.TestCase):
                     x = self.logits(x)
                     return x
 
-            optimizer = Adam(learning_rate=0.01)
-
-            def train_step(model, images, labels):
-                with tf.GradientTape() as tape:
-                    predictions = model(images, training=True)
-                    loss = loss_object(labels, predictions)
-                gradients = tape.gradient(loss, model.trainable_variables)
-                optimizer.apply_gradients(zip(gradients, model.trainable_variables))
-
             model = TensorFlowModel()
             loss_object = tf.keras.losses.CategoricalCrossentropy(from_logits=True)
+            optimizer = Adam(learning_rate=0.01)
+            model.compile(loss=loss_object, optimizer=optimizer)
 
             classifier = TensorFlowV2Classifier(
                 model=model,
                 loss_object=loss_object,
-                train_step=train_step,
+                optimizer=optimizer,
                 nb_classes=10,
                 input_shape=(28, 28, 1),
                 clip_values=(0, 1),

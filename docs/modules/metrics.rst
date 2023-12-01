@@ -28,3 +28,7 @@ Wasserstein Distance
 Pointwise Differential Training Privacy
 ---------------------------------------
 .. autofunction:: PDTP
+
+SHAPr Membership Privacy Risk
+-----------------------------
+.. autofunction:: SHAPr

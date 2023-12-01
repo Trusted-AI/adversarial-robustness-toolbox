@@ -66,6 +66,10 @@ models.
 [attack_adversarial_patch_faster_rcnn.ipynb](adversarial_patch/attack_adversarial_patch_faster_rcnn.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/adversarial_patch/attack_adversarial_patch_faster_rcnn.ipynb)]
 shows how to set up a TFv2 Faster R-CNN object detector with ART and create an adversarial patch attack that fools the detector.
 
+[attack_adversarial_patch_detr.ipynb](adversarial_patch/attack_adversarial_patch_detr.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/adversarial_patch/attack_adversarial_patch_detr.ipynb)]
+shows how to set up the DEtection TRansformer (DETR) with ART for object detection and create an adversarial patch attack that fools the detector.
+
+
 <p align="center">
   <img src="../utils/data/images/adversarial_patch.png?raw=true" width="200" title="adversarial_patch">
 </p>
@@ -291,6 +295,9 @@ demonstrates using interval bound propagation for certification of neural networ
 <p align="center">
   <img src="../utils/data/images/IBP_certification.png?raw=true" width="200" title="IBP certification">
 </p>
+
+[smoothed_vision_transformers.ipynb](smoothed_vision_transformers.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/smoothed_vision_transformers.ipynb)]
+Demonstrates training a neural network using smoothed vision transformers for certified performance against patch attacks.
 
 ## MNIST
 

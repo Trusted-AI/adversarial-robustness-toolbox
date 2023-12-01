@@ -178,11 +178,11 @@ class RONIDefense(PoisonFilteringDefence):
         """
         if self.calibrated:
             median, std_dev = self.get_calibration_info(before_classifier)
-            return perf_shift < median - 3 * std_dev
+            return bool(perf_shift < median - 3 * std_dev)
 
-        return perf_shift < -self.eps
+        return bool(perf_shift < -self.eps)
 
-    def get_calibration_info(self, before_classifier: "CLASSIFIER_TYPE") -> Tuple[np.ndarray, np.ndarray]:
+    def get_calibration_info(self, before_classifier: "CLASSIFIER_TYPE") -> Tuple[float, float]:
         """
         Calculate the median and standard deviation of the accuracy shifts caused
         by the calibration set.
@@ -205,7 +205,7 @@ class RONIDefense(PoisonFilteringDefence):
                 )
             )
 
-        return np.median(accs), np.std(accs)
+        return float(np.median(accs)), float(np.std(accs))
 
     def _check_params(self) -> None:
         if len(self.x_train) != len(self.y_train):

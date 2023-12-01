@@ -109,8 +109,8 @@ class AdversarialTrainerCertifiedIBPPyTorch(Trainer):
         classifier: "IBP_CERTIFIER_TYPE",
         nb_epochs: Optional[int] = 20,
         bound: float = 0.1,
-        loss_weighting: float = 0.1,
         batch_size: int = 32,
+        loss_weighting: Optional[int] = None,
         use_certification_schedule: bool = True,
         certification_schedule: Optional[Any] = None,
         use_loss_weighting_schedule: bool = True,
@@ -133,9 +133,9 @@ class AdversarialTrainerCertifiedIBPPyTorch(Trainer):
                            * *max_iter*: The maximum number of iterations.
                            * *batch_size*: Size of the batch on which adversarial samples are generated.
                            * *num_random_init*: Number of random initialisations within the epsilon ball.
+        :param loss_weighting: Weighting factor for the certified loss.
         :param bound: The perturbation range for the interval. If the default certification schedule is used
                       will be the upper limit.
-        :param loss_weighting: Weighting factor for the certified loss.
         :param nb_epochs: Number of training epochs.
         :param use_certification_schedule: If to use a training schedule for the certification radius.
         :param certification_schedule: Schedule for gradually increasing the certification radius. Empirical studies
@@ -151,6 +151,14 @@ class AdversarialTrainerCertifiedIBPPyTorch(Trainer):
                 "The classifier to pass in should be of type PyTorchIBPClassifier which can be found in "
                 "art.estimators.certification.interval.pytorch.PyTorchIBPClassifier"
             )
+
+        if not use_loss_weighting_schedule and loss_weighting is None:
+            raise ValueError(
+                "If a loss weighting schedule is not used then a value for loss_weighting should be supplied."
+            )
+
+        if use_loss_weighting_schedule and loss_weighting is not None:
+            raise ValueError("Using a loss weighting schedule is incompatible with a fixed loss_weighting.")
 
         super().__init__(classifier=classifier)
         self.classifier: "IBP_CERTIFIER_TYPE"
@@ -280,7 +288,7 @@ class AdversarialTrainerCertifiedIBPPyTorch(Trainer):
         y_preprocessed = self.classifier.reduce_labels(y_preprocessed)
 
         num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
-        ind = np.arange(len(x_preprocessed))
+        ind = np.arange(len(x_preprocessed)).tolist()
 
         x_cert = np.copy(x_preprocessed)
         y_cert = np.copy(y_preprocessed)
@@ -300,8 +308,10 @@ class AdversarialTrainerCertifiedIBPPyTorch(Trainer):
                 self.loss_weighting_schedule = self.initialise_default_scheduler(
                     initial_val=0.0, final_val=0.5, epochs=epochs
                 )
+        elif self.loss_weighting is not None:
+            loss_weighting_k = self.loss_weighting
         else:
-            loss_weighting_k = 0.1
+            raise ValueError("Unable to determine loss weighting.")
 
         for _ in tqdm(range(epochs)):
             if self.use_certification_schedule and self.certification_schedule is not None:

@@ -18,9 +18,13 @@
 """
 This module contains utility functions for object detection.
 """
-from typing import Dict, List
+from typing import Dict, List, Union, Tuple, Optional, TYPE_CHECKING
 
 import numpy as np
+
+if TYPE_CHECKING:
+    # pylint: disable=C0412
+    import torch
 
 
 def convert_tf_to_pt(y: List[Dict[str, np.ndarray]], height: int, width: int) -> List[Dict[str, np.ndarray]]:
@@ -88,3 +92,68 @@ def convert_pt_to_tf(y: List[Dict[str, np.ndarray]], height: int, width: int) ->
         y[i]["labels"] = y[i]["labels"] - 1
 
     return y
+
+
+def cast_inputs_to_pt(
+    x: Union[np.ndarray, "torch.Tensor"],
+    y: Optional[List[Dict[str, Union[np.ndarray, "torch.Tensor"]]]] = None,
+) -> Tuple["torch.Tensor", Optional[List[Dict[str, "torch.Tensor"]]]]:
+    """
+    Cast object detection inputs `(x, y)` to PyTorch tensors.
+
+    :param x: Samples of shape NCHW or NHWC.
+    :param y: Target values of format `List[Dict[str, Union[np.ndarray, torch.Tensor]]]`, one for each input image.
+                The fields of the Dict are as follows:
+
+                - boxes [N, 4]: the boxes in [x1, y1, x2, y2] format, with 0 <= x1 < x2 <= W and 0 <= y1 < y2 <= H.
+                - labels [N]: the labels for each image.
+    :return: Object detection inputs `(x, y)` as tensors.
+    """
+    import torch
+
+    # Convert images into tensor
+    if isinstance(x, np.ndarray):
+        x_tensor = torch.from_numpy(x)
+    else:
+        x_tensor = x
+
+    y_tensor: Optional[List[Dict[str, torch.Tensor]]] = None
+
+    # Convert labels into tensor
+    if isinstance(y, list):
+        y_tensor = []
+        for y_i in y:
+            y_t = {}
+
+            if isinstance(y_i["boxes"], np.ndarray):
+                y_t["boxes"] = torch.from_numpy(y_i["boxes"]).to(dtype=torch.float32)
+            else:
+                y_t["boxes"] = y_i["boxes"]
+
+            if isinstance(y_i["labels"], np.ndarray):
+                y_t["labels"] = torch.from_numpy(y_i["labels"]).to(dtype=torch.int64)
+            else:
+                y_t["labels"] = y_i["labels"]
+
+            if "masks" in y_i:
+                if isinstance(y_i["masks"], np.ndarray):
+                    y_t["masks"] = torch.from_numpy(y_i["masks"]).to(dtype=torch.uint8)
+                else:
+                    y_t["masks"] = y_i["masks"]
+
+            y_tensor.append(y_t)
+    elif isinstance(y, dict):
+        y_tensor = []
+        for i in range(len(y["boxes"])):
+            y_t = {}
+
+            y_t["boxes"] = y["boxes"][i]
+            y_t["labels"] = y["labels"][i]
+            if "masks" in y:
+                y_t["masks"] = y["masks"][i]
+
+            y_tensor.append(y_t)
+    else:
+        y_tensor = y
+
+    return x_tensor, y_tensor

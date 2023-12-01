@@ -17,3 +17,4 @@ from art.attacks.poisoning.gradient_matching_attack import GradientMatchingAttac
 from art.attacks.poisoning.hidden_trigger_backdoor.hidden_trigger_backdoor import HiddenTriggerBackdoor
 from art.attacks.poisoning.hidden_trigger_backdoor.hidden_trigger_backdoor_pytorch import HiddenTriggerBackdoorPyTorch
 from art.attacks.poisoning.hidden_trigger_backdoor.hidden_trigger_backdoor_keras import HiddenTriggerBackdoorKeras
+from art.attacks.poisoning.sleeper_agent_attack import SleeperAgentAttack

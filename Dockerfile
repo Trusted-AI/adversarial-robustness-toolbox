@@ -9,7 +9,7 @@ RUN pip3 install tensorflow==2.9.1 keras==2.9.0 numpy==1.22.4 scipy==1.8.1 matpl
                  resampy==0.3.1 ffmpeg-python==0.2.0 cma==3.2.2 pandas==1.4.3 h5py==3.7.0 tensorflow-addons==0.17.1 \
                  mxnet==1.6.0 torch==1.12.0 torchaudio==0.12.0 torchvision==0.13.0 catboost==1.0.6 GPy==1.10.0 \
                  lightgbm==3.3.2 xgboost==1.6.1 kornia==0.6.6 lief==0.12.1 pytest==7.1.2 pytest-pep8==1.0.6 \
-                 pytest-mock==3.8.2 codecov==2.1.12 requests==2.28.1
+                 pytest-mock==3.8.2 requests==2.28.1
 
 RUN apt-get -y install ffmpeg libavcodec-extra vim git
 

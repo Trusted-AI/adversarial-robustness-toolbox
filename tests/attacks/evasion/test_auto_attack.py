@@ -41,7 +41,7 @@ def fix_get_mnist_subset(get_mnist_dataset):
     yield x_train_mnist[:n_train], y_train_mnist[:n_train], x_test_mnist[:n_test], y_test_mnist[:n_test]
 
 
-@pytest.mark.skip_framework("tensorflow1", "tensorflow2v1", "keras", "pytorch", "non_dl_frameworks", "mxnet", "kerastf")
+@pytest.mark.skip_framework("tensorflow1", "tensorflow2v1", "keras", "non_dl_frameworks", "mxnet", "kerastf")
 def test_generate_default(art_warning, fix_get_mnist_subset, image_dl_estimator):
     try:
         classifier, _ = image_dl_estimator(from_logits=True)
@@ -66,7 +66,7 @@ def test_generate_default(art_warning, fix_get_mnist_subset, image_dl_estimator)
         art_warning(e)
 
 
-@pytest.mark.skip_framework("tensorflow1", "tensorflow2v1", "keras", "pytorch", "non_dl_frameworks", "mxnet", "kerastf")
+@pytest.mark.skip_framework("tensorflow1", "tensorflow2v1", "keras", "non_dl_frameworks", "mxnet", "kerastf")
 def test_generate_attacks_and_targeted(art_warning, fix_get_mnist_subset, image_dl_estimator):
     try:
         classifier, _ = image_dl_estimator(from_logits=True)
@@ -145,6 +145,15 @@ def test_generate_attacks_and_targeted(art_warning, fix_get_mnist_subset, image_
         art_warning(e)
 
 
+@pytest.mark.skip_framework("tensorflow1", "tensorflow2v1", "keras", "non_dl_frameworks", "mxnet", "kerastf")
+def test_attack_if_targeted_not_supported(art_warning, fix_get_mnist_subset, image_dl_estimator):
+    with pytest.raises(ValueError) as excinfo:
+        classifier, _ = image_dl_estimator(from_logits=True)
+        attack = SquareAttack(estimator=classifier, norm=np.inf, max_iter=5000, eps=0.3, p_init=0.8, nb_restarts=5)
+        attack.set_params(targeted=True)
+    assert str(excinfo.value) == """The attribute "targeted" cannot be set for this attack."""
+
+
 @pytest.mark.skip_framework("tensorflow1", "keras", "pytorch", "non_dl_frameworks", "mxnet", "kerastf")
 def test_check_params(art_warning, image_dl_estimator_for_attack):
     try:
@@ -180,5 +189,134 @@ def test_check_params(art_warning, image_dl_estimator_for_attack):
 def test_classifier_type_check_fail(art_warning):
     try:
         backend_test_classifier_type_check_fail(AutoAttack, [BaseEstimator, ClassifierMixin])
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.skip_framework(
+    "tensorflow1", "tensorflow2v1", "tensorflow2", "keras", "non_dl_frameworks", "mxnet", "kerastf"
+)
+def test_generate_parallel(art_warning, fix_get_mnist_subset, image_dl_estimator, framework):
+    try:
+        classifier, _ = image_dl_estimator(from_logits=True)
+
+        if framework == "tensorflow2":
+            import tensorflow as tf
+
+            classifier.model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.01))
+
+        norm = np.inf
+        eps = 0.3
+        eps_step = 0.1
+        batch_size = 32
+
+        attacks = list()
+        attacks.append(
+            AutoProjectedGradientDescent(
+                estimator=classifier,
+                norm=norm,
+                eps=eps,
+                eps_step=eps_step,
+                max_iter=100,
+                targeted=True,
+                nb_random_init=5,
+                batch_size=batch_size,
+                loss_type="cross_entropy",
+                verbose=False,
+            )
+        )
+        attacks.append(
+            AutoProjectedGradientDescent(
+                estimator=classifier,
+                norm=norm,
+                eps=eps,
+                eps_step=eps_step,
+                max_iter=100,
+                targeted=False,
+                nb_random_init=5,
+                batch_size=batch_size,
+                loss_type="difference_logits_ratio",
+                verbose=False,
+            )
+        )
+        attacks.append(
+            DeepFool(
+                classifier=classifier,
+                max_iter=100,
+                epsilon=1e-6,
+                nb_grads=3,
+                batch_size=batch_size,
+                verbose=False,
+            )
+        )
+        attacks.append(
+            SquareAttack(
+                estimator=classifier,
+                norm=norm,
+                max_iter=5000,
+                eps=eps,
+                p_init=0.8,
+                nb_restarts=5,
+                verbose=False,
+            )
+        )
+
+        (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
+
+        # First test with defined_attack_only=False
+        attack = AutoAttack(
+            estimator=classifier,
+            norm=norm,
+            eps=eps,
+            eps_step=eps_step,
+            attacks=attacks,
+            batch_size=batch_size,
+            estimator_orig=None,
+            targeted=False,
+            parallel=True,
+        )
+
+        attack_noparallel = AutoAttack(
+            estimator=classifier,
+            norm=norm,
+            eps=eps,
+            eps_step=eps_step,
+            attacks=attacks,
+            batch_size=batch_size,
+            estimator_orig=None,
+            targeted=False,
+            parallel=False,
+        )
+
+        x_train_mnist_adv = attack.generate(x=x_train_mnist, y=y_train_mnist)
+
+        x_train_mnist_adv_nop = attack_noparallel.generate(x=x_train_mnist, y=y_train_mnist)
+
+        assert np.mean(np.abs(x_train_mnist_adv - x_train_mnist)) == pytest.approx(expected=0.0182, abs=0.105)
+        assert np.max(np.abs(x_train_mnist_adv - x_train_mnist)) == pytest.approx(expected=0.3, abs=0.05)
+
+        noparallel_perturbation = np.linalg.norm(x_train_mnist[[2]] - x_train_mnist_adv_nop[[2]])
+        parallel_perturbation = np.linalg.norm(x_train_mnist[[2]] - x_train_mnist_adv[[2]])
+
+        assert parallel_perturbation < noparallel_perturbation
+
+        # Then test with defined_attack_only=True
+        attack = AutoAttack(
+            estimator=classifier,
+            norm=norm,
+            eps=eps,
+            eps_step=eps_step,
+            attacks=attacks,
+            batch_size=batch_size,
+            estimator_orig=None,
+            targeted=True,
+            parallel=True,
+        )
+
+        x_train_mnist_adv = attack.generate(x=x_train_mnist, y=y_train_mnist)
+
+        assert np.mean(x_train_mnist_adv - x_train_mnist) == pytest.approx(expected=0.0, abs=0.0075)
+        assert np.max(np.abs(x_train_mnist_adv - x_train_mnist)) == pytest.approx(expected=eps, abs=0.005)
+
     except ARTTestException as e:
         art_warning(e)

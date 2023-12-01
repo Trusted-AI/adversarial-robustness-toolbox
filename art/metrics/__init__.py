@@ -1,6 +1,7 @@
 """
 Module providing metrics and verifications.
 """
+from art.metrics.metrics import adversarial_accuracy
 from art.metrics.metrics import empirical_robustness
 from art.metrics.metrics import loss_sensitivity
 from art.metrics.metrics import clever

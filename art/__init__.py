@@ -12,7 +12,7 @@ from art import metrics
 from art import preprocessing
 
 # Semantic Version
-__version__ = "1.13.1"
+__version__ = "1.16.0"
 
 # pylint: disable=C0103
 
