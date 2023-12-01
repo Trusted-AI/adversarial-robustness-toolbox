@@ -157,7 +157,6 @@ class FastGradientMethodCLIP(FastGradientMethod):
         """
         partial_stop_condition: Union[bool, np.ndarray, np.bool_]
         current_eps: Union[int, float, np.ndarray]
-        sentinel = object()
 
         adv_x = copy.deepcopy(x)
         # Compute perturbation with implicit batching
@@ -166,9 +165,6 @@ class FastGradientMethodCLIP(FastGradientMethod):
                 batch_id * self.batch_size,
                 (batch_id + 1) * self.batch_size,
             )
-            # batch = sentinel
-            # if batch is sentinel:
-            #    batch = adv_x[batch_index_1:batch_index_2]
             batch_labels = y[batch_index_1:batch_index_2]
 
             mask_batch = mask
@@ -207,9 +203,13 @@ class FastGradientMethodCLIP(FastGradientMethod):
                 adv_preds = self.estimator.predict(adv_x[batch_index_1:batch_index_2])
                 # If targeted active check to see whether we have hit the target, otherwise head to anything but
                 if self.targeted:
-                    active_indices = np.where(np.argmax(batch_labels, axis=1) != np.argmax(adv_preds, axis=1))[0] + batch_index_1
+                    active_indices = (
+                        np.where(np.argmax(batch_labels, axis=1) != np.argmax(adv_preds, axis=1))[0] + batch_index_1
+                    )
                 else:
-                    active_indices = np.where(np.argmax(batch_labels, axis=1) == np.argmax(adv_preds, axis=1))[0] + batch_index_1
+                    active_indices = (
+                        np.where(np.argmax(batch_labels, axis=1) == np.argmax(adv_preds, axis=1))[0] + batch_index_1
+                    )
 
                 # Update current eps and check the stop condition
                 if isinstance(self.eps, np.ndarray) and isinstance(self.eps_step, np.ndarray):
@@ -224,8 +224,6 @@ class FastGradientMethodCLIP(FastGradientMethod):
                 else:
                     current_eps = current_eps + self.eps_step
                     partial_stop_condition = current_eps <= self.eps
-
-            adv_x[batch_index_1:batch_index_2] = batch
 
         return adv_x
 
@@ -302,7 +300,6 @@ class FastGradientMethodCLIP(FastGradientMethod):
                 self._batch_id = batch_id_ext
             batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
             batch_index_2 = min(batch_index_2, x.shape[0])
-            batch = x_adv[batch_index_1:batch_index_2]
             batch_labels = y[batch_index_1:batch_index_2]
 
             mask_batch = mask
@@ -313,7 +310,9 @@ class FastGradientMethodCLIP(FastGradientMethod):
                     mask_batch = mask[batch_index_1:batch_index_2]
 
             # Get perturbation
-            perturbation = self._compute_perturbation(batch, batch_labels, mask_batch, decay, momentum)
+            perturbation = self._compute_perturbation(
+                x_adv[batch_index_1:batch_index_2], batch_labels, mask_batch, decay, momentum
+            )
 
             # Compute batch_eps and batch_eps_step
             if isinstance(eps, np.ndarray) and isinstance(eps_step, np.ndarray):
@@ -330,7 +329,9 @@ class FastGradientMethodCLIP(FastGradientMethod):
                 batch_eps_step = eps_step
 
             # Apply perturbation and clip
-            x_adv[batch_index_1:batch_index_2] = self._apply_perturbation(batch, perturbation, batch_eps_step)
+            x_adv[batch_index_1:batch_index_2] = self._apply_perturbation(
+                x_adv[batch_index_1:batch_index_2], perturbation, batch_eps_step
+            )
 
             if project:
                 if x_adv.dtype == object:
