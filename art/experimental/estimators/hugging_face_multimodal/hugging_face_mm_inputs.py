@@ -184,12 +184,12 @@ class HuggingFaceMultiModalInput(UserDict):
         pixel_values = UserDict.__getitem__(self, "pixel_values")
         return len(pixel_values)
 
-    def update_pixels(self, updated_pixel_values: torch.Tensor,
-                      indices: Optional[np.ndarray] = None) -> HuggingFaceMultiModalInput:
+    def update_pixels(self, updated_pixel_values: torch.Tensor, indices: Optional[np.ndarray] = None) -> None:
         """
         Helper method to set pixel values
         :param updated_pixel_values: pixel values to set.
         :param indices: If to partially update the values based on indices
+        :return: The HuggingFaceMultiModalInput instance with updated pixel values
         """
         if indices is None:
             super().__setitem__("pixel_values", updated_pixel_values)
@@ -198,7 +198,6 @@ class HuggingFaceMultiModalInput(UserDict):
             pixel_values = UserDict.__getitem__(self, "pixel_values")
             pixel_values[indices_list] = updated_pixel_values[indices_list]
             super().__setitem__("pixel_values", pixel_values)
-        return self
 
     def reshape(self, new_shape: Tuple) -> HuggingFaceMultiModalInput:
         """
@@ -237,4 +236,4 @@ class HuggingFaceMultiModalInput(UserDict):
         """
         Enable mypy compatibility
         """
-        raise ValueError("Trying to access is_leaf for the whole dictionary. Please use on individual tensors")
+        raise ValueError("Trying to access grad for the whole dictionary. Please use on individual tensors")

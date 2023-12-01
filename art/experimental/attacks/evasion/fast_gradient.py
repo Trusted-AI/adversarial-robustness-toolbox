@@ -199,7 +199,7 @@ class FastGradientMethodCLIP(FastGradientMethod):
 
                 # Update
                 if isinstance(adv_x, HuggingFaceMultiModalInput):
-                    adv_x[active_indices] = current_x[active_indices]
+                    adv_x.update_pixels(current_x, active_indices)  # type: ignore
                 else:
                     raise ValueError("Compatibility supported for HF style inputs")
 
@@ -275,10 +275,11 @@ class FastGradientMethodCLIP(FastGradientMethod):
         momentum: Optional[np.ndarray] = None,
     ) -> np.ndarray:
         import torch
+
         batch_eps: Union[int, float, np.ndarray]
         batch_eps_step: Union[int, float, np.ndarray]
         if isinstance(x, HuggingFaceMultiModalInput):
-            original_type = x['pixel_values'].dtype
+            original_type = x["pixel_values"].dtype
         else:
             original_type = x.dtype
 
@@ -338,9 +339,7 @@ class FastGradientMethodCLIP(FastGradientMethod):
                 batch_eps_step = eps_step
 
             # Apply perturbation and clip
-            x_adv_batch = self._apply_perturbation(
-                x_adv[batch_index_1:batch_index_2], perturbation, batch_eps_step
-            )
+            x_adv_batch = self._apply_perturbation(x_adv[batch_index_1:batch_index_2], perturbation, batch_eps_step)
 
             if project:
                 if x_adv.dtype == object:
@@ -363,11 +362,12 @@ class FastGradientMethodCLIP(FastGradientMethod):
                     )
                     x_adv_batch = x_init[batch_index_1:batch_index_2] + perturbation
             if isinstance(x_adv, HuggingFaceMultiModalInput):
-                x_adv_result_list.append(x_adv_batch['pixel_values'])
+                x_adv_result_list.append(x_adv_batch["pixel_values"])
             if isinstance(x_adv, np.ndarray):
                 x_adv_np_result_list.append(x_adv_batch)
 
-        if isinstance(original_type, str) or isinstance(original_type, torch.dtype):
+        if isinstance(original_type, (str, torch.dtype)):
             x_adv_result = torch.concatenate(x_adv_result_list).type(original_type)
-            return x_adv.update_pixels(x_adv_result)  # type: ignore
+            x_adv.update_pixels(x_adv_result)  # type: ignore
+            return x_adv
         return np.concatenate(x_adv_np_result_list)
