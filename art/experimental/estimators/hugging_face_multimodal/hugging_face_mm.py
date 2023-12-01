@@ -302,7 +302,7 @@ class HuggingFaceMultiModalPyTorch(PyTorchEstimator):
         y_tensor = torch.from_numpy(y)
 
         num_batch = int(len(y_tensor) / float(batch_size))
-        ind = np.arange(len(y_tensor))
+        ind = np.arange(len(y_tensor)).tolist()
 
         # Start training
         for _ in tqdm(range(nb_epochs)):

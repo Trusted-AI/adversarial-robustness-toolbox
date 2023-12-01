@@ -30,7 +30,7 @@ def test_predict(art_warning):
     try:
         import torch
         from transformers import CLIPModel, CLIPProcessor
-        from art.experimental.estimators.hugging_face_multimodal import (
+        from art.experimental.estimators import (
             HuggingFaceMultiModalPyTorch,
             HuggingFaceMultiModalInput,
         )
@@ -82,7 +82,7 @@ def test_fit(art_warning, fix_get_cifar10_data):
     try:
         import torch
         from transformers import CLIPProcessor, CLIPModel
-        from art.experimental.estimators.hugging_face_multimodal import (
+        from art.experimental.estimators import (
             HuggingFaceMultiModalPyTorch,
             HuggingFaceMultiModalInput,
         )

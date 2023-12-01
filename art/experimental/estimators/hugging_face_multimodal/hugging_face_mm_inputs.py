@@ -99,15 +99,16 @@ class HuggingFaceMultiModalInput(UserDict):
         :param item: Item to get. If accessing via array like functionality (slice, int, etc) pixel_values are fetched.
                      Else, if passing a string will fetch like a ordinary dictionary
         """
-        if isinstance(item, (slice, tuple, int, np.ndarray)):
+        if isinstance(item, (list, slice, tuple, int, np.ndarray)):
             pixel_values = UserDict.__getitem__(self, "pixel_values")
             pixel_values = pixel_values[item]
             output = HuggingFaceMultiModalInput(**self)
             output["pixel_values"] = pixel_values
             return output
-        if item in self.keys():
+        elif item in self.keys():
             return UserDict.__getitem__(self, item)
-        raise ValueError("Unsupported item for __getitem__ in HuggingFaceMultiModalInput")
+        else:
+            raise ValueError("Unsupported item for __getitem__ in HuggingFaceMultiModalInput")
 
     def __add__(self, other: Union[HuggingFaceMultiModalInput, np.ndarray]) -> HuggingFaceMultiModalInput:
         """
