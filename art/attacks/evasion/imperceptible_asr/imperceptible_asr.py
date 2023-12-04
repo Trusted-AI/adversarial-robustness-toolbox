@@ -547,6 +547,7 @@ class ImperceptibleASR(EvasionAttack):
             win_length=self._window_size,
             center=False,
             window=torch.hann_window(self._window_size).to(self.estimator._device),
+            return_complex=True,
         ).to(self.estimator._device)
 
         # compute power spectral density (PSD)

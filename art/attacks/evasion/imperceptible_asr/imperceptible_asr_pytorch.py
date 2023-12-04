@@ -754,6 +754,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
             win_length=self.win_length,
             center=False,
             window=window_fn(self.win_length).to(self.estimator.device),
+            return_complex=True,
         ).to(self.estimator.device)
 
         # Take abs of complex STFT results
