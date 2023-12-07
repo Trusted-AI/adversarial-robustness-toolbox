@@ -61,7 +61,7 @@ class STRIP(Transformer):
         self,
         num_samples: int = 20,
         false_acceptance_rate: float = 0.01,
-    ) -> CLASSIFIER_TYPE:
+    ) -> "CLASSIFIER_TYPE":
         """
         Create a STRIP defense
 

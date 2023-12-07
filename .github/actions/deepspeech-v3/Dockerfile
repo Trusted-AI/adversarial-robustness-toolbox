@@ -18,6 +18,7 @@ RUN apt-get update \
         libsndfile-dev \
         libsndfile1 \
         vim \
+        curl \
      && apt-get clean all \
      && rm -r /var/lib/apt/lists/*
 
@@ -30,3 +31,5 @@ RUN cd deepspeech.pytorch && sed -i '/^sklearn/d' requirements.txt && pip instal
 
 RUN pip install numba==0.56.4 pytest-cov==4.1.0 pydub==0.25.1
 RUN pip list
+
+RUN mkdir -p /root/.art/data && cd /root/.art/data && curl -LJO "https://github.com/SeanNaren/deepspeech.pytorch/releases/download/V3.0/librispeech_pretrained_v3.ckpt"
