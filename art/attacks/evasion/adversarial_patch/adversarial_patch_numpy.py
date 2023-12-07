@@ -251,7 +251,11 @@ class AdversarialPatchNumpy(EvasionAttack):
         return self.patch, self._get_circular_patch_mask()
 
     def apply_patch(
-        self, x: np.ndarray, scale: float, patch_external: np.ndarray = None, mask: Optional[np.ndarray] = None
+        self,
+        x: np.ndarray,
+        scale: float,
+        patch_external: Optional[np.ndarray] = None,
+        mask: Optional[np.ndarray] = None,
     ) -> np.ndarray:
         """
         A function to apply the learned adversarial patch to images or videos.

@@ -540,15 +540,17 @@ class ImperceptibleASR(EvasionAttack):
 
         # compute short-time Fourier transform (STFT)
         # pylint: disable=W0212
-        stft_matrix = torch.stft(
-            perturbation,
-            n_fft=self._window_size,
-            hop_length=self._hop_size,
-            win_length=self._window_size,
-            center=False,
-            window=torch.hann_window(self._window_size).to(self.estimator._device),
-            return_complex=True,
-        ).to(self.estimator._device)
+        stft_matrix = torch.view_as_real(
+            torch.stft(
+                perturbation,
+                n_fft=self._window_size,
+                hop_length=self._hop_size,
+                win_length=self._window_size,
+                center=False,
+                window=torch.hann_window(self._window_size).to(self.estimator._device),
+                return_complex=True,
+            ).to(self.estimator._device)
+        )
 
         # compute power spectral density (PSD)
         # note: fixes implementation of Qin et al. by also considering the square root of gain_factor

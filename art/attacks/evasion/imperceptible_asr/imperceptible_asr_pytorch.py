@@ -747,15 +747,17 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         window_fn = torch.hann_window  # type: ignore
 
         # Return STFT of delta
-        delta_stft = torch.stft(
-            delta,
-            n_fft=self.n_fft,
-            hop_length=self.hop_length,
-            win_length=self.win_length,
-            center=False,
-            window=window_fn(self.win_length).to(self.estimator.device),
-            return_complex=True,
-        ).to(self.estimator.device)
+        delta_stft = torch.view_as_real(
+            torch.stft(
+                delta,
+                n_fft=self.n_fft,
+                hop_length=self.hop_length,
+                win_length=self.win_length,
+                center=False,
+                window=window_fn(self.win_length).to(self.estimator.device),
+                return_complex=True,
+            ).to(self.estimator.device)
+        )
 
         # Take abs of complex STFT results
         transformed_delta = torch.sqrt(torch.sum(torch.square(delta_stft), -1))

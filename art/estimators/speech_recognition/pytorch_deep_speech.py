@@ -146,7 +146,10 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
         # Check DeepSpeech version
         if str(DeepSpeech.__base__) == "<class 'torch.nn.modules.module.Module'>":
             self._version = 2
-        elif str(DeepSpeech.__base__) in ["<class 'pytorch_lightning.core.lightning.LightningModule'>", "<class 'pytorch_lightning.core.module.LightningModule'>"]:
+        elif str(DeepSpeech.__base__) in [
+            "<class 'pytorch_lightning.core.lightning.LightningModule'>",
+            "<class 'pytorch_lightning.core.module.LightningModule'>",
+        ]:
             self._version = 3
         else:
             raise NotImplementedError("Only DeepSpeech version 2 and DeepSpeech version 3 are currently supported.")

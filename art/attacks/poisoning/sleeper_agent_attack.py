@@ -431,7 +431,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
             classifier.model.trainable = model_trainable
         else:
             raise NotImplementedError("SleeperAgentAttack is currently implemented only for PyTorch and TensorFlowV2.")
-        indices = sorted(range(len(grad_norms)), key=lambda k: grad_norms[k])
+        indices = sorted(range(len(grad_norms)), key=lambda k: grad_norms[k])  # type: ignore
         indices = indices[-num_poison:]
         return np.array(indices)  # this will get only indices for target class
 

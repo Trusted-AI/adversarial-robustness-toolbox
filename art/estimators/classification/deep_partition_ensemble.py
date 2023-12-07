@@ -160,7 +160,7 @@ class DeepPartitionEnsemble(EnsembleClassifier):
         y: np.ndarray,
         batch_size: int = 128,
         nb_epochs: int = 20,
-        train_dict: Dict = None,
+        train_dict: Optional[Dict] = None,
         **kwargs
     ) -> None:
         """

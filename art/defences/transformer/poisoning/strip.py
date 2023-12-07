@@ -33,8 +33,6 @@ from art.estimators.poison_mitigation.strip import STRIPMixin
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_TYPE
 
-    ClassifierWithStrip = TypeVar("ClassifierWithStrip", CLASSIFIER_TYPE, STRIPMixin)
-
 logger = logging.getLogger(__name__)
 
 
@@ -63,7 +61,7 @@ class STRIP(Transformer):
         self,
         num_samples: int = 20,
         false_acceptance_rate: float = 0.01,
-    ) -> "ClassifierWithStrip":
+    ) -> CLASSIFIER_TYPE:
         """
         Create a STRIP defense
 
