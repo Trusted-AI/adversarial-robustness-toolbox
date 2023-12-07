@@ -60,7 +60,6 @@ class CLIPProjectedGradientDescentNumpy(ProjectedGradientDescentNumpy, FastGradi
         decay: Optional[float] = None,
         max_iter: int = 100,
         targeted: bool = False,
-        num_random_init: int = 0,
         batch_size: int = 32,
         random_eps: bool = False,
         summary_writer: Union[str, bool, SummaryWriter] = False,
@@ -79,8 +78,6 @@ class CLIPProjectedGradientDescentNumpy(ProjectedGradientDescentNumpy, FastGradi
                            PGD is untested (https://arxiv.org/pdf/1611.01236.pdf).
         :param max_iter: The maximum number of iterations.
         :param targeted: Indicates whether the attack is targeted (True) or untargeted (False)
-        :param num_random_init: Number of random initialisations within the epsilon ball. For num_random_init=0 starting
-                                at the original input.
         :param batch_size: Size of the batch on which adversarial samples are generated.
         :param summary_writer: Activate summary writer for TensorBoard.
                                Default is `False` and deactivated summary writer.
@@ -91,8 +88,6 @@ class CLIPProjectedGradientDescentNumpy(ProjectedGradientDescentNumpy, FastGradi
                                ‘runs/exp1’, ‘runs/exp2’, etc. for each new experiment to compare across them.
         :param verbose: Show progress bars.
         """
-        if summary_writer and num_random_init > 1:
-            raise ValueError("TensorBoard is not yet supported for more than 1 random restart (num_random_init>1).")
 
         super().__init__(
             estimator=estimator,
@@ -102,7 +97,7 @@ class CLIPProjectedGradientDescentNumpy(ProjectedGradientDescentNumpy, FastGradi
             decay=decay,
             max_iter=max_iter,
             targeted=targeted,
-            num_random_init=num_random_init,
+            num_random_init=0,
             batch_size=batch_size,
             random_eps=random_eps,
             summary_writer=summary_writer,
