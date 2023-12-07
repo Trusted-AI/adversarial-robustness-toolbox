@@ -23,7 +23,7 @@ This module implements STRIP: A Defence Against Trojan Attacks on Deep Neural Ne
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional, TypeVar, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING
 
 import numpy as np
 

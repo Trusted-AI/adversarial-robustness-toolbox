@@ -399,7 +399,10 @@ class ImperceptibleASRPyTorch(EvasionAttack):
                 loss.backward()
 
             # Get sign of the gradients
-            self.global_optimal_delta.grad = torch.sign(self.global_optimal_delta.grad)
+            if self.global_optimal_delta.grad is not None:
+                self.global_optimal_delta.grad = torch.sign(self.global_optimal_delta.grad)
+            else:
+                raise ValueError("Received None instead of gradient tensor.")
 
             # Do optimization
             self.optimizer_1.step()
