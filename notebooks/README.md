@@ -303,3 +303,14 @@ Demonstrates training a neural network using smoothed vision transformers for ce
 
 [fabric_for_deep_learning_adversarial_samples_fashion_mnist.ipynb](fabric_for_deep_learning_adversarial_samples_fashion_mnist.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/fabric_for_deep_learning_adversarial_samples_fashion_mnist.ipynb)]
 shows how to use ART with deep learning models trained with the Fabric for Deep Learning (FfDL).
+
+## Hugging Face
+
+[huggingface_notebook.ipynb](huggingface_notebook.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/huggingface_notebook.ipynb)]
+shows how to use ART with the Hugging Face API for image classification tasks.
+
+[hugging_face_evasion.ipynb](hugging_face_evasion.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/hugging_face_evasion.ipynb)]
+shows how to use ART to perform evasion attacks on Hugging Face image classification models and defend them using adversarial training.
+
+[hugging_face_poisoning.ipynb](hugging_face_poisoning.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/hugging_face_poisoning.ipynb)]
+shows how to use ART to perform poison Hugging Face image classification models and defend them using poisoning defenses.
