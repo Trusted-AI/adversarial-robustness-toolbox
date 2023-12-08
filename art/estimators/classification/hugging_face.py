@@ -318,7 +318,11 @@ class HuggingFaceClassifierPyTorch(PyTorchClassifier):
         def get_feature(name):
             # the hook signature
             def hook(model, input, output):  # pylint: disable=W0622,W0613
-                self._features[name] = output
+                # TODO: this is using the input, rather than the output, to circumvent the fact
+                # TODO: that flatten is not a layer in pytorch, and the activation defence expects
+                # TODO: a flattened input. A better option is to refactor the activation defence
+                # TODO: to not crash if non 2D inputs are provided.
+                self._features[name] = input
 
             return hook
 
