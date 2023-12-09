@@ -737,7 +737,7 @@ class AdversarialTrainerOAATPyTorch(AdversarialTrainerOAAT):
     def get_layer_activations(  # type: ignore
         p_classifier: PyTorchClassifier,
         x: "torch.Tensor",
-        layers: List[Union[int, str]] = None,
+        layers: List[Union[int, str]],
     ) -> Tuple[Dict[str, "torch.Tensor"], List[str]]:
         """
         Return the output of the specified layers for input `x`. `layers` is a list of either layer indices (between 0
@@ -750,21 +750,20 @@ class AdversarialTrainerOAATPyTorch(AdversarialTrainerOAAT):
         :return: Tuple containing the output dict and a list of layers' names. In dictionary each element is a
                  layer's output where the first dimension is the batch size corresponding to `x'.
         """
-        import torch
 
         p_classifier.model.train(mode=False)
 
         list_layer_names = []
         for layer in layers:
             if isinstance(layer, six.string_types):
-                if layer not in p_classifier.layer_names:
+                if layer not in p_classifier._layer_names:  # pylint: disable=W0212
                     raise ValueError(f"Layer name {layer} not supported")
                 layer_name = layer
                 list_layer_names.append(layer_name)
 
             elif isinstance(layer, int):
                 layer_index = layer
-                layer_name = p_classifier.layer_names[layer_index]
+                layer_name = p_classifier._layer_names[layer_index]  # pylint: disable=W0212
                 list_layer_names.append(layer_name)
 
             else:
@@ -778,7 +777,7 @@ class AdversarialTrainerOAATPyTorch(AdversarialTrainerOAAT):
             return hook
 
         if not hasattr(p_classifier, "_features"):
-            p_classifier._features: Dict[str, torch.Tensor] = {}
+            p_classifier._features = {}  # pylint: disable=W0212
             # register forward hooks on the layers of choice
 
         for layer_name in list_layer_names:
@@ -825,7 +824,7 @@ class AdversarialTrainerOAATPyTorch(AdversarialTrainerOAAT):
         p_classifier: PyTorchClassifier,
         input_1: "torch.Tensor",
         input_2: "torch.Tensor",
-        layers: List[Union[int, str]] = None,
+        layers: List[Union[int, str]],
     ) -> "torch.Tensor":
         """
         Return the LPIPS distance between input_1 and input_2. `layers` is a list of either layer indices (between 0 and
@@ -874,8 +873,14 @@ class AdversarialTrainerOAATPyTorch(AdversarialTrainerOAAT):
             else:
                 l_r = self._train_params["lr"] * 0.5 * (1 + np.cos(epoch / nb_epochs * np.pi))
 
+            for param_group in optimizer.param_groups:
+                param_group["lr"] = l_r
+
         elif lr_schedule.lower() == "linear":
             l_r = (epoch + 1) * (self._train_params["lr"] / 10)
+
+            for param_group in optimizer.param_groups:
+                param_group["lr"] = l_r
 
         elif lr_schedule.lower() == "step":
             if epoch >= 75 * nb_epochs / 110:
@@ -884,11 +889,11 @@ class AdversarialTrainerOAATPyTorch(AdversarialTrainerOAAT):
                 l_r = self._train_params["lr"] * 0.01
             if epoch >= 100 * nb_epochs / 110:
                 l_r = self._train_params["lr"] * 0.001
+
+            for param_group in optimizer.param_groups:
+                param_group["lr"] = l_r
         else:
             raise ValueError(f"lr_schedule {lr_schedule} not supported")
-
-        for param_group in optimizer.param_groups:
-            param_group["lr"] = l_r
 
     def _attack_lpips(  # type: ignore
         self,
@@ -898,7 +903,7 @@ class AdversarialTrainerOAATPyTorch(AdversarialTrainerOAAT):
         eps_step: Union[int, float, np.ndarray],
         max_iter: int,
         training_mode: bool,
-    ) -> "torch.Tensor":
+    ) -> np.ndarray:
         """
         Compute adversarial examples with cross entropy and lpips distance.
 
@@ -916,12 +921,12 @@ class AdversarialTrainerOAATPyTorch(AdversarialTrainerOAAT):
         """
         import torch
 
-        x = torch.from_numpy(x.astype(ART_NUMPY_DTYPE)).to(self._classifier.device)
-        y = torch.from_numpy(y.astype(ART_NUMPY_DTYPE)).to(self._classifier.device)
-        adv_x = torch.clone(x)
+        x_t = torch.from_numpy(x.astype(ART_NUMPY_DTYPE)).to(self._classifier.device)
+        y_t = torch.from_numpy(y.astype(ART_NUMPY_DTYPE)).to(self._classifier.device)
+        adv_x = torch.clone(x_t)
 
         for i_max_iter in range(max_iter):
-            adv_x = self._one_step_adv_example(adv_x, x, y, eps, eps_step, i_max_iter == 0, training_mode)
+            adv_x = self._one_step_adv_example(adv_x, x_t, y_t, eps, eps_step, i_max_iter == 0, training_mode)
 
         return adv_x.cpu().detach().numpy()
 

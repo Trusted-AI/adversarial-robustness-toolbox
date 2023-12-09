@@ -27,7 +27,7 @@ perturbation on the model parameters. Consequently, framework specific implement
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import abc
-from typing import Optional, Tuple, List, TYPE_CHECKING
+from typing import Optional, Tuple, TYPE_CHECKING, Sequence
 
 import numpy as np
 
@@ -51,7 +51,7 @@ class AdversarialTrainerOAAT(Trainer):
         classifier: "CLASSIFIER_LOSS_GRADIENTS_TYPE",
         proxy_classifier: "CLASSIFIER_LOSS_GRADIENTS_TYPE",
         lpips_classifier: "CLASSIFIER_LOSS_GRADIENTS_TYPE",
-        list_avg_models: List["CLASSIFIER_LOSS_GRADIENTS_TYPE"],
+        list_avg_models: Sequence["CLASSIFIER_LOSS_GRADIENTS_TYPE"],
         attack: EvasionAttack,
         train_params: dict,
     ):
@@ -66,7 +66,6 @@ class AdversarialTrainerOAAT(Trainer):
         :param train_params: parmaters' dictionary related to adversarial training
         """
         self._attack = attack
-        self._classifier = classifier
         self._proxy_classifier = proxy_classifier
         self._lpips_classifier = lpips_classifier
         self._list_avg_models = list_avg_models
