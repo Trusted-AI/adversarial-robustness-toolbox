@@ -63,7 +63,7 @@ class AdversarialTrainerOAAT(Trainer):
         :param lpips_classifier: Weight averaging model for calculating activations.
         :param list_avg_models: list of models for weight averaging.
         :param attack: attack to use for data augmentation in adversarial training
-        :param train_params: parmaters' dictionary related to adversarial training
+        :param train_params: parameters' dictionary related to adversarial training
         """
         self._attack = attack
         self._proxy_classifier = proxy_classifier

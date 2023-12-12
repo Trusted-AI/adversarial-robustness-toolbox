@@ -23,16 +23,17 @@ for adversarial training for defence against larger perturbations.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+from collections import OrderedDict
 import logging
+import os
 import time
 from typing import Optional, Tuple, TYPE_CHECKING, List, Dict, Union
-from collections import OrderedDict
-import six
 
+import six
 import numpy as np
 from tqdm.auto import trange
-from art import config
 
+from art import config
 from art.defences.trainer.adversarial_trainer_oaat import AdversarialTrainerOAAT
 from art.estimators.classification.pytorch import PyTorchClassifier
 from art.data_generators import DataGenerator
@@ -71,7 +72,7 @@ class AdversarialTrainerOAATPyTorch(AdversarialTrainerOAAT):
         :param lpips_classifier: Weight averaging model for calculating activations.
         :param list_avg_models: list of models for weight averaging.
         :param attack: attack to use for data augmentation in adversarial training.
-        :param train_params: training parmaters' dictionary related to adversarial training
+        :param train_params: training parameters' dictionary related to adversarial training
         """
         super().__init__(classifier, proxy_classifier, lpips_classifier, list_avg_models, attack, train_params)
         self._classifier: PyTorchClassifier
@@ -104,7 +105,6 @@ class AdversarialTrainerOAATPyTorch(AdversarialTrainerOAAT):
         :param kwargs: Dictionary of framework-specific arguments. These will be passed as such to the `fit` function of
                                   the target classifier.
         """
-        import os
         import torch
 
         logger.info("Performing adversarial training with OAAT protocol")
@@ -302,7 +302,6 @@ class AdversarialTrainerOAATPyTorch(AdversarialTrainerOAAT):
         :param kwargs: Dictionary of framework-specific arguments. These will be passed as such to the `fit` function of
                                   the target classifier.
         """
-        import os
         import torch
 
         logger.info("Performing adversarial training with OAAT protocol")
@@ -895,7 +894,7 @@ class AdversarialTrainerOAATPyTorch(AdversarialTrainerOAAT):
         else:
             raise ValueError(f"lr_schedule {lr_schedule} not supported")
 
-    def _attack_lpips(  # type: ignore
+    def _attack_lpips(
         self,
         x: np.ndarray,
         y: np.ndarray,
@@ -993,7 +992,7 @@ class AdversarialTrainerOAATPyTorch(AdversarialTrainerOAAT):
 
         return x_adv
 
-    def _compute_perturbation(  # pylint: disable=W0221
+    def _compute_perturbation(
         self, x: "torch.Tensor", x_init: "torch.Tensor", y: "torch.Tensor", training_mode: bool = False
     ) -> "torch.Tensor":
         """
@@ -1009,9 +1008,6 @@ class AdversarialTrainerOAATPyTorch(AdversarialTrainerOAAT):
                                 eval mode
         """
         import torch
-
-        # Pick a small scalar to avoid division by 0
-        tol = 10e-8
 
         self._classifier.model.train(mode=training_mode)
         self._lpips_classifier.model.train(mode=training_mode)
@@ -1124,17 +1120,17 @@ class AdversarialTrainerOAATPyTorch(AdversarialTrainerOAAT):
 
         elif self._train_params["norm"] == 1:
             ind = tuple(range(1, len(x.shape)))
-            grad = grad / (torch.sum(grad.abs(), dim=ind, keepdims=True) + tol)  # type: ignore
+            grad = grad / (torch.sum(grad.abs(), dim=ind, keepdims=True) + EPS)  # type: ignore
 
         elif self._train_params["norm"] == 2:
             ind = tuple(range(1, len(x.shape)))
-            grad = grad / (torch.sqrt(torch.sum(grad * grad, axis=ind, keepdims=True)) + tol)  # type: ignore
+            grad = grad / (torch.sqrt(torch.sum(grad * grad, axis=ind, keepdims=True)) + EPS)  # type: ignore
 
         assert x.shape == grad.shape
 
         return grad
 
-    def _apply_perturbation(  # pylint: disable=W0221
+    def _apply_perturbation(
         self, x: "torch.Tensor", perturbation: "torch.Tensor", eps_step: Union[int, float, np.ndarray]
     ) -> "torch.Tensor":
         """
@@ -1173,8 +1169,6 @@ class AdversarialTrainerOAATPyTorch(AdversarialTrainerOAAT):
         """
         import torch
 
-        # Pick a small scalar to avoid division by 0
-        tol = 10e-8
         values_tmp = values.reshape(values.shape[0], -1)
 
         if norm_p == 2:
@@ -1187,7 +1181,7 @@ class AdversarialTrainerOAATPyTorch(AdversarialTrainerOAAT):
                 values_tmp
                 * torch.min(
                     torch.tensor([1.0], dtype=torch.float32).to(self._classifier.device),
-                    eps / (torch.norm(values_tmp, p=2, dim=1) + tol),
+                    eps / (torch.norm(values_tmp, p=2, dim=1) + EPS),
                 ).unsqueeze_(-1)
             )
 
@@ -1201,14 +1195,14 @@ class AdversarialTrainerOAATPyTorch(AdversarialTrainerOAAT):
                 values_tmp
                 * torch.min(
                     torch.tensor([1.0], dtype=torch.float32).to(self._classifier.device),
-                    eps / (torch.norm(values_tmp, p=1, dim=1) + tol),
+                    eps / (torch.norm(values_tmp, p=1, dim=1) + EPS),
                 ).unsqueeze_(-1)
             )
 
         elif norm_p in [np.inf, "inf"]:
             if isinstance(eps, np.ndarray):
-                eps = eps * np.ones_like(values.cpu())
-                eps = eps.reshape([eps.shape[0], -1])  # type: ignore
+                eps_array = eps * np.ones_like(values.cpu())
+                eps = eps_array.reshape([eps_array.shape[0], -1])
 
             values_tmp = values_tmp.sign() * torch.min(
                 values_tmp.abs(), torch.tensor([eps], dtype=torch.float32).to(self._classifier.device)
