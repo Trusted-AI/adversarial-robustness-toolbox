@@ -20,15 +20,9 @@ This module implements mixin abstract base class for all language models in ART.
 """
 
 import abc
-
-from typing import List, Optional, Tuple, Union, Dict, Callable, Any, TYPE_CHECKING
-
-import numpy as np
+from typing import Any
 
 from art.estimators.estimator import BaseEstimator
-
-if TYPE_CHECKING:
-    import torch
 
 
 class LanguageModelMixin(abc.ABC):
@@ -39,47 +33,10 @@ class LanguageModelMixin(abc.ABC):
     pass
 
 
-class LanguageModel(LanguageModelMixin, abc.ABC):
+class LanguageModel(LanguageModelMixin, BaseEstimator, abc.ABC):
     """
-    Abstract base class for ART language models.
+    Abstract base class for ART language models used to define common types and methods.
     """
-
-    estimator_params = (
-        BaseEstimator.estimator_params
-        + [
-            "device_type",
-        ]
-    )
-
-    def __init__(self, device_type: str = "gpu", **kwargs) -> None:
-        """
-        Abstract base class for language models.
-
-        :param model: The model.
-        :param tokenizer: The tokenizer.
-        :param device_type: Type of device on which the classifier is run, either `gpu` or `cpu`.
-        """
-        import torch
-
-        super().__init__()
-
-        self._device_type = device_type
-
-        # Set device
-        if device_type == "cpu" or not torch.cuda.is_available():
-            self._device = torch.device("cpu")
-        else:  # pragma: no cover
-            cuda_idx = torch.cuda.current_device()
-            self._device = torch.device(f"cuda:{cuda_idx}")
-
-    @property
-    def device_type(self) -> str:
-        """
-        Return the type of device on which the estimator is run.
-
-        :return: Type of device on which the estimator is run, either `gpu` or `cpu`.
-        """
-        return self._device_type  # type: ignore
 
     @abc.abstractmethod
     def tokenize(self, text: Any, **kwargs) -> Any:

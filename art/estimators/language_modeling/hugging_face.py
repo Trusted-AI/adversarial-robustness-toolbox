@@ -19,16 +19,20 @@
 This module implements the language model `HuggingFaceLanguage` using a PyTorch as a backend to interface with ART.
 """
 import logging
-
-from typing import List, Optional, Union, Dict, Any, TYPE_CHECKING
+from typing import List, Optional, Tuple, Union, Dict, Any, TYPE_CHECKING
 
 import numpy as np
 
+from art.estimators.estimator import BaseEstimator
 from art.estimators.language_modeling.language_model import LanguageModel
 
 if TYPE_CHECKING:
+    # pylint: disable=R0401
     import torch
     import transformers
+    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
+    from art.defences.postprocessor.postprocessor import Postprocessor
+    from art.defences.preprocessor.preprocessor import Preprocessor
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +41,13 @@ class HuggingFaceLanguageModel(LanguageModel):
     """
     This class implements a language model with the Hugging Face framework and PyTorch backend.
     """
+
+    estimator_params = (
+        BaseEstimator.estimator_params
+        + [
+            "device_type",
+        ]
+    )
     
     def __init__(
         self,
@@ -44,6 +55,10 @@ class HuggingFaceLanguageModel(LanguageModel):
         tokenizer: Union["transformers.PreTrainedTokenizerFast", "transformers.PreTrainedTokenizer"],
         loss: Optional["torch.nn.modules.loss._Loss"] = None,
         optimizer: Optional["torch.optim.Optimizer"] = None,
+        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
+        preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
+        postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
+        preprocessing: Union["PREPROCESSING_TYPE", "Preprocessor"] = (0.0, 1.0),
         device_type: str = "gpu",
     ):
         """
@@ -52,27 +67,53 @@ class HuggingFaceLanguageModel(LanguageModel):
         :param model: Hugging Face model which returns outputs of type ModelOutput from the transformers library.
         :param tokenizer: Hugging Face tokenizer which converts str | list[str] into the model input.
         :param loss: The loss function for which to compute gradients for training. The target label must be raw
-                     categorical, i.e. not converted to one-hot encoding.
-        :param optimizer: The optimizer used to train the classifier.
+                     categorical, i.e. not converted to one-hot encoding. (Currently unused)
+        :param optimizer: The optimizer used to train the classifier. (Currently unused)
+        :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
+               maximum values allowed for features. If floats are provided, these will be used as the range of all
+               features. If arrays are provided, each value will be considered the bound for a feature, thus
+               the shape of clip values needs to match the total number of features. (Currently unused)
+        :param preprocessing_defences: Preprocessing defence(s) to be applied by the estimator. (Currently unused)
+        :param postprocessing_defences: Postprocessing defence(s) to be applied by the estimator. (Currently unused)
+        :param preprocessing: Tuple of the form `(subtrahend, divisor)` of floats or `np.ndarray` of values to be
+               used for data preprocessing. The first value will be subtracted from the input and the results will be
+               divided by the second value. (Currently unused)
         :param device_type: Type of device on which the classifier is run, either `gpu` or `cpu`.
         """
         import torch
 
         super().__init__(
             model=model,
-            tokenizer=tokenizer,
-            loss=loss,
-            optimizer=optimizer,
-            device_type=device_type,
+            clip_values=clip_values,
+            preprocessing_defences=preprocessing_defences,
+            postprocessing_defences=postprocessing_defences,
+            preprocessing=preprocessing,
         )
 
         self._model = model
         self._tokenizer = tokenizer
         self._loss = loss
         self._optimizer = optimizer
+        self._device_type = device_type
+
+        # Set device
+        if device_type == "cpu" or not torch.cuda.is_available():
+            self._device = torch.device("cpu")
+        else:  # pragma: no cover
+            cuda_idx = torch.cuda.current_device()
+            self._device = torch.device(f"cuda:{cuda_idx}")
 
         # Move model to GPU
         self._model.to(self._device)
+
+    @property
+    def device_type(self) -> str:
+        """
+        Return the type of device on which the estimator is run.
+
+        :return: Type of device on which the estimator is run, either `gpu` or `cpu`.
+        """
+        return self._device_type 
 
     @property
     def device(self) -> "torch.device":
@@ -109,13 +150,23 @@ class HuggingFaceLanguageModel(LanguageModel):
         """
         return self._optimizer  # type: ignore
     
+    @property
+    def input_shape(self) -> Tuple[int, ...]:
+        """
+        Return the shape of one input sample.
+
+        :return: Shape of one input sample.
+        """
+        raise NotImplementedError
+    
     def tokenize(self, text: Union[str, List[str]], **kwargs) -> Dict[str, np.ndarray]:
         """
         Use the tokenizer to encode a string to a list of token ids or lists of strings to a lists of token ids.
 
         :param text: A string or list of strings.
         :param kwargs: Additional keyword arguments for the tokenizer. Can override the `text` input.
-        :return: A dictionary of the tokenized string or multiple strings.
+        :return: A dictionary of the tokenized string or multiple strings. The fields of the dictionary will be
+                 specific to the tokenizer used.
         """
         # Create input parameters
         inputs = {'text': text}
@@ -183,7 +234,8 @@ class HuggingFaceLanguageModel(LanguageModel):
 
         :param text: A string or list of strings.
         :param kwargs: Additional keyword arguments for the model. Can override the `text` input.
-        :return: A dictionary of the model output from running inference on the input string or strings.
+        :return: A dictionary of the model output from running inference on the input string or strings. The fields
+                 of the dictionary will be specific to the model used.
         """
         import torch
 
