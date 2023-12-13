@@ -90,10 +90,10 @@ def get_crafter(classifier: "CLASSIFIER_TYPE", attack: str, params: Optional[Dic
 def adversarial_accuracy(
     classifier: "CLASSIFIER_TYPE",
     x: np.ndarray,
-    y: np.ndarray = None,
-    attack_name: str = None,
+    y: Optional[np.ndarray] = None,
+    attack_name: Optional[str] = None,
     attack_params: Optional[Dict[str, Any]] = None,
-    attack_crafter: EvasionAttack = None,
+    attack_crafter: Optional[EvasionAttack] = None,
 ) -> float:
     """
     Compute the adversarial accuracy of a classifier object over the sample `x` for a given adversarial crafting

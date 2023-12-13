@@ -264,7 +264,7 @@ class DPatch(EvasionAttack):
         random_location: bool,
         channels_first: bool,
         mask: Optional[np.ndarray] = None,
-        transforms: List[Dict[str, int]] = None,
+        transforms: Optional[List[Dict[str, int]]] = None,
     ) -> Tuple[np.ndarray, List[Dict[str, int]]]:
         """
         Augment images with patch.

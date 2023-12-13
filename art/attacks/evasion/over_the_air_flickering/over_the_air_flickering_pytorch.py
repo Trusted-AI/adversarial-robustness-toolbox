@@ -296,7 +296,10 @@ class OverTheAirFlickeringPyTorch(EvasionAttack):
             # Compute gradients
             loss.backward()
             grads = eps.grad
-            grads_batch.append(grads[0, ...])
+            if grads is not None:
+                grads_batch.append(grads[0, ...])
+            else:
+                raise ValueError("Received None instead of gradient tensor.")
 
         grads_batch_tensor = torch.stack(grads_batch)
 

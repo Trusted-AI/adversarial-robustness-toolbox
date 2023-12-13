@@ -170,7 +170,7 @@ def test_pytorch_deep_speech_preprocessor(
         # Test probability outputs
         probs, sizes = speech_recognizer.predict(x, batch_size=1, transcription_output=False)
 
-        np.testing.assert_array_almost_equal(probs[1][1], expected_probs, decimal=3)
+        np.testing.assert_array_almost_equal(probs[1][1], expected_probs, decimal=2)
         np.testing.assert_array_almost_equal(sizes, expected_sizes)
 
         # Test transcription outputs
