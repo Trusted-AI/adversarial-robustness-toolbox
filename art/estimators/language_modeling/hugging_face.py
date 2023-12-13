@@ -16,8 +16,7 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements the abstract estimator `HuggingFaceClassifier` using the PyTorchClassifier as a backend
-to interface with ART.
+This module implements the language model `HuggingFaceLanguage` using a PyTorch as a backend to interface with ART.
 """
 import logging
 
@@ -36,7 +35,7 @@ logger = logging.getLogger(__name__)
 
 class HuggingFaceLanguageModel(LanguageModel):
     """
-    This class implements a classifier with the HuggingFace framework.
+    This class implements a language model with the HuggingFace framework and PyTorch backend.
     """
     
     def __init__(
@@ -110,42 +109,82 @@ class HuggingFaceLanguageModel(LanguageModel):
         """
         return self._optimizer  # type: ignore
     
-    def tokenize(self, x: Union[str, List[str]], **kwargs) -> Dict[str, Any]:
-        tokenized_output = self._tokenizer(x, **kwargs)
+    def tokenize(self, text: Union[str, List[str]], **kwargs) -> Dict[str, np.ndarray]:
+        """
+        Use the tokenizer to encode a string to a list of token ids or lists of strings to a lists of token ids.
+
+        :param text: A string or list of strings.
+        :param kwargs: Additional keyword arguments for the tokenizer. Can override the `text` input.
+        :return: A dictionary of the tokenized string or multiple strings.
+        """
+        # Create input parameters
+        inputs = {'text': text}
+        for k, v in kwargs.items():
+            inputs[k] = v
+        inputs['return_tensors'] = 'np'
+
+        tokenized_output = self._tokenizer(**inputs)
         tokenized_dict = tokenized_output.data
         return tokenized_dict
     
-    def encode(self, x: Union[str, List[str]], **kwargs) -> np.ndarray:
-        encoded_output = self._tokenizer.encode(x, **kwargs)
-        return encoded_output
+    def encode(self, text: Union[str, List[str]], **kwargs) -> Union[np.ndarray, List[np.ndarray]]:
+        """
+        Use the tokenizer to encode a string to a list of token ids or lists of strings to a lists of token ids.
+
+        :param text: A string or list of strings.
+        :param kwargs: Additional keyword arguments for the tokenizer. Can override the `text` input.
+        :return: A list of encoded token ids of a string or lists of encoded token ids of multiple strings.
+        """
+        # Encode each string individually
+        if isinstance(text, list):
+            return [self.encode(t, **kwargs) for t in text]
+
+        # Encode single string
+        encoded_output = self._tokenizer.encode(text, **kwargs)
+
+        return np.asarray(encoded_output)
     
     def decode(
         self,
-        token_ids: np.ndarray,
-        *,
-        skip_special_tokens: Optional[bool] = None,
-        clean_up_tokenization_spaces: Optional[bool] = None,
+        tokens: Union[np.ndarray, List[np.ndarray]],
         **kwargs
-    ) -> str:
+    ) -> Union[str, List[str]]:
         """
-        Decode token ids to a string using the tokenizer.
+        Use the tokenizer to decode a list of token ids to a string or lists of token ids to a list of strings.
 
-        :param token_ids: The tokenized input ids of a string.
-        :param skip_special_tokens: Whether or not to remove special tokens in the decoding.
-        :param clean_up_tokenization_spaces: Whether or not to clean up the tokenization spaces.
+        :param tokens: A list of tokenized input ids of a string or lists of tokenized input ids of strings.
+        :param kwargs: Additional keyword arguments for the tokenizer. Can override the `tokens` input.
+        :return: Decoded string or list of strings.
         """
+        if isinstance(tokens, list):
+            sequences = isinstance(tokens[0], (np.ndarray, list))
+        else:
+            sequences = len(tokens.shape) > 1
+
         # Create input parameters
         inputs = {}
-        inputs['token_ids'] = token_ids
-        if skip_special_tokens:
-            inputs['skip_special_tokens'] = skip_special_tokens
-        if clean_up_tokenization_spaces:
-            inputs['skip_special_tokens'] = clean_up_tokenization_spaces
-
-        decoded_output = self._tokenizer.decode(**inputs, **kwargs)
+        if sequences:
+            inputs['sequences'] = tokens
+        else:
+            inputs['token_ids'] = tokens
+        for k, v in kwargs.items():
+            inputs[k] = v
+        
+        # Decode tokens to string
+        if sequences:
+            decoded_output = self._tokenizer.batch_decode(**inputs)
+        else:
+            decoded_output = self._tokenizer.decode(**inputs)
         return decoded_output
     
-    def predict(self, x: Optional[Union[str, List[str]]] = None, **kwargs) -> Dict[str, Any]:
+    def predict(self, text: Optional[Union[str, List[str]]] = None, **kwargs) -> Dict[str, np.ndarray]:
+        """
+        Tokenize the string or list of strings and run inference on the model.
+
+        :param text: A string or list of strings.
+        :param kwargs: Additional keyword arguments for the model. Can override the `text` input.
+        :return: A dictionary of the model output from running inference on the input string or strings.
+        """
         import torch
 
         self._model.eval()
@@ -153,8 +192,8 @@ class HuggingFaceLanguageModel(LanguageModel):
         inputs = {}
 
         # Tokenize text input
-        if x is not None:
-            tokenized = self._tokenizer(x, padding=True, truncation=True, return_tensors="pt")
+        if text is not None:
+            tokenized = self._tokenizer(text, padding=True, truncation=True, return_tensors="pt")
             for k, v in tokenized.items():
                 inputs[k] = v.to(self._device)
 
@@ -197,9 +236,9 @@ class HuggingFaceLanguageModel(LanguageModel):
 
         return outputs
     
-    def generate(self, x: Any, **kwargs) -> Any:
+    def generate(self, text: Any, **kwargs) -> Any:
         raise NotImplementedError
 
-    def fit(self, x: Any, **kwargs):
+    def fit(self, x: Any, y: Any, **kwargs):
         raise NotImplementedError
 

@@ -82,27 +82,27 @@ class LanguageModel(LanguageModelMixin, abc.ABC):
         return self._device_type  # type: ignore
 
     @abc.abstractmethod
-    def tokenize(self, x: Any, **kwargs) -> Any:
+    def tokenize(self, text: Any, **kwargs) -> Any:
         raise NotImplementedError
     
     @abc.abstractmethod
-    def encode(self, x: Any, **kwargs) -> Any:
+    def encode(self, text: Any, **kwargs) -> Any:
         raise NotImplementedError
     
     @abc.abstractmethod
-    def decode(self, x: Any, **kwargs) -> Any:
+    def decode(self, tokens: Any, **kwargs) -> Any:
         raise NotImplementedError
 
     @abc.abstractmethod
-    def predict(self, x: Any, **kwargs) -> Any:
+    def predict(self, text: Any, **kwargs) -> Any:
         raise NotImplementedError
     
     @abc.abstractmethod
-    def generate(self, x: Any, **kwargs) -> Any:
+    def generate(self, text: Any, **kwargs) -> Any:
         raise NotImplementedError
 
     @abc.abstractmethod
-    def fit(self, x: Any, **kwargs) -> None:
+    def fit(self, x: Any, y: Any, **kwargs) -> None:
         raise NotImplementedError
 
     def _set_layer(self, train: bool, layerinfo: List["torch.nn.modules.Module"]) -> None:
