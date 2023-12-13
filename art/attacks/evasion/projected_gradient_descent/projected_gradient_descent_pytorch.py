@@ -198,6 +198,9 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
 
             batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
 
+            batch_eps: Union[int, float, np.ndarray]
+            batch_eps_step: Union[int, float, np.ndarray]
+
             # Compute batch_eps and batch_eps_step
             if isinstance(self.eps, np.ndarray) and isinstance(self.eps_step, np.ndarray):
                 if len(self.eps.shape) == len(x.shape) and self.eps.shape[0] == x.shape[0]:

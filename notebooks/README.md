@@ -301,6 +301,9 @@ demonstrates using interval bound propagation for certification of neural networ
   <img src="../utils/data/images/IBP_certification.png?raw=true" width="200" title="IBP certification">
 </p>
 
+[smoothed_vision_transformers.ipynb](smoothed_vision_transformers.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/smoothed_vision_transformers.ipynb)]
+Demonstrates training a neural network using smoothed vision transformers for certified performance against patch attacks.
+
 ## MNIST
 
 [fabric_for_deep_learning_adversarial_samples_fashion_mnist.ipynb](fabric_for_deep_learning_adversarial_samples_fashion_mnist.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/fabric_for_deep_learning_adversarial_samples_fashion_mnist.ipynb)]

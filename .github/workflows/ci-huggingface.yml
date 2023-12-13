@@ -1,0 +1,65 @@
+name: CI Huggingface
+on:
+  # Run on manual trigger
+  workflow_dispatch:
+
+  # Run on pull requests
+  pull_request:
+    paths-ignore:
+      - '*.md'
+
+  # Run on merge queue
+  merge_group:
+
+  # Run when pushing to main or dev branches
+  push:
+    branches:
+      - main
+      - dev*
+
+  # Run scheduled CI flow daily
+  schedule:
+    - cron: '0 8 * * 0'
+
+jobs:
+  test:
+    runs-on: ubuntu-20.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Huggingface 4.30
+            framework: huggingface
+            python: 3.9
+            torch: 1.13.1+cpu
+            torchvision: 0.14.1+cpu
+            torchaudio: 0.13.1
+            transformers: 4.30.2
+
+    name: ${{ matrix.name }}
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v3
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get -y -q install ffmpeg libavcodec-extra
+          python -m pip install --upgrade pip setuptools wheel
+          pip3 install -r requirements_test.txt
+          pip install tensorflow==2.14.0
+          pip install keras==2.14.0
+          pip install torch==${{ matrix.torch }} -f https://download.pytorch.org/whl/cpu/torch_stable.html
+          pip install torchvision==${{ matrix.torchvision }} -f https://download.pytorch.org/whl/cpu/torch_stable.html
+          pip install torchaudio==${{ matrix.torchaudio }} -f https://download.pytorch.org/whl/cpu/torch_stable.html
+          pip install transformers==${{ matrix.transformers }}
+          pip list
+      - name: Run Tests
+        run: ./run_tests.sh ${{ matrix.framework }}
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          fail_ci_if_error: true

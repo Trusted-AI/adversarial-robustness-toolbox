@@ -288,7 +288,7 @@ class AdversarialTrainerCertifiedIBPPyTorch(Trainer):
         y_preprocessed = self.classifier.reduce_labels(y_preprocessed)
 
         num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
-        ind = np.arange(len(x_preprocessed))
+        ind = np.arange(len(x_preprocessed)).tolist()
 
         x_cert = np.copy(x_preprocessed)
         y_cert = np.copy(y_preprocessed)

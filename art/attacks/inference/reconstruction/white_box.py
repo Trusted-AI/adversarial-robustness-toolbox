@@ -83,8 +83,8 @@ class DatabaseReconstruction(ReconstructionAttack):
 
         tol = float("inf")
         x_0 = x[0, :]
-        x_guess = None
-        y_guess = None
+        x_guess: Optional[np.ndarray] = None
+        y_guess: int
 
         for _y in range(self.estimator.nb_classes):
             args = (_y, x, y, self._estimator, self.estimator, self.params)
@@ -96,6 +96,9 @@ class DatabaseReconstruction(ReconstructionAttack):
                 tol = _tol
                 x_guess = _x
                 y_guess = _y
+
+        if x_guess is None:
+            raise ValueError("Guessed values are None.")
 
         x_reconstructed = np.expand_dims(x_guess, axis=0)
         y_reconstructed = np.zeros(shape=(1, self.estimator.nb_classes))

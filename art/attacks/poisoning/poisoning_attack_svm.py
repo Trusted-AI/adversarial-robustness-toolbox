@@ -49,6 +49,7 @@ class PoisoningAttackSVM(PoisoningAttackWhiteBox):
         "y_train",
         "x_val",
         "y_val",
+        "max_iter",
         "verbose",
     ]
     _estimator_requirements = (ScikitlearnSVC,)
@@ -56,13 +57,13 @@ class PoisoningAttackSVM(PoisoningAttackWhiteBox):
     def __init__(
         self,
         classifier: "ScikitlearnSVC",
-        step: Optional[float] = None,
-        eps: Optional[float] = None,
-        x_train: Optional[np.ndarray] = None,
-        y_train: Optional[np.ndarray] = None,
-        x_val: Optional[np.ndarray] = None,
-        y_val: Optional[np.ndarray] = None,
-        max_iter: int = 100,
+        step: float,
+        eps: float,
+        x_train: np.ndarray,
+        y_train: np.ndarray,
+        x_val: np.ndarray,
+        y_val: np.ndarray,
+        max_iter: int,
         verbose: bool = True,
     ) -> None:
         """

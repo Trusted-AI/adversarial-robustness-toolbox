@@ -99,6 +99,7 @@ class TestProvenanceDefence(unittest.TestCase):
             eps=1.0,
             x_val=valid_data,
             y_val=valid_labels,
+            max_iter=100,
             verbose=False,
         )
 

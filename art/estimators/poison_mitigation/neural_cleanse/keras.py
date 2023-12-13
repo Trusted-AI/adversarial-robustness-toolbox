@@ -182,7 +182,7 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier):
         self.loss_combined = self.loss_ce + self.loss_reg * self.cost_tensor
 
         try:
-            from keras.optimizers import Adam
+            from keras.optimizers.legacy import Adam
 
             self.opt = Adam(lr=self.learning_rate, beta_1=0.5, beta_2=0.9)
         except ImportError:
@@ -228,7 +228,7 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier):
         :return: A tuple of the pattern and mask for the model.
         """
         import keras.backend as K
-        from keras_preprocessing.image import ImageDataGenerator
+        from keras.preprocessing.image import ImageDataGenerator
 
         self.reset()
         datagen = ImageDataGenerator()
@@ -391,7 +391,11 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier):
         return self.loss_gradient(x=x, y=y, training_mode=training_mode, **kwargs)
 
     def class_gradient(
-        self, x: np.ndarray, label: Union[int, List[int], None] = None, training_mode: bool = False, **kwargs
+        self,
+        x: np.ndarray,
+        label: Optional[Union[int, List[int], np.ndarray]] = None,
+        training_mode: bool = False,
+        **kwargs,
     ) -> np.ndarray:
         """
         Compute per-class derivatives of the given classifier w.r.t. `x` of original classifier.

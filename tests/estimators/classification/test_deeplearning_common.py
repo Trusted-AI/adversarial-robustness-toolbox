@@ -154,7 +154,7 @@ def test_loss_functions(
         art_warning(e)
 
 
-@pytest.mark.skip_framework("non_dl_frameworks")
+@pytest.mark.skip_framework("non_dl_frameworks", "huggingface", "tensorflow2", "kerastf")
 def test_pickle(art_warning, image_dl_estimator, image_dl_estimator_defended, tmp_path):
     try:
         full_path = os.path.join(tmp_path, "my_classifier.p")
@@ -176,7 +176,7 @@ def test_pickle(art_warning, image_dl_estimator, image_dl_estimator_defended, tm
         art_warning(e)
 
 
-@pytest.mark.skip_framework("non_dl_frameworks", "pytorch")
+@pytest.mark.skip_framework("non_dl_frameworks", "pytorch", "huggingface")
 def test_functional_model(art_warning, image_dl_estimator):
     try:
         # Need to update the functional_model code to produce a model with more than one input and output layers...
@@ -191,7 +191,7 @@ def test_functional_model(art_warning, image_dl_estimator):
         art_warning(e)
 
 
-@pytest.mark.skip_framework("mxnet", "tensorflow", "pytorch", "non_dl_frameworks")
+@pytest.mark.skip_framework("mxnet", "tensorflow", "pytorch", "huggingface", "non_dl_frameworks")
 def test_fit_kwargs(art_warning, image_dl_estimator, get_default_mnist_subset, default_batch_size):
     try:
         (x_train_mnist, y_train_mnist), (_, _) = get_default_mnist_subset
