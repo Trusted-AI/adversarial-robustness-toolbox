@@ -33,7 +33,7 @@ if TYPE_CHECKING:
 
 class LanguageModelMixin(abc.ABC):
     """
-    Mix-in Base class for ART language models.
+    Mix-in base class for ART language models.
     """
 
     pass
@@ -41,7 +41,7 @@ class LanguageModelMixin(abc.ABC):
 
 class LanguageModel(LanguageModelMixin, abc.ABC):
     """
-    Typing variable definition.
+    Abstract base class for ART language models.
     """
 
     estimator_params = (
@@ -53,7 +53,7 @@ class LanguageModel(LanguageModelMixin, abc.ABC):
 
     def __init__(self, device_type: str = "gpu", **kwargs) -> None:
         """
-        Estimator class for PyTorch models.
+        Abstract base class for language models.
 
         :param model: The model.
         :param tokenizer: The tokenizer.
@@ -83,18 +83,50 @@ class LanguageModel(LanguageModelMixin, abc.ABC):
 
     @abc.abstractmethod
     def tokenize(self, text: Any, **kwargs) -> Any:
+        """
+        Token the input `text`.
+
+        :param text: Samples to be tokenized.
+        :type text: Format as expected by the `tokenizer`
+        :return: Tokenized output by the tokenizer.
+        :rtype: Format as produced by the `tokenizer`
+        """
         raise NotImplementedError
     
     @abc.abstractmethod
     def encode(self, text: Any, **kwargs) -> Any:
+        """
+        Encode the input `text`.
+
+        :param text: Samples to be encoded.
+        :type text: Format as expected by the `tokenizer`
+        :return: Encoded output by the tokenizer.
+        :rtype: Format as produced by the `tokenizer`
+        """
         raise NotImplementedError
     
     @abc.abstractmethod
     def decode(self, tokens: Any, **kwargs) -> Any:
+        """
+        Decode the input `tokens`.
+
+        :param tokens: Samples to be decoded.
+        :type tokens: Format as expected by the `tokenizer`
+        :return: decoded output by the tokenizer.
+        :rtype: Format as produced by the `tokenizer`
+        """
         raise NotImplementedError
 
     @abc.abstractmethod
     def predict(self, text: Any, **kwargs) -> Any:
+        """
+        Perform prediction of the language model for input `text`.
+
+        :param text: Samples to be tokenized.
+        :type text: Format as expected by the `tokenizer`
+        :return: Predictions by the model.
+        :rtype: Format as produced by the `model`
+        """
         raise NotImplementedError
     
     @abc.abstractmethod
@@ -103,63 +135,12 @@ class LanguageModel(LanguageModelMixin, abc.ABC):
 
     @abc.abstractmethod
     def fit(self, x: Any, y: Any, **kwargs) -> None:
+        """
+        Fit the estimator using the training data `(x, y)`.
+
+        :param x: Training data.
+        :type x: Format as expected by the `model`
+        :param y: Target values.
+        :type y: Format as expected by the `model`
+        """
         raise NotImplementedError
-
-    def _set_layer(self, train: bool, layerinfo: List["torch.nn.modules.Module"]) -> None:
-        """
-        Set all layers that are an instance of `layerinfo` into training or evaluation mode.
-
-        :param train: False for evaluation mode.
-        :param layerinfo: List of module types.
-        """
-        import torch
-
-        assert all((issubclass(layer, torch.nn.modules.Module) for layer in layerinfo))  # type: ignore
-
-        def set_train(layer, layerinfo=layerinfo):
-            "Set layer into training mode if instance of `layerinfo`."
-            if isinstance(layer, tuple(layerinfo)):
-                layer.train()
-
-        def set_eval(layer, layerinfo=layerinfo):
-            "Set layer into evaluation mode if instance of `layerinfo`."
-            if isinstance(layer, tuple(layerinfo)):
-                layer.eval()
-
-        if train:
-            self._model.apply(set_train)
-        else:
-            self._model.apply(set_eval)
-
-    def set_dropout(self, train: bool) -> None:
-        """
-        Set all dropout layers into train or eval mode.
-
-        :param train: False for evaluation mode.
-        """
-        import torch
-
-        # pylint: disable=W0212
-        self._set_layer(train=train, layerinfo=[torch.nn.modules.dropout._DropoutNd])  # type: ignore
-
-    def set_batchnorm(self, train: bool) -> None:
-        """
-        Set all batch normalization layers into train or eval mode.
-
-        :param train: False for evaluation mode.
-        """
-        import torch
-
-        # pylint: disable=W0212
-        self._set_layer(train=train, layerinfo=[torch.nn.modules.batchnorm._BatchNorm])  # type: ignore
-
-    def set_multihead_attention(self, train: bool) -> None:
-        """
-        Set all multi-head attention layers into train or eval mode.
-
-        :param train: False for evaluation mode.
-        """
-        import torch
-
-        # pylint: disable=W0212
-        self._set_layer(train=train, layerinfo=[torch.nn.modules.MultiheadAttention])  # type: ignore
