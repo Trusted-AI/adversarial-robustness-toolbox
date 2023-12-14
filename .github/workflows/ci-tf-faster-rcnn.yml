@@ -28,7 +28,7 @@ jobs:
     container: minhitbk/art_testing_envs:tf_fasterrcnn
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Run Test Action
         uses: ./.github/actions/tf-faster-rcnn
       - name: Upload coverage to Codecov
