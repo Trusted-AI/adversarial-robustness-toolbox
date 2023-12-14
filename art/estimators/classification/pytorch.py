@@ -375,6 +375,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         training_mode: bool = True,
         drop_last: bool = False,
         scheduler: Optional["torch.optim.lr_scheduler._LRScheduler"] = None,
+        verbose: bool = False,
         **kwargs,
     ) -> None:
         """
@@ -390,13 +391,12 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                           the batch size. If ``False`` and the size of dataset is not divisible by the batch size, then
                           the last batch will be smaller. (default: ``False``)
         :param scheduler: Learning rate scheduler to run at the start of every epoch.
-        :param kwargs: Dictionary of framework-specific arguments. Currently supports "display_progress_bar" to
-                       display training progress.
+        :param verbose: If to display the progress bar information.
+        :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
+                       and providing it takes no effect.
         """
         import torch
         from torch.utils.data import TensorDataset, DataLoader
-
-        display_progress_bar = kwargs.get("display_progress_bar", False)
 
         # Set model mode
         self._model.train(mode=training_mode)
@@ -419,8 +419,8 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         dataloader = DataLoader(dataset=dataset, batch_size=batch_size, shuffle=True, drop_last=drop_last)
 
         # Start training
-        for _ in tqdm(range(nb_epochs), disable=not display_progress_bar, desc="Epochs"):
-            for x_batch, y_batch in tqdm(dataloader, disable=not display_progress_bar, desc="Batches"):
+        for _ in tqdm(range(nb_epochs), disable=not verbose, desc="Epochs"):
+            for x_batch, y_batch in tqdm(dataloader, disable=not verbose, desc="Batches"):
                 # Move inputs to device
                 x_batch = x_batch.to(self._device)
                 y_batch = y_batch.to(self._device)
@@ -456,19 +456,18 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
             if scheduler is not None:
                 scheduler.step()
 
-    def fit_generator(self, generator: "DataGenerator", nb_epochs: int = 20, **kwargs) -> None:
+    def fit_generator(self, generator: "DataGenerator", nb_epochs: int = 20, verbose: bool = False, **kwargs) -> None:
         """
         Fit the classifier using the generator that yields batches as specified.
 
         :param generator: Batch generator providing `(x, y)` for each epoch.
         :param nb_epochs: Number of epochs to use for training.
-        :param kwargs: Dictionary of framework-specific arguments. Currently supports "display_progress_bar" to
-                       display training progress.
+        :param verbose: If to display the progress bar information.
+        :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
+                       and providing it takes no effect.
         """
         import torch
         from art.data_generators import PyTorchDataGenerator
-
-        display_progress_bar = kwargs.get("display_progress_bar", False)
 
         # Put the model in the training mode
         self._model.train()
@@ -490,8 +489,8 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                 == (0, 1)
             )
         ):
-            for _ in tqdm(range(nb_epochs), disable=not display_progress_bar, desc="Epochs"):
-                for i_batch, o_batch in tqdm(generator.iterator, disable=not display_progress_bar, desc="Batches"):
+            for _ in tqdm(range(nb_epochs), disable=not verbose, desc="Epochs"):
+                for i_batch, o_batch in tqdm(generator.iterator, disable=not verbose, desc="Batches"):
                     if isinstance(i_batch, np.ndarray):
                         i_batch = torch.from_numpy(i_batch).to(self._device)
                     else:
@@ -500,7 +499,10 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                     if isinstance(o_batch, np.ndarray):
                         o_batch = torch.argmax(torch.from_numpy(o_batch).to(self._device), dim=1)
                     else:
-                        o_batch = torch.argmax(o_batch.to(self._device), dim=1)
+                        if o_batch.dim() > 1:
+                            o_batch = torch.argmax(o_batch.to(self._device), dim=1)
+                        else:
+                            o_batch = o_batch.to(self._device)
 
                     # Zero the parameter gradients
                     self._optimizer.zero_grad()

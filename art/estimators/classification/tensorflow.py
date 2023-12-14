@@ -266,7 +266,9 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
 
         return predictions
 
-    def fit(self, x: np.ndarray, y: np.ndarray, batch_size: int = 128, nb_epochs: int = 10, **kwargs) -> None:
+    def fit(
+        self, x: np.ndarray, y: np.ndarray, batch_size: int = 128, nb_epochs: int = 10, verbose: bool = False, **kwargs
+    ) -> None:
         """
         Fit the classifier on the training set `(x, y)`.
 
@@ -275,6 +277,7 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
                   shape (nb_samples,).
         :param batch_size: Size of batches.
         :param nb_epochs: Number of epochs to use for training.
+        :param verbose: If to display the progress bar information.
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for
                TensorFlow and providing it takes no effect.
         """
@@ -298,12 +301,12 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
         ind = np.arange(len(x_preprocessed)).tolist()
 
         # Start training
-        for _ in range(nb_epochs):
+        for _ in tqdm(range(nb_epochs), disable=not verbose, desc="Epochs"):
             # Shuffle the examples
             random.shuffle(ind)
 
             # Train for one epoch
-            for m in range(num_batch):
+            for m in tqdm(range(num_batch), disable=not verbose, desc="Batches"):
                 i_batch = x_preprocessed[ind[m * batch_size : (m + 1) * batch_size]]
                 o_batch = y_preprocessed[ind[m * batch_size : (m + 1) * batch_size]]
 
@@ -314,13 +317,14 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
                 # Run train step
                 self._sess.run(self.train, feed_dict=feed_dict)
 
-    def fit_generator(self, generator: "DataGenerator", nb_epochs: int = 20, **kwargs) -> None:
+    def fit_generator(self, generator: "DataGenerator", nb_epochs: int = 20, verbose: bool = False, **kwargs) -> None:
         """
         Fit the classifier using the generator that yields batches as specified.
 
         :param generator: Batch generator providing `(x, y)` for each epoch. If the generator can be used for native
                           training in TensorFlow, it will.
         :param nb_epochs: Number of epochs to use for training.
+        :param verbose: If to display the progress bar information.
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for
                TensorFlow and providing it takes no effect.
         """
@@ -343,8 +347,8 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
                 == (0, 1)
             )
         ):
-            for _ in range(nb_epochs):
-                for _ in range(int(generator.size / generator.batch_size)):  # type: ignore
+            for _ in tqdm(range(nb_epochs), disable=not verbose, desc="Epochs"):
+                for _ in tqdm(range(int(generator.size / generator.batch_size)), disable=not verbose, desc="Batches"):  # type: ignore
                     i_batch, o_batch = generator.get_batch()
 
                     if self._reduce_labels:
@@ -953,7 +957,9 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
 
         return self._model(x_preprocessed, training=training_mode)
 
-    def fit(self, x: np.ndarray, y: np.ndarray, batch_size: int = 128, nb_epochs: int = 10, **kwargs) -> None:
+    def fit(
+        self, x: np.ndarray, y: np.ndarray, batch_size: int = 128, nb_epochs: int = 10, verbose: bool = False, **kwargs
+    ) -> None:
         """
         Fit the classifier on the training set `(x, y)`.
 
@@ -962,13 +968,12 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
                   shape (nb_samples,).
         :param batch_size: Size of batches.
         :param nb_epochs: Number of epochs to use for training.
+        :param verbose: If to display progress bar information.
         :param kwargs: Dictionary of framework-specific arguments. This parameter currently supports
                        "scheduler" which is an optional function that will be called at the end of every
-                       epoch to adjust the learning rate, and "display_progress_bar" to display training progress.
+                       epoch to adjust the learning rate.
         """
         import tensorflow as tf
-
-        display_progress_bar = kwargs.get("display_progress_bar", False)
 
         if self._train_step is None:  # pragma: no cover
             if self._loss_object is None:  # pragma: no cover
@@ -1006,28 +1011,27 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
 
         train_ds = tf.data.Dataset.from_tensor_slices((x_preprocessed, y_preprocessed)).shuffle(10000).batch(batch_size)
 
-        for epoch in tqdm(range(nb_epochs), disable=not display_progress_bar, desc="Epochs"):
-            for images, labels in tqdm(train_ds, disable=not display_progress_bar, desc="Batches"):
+        for epoch in tqdm(range(nb_epochs), disable=not verbose, desc="Epochs"):
+            for images, labels in tqdm(train_ds, disable=not verbose, desc="Batches"):
                 train_step(self.model, images, labels)
 
             if scheduler is not None:
                 scheduler(epoch)
 
-    def fit_generator(self, generator: "DataGenerator", nb_epochs: int = 20, **kwargs) -> None:
+    def fit_generator(self, generator: "DataGenerator", nb_epochs: int = 20, verbose: bool = False, **kwargs) -> None:
         """
         Fit the classifier using the generator that yields batches as specified.
 
         :param generator: Batch generator providing `(x, y)` for each epoch. If the generator can be used for native
                           training in TensorFlow, it will.
         :param nb_epochs: Number of epochs to use for training.
+        :param verbose: If to display progress bar information
         :param kwargs: Dictionary of framework-specific arguments. This parameter currently supports
                        "scheduler" which is an optional function that will be called at the end of every
-                       epoch to adjust the learning rate, and "display_progress_bar" to display training progress.
+                       epoch to adjust the learning rate.
         """
         import tensorflow as tf
         from art.data_generators import TensorFlowV2DataGenerator
-
-        display_progress_bar = kwargs.get("display_progress_bar", False)
 
         if self._train_step is None:  # pragma: no cover
             if self._loss_object is None:  # pragma: no cover
@@ -1068,8 +1072,8 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
                 == (0, 1)
             )
         ):
-            for epoch in tqdm(range(nb_epochs), disable=not display_progress_bar, desc="Epochs"):
-                for i_batch, o_batch in tqdm(generator.iterator, disable=not display_progress_bar, desc="Batches"):
+            for epoch in tqdm(range(nb_epochs), disable=not verbose, desc="Epochs"):
+                for i_batch, o_batch in tqdm(generator.iterator, disable=not verbose, desc="Batches"):
                     if self._reduce_labels:
                         o_batch = tf.math.argmax(o_batch, axis=1)
                     train_step(self._model, i_batch, o_batch)

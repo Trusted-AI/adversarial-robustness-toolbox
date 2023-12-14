@@ -202,11 +202,7 @@ def test_fit_kwargs(art_warning, image_dl_estimator, get_default_mnist_subset, d
         # Test a valid callback
         classifier, _ = image_dl_estimator(from_logits=True)
 
-        # Keras fit has its own kwarg arguments
-        if framework in ["kerastf", "keras"]:
-            kwargs = {"callbacks": [LearningRateScheduler(get_lr)]}
-        else:
-            kwargs = {"callbacks": [LearningRateScheduler(get_lr)], "display_progress_bar": True}
+        kwargs = {"callbacks": [LearningRateScheduler(get_lr)], "verbose": True}
         classifier.fit(x_train_mnist, y_train_mnist, batch_size=default_batch_size, nb_epochs=1, **kwargs)
 
         # Test failure for invalid parameters: does not apply to many frameworks which allow arbitrary kwargs
