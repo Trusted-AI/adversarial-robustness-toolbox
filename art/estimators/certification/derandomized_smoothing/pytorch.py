@@ -441,7 +441,7 @@ class PyTorchDeRandomizedSmoothing(DeRandomizedSmoothingMixin, PyTorchClassifier
         update_batchnorm: bool = True,
         batchnorm_update_epochs: int = 1,
         transform: Optional["torchvision.transforms.transforms.Compose"] = None,
-        verbose: bool = True,
+        verbose: Optional[Union[bool, int]] = None,
         **kwargs,
     ) -> None:
         """
@@ -468,6 +468,17 @@ class PyTorchDeRandomizedSmoothing(DeRandomizedSmoothingMixin, PyTorchClassifier
                and providing it takes no effect.
         """
         import torch
+
+        if verbose is not None:
+            if isinstance(verbose, int):
+                if verbose == 0:
+                    display_pb = False
+                else:
+                    display_pb = True
+            else:
+                display_pb = verbose
+        else:
+            display_pb = False
 
         # Set model mode
         self._model.train(mode=training_mode)
@@ -499,7 +510,7 @@ class PyTorchDeRandomizedSmoothing(DeRandomizedSmoothingMixin, PyTorchClassifier
             epoch_loss = []
             epoch_batch_sizes = []
 
-            pbar = tqdm(range(num_batch), disable=not verbose)
+            pbar = tqdm(range(num_batch), disable=not display_pb)
 
             # Train for one epoch
             for m in pbar:
@@ -545,7 +556,7 @@ class PyTorchDeRandomizedSmoothing(DeRandomizedSmoothingMixin, PyTorchClassifier
                 epoch_loss.append(loss.cpu().detach().numpy())
                 epoch_batch_sizes.append(len(i_batch))
 
-                if verbose:
+                if display_pb:
                     pbar.set_description(
                         f"Loss {np.average(epoch_loss, weights=epoch_batch_sizes):.3f} "
                         f"Acc {np.average(epoch_acc, weights=epoch_batch_sizes):.3f} "

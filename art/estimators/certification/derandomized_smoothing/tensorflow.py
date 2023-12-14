@@ -155,7 +155,13 @@ class TensorFlowV2DeRandomizedSmoothing(TensorFlowV2Classifier, DeRandomizedSmoo
         return np.asarray(outputs >= self.threshold).astype(int)
 
     def fit(  # pylint: disable=W0221
-        self, x: np.ndarray, y: np.ndarray, batch_size: int = 128, nb_epochs: int = 10, verbose: bool = True, **kwargs
+        self,
+        x: np.ndarray,
+        y: np.ndarray,
+        batch_size: int = 128,
+        nb_epochs: int = 10,
+        verbose: Optional[Union[bool, int]] = None,
+        **kwargs,
     ) -> None:
         """
         Fit the classifier on the training set `(x, y)`.
@@ -165,12 +171,23 @@ class TensorFlowV2DeRandomizedSmoothing(TensorFlowV2Classifier, DeRandomizedSmoo
                   shape (nb_samples,).
         :param batch_size: Size of batches.
         :param nb_epochs: Number of epochs to use for training.
-        :param verbose: if to display training progress bars
+        :param verbose: If to display training progress bars
         :param kwargs: Dictionary of framework-specific arguments. This parameter currently only supports
                        "scheduler" which is an optional function that will be called at the end of every
                        epoch to adjust the learning rate.
         """
         import tensorflow as tf
+
+        if verbose is not None:
+            if isinstance(verbose, int):
+                if verbose == 0:
+                    display_pb = False
+                else:
+                    display_pb = True
+            else:
+                display_pb = verbose
+        else:
+            display_pb = False
 
         if self._train_step is None:  # pragma: no cover
             if self._loss_object is None:  # pragma: no cover
@@ -214,7 +231,7 @@ class TensorFlowV2DeRandomizedSmoothing(TensorFlowV2Classifier, DeRandomizedSmoo
             epoch_loss = []
             epoch_batch_sizes = []
 
-            pbar = tqdm(range(num_batch), disable=not verbose)
+            pbar = tqdm(range(num_batch), disable=not display_pb)
 
             ind = np.arange(len(x_preprocessed))
             for m in pbar:
@@ -231,7 +248,7 @@ class TensorFlowV2DeRandomizedSmoothing(TensorFlowV2Classifier, DeRandomizedSmoo
                 else:
                     train_step(self.model, images, labels)
 
-                if verbose:
+                if display_pb:
                     if self._train_step is None:
                         pbar.set_description(
                             f"Loss {np.average(epoch_loss, weights=epoch_batch_sizes):.3f} "

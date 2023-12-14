@@ -267,7 +267,13 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
         return predictions
 
     def fit(
-        self, x: np.ndarray, y: np.ndarray, batch_size: int = 128, nb_epochs: int = 10, verbose: bool = False, **kwargs
+        self,
+        x: np.ndarray,
+        y: np.ndarray,
+        batch_size: int = 128,
+        nb_epochs: int = 10,
+        verbose: Optional[Union[bool, int]] = None,
+        **kwargs,
     ) -> None:
         """
         Fit the classifier on the training set `(x, y)`.
@@ -283,6 +289,16 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
         """
         if self.learning is not None:
             self.feed_dict[self.learning] = True
+
+        if verbose is None:
+            display_pb = False
+        elif isinstance(verbose, int):
+            if verbose == 0:
+                display_pb = False
+            else:
+                display_pb = True
+        else:
+            display_pb = verbose
 
         # Check if train and output_ph available
         if self.train is None or self.labels_ph is None:  # pragma: no cover
@@ -301,12 +317,12 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
         ind = np.arange(len(x_preprocessed)).tolist()
 
         # Start training
-        for _ in tqdm(range(nb_epochs), disable=not verbose, desc="Epochs"):
+        for _ in tqdm(range(nb_epochs), disable=not display_pb, desc="Epochs"):
             # Shuffle the examples
             random.shuffle(ind)
 
             # Train for one epoch
-            for m in tqdm(range(num_batch), disable=not verbose, desc="Batches"):
+            for m in tqdm(range(num_batch), disable=not display_pb, desc="Batches"):
                 i_batch = x_preprocessed[ind[m * batch_size : (m + 1) * batch_size]]
                 o_batch = y_preprocessed[ind[m * batch_size : (m + 1) * batch_size]]
 
@@ -317,7 +333,9 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
                 # Run train step
                 self._sess.run(self.train, feed_dict=feed_dict)
 
-    def fit_generator(self, generator: "DataGenerator", nb_epochs: int = 20, verbose: bool = False, **kwargs) -> None:
+    def fit_generator(
+        self, generator: "DataGenerator", nb_epochs: int = 20, verbose: Optional[Union[bool, int]] = None, **kwargs
+    ) -> None:
         """
         Fit the classifier using the generator that yields batches as specified.
 
@@ -329,6 +347,16 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
                TensorFlow and providing it takes no effect.
         """
         from art.data_generators import TensorFlowDataGenerator
+
+        if verbose is None:
+            display_pb = False
+        elif isinstance(verbose, int):
+            if verbose == 0:
+                display_pb = False
+            else:
+                display_pb = True
+        else:
+            display_pb = verbose
 
         if self.learning is not None:
             self.feed_dict[self.learning] = True
@@ -347,8 +375,8 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
                 == (0, 1)
             )
         ):
-            for _ in tqdm(range(nb_epochs), disable=not verbose, desc="Epochs"):
-                for _ in tqdm(range(int(generator.size / generator.batch_size)), disable=not verbose, desc="Batches"):  # type: ignore
+            for _ in tqdm(range(nb_epochs), disable=not display_pb, desc="Epochs"):
+                for _ in tqdm(range(int(generator.size / generator.batch_size)), disable=not display_pb, desc="Batches"):  # type: ignore
                     i_batch, o_batch = generator.get_batch()
 
                     if self._reduce_labels:
@@ -958,7 +986,13 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         return self._model(x_preprocessed, training=training_mode)
 
     def fit(
-        self, x: np.ndarray, y: np.ndarray, batch_size: int = 128, nb_epochs: int = 10, verbose: bool = False, **kwargs
+        self,
+        x: np.ndarray,
+        y: np.ndarray,
+        batch_size: int = 128,
+        nb_epochs: int = 10,
+        verbose: Optional[Union[bool, int]] = None,
+        **kwargs,
     ) -> None:
         """
         Fit the classifier on the training set `(x, y)`.
@@ -974,6 +1008,16 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
                        epoch to adjust the learning rate.
         """
         import tensorflow as tf
+
+        if verbose is None:
+            display_pb = False
+        elif isinstance(verbose, int):
+            if verbose == 0:
+                display_pb = False
+            else:
+                display_pb = True
+        else:
+            display_pb = verbose
 
         if self._train_step is None:  # pragma: no cover
             if self._loss_object is None:  # pragma: no cover
@@ -1011,14 +1055,16 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
 
         train_ds = tf.data.Dataset.from_tensor_slices((x_preprocessed, y_preprocessed)).shuffle(10000).batch(batch_size)
 
-        for epoch in tqdm(range(nb_epochs), disable=not verbose, desc="Epochs"):
-            for images, labels in tqdm(train_ds, disable=not verbose, desc="Batches"):
+        for epoch in tqdm(range(nb_epochs), disable=not display_pb, desc="Epochs"):
+            for images, labels in tqdm(train_ds, disable=not display_pb, desc="Batches"):
                 train_step(self.model, images, labels)
 
             if scheduler is not None:
                 scheduler(epoch)
 
-    def fit_generator(self, generator: "DataGenerator", nb_epochs: int = 20, verbose: bool = False, **kwargs) -> None:
+    def fit_generator(
+        self, generator: "DataGenerator", nb_epochs: int = 20, verbose: Optional[Union[bool, int]] = None, **kwargs
+    ) -> None:
         """
         Fit the classifier using the generator that yields batches as specified.
 
@@ -1032,6 +1078,16 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         """
         import tensorflow as tf
         from art.data_generators import TensorFlowV2DataGenerator
+
+        if verbose is None:
+            display_pb = False
+        elif isinstance(verbose, int):
+            if verbose == 0:
+                display_pb = False
+            else:
+                display_pb = True
+        else:
+            display_pb = verbose
 
         if self._train_step is None:  # pragma: no cover
             if self._loss_object is None:  # pragma: no cover
@@ -1072,8 +1128,8 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
                 == (0, 1)
             )
         ):
-            for epoch in tqdm(range(nb_epochs), disable=not verbose, desc="Epochs"):
-                for i_batch, o_batch in tqdm(generator.iterator, disable=not verbose, desc="Batches"):
+            for epoch in tqdm(range(nb_epochs), disable=not display_pb, desc="Epochs"):
+                for i_batch, o_batch in tqdm(generator.iterator, disable=not display_pb, desc="Batches"):
                     if self._reduce_labels:
                         o_batch = tf.math.argmax(o_batch, axis=1)
                     train_step(self._model, i_batch, o_batch)

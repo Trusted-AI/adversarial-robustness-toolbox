@@ -131,7 +131,15 @@ class TensorFlowV2RandomizedSmoothing(RandomizedSmoothingMixin, TensorFlowV2Clas
     def _fit_classifier(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: int, **kwargs) -> None:
         return TensorFlowV2Classifier.fit(self, x, y, batch_size=batch_size, nb_epochs=nb_epochs, **kwargs)
 
-    def fit(self, x: np.ndarray, y: np.ndarray, batch_size: int = 128, nb_epochs: int = 10, **kwargs) -> None:
+    def fit(
+        self,
+        x: np.ndarray,
+        y: np.ndarray,
+        batch_size: int = 128,
+        nb_epochs: int = 10,
+        verbose: Optional[Union[bool, int]] = None,
+        **kwargs
+    ) -> None:
         """
         Fit the classifier on the training set `(x, y)`.
 
@@ -140,11 +148,24 @@ class TensorFlowV2RandomizedSmoothing(RandomizedSmoothingMixin, TensorFlowV2Clas
                   shape (nb_samples,).
         :param batch_size: Size of batches.
         :param nb_epochs: Number of epochs to use for training.
+        :param verbose: (Optional) Display the progress bar, if not supplied will revert to the verbose level when
+                        class was initialised.
         :param kwargs: Dictionary of framework-specific arguments. This parameter currently only supports
                        "scheduler" which is an optional function that will be called at the end of every
                        epoch to adjust the learning rate.
         """
         import tensorflow as tf
+
+        if verbose is not None:
+            if isinstance(verbose, int):
+                if verbose == 0:
+                    display_pb = False
+                else:
+                    display_pb = True
+            else:
+                display_pb = verbose
+        else:
+            display_pb = self.verbose
 
         if self._train_step is None:  # pragma: no cover
             if self._loss_object is None:  # pragma: no cover
@@ -182,7 +203,7 @@ class TensorFlowV2RandomizedSmoothing(RandomizedSmoothingMixin, TensorFlowV2Clas
 
         train_ds = tf.data.Dataset.from_tensor_slices((x_preprocessed, y_preprocessed)).shuffle(10000).batch(batch_size)
 
-        for epoch in trange(nb_epochs, disable=not self.verbose):
+        for epoch in trange(nb_epochs, disable=not display_pb):
             for images, labels in train_ds:
                 # Add random noise for randomized smoothing
                 images += tf.random.normal(shape=images.shape, mean=0.0, stddev=self.scale)

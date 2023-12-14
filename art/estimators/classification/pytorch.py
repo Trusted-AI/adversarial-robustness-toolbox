@@ -375,7 +375,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         training_mode: bool = True,
         drop_last: bool = False,
         scheduler: Optional["torch.optim.lr_scheduler._LRScheduler"] = None,
-        verbose: bool = False,
+        verbose: Optional[Union[bool, int]] = None,
         **kwargs,
     ) -> None:
         """
@@ -398,6 +398,16 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         import torch
         from torch.utils.data import TensorDataset, DataLoader
 
+        if verbose is None:
+            display_pb = False
+        elif isinstance(verbose, int):
+            if verbose == 0:
+                display_pb = False
+            else:
+                display_pb = True
+        else:
+            display_pb = verbose
+
         # Set model mode
         self._model.train(mode=training_mode)
 
@@ -419,8 +429,8 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         dataloader = DataLoader(dataset=dataset, batch_size=batch_size, shuffle=True, drop_last=drop_last)
 
         # Start training
-        for _ in tqdm(range(nb_epochs), disable=not verbose, desc="Epochs"):
-            for x_batch, y_batch in tqdm(dataloader, disable=not verbose, desc="Batches"):
+        for _ in tqdm(range(nb_epochs), disable=not display_pb, desc="Epochs"):
+            for x_batch, y_batch in tqdm(dataloader, disable=not display_pb, desc="Batches"):
                 # Move inputs to device
                 x_batch = x_batch.to(self._device)
                 y_batch = y_batch.to(self._device)
@@ -456,7 +466,9 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
             if scheduler is not None:
                 scheduler.step()
 
-    def fit_generator(self, generator: "DataGenerator", nb_epochs: int = 20, verbose: bool = False, **kwargs) -> None:
+    def fit_generator(
+        self, generator: "DataGenerator", nb_epochs: int = 20, verbose: Optional[Union[bool, int]] = None, **kwargs
+    ) -> None:
         """
         Fit the classifier using the generator that yields batches as specified.
 
@@ -468,6 +480,16 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         """
         import torch
         from art.data_generators import PyTorchDataGenerator
+
+        if verbose is None:
+            display_pb = False
+        elif isinstance(verbose, int):
+            if verbose == 0:
+                display_pb = False
+            else:
+                display_pb = True
+        else:
+            display_pb = verbose
 
         # Put the model in the training mode
         self._model.train()
@@ -489,8 +511,8 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                 == (0, 1)
             )
         ):
-            for _ in tqdm(range(nb_epochs), disable=not verbose, desc="Epochs"):
-                for i_batch, o_batch in tqdm(generator.iterator, disable=not verbose, desc="Batches"):
+            for _ in tqdm(range(nb_epochs), disable=not display_pb, desc="Epochs"):
+                for i_batch, o_batch in tqdm(generator.iterator, disable=not display_pb, desc="Batches"):
                     if isinstance(i_batch, np.ndarray):
                         i_batch = torch.from_numpy(i_batch).to(self._device)
                     else:
