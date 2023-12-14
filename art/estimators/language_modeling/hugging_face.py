@@ -87,7 +87,6 @@ class HuggingFaceLanguageModel(LanguageModel):
             preprocessing=preprocessing,
         )
 
-        self._model = model
         self._tokenizer = tokenizer
         self._loss = loss
         self._optimizer = optimizer
@@ -276,8 +275,10 @@ class HuggingFaceLanguageModel(LanguageModel):
                     inputs[key] = [v_i.to(self._device) for v_i in value]
                 elif isinstance(value[0], np.ndarray):
                     inputs[key] = [torch.from_numpy(v_i).to(self._device) for v_i in value]
-                elif isinstance(value[0], (float, int)):
+                elif isinstance(value[0], list):
                     inputs[key] = torch.tensor(value).to(self._device)
+                elif isinstance(value[0], (float, int)):
+                    inputs[key] = torch.tensor([value]).to(self._device)
                 else:
                     inputs[key] = value
             else:
