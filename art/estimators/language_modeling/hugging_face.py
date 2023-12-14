@@ -42,13 +42,10 @@ class HuggingFaceLanguageModel(LanguageModel):
     This class implements a language model with the Hugging Face framework and PyTorch backend.
     """
 
-    estimator_params = (
-        BaseEstimator.estimator_params
-        + [
-            "device_type",
-        ]
-    )
-    
+    estimator_params = BaseEstimator.estimator_params + [
+        "device_type",
+    ]
+
     def __init__(
         self,
         model: "transformers.PreTrainedModel",
@@ -113,7 +110,7 @@ class HuggingFaceLanguageModel(LanguageModel):
 
         :return: Type of device on which the estimator is run, either `gpu` or `cpu`.
         """
-        return self._device_type 
+        return self._device_type
 
     @property
     def device(self) -> "torch.device":
@@ -126,10 +123,20 @@ class HuggingFaceLanguageModel(LanguageModel):
 
     @property
     def model(self) -> "transformers.PreTrainedModel":
+        """
+        The model.
+
+        :return: The model.
+        """
         return self._model
 
     @property
     def tokenizer(self) -> Union["transformers.PreTrainedTokenizerFast", "transformers.PreTrainedTokenizer"]:
+        """
+        The tokenizer.
+
+        :return: The tokenizer.
+        """
         return self._tokenizer
 
     @property
@@ -149,7 +156,7 @@ class HuggingFaceLanguageModel(LanguageModel):
         :return: The optimizer.
         """
         return self._optimizer  # type: ignore
-    
+
     @property
     def input_shape(self) -> Tuple[int, ...]:
         """
@@ -158,138 +165,196 @@ class HuggingFaceLanguageModel(LanguageModel):
         :return: Shape of one input sample.
         """
         raise NotImplementedError
-    
-    def tokenize(self, text: Union[str, List[str]], **kwargs) -> Dict[str, np.ndarray]:
+
+    def tokenize(self, x: Union[str, List[str]], **kwargs) -> Dict[str, list]:
         """
         Use the tokenizer to encode a string to a list of token ids or lists of strings to a lists of token ids.
 
-        :param text: A string or list of strings.
-        :param kwargs: Additional keyword arguments for the tokenizer. Can override the `text` input.
+        :param x: A string or list of strings.
+        :param kwargs: Additional keyword arguments for the tokenizer. Can override the `x` input.
         :return: A dictionary of the tokenized string or multiple strings. The fields of the dictionary will be
-                 specific to the tokenizer used.
+                 specific to the tokenizer and keyword arguments provided.
         """
         # Create input parameters
-        inputs = {'text': text}
-        for k, v in kwargs.items():
-            inputs[k] = v
-        inputs['return_tensors'] = 'np'
+        inputs = {"text": x}
+        for key, value in kwargs.items():
+            inputs[key] = value
 
         tokenized_output = self._tokenizer(**inputs)
         tokenized_dict = tokenized_output.data
         return tokenized_dict
-    
-    def encode(self, text: Union[str, List[str]], **kwargs) -> Union[np.ndarray, List[np.ndarray]]:
+
+    def encode(self, x: str, **kwargs) -> List[int]:
         """
-        Use the tokenizer to encode a string to a list of token ids or lists of strings to a lists of token ids.
+        Use the tokenizer to encode a string to a list of token ids.
 
-        :param text: A string or list of strings.
-        :param kwargs: Additional keyword arguments for the tokenizer. Can override the `text` input.
-        :return: A list of encoded token ids of a string or lists of encoded token ids of multiple strings.
+        :param x: A string to convert to tokens.
+        :param kwargs: Additional keyword arguments for the tokenizer. Can override the `x` input.
+        :return: A list of encoded token ids of a string.
         """
-        # Encode each string individually
-        if isinstance(text, list):
-            return [self.encode(t, **kwargs) for t in text]
-
-        # Encode single string
-        encoded_output = self._tokenizer.encode(text, **kwargs)
-
-        return np.asarray(encoded_output)
-    
-    def decode(
-        self,
-        tokens: Union[np.ndarray, List[np.ndarray]],
-        **kwargs
-    ) -> Union[str, List[str]]:
-        """
-        Use the tokenizer to decode a list of token ids to a string or lists of token ids to a list of strings.
-
-        :param tokens: A list of tokenized input ids of a string or lists of tokenized input ids of strings.
-        :param kwargs: Additional keyword arguments for the tokenizer. Can override the `tokens` input.
-        :return: Decoded string or list of strings.
-        """
-        if isinstance(tokens, list):
-            sequences = isinstance(tokens[0], (np.ndarray, list))
-        else:
-            sequences = len(tokens.shape) > 1
-
         # Create input parameters
-        inputs = {}
-        if sequences:
-            inputs['sequences'] = tokens
-        else:
-            inputs['token_ids'] = tokens
-        for k, v in kwargs.items():
-            inputs[k] = v
-        
+        inputs = {"text": x}
+        for key, value in kwargs.items():
+            inputs[key] = value
+
+        encoded_output = self._tokenizer.encode(**inputs)
+        return encoded_output
+
+    def batch_encode(self, x: List[str], **kwargs) -> List[List[int]]:
+        """
+        Use the tokenizer to encode a list of strings to lists of token ids.
+
+        :param x: A list strings to convert to tokens.
+        :param kwargs: Additional keyword arguments for the tokenizer. Can override the `x` input.
+        :return: lists of encoded token ids of each string.
+        """
+        return [self.encode(x_i, **kwargs) for x_i in x]
+
+    def decode(self, x: List[int], **kwargs) -> str:
+        """
+        Use the tokenizer to decode a list of token ids to a string.
+
+        :param x: A list of tokenized input ids of a string.
+        :param kwargs: Additional keyword arguments for the tokenizer. Can override the `x` input.
+        :return: Decoded string.
+        """
+        # Create input parameters
+        inputs = {"token_ids": x}
+        for key, value in kwargs.items():
+            inputs[key] = value
+
         # Decode tokens to string
-        if sequences:
-            decoded_output = self._tokenizer.batch_decode(**inputs)
-        else:
-            decoded_output = self._tokenizer.decode(**inputs)
+        decoded_output = self._tokenizer.decode(**inputs)
         return decoded_output
-    
-    def predict(self, text: Optional[Union[str, List[str]]] = None, **kwargs) -> Dict[str, np.ndarray]:
+
+    def batch_decode(self, x: List[List[int]], **kwargs) -> List[str]:
+        """
+        Use the tokenizer to decode lists of token ids to a list of strings.
+
+        :param x: List of tokenized input ids of multiple strings.
+        :param kwargs: Additional keyword arguments for the tokenizer. Can override the `x` input.
+        :return: List of decoded strings.
+        """
+        # Create input parameters
+        inputs = {"sequences": x}
+        for key, value in kwargs.items():
+            inputs[key] = value
+
+        # Decode tokens to string
+        decoded_output = self._tokenizer.batch_decode(**inputs)
+        return decoded_output
+
+    def predict(self, x: Optional[Union[str, List[str]]] = None, **kwargs) -> Dict[str, np.ndarray]:
         """
         Tokenize the string or list of strings and run inference on the model.
 
         :param text: A string or list of strings.
-        :param kwargs: Additional keyword arguments for the model. Can override the `text` input.
+        :param kwargs: Additional keyword arguments for the model. Can override the `x` input.
         :return: A dictionary of the model output from running inference on the input string or strings. The fields
                  of the dictionary will be specific to the model used.
         """
         import torch
 
         self._model.eval()
-        
+
         inputs = {}
 
         # Tokenize text input
-        if text is not None:
-            tokenized = self._tokenizer(text, padding=True, truncation=True, return_tensors="pt")
-            for k, v in tokenized.items():
-                inputs[k] = v.to(self._device)
+        if x is not None:
+            tokenized = self._tokenizer(x, padding=True, truncation=True, return_tensors="pt")
+            for key, value in tokenized.items():
+                inputs[key] = value.to(self._device)
 
         # Convert inputs to tensors and move to GPU
-        for k, v in kwargs.items():
-            if isinstance(v, torch.Tensor):
-                inputs[k] = v.to(self._device)
-            elif isinstance(v, np.ndarray):
-                inputs[k] = torch.from_numpy(v).to(self._device)
-            elif isinstance(v, list):
-                if isinstance(v[0], torch.Tensor):
-                    inputs[k] = [v_i.to(self._device) for v_i in v]
-                elif isinstance(v[0], np.ndarray):
-                    inputs[k] = [torch.from_numpy(v_i).to(self._device) for v_i in v]
-                elif isinstance(v[0], (float, int)):
-                    inputs[k] = torch.tensor(v).to(self._device)
+        for key, value in kwargs.items():
+            if isinstance(value, torch.Tensor):
+                inputs[key] = value.to(self._device)
+            elif isinstance(value, np.ndarray):
+                inputs[key] = torch.from_numpy(value).to(self._device)
+            elif isinstance(value, list):
+                if isinstance(value[0], torch.Tensor):
+                    inputs[key] = [v_i.to(self._device) for v_i in value]
+                elif isinstance(value[0], np.ndarray):
+                    inputs[key] = [torch.from_numpy(v_i).to(self._device) for v_i in value]
+                elif isinstance(value[0], (float, int)):
+                    inputs[key] = torch.tensor(value).to(self._device)
                 else:
-                    inputs[k] = v
+                    inputs[key] = value
             else:
-                inputs[k] = v
+                inputs[key] = value
 
         # Run prediction
         with torch.no_grad():
             out = self._model(**inputs)
-        
+
         # Extract outputs and convert to numpy arrays
         outputs = {}
-        for k, v in out.items():
-            if isinstance(v, torch.Tensor):
-                outputs[k] = v.detach().cpu().numpy()
-            elif isinstance(v, (tuple, list)):
-                if isinstance(v[0], torch.Tensor):
-                    outputs[k] = [v_i.detach().cpu().numpy() for v_i in v]
-                elif isinstance(v[0], (tuple, list)):
-                    outputs[k] = [[v_ij.detach().cpu().numpy() for v_ij in v_i] for v_i in v]
+        for key, value in out.items():
+            if isinstance(value, torch.Tensor):
+                outputs[key] = value.detach().cpu().numpy()
+            elif isinstance(value, (tuple, list)):
+                if isinstance(value[0], torch.Tensor):
+                    outputs[key] = [v_i.detach().cpu().numpy() for v_i in value]
+                elif isinstance(value[0], (tuple, list)):
+                    outputs[key] = [[v_ij.detach().cpu().numpy() for v_ij in v_i] for v_i in value]
                 else:
-                    outputs[k] = v
+                    outputs[key] = value
             else:
-                outputs[k] = v
+                outputs[key] = value
 
         return outputs
-    
-    def generate(self, text: Any, **kwargs) -> Any:
-        raise NotImplementedError
+
+    def generate(self, x: Union[str, List[str]], **kwargs) -> Union[str, List[str]]:
+        """
+        Tokenize the string or list of strings and run generation using the model.
+
+        :param text: A string or list of strings.
+        :param kwargs: Additional keyword arguments for the model. Can override the `x` input.
+        :return: A dictionary of the model output from running inference on the input string or strings. The fields
+                 of the dictionary will be specific to the model used.
+        """
+        import torch
+
+        self._model.eval()
+
+        inputs = {}
+
+        # Tokenize text input
+        if x is not None:
+            tokenized = self._tokenizer(x, padding=True, truncation=True, return_tensors="pt")
+            for key, value in tokenized.items():
+                inputs[key] = value.to(self._device)
+
+        # Convert inputs to tensors and move to GPU
+        for key, value in kwargs.items():
+            if isinstance(value, torch.Tensor):
+                inputs[key] = value.to(self._device)
+            elif isinstance(value, np.ndarray):
+                inputs[key] = torch.from_numpy(value).to(self._device)
+            elif isinstance(value, list):
+                if isinstance(value[0], torch.Tensor):
+                    inputs[key] = [v_i.to(self._device) for v_i in value]
+                elif isinstance(value[0], np.ndarray):
+                    inputs[key] = [torch.from_numpy(v_i).to(self._device) for v_i in value]
+                elif isinstance(value[0], (float, int)):
+                    inputs[key] = torch.tensor(value).to(self._device)
+                else:
+                    inputs[key] = value
+            else:
+                inputs[key] = value
+        inputs["return_dict_in_generate"] = False
+
+        # Run prediction
+        with torch.no_grad():
+            tokens = self._model.generate(**inputs)
+
+        # Decode output tokens
+        generated_strings = self._tokenizer.batch_decode(tokens, skip_special_tokens=True)
+
+        if isinstance(x, str):
+            return generated_strings[0]
+
+        return generated_strings
 
     def fit(self, x: Any, y: Any, **kwargs):
         """
@@ -301,7 +366,7 @@ class HuggingFaceLanguageModel(LanguageModel):
         :type y: Format as expected by the `model`
         """
         raise NotImplementedError
-    
+
     def _set_layer(self, train: bool, layerinfo: List["torch.nn.modules.Module"]) -> None:
         """
         Set all layers that are an instance of `layerinfo` into training or evaluation mode.
@@ -360,4 +425,3 @@ class HuggingFaceLanguageModel(LanguageModel):
 
         # pylint: disable=W0212
         self._set_layer(train=train, layerinfo=[torch.nn.modules.MultiheadAttention])  # type: ignore
-

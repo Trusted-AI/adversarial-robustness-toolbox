@@ -39,9 +39,9 @@ class LanguageModel(LanguageModelMixin, BaseEstimator, abc.ABC):
     """
 
     @abc.abstractmethod
-    def tokenize(self, text: Any, **kwargs) -> Any:
+    def tokenize(self, x: Any, **kwargs) -> Any:
         """
-        Token the input `text`.
+        Token the input `x`.
 
         :param text: Samples to be tokenized.
         :type text: Format as expected by the `tokenizer`
@@ -49,11 +49,11 @@ class LanguageModel(LanguageModelMixin, BaseEstimator, abc.ABC):
         :rtype: Format as produced by the `tokenizer`
         """
         raise NotImplementedError
-    
+
     @abc.abstractmethod
-    def encode(self, text: Any, **kwargs) -> Any:
+    def encode(self, x: Any, **kwargs) -> Any:
         """
-        Encode the input `text`.
+        Encode the input `x`.
 
         :param text: Samples to be encoded.
         :type text: Format as expected by the `tokenizer`
@@ -61,11 +61,23 @@ class LanguageModel(LanguageModelMixin, BaseEstimator, abc.ABC):
         :rtype: Format as produced by the `tokenizer`
         """
         raise NotImplementedError
-    
+
     @abc.abstractmethod
-    def decode(self, tokens: Any, **kwargs) -> Any:
+    def batch_encode(self, x: Any, **kwargs) -> Any:
         """
-        Decode the input `tokens`.
+        Encode the input `x`.
+
+        :param text: Samples to be encoded.
+        :type text: Format as expected by the `tokenizer`
+        :return: Encoded output by the tokenizer.
+        :rtype: Format as produced by the `tokenizer`
+        """
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def decode(self, x: Any, **kwargs) -> Any:
+        """
+        Decode the input `x`.
 
         :param tokens: Samples to be decoded.
         :type tokens: Format as expected by the `tokenizer`
@@ -75,9 +87,21 @@ class LanguageModel(LanguageModelMixin, BaseEstimator, abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def predict(self, text: Any, **kwargs) -> Any:
+    def batch_decode(self, x: Any, **kwargs) -> Any:
         """
-        Perform prediction of the language model for input `text`.
+        Decode the input `x`.
+
+        :param tokens: Samples to be decoded.
+        :type tokens: Format as expected by the `tokenizer`
+        :return: decoded output by the tokenizer.
+        :rtype: Format as produced by the `tokenizer`
+        """
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def predict(self, x: Any, **kwargs) -> Any:
+        """
+        Perform prediction of the language model for input `x`.
 
         :param text: Samples to be tokenized.
         :type text: Format as expected by the `tokenizer`
@@ -85,9 +109,17 @@ class LanguageModel(LanguageModelMixin, BaseEstimator, abc.ABC):
         :rtype: Format as produced by the `model`
         """
         raise NotImplementedError
-    
+
     @abc.abstractmethod
-    def generate(self, text: Any, **kwargs) -> Any:
+    def generate(self, x: Any, **kwargs) -> Any:
+        """
+        Generate text using the language model from input `x`.
+
+        :param text: Samples to be tokenized.
+        :type text: Format as expected by the `tokenizer`
+        :return: Generated text by the model.
+        :rtype: Format as produced by the `tokenizer`
+        """
         raise NotImplementedError
 
     @abc.abstractmethod
