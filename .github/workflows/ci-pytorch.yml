@@ -28,31 +28,25 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: PyTorch 1.12.1 (Python 3.9)
-            framework: pytorch
-            python: 3.9
-            torch: 1.12.1+cpu
-            torchvision: 0.13.1+cpu
-            torchaudio: 0.12.1
-          - name: PyTorch 1.13.1 (Python 3.9)
-            framework: pytorch
-            python: 3.9
-            torch: 1.13.1+cpu
-            torchvision: 0.14.1+cpu
-            torchaudio: 0.13.1
           - name: PyTorch 1.13.1 (Python 3.10)
             framework: pytorch
             python: '3.10'
             torch: 1.13.1+cpu
             torchvision: 0.14.1+cpu
             torchaudio: 0.13.1
+          - name: PyTorch 2.1.1 (Python 3.10)
+            framework: pytorch
+            python: '3.10'
+            torch: 2.1.1
+            torchvision: 0.16.1+cpu
+            torchaudio: 2.1.1
 
     name: ${{ matrix.name }}
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v3
       - name: Setup Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python }}
       - name: Install Dependencies

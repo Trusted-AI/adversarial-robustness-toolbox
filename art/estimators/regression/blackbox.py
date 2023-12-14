@@ -49,7 +49,7 @@ class BlackBoxRegressor(RegressorMixin, BaseEstimator):
         self,
         predict_fn: Union[Callable, Tuple[np.ndarray, np.ndarray]],
         input_shape: Tuple[int, ...],
-        loss_fn: Callable = None,
+        loss_fn: Optional[Callable] = None,
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
