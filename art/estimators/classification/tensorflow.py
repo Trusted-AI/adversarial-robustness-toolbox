@@ -376,7 +376,8 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
             )
         ):
             for _ in tqdm(range(nb_epochs), disable=not display_pb, desc="Epochs"):
-                for _ in tqdm(range(int(generator.size / generator.batch_size)), disable=not display_pb, desc="Batches"):  # type: ignore
+                num_bathces = int(generator.size / generator.batch_size)
+                for _ in tqdm(range(num_bathces), disable=not display_pb, desc="Batches"):  # type: ignore
                     i_batch, o_batch = generator.get_batch()
 
                     if self._reduce_labels:
