@@ -371,20 +371,20 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         Function to unify the various ways implemented in ART of displaying progress bars
         into a single True/False output.
 
-        :param verbose: If to display the progress bar information.
+        :param verbose: If to display the progress bar information in one of a few possible formats.
         :return: True/False if to display the progress bars.
         """
 
         if verbose is not None:
             if isinstance(verbose, int):
-                if verbose == 0:
+                if verbose <= 0:
                     display_pb = False
                 else:
                     display_pb = True
             elif isinstance(verbose, bool):
                 display_pb = verbose
             else:
-                raise ValueError("Verbose should be True/False or a 0/1 int")
+                raise ValueError("Verbose should be True/False or an int")
         else:
             # Check if the verbose attribute is present in the current classifier
             if hasattr(self, "verbose"):
