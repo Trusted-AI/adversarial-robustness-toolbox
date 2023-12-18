@@ -210,9 +210,7 @@ class CompositeAdversarialAttackPyTorch(EvasionAttack):
             if (
                 not isinstance(self.epsilons[i], tuple)
                 or not len(self.epsilons[i]) == 2
-                or not (
-                    isinstance(self.epsilons[i][0], float) and isinstance(self.epsilons[i][1], float)
-                )
+                or not (isinstance(self.epsilons[i][0], float) and isinstance(self.epsilons[i][1], float))
             ):
                 logger.info(
                     "The argument `%s` must be an interval within %s of type tuple.",
@@ -224,10 +222,7 @@ class CompositeAdversarialAttackPyTorch(EvasionAttack):
                     f"within {_epsilons_range[i][2]} of type tuple."
                 )
 
-            if (not (
-                    _epsilons_range[i][1][0] <= self.epsilons[i][0] <= self.epsilons[i][1] <= _epsilons_range[i][1][1]
-                )
-            ):
+            if not (_epsilons_range[i][1][0] <= self.epsilons[i][0] <= self.epsilons[i][1] <= _epsilons_range[i][1][1]):
                 logger.info(
                     "The argument `%s` must be an interval within %s of type tuple.",
                     _epsilons_range[i][0],
