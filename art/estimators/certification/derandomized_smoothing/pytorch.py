@@ -469,16 +469,7 @@ class PyTorchDeRandomizedSmoothing(DeRandomizedSmoothingMixin, PyTorchClassifier
         """
         import torch
 
-        if verbose is not None:
-            if isinstance(verbose, int):
-                if verbose == 0:
-                    display_pb = False
-                else:
-                    display_pb = True
-            else:
-                display_pb = verbose
-        else:
-            display_pb = False
+        display_pb = self.process_verbose(verbose)
 
         # Set model mode
         self._model.train(mode=training_mode)

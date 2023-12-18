@@ -287,7 +287,7 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
         else:
             # Check if the verbose attribute is present in the current classifier
             if hasattr(self, "verbose"):
-                display_pb = self.verbose
+                display_pb = self.verbose  # type: ignore
             # else default to False
             else:
                 display_pb = False
@@ -1024,14 +1024,14 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         else:
             # Check if the verbose attribute is present in the current classifier
             if hasattr(self, "verbose"):
-                display_pb = self.verbose
+                display_pb = self.verbose  # type: ignore
             # else default to False
             else:
                 display_pb = False
 
         return display_pb
 
-    def fit(
+    def fit(  # pylint: disable=W0221
         self,
         x: np.ndarray,
         y: np.ndarray,
@@ -1100,7 +1100,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
             if scheduler is not None:
                 scheduler(epoch)
 
-    def fit_generator(
+    def fit_generator(  # pylint: disable=W0221
         self, generator: "DataGenerator", nb_epochs: int = 20, verbose: Optional[Union[bool, int]] = None, **kwargs
     ) -> None:
         """

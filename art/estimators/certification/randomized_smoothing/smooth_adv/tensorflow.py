@@ -174,16 +174,7 @@ class TensorFlowV2SmoothAdv(TensorFlowV2RandomizedSmoothing):
         """
         import tensorflow as tf
 
-        if verbose is not None:
-            if isinstance(verbose, int):
-                if verbose == 0:
-                    display_pb = False
-                else:
-                    display_pb = True
-            else:
-                display_pb = verbose
-        else:
-            display_pb = self.verbose
+        display_pb = self.process_verbose(verbose)
 
         if self._train_step is None:  # pragma: no cover
             if self._loss_object is None:  # pragma: no cover

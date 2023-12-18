@@ -388,7 +388,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         else:
             # Check if the verbose attribute is present in the current classifier
             if hasattr(self, "verbose"):
-                display_pb = self.verbose
+                display_pb = self.verbose  # type: ignore
             # else default to False
             else:
                 display_pb = False
@@ -487,7 +487,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
             if scheduler is not None:
                 scheduler.step()
 
-    def fit_generator(
+    def fit_generator(  # pylint: disable=W0221
         self, generator: "DataGenerator", nb_epochs: int = 20, verbose: Optional[Union[bool, int]] = None, **kwargs
     ) -> None:
         """
