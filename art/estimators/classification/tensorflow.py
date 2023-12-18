@@ -266,7 +266,35 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
 
         return predictions
 
-    def fit(
+    def process_verbose(self, verbose: Optional[Union[bool, int]] = None) -> bool:
+        """
+        Function to unify the various ways implemented in ART of displaying progress bars
+        into a single True/False output.
+        :param verbose: If to display the progress bar information.
+        :return: True/False if to display the progress bars.
+        """
+
+        if verbose is not None:
+            if isinstance(verbose, int):
+                if verbose == 0:
+                    display_pb = False
+                else:
+                    display_pb = True
+            elif isinstance(verbose, bool):
+                display_pb = verbose
+            else:
+                raise ValueError("Verbose should be True/False or a 0/1 int")
+        else:
+            # Check if the verbose attribute is present in the current classifier
+            if hasattr(self, "verbose"):
+                display_pb = self.verbose
+            # else default to False
+            else:
+                display_pb = False
+
+        return display_pb
+
+    def fit(  # pylint: disable=W0221
         self,
         x: np.ndarray,
         y: np.ndarray,
@@ -290,15 +318,7 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
         if self.learning is not None:
             self.feed_dict[self.learning] = True
 
-        if verbose is None:
-            display_pb = False
-        elif isinstance(verbose, int):
-            if verbose == 0:
-                display_pb = False
-            else:
-                display_pb = True
-        else:
-            display_pb = verbose
+        display_pb = self.process_verbose(verbose)
 
         # Check if train and output_ph available
         if self.train is None or self.labels_ph is None:  # pragma: no cover
@@ -333,7 +353,7 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
                 # Run train step
                 self._sess.run(self.train, feed_dict=feed_dict)
 
-    def fit_generator(
+    def fit_generator(  # pylint: disable=W0221
         self, generator: "DataGenerator", nb_epochs: int = 20, verbose: Optional[Union[bool, int]] = None, **kwargs
     ) -> None:
         """
@@ -348,15 +368,7 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
         """
         from art.data_generators import TensorFlowDataGenerator
 
-        if verbose is None:
-            display_pb = False
-        elif isinstance(verbose, int):
-            if verbose == 0:
-                display_pb = False
-            else:
-                display_pb = True
-        else:
-            display_pb = verbose
+        display_pb = self.process_verbose(verbose)
 
         if self.learning is not None:
             self.feed_dict[self.learning] = True
@@ -376,8 +388,13 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
             )
         ):
             for _ in tqdm(range(nb_epochs), disable=not display_pb, desc="Epochs"):
-                num_bathces = int(generator.size / generator.batch_size)
-                for _ in tqdm(range(num_bathces), disable=not display_pb, desc="Batches"):  # type: ignore
+                gen_size = generator.size
+                if isinstance(gen_size, int):
+                    num_batchcs = int(gen_size / generator.batch_size)
+                else:
+                    raise ValueError("Number of batches could not be determined from the generator")
+
+                for _ in tqdm(range(num_batchcs), disable=not display_pb, desc="Batches"):
                     i_batch, o_batch = generator.get_batch()
 
                     if self._reduce_labels:
@@ -986,6 +1003,34 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
 
         return self._model(x_preprocessed, training=training_mode)
 
+    def process_verbose(self, verbose: Optional[Union[bool, int]] = None) -> bool:
+        """
+        Function to unify the various ways implemented in ART of displaying progress bars
+        into a single True/False output.
+        :param verbose: If to display the progress bar information.
+        :return: True/False if to display the progress bars.
+        """
+
+        if verbose is not None:
+            if isinstance(verbose, int):
+                if verbose == 0:
+                    display_pb = False
+                else:
+                    display_pb = True
+            elif isinstance(verbose, bool):
+                display_pb = verbose
+            else:
+                raise ValueError("Verbose should be True/False or a 0/1 int")
+        else:
+            # Check if the verbose attribute is present in the current classifier
+            if hasattr(self, "verbose"):
+                display_pb = self.verbose
+            # else default to False
+            else:
+                display_pb = False
+
+        return display_pb
+
     def fit(
         self,
         x: np.ndarray,
@@ -1010,15 +1055,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         """
         import tensorflow as tf
 
-        if verbose is None:
-            display_pb = False
-        elif isinstance(verbose, int):
-            if verbose == 0:
-                display_pb = False
-            else:
-                display_pb = True
-        else:
-            display_pb = verbose
+        display_pb = self.process_verbose(verbose)
 
         if self._train_step is None:  # pragma: no cover
             if self._loss_object is None:  # pragma: no cover
@@ -1080,15 +1117,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         import tensorflow as tf
         from art.data_generators import TensorFlowV2DataGenerator
 
-        if verbose is None:
-            display_pb = False
-        elif isinstance(verbose, int):
-            if verbose == 0:
-                display_pb = False
-            else:
-                display_pb = True
-        else:
-            display_pb = verbose
+        display_pb = self.process_verbose(verbose)
 
         if self._train_step is None:  # pragma: no cover
             if self._loss_object is None:  # pragma: no cover

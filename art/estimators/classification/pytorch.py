@@ -366,6 +366,35 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
         return output, y_preprocessed
 
+    def process_verbose(self, verbose: Optional[Union[bool, int]] = None) -> bool:
+        """
+        Function to unify the various ways implemented in ART of displaying progress bars
+        into a single True/False output.
+
+        :param verbose: If to display the progress bar information.
+        :return: True/False if to display the progress bars.
+        """
+
+        if verbose is not None:
+            if isinstance(verbose, int):
+                if verbose == 0:
+                    display_pb = False
+                else:
+                    display_pb = True
+            elif isinstance(verbose, bool):
+                display_pb = verbose
+            else:
+                raise ValueError("Verbose should be True/False or a 0/1 int")
+        else:
+            # Check if the verbose attribute is present in the current classifier
+            if hasattr(self, "verbose"):
+                display_pb = self.verbose
+            # else default to False
+            else:
+                display_pb = False
+
+        return display_pb
+
     def fit(  # pylint: disable=W0221
         self,
         x: np.ndarray,
@@ -398,15 +427,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         import torch
         from torch.utils.data import TensorDataset, DataLoader
 
-        if verbose is None:
-            display_pb = False
-        elif isinstance(verbose, int):
-            if verbose == 0:
-                display_pb = False
-            else:
-                display_pb = True
-        else:
-            display_pb = verbose
+        display_pb = self.process_verbose(verbose)
 
         # Set model mode
         self._model.train(mode=training_mode)
@@ -481,15 +502,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         import torch
         from art.data_generators import PyTorchDataGenerator
 
-        if verbose is None:
-            display_pb = False
-        elif isinstance(verbose, int):
-            if verbose == 0:
-                display_pb = False
-            else:
-                display_pb = True
-        else:
-            display_pb = verbose
+        display_pb = self.process_verbose(verbose)
 
         # Put the model in the training mode
         self._model.train()
