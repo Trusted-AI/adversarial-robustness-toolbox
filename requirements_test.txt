@@ -55,7 +55,7 @@ jax[cpu]==0.4.23
 # lingvo==0.6.4
 
 # other
-pytest~=7.3.1
+pytest~=7.4.3
 pytest-flake8~=1.1.1
 flake8~=4.0.1
 pytest-mock~=3.10.0
