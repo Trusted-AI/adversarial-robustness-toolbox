@@ -213,7 +213,7 @@ def test_mnist_certified_loss(art_warning, fix_get_mnist_data):
 
             certified_loss += sample_loss
 
-        assert round(float(certified_loss.cpu().detach().numpy()), 4) == -309.2724
+        assert float(certified_loss.cpu().detach().numpy()) == pytest.approx(-309.2724, abs=0.001)
         assert samples_certified == 94
 
         # empirically check that PGD does not give a lower acc

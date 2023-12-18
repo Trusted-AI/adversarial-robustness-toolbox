@@ -57,7 +57,7 @@ def get_mnist_classifier(framework):
             import tensorflow as tf
 
             classifier, _ = get_image_classifier_tf()
-            optimizer = tf.keras.optimizers.SGD(learning_rate=0.01, momentum=0.9, name="SGD", decay=5e-4)
+            optimizer = tf.keras.optimizers.legacy.SGD(learning_rate=0.01, momentum=0.9, name="SGD", decay=5e-4)
             scheduler = tf.keras.optimizers.schedules.PiecewiseConstantDecay([250, 400], [0.01, 0.001, 0.0001])
             rs = TensorFlowV2MACER(
                 model=classifier.model,

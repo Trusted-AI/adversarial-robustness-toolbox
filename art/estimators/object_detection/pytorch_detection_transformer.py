@@ -51,7 +51,7 @@ class PyTorchDetectionTransformer(ObjectDetectorMixin, PyTorchEstimator):
 
     def __init__(
         self,
-        model: "torch.nn.Module" = None,
+        model: Optional["torch.nn.Module"] = None,
         input_shape: Tuple[int, ...] = (3, 800, 800),
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         channels_first: Optional[bool] = True,
@@ -289,7 +289,7 @@ class PyTorchDetectionTransformer(ObjectDetectorMixin, PyTorchEstimator):
                     y_tensor.append(y_t)
             elif y is not None and isinstance(y[0]["boxes"], np.ndarray):
                 y_tensor = []
-                for y_i in y_preprocessed:
+                for y_i in y:
                     y_t = {
                         "boxes": torch.from_numpy(y_i["boxes"]).type(torch.float).to(self.device),
                         "labels": torch.from_numpy(y_i["labels"]).type(torch.int64).to(self.device),
