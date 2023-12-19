@@ -92,7 +92,7 @@ class TestMetricsTrees(unittest.TestCase):
             "verbose": 0,
         }
 
-        model = lightgbm.train(parameters, train_data, valid_sets=test_data, num_boost_round=2, early_stopping_rounds=1)
+        model = lightgbm.train(parameters, train_data, valid_sets=test_data, num_boost_round=2)
 
         classifier = LightGBMClassifier(model=model)
 
