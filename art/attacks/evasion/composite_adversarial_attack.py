@@ -53,7 +53,7 @@ class CompositeAdversarialAttackPyTorch(EvasionAttack):
     and uses the iterative gradient sign method to optimize the perturbations in semantic space and Lp-ball (see
     `FastGradientMethod` and `BasicIterativeMethod`).
 
-    | Note that this attack is intended for only PyTorch image classifiers with RGB images in the range [0, 1] as inputs.
+    | Note that this attack is intended for only PyTorch image classifiers with RGB images in the range [0, 1] as inputs
 
     | Paper link: https://arxiv.org/abs/2202.04235
     """
@@ -222,7 +222,7 @@ class CompositeAdversarialAttackPyTorch(EvasionAttack):
                     f"within {_epsilons_range[i][2]} of type tuple."
                 )
 
-            if not (_epsilons_range[i][1][0] <= self.epsilons[i][0] <= self.epsilons[i][1] <= _epsilons_range[i][1][1]):
+            if not _epsilons_range[i][1][0] <= self.epsilons[i][0] <= self.epsilons[i][1] <= _epsilons_range[i][1][1]:
                 logger.info(
                     "The argument `%s` must be an interval within %s of type tuple.",
                     _epsilons_range[i][0],
@@ -653,7 +653,7 @@ class CompositeAdversarialAttackPyTorch(EvasionAttack):
 
             for tdx in range(self.seq_num):
                 idx = self.curr_seq[tdx]
-                adv_img, adv_val_updated = self.attack_dict[idx](adv_img, adv_val[idx], labels)
+                adv_img, adv_val_updated = self.attack_dict[idx](adv_img, adv_val[idx], labels)  # type: ignore
                 if idx != self.linf_idx:
                     adv_val[idx] = adv_val_updated
 
