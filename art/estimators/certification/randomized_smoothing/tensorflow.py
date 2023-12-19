@@ -137,7 +137,7 @@ class TensorFlowV2RandomizedSmoothing(RandomizedSmoothingMixin, TensorFlowV2Clas
         y: np.ndarray,
         batch_size: int = 128,
         nb_epochs: int = 10,
-        verbose: Optional[Union[bool, int]] = None,
+        verbose: bool = False,
         **kwargs
     ) -> None:
         """
@@ -148,15 +148,12 @@ class TensorFlowV2RandomizedSmoothing(RandomizedSmoothingMixin, TensorFlowV2Clas
                   shape (nb_samples,).
         :param batch_size: Size of batches.
         :param nb_epochs: Number of epochs to use for training.
-        :param verbose: (Optional) Display the progress bar, if not supplied will revert to the verbose level when
-                        class was initialised.
+        :param verbose: Display the training progress bar.
         :param kwargs: Dictionary of framework-specific arguments. This parameter currently only supports
                        "scheduler" which is an optional function that will be called at the end of every
                        epoch to adjust the learning rate.
         """
         import tensorflow as tf
-
-        display_pb = self.process_verbose(verbose)
 
         if self._train_step is None:  # pragma: no cover
             if self._loss_object is None:  # pragma: no cover
@@ -194,7 +191,7 @@ class TensorFlowV2RandomizedSmoothing(RandomizedSmoothingMixin, TensorFlowV2Clas
 
         train_ds = tf.data.Dataset.from_tensor_slices((x_preprocessed, y_preprocessed)).shuffle(10000).batch(batch_size)
 
-        for epoch in trange(nb_epochs, disable=not display_pb):
+        for epoch in trange(nb_epochs, disable=not verbose):
             for images, labels in train_ds:
                 # Add random noise for randomized smoothing
                 images += tf.random.normal(shape=images.shape, mean=0.0, stddev=self.scale)

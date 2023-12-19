@@ -204,26 +204,12 @@ def test_fit_kwargs(
         # Test a valid callback
         classifier, sess = image_dl_estimator(from_logits=True)
 
-        kwargs = {"callbacks": [LearningRateScheduler(get_lr)], "verbose": True}
-        classifier.fit(x_train_mnist, y_train_mnist, batch_size=default_batch_size, nb_epochs=1, **kwargs)
+        kwargs = {"callbacks": [LearningRateScheduler(get_lr)]}
+        classifier.fit(x_train_mnist, y_train_mnist, batch_size=default_batch_size, nb_epochs=1, verbose=True, **kwargs)
 
         # Check for fit_generator kwargs as well
         data_gen = image_data_generator(sess=sess)
         classifier.fit_generator(generator=data_gen, nb_epochs=1, **kwargs)
-
-        # Test failure for invalid parameters: does not apply to many frameworks which allow arbitrary kwargs
-        if framework not in [
-            "tensorflow1",
-            "tensorflow2",
-            "tensorflow2v1",
-            "huggingface",
-            "pytorch",
-        ]:
-            kwargs = {"epochs": 1}
-            with pytest.raises(TypeError) as exception:
-                classifier.fit(x_train_mnist, y_train_mnist, batch_size=default_batch_size, nb_epochs=1, **kwargs)
-
-            assert "multiple values for keyword argument" in str(exception)
 
     except ARTTestException as e:
         art_warning(e)

@@ -172,7 +172,7 @@ class PyTorchSmoothMix(PyTorchRandomizedSmoothing):
         training_mode: bool = True,
         drop_last: bool = False,
         scheduler: Optional["torch.optim.lr_scheduler._LRScheduler"] = None,
-        verbose: Optional[Union[bool, int]] = None,
+        verbose: bool = False,
         **kwargs,
     ) -> None:
         """
@@ -188,16 +188,13 @@ class PyTorchSmoothMix(PyTorchRandomizedSmoothing):
                           the batch size. If ``False`` and the size of dataset is not divisible by the batch size, then
                           the last batch will be smaller. (default: ``False``)
         :param scheduler: Learning rate scheduler to run at the start of every epoch.
-        :param verbose: (Optional) Display the progress bar, if not supplied will revert to the verbose level when
-                 class was initialised.
+        :param verbose: Display the training progress bar.
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
                and providing it takes no effect.
         """
         import torch
         import torch.nn.functional as F
         from torch.utils.data import TensorDataset, DataLoader
-
-        display_pb = self.process_verbose(verbose)
 
         # Set model mode
         self._model.train(mode=training_mode)
@@ -220,7 +217,7 @@ class PyTorchSmoothMix(PyTorchRandomizedSmoothing):
         dataloader = DataLoader(dataset=dataset, batch_size=batch_size, shuffle=True, drop_last=drop_last)
 
         # Start training
-        for epoch in trange(nb_epochs, disable=not display_pb):
+        for epoch in trange(nb_epochs, disable=not verbose):
             warmup_v = min(1.0, (epoch + 1) / self.warmup)
 
             for x_batch, y_batch in dataloader:

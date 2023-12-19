@@ -366,35 +366,6 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
         return output, y_preprocessed
 
-    def process_verbose(self, verbose: Optional[Union[bool, int]] = None) -> bool:
-        """
-        Function to unify the various ways implemented in ART of displaying progress bars
-        into a single True/False output.
-
-        :param verbose: If to display the progress bar information in one of a few possible formats.
-        :return: True/False if to display the progress bars.
-        """
-
-        if verbose is not None:
-            if isinstance(verbose, int):
-                if verbose <= 0:
-                    display_pb = False
-                else:
-                    display_pb = True
-            elif isinstance(verbose, bool):
-                display_pb = verbose
-            else:
-                raise ValueError("Verbose should be True/False or an int")
-        else:
-            # Check if the verbose attribute is present in the current classifier
-            if hasattr(self, "verbose"):
-                display_pb = self.verbose  # type: ignore
-            # else default to False
-            else:
-                display_pb = False
-
-        return display_pb
-
     def fit(  # pylint: disable=W0221
         self,
         x: np.ndarray,
@@ -404,7 +375,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         training_mode: bool = True,
         drop_last: bool = False,
         scheduler: Optional["torch.optim.lr_scheduler._LRScheduler"] = None,
-        verbose: Optional[Union[bool, int]] = None,
+        verbose: bool = False,
         **kwargs,
     ) -> None:
         """
@@ -427,8 +398,6 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         import torch
         from torch.utils.data import TensorDataset, DataLoader
 
-        display_pb = self.process_verbose(verbose)
-
         # Set model mode
         self._model.train(mode=training_mode)
 
@@ -450,8 +419,8 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         dataloader = DataLoader(dataset=dataset, batch_size=batch_size, shuffle=True, drop_last=drop_last)
 
         # Start training
-        for _ in tqdm(range(nb_epochs), disable=not display_pb, desc="Epochs"):
-            for x_batch, y_batch in tqdm(dataloader, disable=not display_pb, desc="Batches"):
+        for _ in tqdm(range(nb_epochs), disable=not verbose, desc="Epochs"):
+            for x_batch, y_batch in dataloader:
                 # Move inputs to device
                 x_batch = x_batch.to(self._device)
                 y_batch = y_batch.to(self._device)
@@ -488,21 +457,19 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                 scheduler.step()
 
     def fit_generator(  # pylint: disable=W0221
-        self, generator: "DataGenerator", nb_epochs: int = 20, verbose: Optional[Union[bool, int]] = None, **kwargs
+        self, generator: "DataGenerator", nb_epochs: int = 20, verbose: bool = False, **kwargs
     ) -> None:
         """
         Fit the classifier using the generator that yields batches as specified.
 
         :param generator: Batch generator providing `(x, y)` for each epoch.
         :param nb_epochs: Number of epochs to use for training.
-        :param verbose: If to display the progress bar information.
+        :param verbose: Display the training progress bar.
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
                        and providing it takes no effect.
         """
         import torch
         from art.data_generators import PyTorchDataGenerator
-
-        display_pb = self.process_verbose(verbose)
 
         # Put the model in the training mode
         self._model.train()
@@ -524,8 +491,8 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                 == (0, 1)
             )
         ):
-            for _ in tqdm(range(nb_epochs), disable=not display_pb, desc="Epochs"):
-                for i_batch, o_batch in tqdm(generator.iterator, disable=not display_pb, desc="Batches"):
+            for _ in tqdm(range(nb_epochs), disable=not verbose, desc="Epochs"):
+                for i_batch, o_batch in generator.iterator:
                     if isinstance(i_batch, np.ndarray):
                         i_batch = torch.from_numpy(i_batch).to(self._device)
                     else:
@@ -534,10 +501,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                     if isinstance(o_batch, np.ndarray):
                         o_batch = torch.argmax(torch.from_numpy(o_batch).to(self._device), dim=1)
                     else:
-                        if o_batch.dim() > 1:
-                            o_batch = torch.argmax(o_batch.to(self._device), dim=1)
-                        else:
-                            o_batch = o_batch.to(self._device)
+                        o_batch = torch.argmax(o_batch.to(self._device), dim=1)
 
                     # Zero the parameter gradients
                     self._optimizer.zero_grad()
