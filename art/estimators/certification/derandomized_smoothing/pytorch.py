@@ -457,7 +457,7 @@ class PyTorchDeRandomizedSmoothing(DeRandomizedSmoothingMixin, PyTorchClassifier
                           the batch size. If ``False`` and the size of dataset is not divisible by the batch size, then
                           the last batch will be smaller. (default: ``False``)
         :param scheduler: Learning rate scheduler to run at the start of every epoch.
-        :param verbose: if to display training progress bars
+        :param verbose: Display training progress bar.
         :param update_batchnorm: ViT specific argument.
                                  If to run the training data through the model to update any batch norm statistics prior
                                  to training. Useful on small datasets when using pre-trained ViTs.
