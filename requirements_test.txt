@@ -41,7 +41,7 @@ timm==0.9.2
 catboost==1.1.1
 GPy==1.10.0
 lightgbm==3.3.5
-xgboost==1.7.5
+xgboost==2.0.2
 
 kornia~=0.6.12
 tensorboardX==2.6.2.2
