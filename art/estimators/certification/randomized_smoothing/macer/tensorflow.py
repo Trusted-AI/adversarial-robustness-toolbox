@@ -75,7 +75,6 @@ class TensorFlowV2MACER(TensorFlowV2RandomizedSmoothing):
         gamma: float = 8.0,
         lmbda: float = 12.0,
         gaussian_samples: int = 16,
-        verbose: bool = False,
     ) -> None:
         """
         Create a MACER classifier.
@@ -108,7 +107,6 @@ class TensorFlowV2MACER(TensorFlowV2RandomizedSmoothing):
         :param gamma: The hinge factor.
         :param lmbda: The trade-off factor.
         :param gaussian_samples: The number of gaussian samples per input.
-        :param verbose: Show progress bars.
         """
         super().__init__(
             model=model,
@@ -125,7 +123,6 @@ class TensorFlowV2MACER(TensorFlowV2RandomizedSmoothing):
             sample_size=sample_size,
             scale=scale,
             alpha=alpha,
-            verbose=verbose,
         )
         self.beta = beta
         self.gamma = gamma
@@ -133,13 +130,7 @@ class TensorFlowV2MACER(TensorFlowV2RandomizedSmoothing):
         self.gaussian_samples = gaussian_samples
 
     def fit(
-        self,
-        x: np.ndarray,
-        y: np.ndarray,
-        batch_size: int = 128,
-        nb_epochs: int = 10,
-        verbose: bool = False,
-        **kwargs
+        self, x: np.ndarray, y: np.ndarray, batch_size: int = 128, nb_epochs: int = 10, verbose: bool = False, **kwargs
     ) -> None:
         """
         Fit the classifier on the training set `(x, y)`.

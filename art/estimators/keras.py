@@ -61,6 +61,8 @@ class KerasEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
         :return: Predictions.
         :rtype: Format as expected by the `model`
         """
+        if "verbose" in kwargs:
+            kwargs["verbose"] = int(kwargs["verbose"])
         return NeuralNetworkMixin.predict(self, x, batch_size=batch_size, **kwargs)
 
     def fit(self, x: np.ndarray, y, batch_size: int = 128, nb_epochs: int = 20, **kwargs) -> None:
@@ -74,6 +76,8 @@ class KerasEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
         :param batch_size: Batch size.
         :param nb_epochs: Number of training epochs.
         """
+        if "verbose" in kwargs:
+            kwargs["verbose"] = int(kwargs["verbose"])
         NeuralNetworkMixin.fit(self, x, y, batch_size=batch_size, nb_epochs=nb_epochs, **kwargs)
 
     def compute_loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:

@@ -77,7 +77,6 @@ class TensorFlowV2SmoothAdv(TensorFlowV2RandomizedSmoothing):
         num_noise_vec: int = 1,
         num_steps: int = 10,
         warmup: int = 1,
-        verbose: bool = False,
     ) -> None:
         """
         Create a MACER classifier.
@@ -110,7 +109,6 @@ class TensorFlowV2SmoothAdv(TensorFlowV2RandomizedSmoothing):
         :param num_noise_vec: The number of noise vectors.
         :param num_steps: The number of attack updates.
         :param warmup: The warm-up strategy that is gradually increased up to the original value.
-        :param verbose: Show progress bars.
         """
         super().__init__(
             model=model,
@@ -150,13 +148,7 @@ class TensorFlowV2SmoothAdv(TensorFlowV2RandomizedSmoothing):
         self.attack = ProjectedGradientDescent(classifier, eps=self.epsilon, max_iter=1, verbose=False)
 
     def fit(
-        self,
-        x: np.ndarray,
-        y: np.ndarray,
-        batch_size: int = 128,
-        nb_epochs: int = 10,
-        verbose: bool = False,
-        **kwargs
+        self, x: np.ndarray, y: np.ndarray, batch_size: int = 128, nb_epochs: int = 10, verbose: bool = False, **kwargs
     ) -> None:
         """
         Fit the classifier on the training set `(x, y)`.

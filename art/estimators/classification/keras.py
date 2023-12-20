@@ -582,6 +582,9 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         if self._reduce_labels or y_ndim == 1:
             y_preprocessed = np.argmax(y_preprocessed, axis=1)
 
+        if "verbose" in kwargs:
+            kwargs["verbose"] = int(kwargs["verbose"])
+
         self._model.fit(x=x_preprocessed, y=y_preprocessed, batch_size=batch_size, epochs=nb_epochs, **kwargs)
 
     def fit_generator(self, generator: "DataGenerator", nb_epochs: int = 20, **kwargs) -> None:
@@ -600,6 +603,9 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         # Try to use the generator as a Keras native generator, otherwise use it through the `DataGenerator` interface
         from art.preprocessing.standardisation_mean_std.numpy import StandardisationMeanStd
 
+        if "verbose" in kwargs:
+            kwargs["verbose"] = int(kwargs["verbose"])
+
         if isinstance(generator, KerasDataGenerator) and (
             self.preprocessing is None
             or (
@@ -615,12 +621,8 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
                 self._model.fit_generator(generator.iterator, epochs=nb_epochs, **kwargs)
             except ValueError:  # pragma: no cover
                 logger.info("Unable to use data generator as Keras generator. Now treating as framework-independent.")
-                if "verbose" not in kwargs:
-                    kwargs["verbose"] = 0
                 super().fit_generator(generator, nb_epochs=nb_epochs, **kwargs)
         else:  # pragma: no cover
-            if "verbose" not in kwargs:
-                kwargs["verbose"] = 0
             super().fit_generator(generator, nb_epochs=nb_epochs, **kwargs)
 
     def get_activations(

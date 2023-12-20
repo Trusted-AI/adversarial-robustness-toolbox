@@ -103,7 +103,6 @@ class PyTorchSmoothMix(PyTorchRandomizedSmoothing):
         mix_step: int = 0,
         maxnorm_s: Optional[float] = None,
         maxnorm: Optional[float] = None,
-        verbose: bool = False,
     ) -> None:
         """
         Create a SmoothMix classifier.
@@ -136,7 +135,6 @@ class PyTorchSmoothMix(PyTorchRandomizedSmoothing):
         :param mix_step: Determines which sample to use for the clean side.
         :param maxnorm_s: The initial value of `alpha * mix_step`.
         :param maxnorm: The initial value of `alpha * mix_step` for adversarial examples.
-        :param verbose: Show progress bars.
         """
         super().__init__(
             model=model,
@@ -153,7 +151,6 @@ class PyTorchSmoothMix(PyTorchRandomizedSmoothing):
             sample_size=sample_size,
             scale=scale,
             alpha=alpha,
-            verbose=verbose,
         )
         self.eta = eta
         self.num_noise_vec = num_noise_vec
