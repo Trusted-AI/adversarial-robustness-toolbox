@@ -121,6 +121,8 @@ class SpectralSignatureDefense(PoisonFilteringDefence):
             raise ValueError("Wrong type detected.")
 
         if features_x_poisoned is not None:
+            # flatten activations across batch
+            features_x_poisoned = np.reshape(features_x_poisoned, (features_x_poisoned.shape[0], -1))
             features_split = segment_by_class(features_x_poisoned, self.y_train, self.classifier.nb_classes)
         else:
             raise ValueError("Activation are `None`.")
