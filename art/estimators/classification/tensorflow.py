@@ -358,7 +358,7 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
             for _ in tqdm(range(nb_epochs), disable=not verbose, desc="Epochs"):
                 gen_size = generator.size
                 if isinstance(gen_size, int):
-                    num_batchcs = int(gen_size / generator.batch_size)
+                    num_batches = int(gen_size / generator.batch_size)
                 else:
                     raise ValueError("Number of batches could not be determined from the generator")
 
