@@ -3,7 +3,7 @@
 numpy>=1.18.5,<1.25
 scipy==1.10.1
 matplotlib==3.7.1
-scikit-learn>=0.22.2,<1.4.0
+scikit-learn>=1.0.0,<1.4.0 # only test v1.0 onwards
 six==1.16.0
 Pillow==10.1.0
 tqdm==4.66.1
@@ -14,7 +14,7 @@ ffmpeg-python==0.2.0
 cma==3.3.0
 pandas==2.1.4
 librosa==0.10.0.post2
-numba~=0.56.4
+numba~=0.58.1 # for Python 3.11 support
 opencv-python
 sortedcontainers==2.4.0
 h5py==3.10.0
