@@ -44,6 +44,10 @@ jobs:
             framework: scikitlearn
             scikit-learn: 1.2.2
             python: '3.10'
+          - name: scikit-learn 1.3.2 (Python 3.11)
+            framework: scikitlearn
+            scikit-learn: 1.3.2
+            python: '3.11'
 
     name: ${{ matrix.name }}
     steps:
