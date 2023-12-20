@@ -101,10 +101,10 @@ class SleeperAgentAttack(GradientMatchingAttack):
         """
         if isinstance(classifier.preprocessing, (StandardisationMeanStdPyTorch, StandardisationMeanStdTensorFlow)):
             clip_values_normalised = (
-                classifier.clip_values - classifier.preprocessing.mean
+                classifier.clip_values - classifier.preprocessing.mean  # type: ignore
             ) / classifier.preprocessing.std
             clip_values_normalised = (clip_values_normalised[0], clip_values_normalised[1])
-            epsilon_normalised = epsilon * (clip_values_normalised[1] - clip_values_normalised[0])
+            epsilon_normalised = epsilon * (clip_values_normalised[1] - clip_values_normalised[0])  # type: ignore
             patch_normalised = (patch - classifier.preprocessing.mean) / classifier.preprocessing.std
         else:
             raise ValueError("classifier.preprocessing not an instance of pytorch/tensorflow")
@@ -431,7 +431,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
             classifier.model.trainable = model_trainable
         else:
             raise NotImplementedError("SleeperAgentAttack is currently implemented only for PyTorch and TensorFlowV2.")
-        indices = sorted(range(len(grad_norms)), key=lambda k: grad_norms[k])
+        indices = sorted(range(len(grad_norms)), key=lambda k: grad_norms[k])  # type: ignore
         indices = indices[-num_poison:]
         return np.array(indices)  # this will get only indices for target class
 

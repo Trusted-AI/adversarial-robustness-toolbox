@@ -41,7 +41,7 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v3
       - name: Setup Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python }}
       - name: Pre-install Lingvo ASR
@@ -76,7 +76,7 @@ jobs:
           pip install tqdm==4.64.1
           pip list
       - name: Run ${{ matrix.name }} Tests
-        run: ./run_tests.sh ${{ matrix.framework }}
+        run: pytest --cov-report=xml --cov=art --cov-append -q -vv tests/estimators/speech_recognition/test_tensorflow_lingvo.py --framework=${{ matrix.framework }} --durations=0
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
         with:

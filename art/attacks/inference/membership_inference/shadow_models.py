@@ -164,8 +164,8 @@ class ShadowModels:
         max_iterations: int = 40,
         max_rejections: int = 3,
         min_features_randomized: int = 1,
-        random_record_fn: Callable[[], np.ndarray] = None,
-        randomize_features_fn: Callable[[np.ndarray, int], np.ndarray] = None,
+        random_record_fn: Optional[Callable[[], np.ndarray]] = None,
+        randomize_features_fn: Optional[Callable[[np.ndarray, int], np.ndarray]] = None,
     ) -> np.ndarray:
         """
         This method implements the hill climbing algorithm from R. Shokri et al. (2017)
@@ -247,8 +247,8 @@ class ShadowModels:
         member_ratio: float = 0.5,
         min_confidence: float = 0.4,
         max_retries: int = 6,
-        random_record_fn: Callable[[], np.ndarray] = None,
-        randomize_features_fn: Callable[[np.ndarray, int], np.ndarray] = None,
+        random_record_fn: Optional[Callable[[], np.ndarray]] = None,
+        randomize_features_fn: Optional[Callable[[np.ndarray, int], np.ndarray]] = None,
     ) -> Tuple[Tuple[np.ndarray, np.ndarray, np.ndarray], Tuple[np.ndarray, np.ndarray, np.ndarray]]:
         """
         Generates a shadow dataset (member and nonmember samples and their corresponding model predictions) by training

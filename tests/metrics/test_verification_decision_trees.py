@@ -71,8 +71,8 @@ class TestMetricsTrees(unittest.TestCase):
             x=self.x_test, y=self.y_test, eps_init=0.3, nb_search_steps=10, max_clique=2, max_level=2
         )
 
-        self.assertEqual(average_bound, 0.03186914062500001)
-        self.assertEqual(verified_error, 0.99)
+        self.assertAlmostEqual(average_bound, second=0.03335742187499999, places=6)
+        self.assertEqual(verified_error, second=0.99)
 
     def test_LightGBM(self):
         train_data = lightgbm.Dataset(self.x_train, label=np.argmax(self.y_train, axis=1))
@@ -92,7 +92,7 @@ class TestMetricsTrees(unittest.TestCase):
             "verbose": 0,
         }
 
-        model = lightgbm.train(parameters, train_data, valid_sets=test_data, num_boost_round=2, early_stopping_rounds=1)
+        model = lightgbm.train(parameters, train_data, valid_sets=test_data, num_boost_round=2)
 
         classifier = LightGBMClassifier(model=model)
 

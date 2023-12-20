@@ -28,37 +28,31 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: Keras 2.9.0 (TensorFlow 2.9.2 Python 3.9)
+          - name: Keras 2.13.1 (TensorFlow 2.13.1 Python 3.10)
             framework: keras
-            python: 3.9
-            tensorflow: 2.9.2
-            keras: 2.9.0
-            tf_addons: 0.17.0
-          - name: TensorFlow-Keras 2.9.2 (Keras 2.9.0 Python 3.9)
-            framework: kerastf
-            python: 3.9
-            tensorflow: 2.9.2
-            keras: 2.9.0
-            tf_addons: 0.17.0
-          - name: Keras 2.10.0 (TensorFlow 2.10.1 Python 3.9)
+            python: '3.10'
+            tensorflow: 2.13.1
+            keras: 2.13.1
+            tf_addons: 0.19.0
+          - name: Keras 2.14.0 (TensorFlow 2.14.0 Python 3.10)
             framework: keras
-            python: 3.9
-            tensorflow: 2.10.1
-            keras: 2.10.0
-            tf_addons: 0.18.0
-          - name: TensorFlow-Keras 2.10.1 (Keras 2.10.0 Python 3.9)
+            python: '3.10'
+            tensorflow: 2.14.0
+            keras: 2.14.0
+            tf_addons: 0.20.0
+          - name: TensorFlow-Keras 2.14.0 (Keras 2.14.0 Python 3.10)
             framework: kerastf
-            python: 3.9
-            tensorflow: 2.10.1
-            keras: 2.10.0
-            tf_addons: 0.18.0
+            python: '3.10'
+            tensorflow: 2.14.0
+            keras: 2.14.0
+            tf_addons: 0.20.0
 
     name: ${{ matrix.name }}
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v3
       - name: Setup Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python }}
       - name: Install Dependencies
@@ -66,7 +60,7 @@ jobs:
           sudo apt-get update
           sudo apt-get -y -q install ffmpeg libavcodec-extra
           python -m pip install --upgrade pip setuptools wheel
-          pip install -r requirements_test.txt
+          pip install -q -r <(sed '/^tensorflow/d;/^keras/d;/^tensorflow-addons/d' requirements_test.txt)
           pip install tensorflow==${{ matrix.tensorflow }}
           pip install keras==${{ matrix.keras }}
           pip install tensorflow-addons==${{ matrix.tf_addons }}

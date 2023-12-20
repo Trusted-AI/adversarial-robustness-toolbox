@@ -225,7 +225,7 @@ class AdversarialTrainerCertifiedPytorch(Trainer):
         y_preprocessed = self.classifier.reduce_labels(y_preprocessed)
 
         num_batch = int(np.ceil(len(x_preprocessed) / float(self.pgd_params["batch_size"])))
-        ind = np.arange(len(x_preprocessed))
+        ind = np.arange(len(x_preprocessed)).tolist()
 
         x_cert = np.copy(x_preprocessed)
         y_cert = np.copy(y_preprocessed)
@@ -287,7 +287,8 @@ class AdversarialTrainerCertifiedPytorch(Trainer):
 
                     if certification_loss == "max_logit_loss":
                         certified_loss += self.classifier.max_logit_loss(
-                            prediction=torch.cat((bias, eps)), target=np.expand_dims(label, axis=0)
+                            prediction=torch.cat((bias, eps)),
+                            target=torch.from_numpy(np.expand_dims(label, axis=0)).to(self.classifier.device),
                         )
                     elif certification_loss == "interval_loss_cce":
                         certified_loss += self.classifier.interval_loss_cce(

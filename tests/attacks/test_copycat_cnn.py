@@ -139,7 +139,7 @@ class TestCopycatCNN(TestBase):
         model.add(Dense(10, activation="softmax"))
         loss = keras.losses.categorical_crossentropy
         try:
-            from keras.optimizers import Adam
+            from keras.optimizers.legacy import Adam
 
             optimizer = Adam(lr=0.001)
         except ImportError:
@@ -365,7 +365,7 @@ class TestCopycatCNNVectors(TestBase):
         model.add(Dense(10, activation="relu"))
         model.add(Dense(3, activation="softmax"))
         try:
-            from keras.optimizers import Adam
+            from keras.optimizers.legacy import Adam
 
             optimizer = Adam(lr=0.001)
         except ImportError:

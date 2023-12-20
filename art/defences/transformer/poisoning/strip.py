@@ -23,7 +23,7 @@ This module implements STRIP: A Defence Against Trojan Attacks on Deep Neural Ne
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional, TypeVar, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING
 
 import numpy as np
 
@@ -32,8 +32,6 @@ from art.estimators.poison_mitigation.strip import STRIPMixin
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_TYPE
-
-    ClassifierWithStrip = TypeVar("ClassifierWithStrip", CLASSIFIER_TYPE, STRIPMixin)
 
 logger = logging.getLogger(__name__)
 
@@ -63,7 +61,7 @@ class STRIP(Transformer):
         self,
         num_samples: int = 20,
         false_acceptance_rate: float = 0.01,
-    ) -> "ClassifierWithStrip":
+    ) -> "CLASSIFIER_TYPE":
         """
         Create a STRIP defense
 

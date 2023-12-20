@@ -146,7 +146,10 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
         # Check DeepSpeech version
         if str(DeepSpeech.__base__) == "<class 'torch.nn.modules.module.Module'>":
             self._version = 2
-        elif str(DeepSpeech.__base__) == "<class 'pytorch_lightning.core.lightning.LightningModule'>":
+        elif str(DeepSpeech.__base__) in [
+            "<class 'pytorch_lightning.core.lightning.LightningModule'>",
+            "<class 'pytorch_lightning.core.module.LightningModule'>",
+        ]:
             self._version = 3
         else:
             raise NotImplementedError("Only DeepSpeech version 2 and DeepSpeech version 3 are currently supported.")
@@ -381,7 +384,7 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
 
             # Call to DeepSpeech model for prediction
             with torch.no_grad():
-                outputs, output_sizes = self._model(
+                outputs, output_sizes, _ = self._model(
                     inputs[begin:end].to(self._device), input_sizes[begin:end].to(self._device)
                 )
 
@@ -455,7 +458,7 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
         input_sizes = input_rates.mul_(inputs.size()[-1]).int()
 
         # Call to DeepSpeech model for prediction
-        outputs, output_sizes = self._model(inputs.to(self._device), input_sizes.to(self._device))
+        outputs, output_sizes, _ = self._model(inputs.to(self._device), input_sizes.to(self._device))
         outputs = outputs.transpose(0, 1)
 
         if self._version == 2:
@@ -534,7 +537,7 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
 
         # Train with batch processing
         num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
-        ind = np.arange(len(x_preprocessed))
+        ind = np.arange(len(x_preprocessed)).tolist()
 
         # Start training
         for _ in range(nb_epochs):
@@ -566,7 +569,7 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
                 self.optimizer.zero_grad()
 
                 # Call to DeepSpeech model for prediction
-                outputs, output_sizes = self._model(inputs.to(self._device), input_sizes.to(self._device))
+                outputs, output_sizes, _ = self._model(inputs.to(self._device), input_sizes.to(self._device))
                 outputs = outputs.transpose(0, 1)
 
                 if self._version == 2:
@@ -625,7 +628,7 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
         input_sizes = input_rates.mul_(inputs.size()[-1]).int()
 
         # Call to DeepSpeech model for prediction
-        outputs, output_sizes = self.model(inputs.to(self.device), input_sizes.to(self.device))
+        outputs, output_sizes, _ = self.model(inputs.to(self.device), input_sizes.to(self.device))
         outputs_ = outputs.transpose(0, 1)
 
         if self._version == 2:

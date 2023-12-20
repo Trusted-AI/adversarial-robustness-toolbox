@@ -494,7 +494,8 @@ def get_image_classifier_tf_v2(from_logits=False):
     loss_object = tf.keras.losses.SparseCategoricalCrossentropy(
         from_logits=from_logits, reduction=tf.keras.losses.Reduction.SUM
     )
-    optimizer = tf.keras.optimizers.Adam(learning_rate=0.01)
+
+    optimizer = tf.keras.optimizers.legacy.Adam(learning_rate=0.01)
 
     model.compile(optimizer=optimizer, loss=loss_object)
 
@@ -640,7 +641,7 @@ def get_image_classifier_kr(
                 loss = loss_name
         elif loss_type == "function_losses":
             if from_logits:
-                if int(keras.__version__.split(".")[0]) == 2 and int(keras.__version__.split(".")[1]) >= 3:
+                if is_tf23_keras24:
 
                     def categorical_crossentropy(y_true, y_pred):
                         return keras.losses.categorical_crossentropy(y_true, y_pred, from_logits=True)
@@ -704,7 +705,7 @@ def get_image_classifier_kr(
     else:
         raise ValueError("Loss name not recognised.")
 
-    model.compile(loss=loss, optimizer=keras.optimizers.Adam(lr=0.01), metrics=["accuracy"])
+    model.compile(loss=loss, optimizer=keras.optimizers.legacy.Adam(lr=0.01), metrics=["accuracy"])
 
     # Get classifier
     krc = KerasClassifier(model, clip_values=(0, 1), use_logits=from_logits)
@@ -962,7 +963,7 @@ def get_image_classifier_kr_tf(loss_name="categorical_crossentropy", loss_type="
     else:
         raise ValueError("Loss name not recognised.")
 
-    model.compile(loss=loss, optimizer=tf.keras.optimizers.Adam(lr=0.01), metrics=["accuracy"])
+    model.compile(loss=loss, optimizer=tf.keras.optimizers.legacy.Adam(lr=0.01), metrics=["accuracy"])
 
     # Get classifier
     krc = KerasClassifier(model, clip_values=(0, 1), use_logits=from_logits)
@@ -1000,7 +1001,7 @@ def get_image_classifier_kr_tf_binary():
         [_kr_tf_weights_loader("MNIST_BINARY", "W", "DENSE"), _kr_tf_weights_loader("MNIST_BINARY", "B", "DENSE")]
     )
 
-    model.compile(loss="binary_crossentropy", optimizer=tf.keras.optimizers.Adam(lr=0.01), metrics=["accuracy"])
+    model.compile(loss="binary_crossentropy", optimizer=tf.keras.optimizers.legacy.Adam(lr=0.01), metrics=["accuracy"])
 
     # Get classifier
     krc = KerasClassifier(model, clip_values=(0, 1), use_logits=False)
@@ -1723,7 +1724,7 @@ def get_tabular_classifier_tf_v2():
 
     model = TensorFlowModel()
     loss_object = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
-    optimizer = tf.keras.optimizers.Adam(learning_rate=0.01)
+    optimizer = tf.keras.optimizers.legacy.Adam(learning_rate=0.01)
 
     # Create the classifier
     tfc = TensorFlowV2Classifier(
@@ -1885,7 +1886,9 @@ def get_tabular_classifier_kr(load_init=True):
         model.add(Dense(10, activation="relu"))
         model.add(Dense(3, activation="softmax"))
 
-    model.compile(loss="categorical_crossentropy", optimizer=keras.optimizers.Adam(lr=0.001), metrics=["accuracy"])
+    model.compile(
+        loss="categorical_crossentropy", optimizer=keras.optimizers.legacy.Adam(lr=0.001), metrics=["accuracy"]
+    )
 
     # Get classifier
     krc = KerasClassifier(model, clip_values=(0, 1), use_logits=False, channels_first=True)
@@ -1978,7 +1981,7 @@ def get_tabular_regressor_kr(load_init=True):
         model.add(Dense(10, activation="relu"))
         model.add(Dense(1))
 
-    model.compile(loss="mean_squared_error", optimizer=keras.optimizers.Adam(lr=0.001), metrics=["accuracy"])
+    model.compile(loss="mean_squared_error", optimizer=keras.optimizers.legacy.Adam(lr=0.001), metrics=["accuracy"])
 
     # Get regressor
     krc = KerasRegressor(model)

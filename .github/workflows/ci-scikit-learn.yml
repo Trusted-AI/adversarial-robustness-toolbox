@@ -50,7 +50,7 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v3
       - name: Setup Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python }}
       - name: Install Dependencies
@@ -59,8 +59,6 @@ jobs:
           sudo apt-get -y -q install ffmpeg libavcodec-extra
           python -m pip install --upgrade pip setuptools wheel
           pip install -r requirements_test.txt
-          pip install tensorflow==2.10.1
-          pip install keras==2.10.0
           pip install scikit-learn==${{ matrix.scikit-learn }}
           pip list
       - name: Run Tests
