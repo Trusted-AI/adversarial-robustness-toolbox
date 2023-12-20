@@ -222,7 +222,9 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
             if scheduler is not None:
                 scheduler.step()
 
-    def predict(self, x: np.ndarray, batch_size: int = 128, verbose: bool = False, **kwargs) -> np.ndarray:  # type: ignore
+    def predict(  # type: ignore
+        self, x: np.ndarray, batch_size: int = 128, verbose: bool = False, **kwargs
+    ) -> np.ndarray:
         """
         Perform prediction of the given classifier for a batch of inputs, taking an expectation over transformations.
 
