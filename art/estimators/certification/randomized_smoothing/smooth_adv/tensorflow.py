@@ -125,7 +125,6 @@ class TensorFlowV2SmoothAdv(TensorFlowV2RandomizedSmoothing):
             sample_size=sample_size,
             scale=scale,
             alpha=alpha,
-            verbose=verbose,
         )
         self.epsilon = epsilon
         self.num_noise_vec = num_noise_vec
