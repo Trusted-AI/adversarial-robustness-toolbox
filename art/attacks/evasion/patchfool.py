@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2022
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2023
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -58,8 +58,20 @@ class PatchFoolPyTorch(EvasionAttack):
         skip_att_loss: bool = False,
     ):
         """
-        Create a :class:`PatchFool` instance.
-        TODO
+        Create a :class:`PatchFoolPyTorch` instance.
+
+        :param estimator: A trained classifier.
+        :param attention_nodes: The .
+        :param patch_size: The model's patch size.
+        :param alpha: Weighted coefficient for controlling the attention-aware loss.
+        :param max_iter: The maximum number of iterations.
+        :param batch_size: Size of the batch on which adversarial samples are generated.
+        :param learning_rate: Learning rate of the attack.
+        :param step_size: Period of learning rate decay.
+        :param step_size_decay: Learning rate decay factor for every `step size` number of iterations.
+        :param patch_layer: Layer index for guiding the attention-aware patch selection.
+        :param random_start: Initalize randomly the adversarial patch.
+        :param skip_att_loss: Used for debugging purposes. Skip the calculation of attention-aware loss.
         """
         if not estimator.all_framework_preprocessing:
             raise NotImplementedError(
@@ -112,7 +124,11 @@ class PatchFoolPyTorch(EvasionAttack):
 
     def _generate_batch(self, x: "torch.Tensor", y: Optional["torch.Tensor"] = None) -> "torch.Tensor":
         """
-        TODO
+        Generate a batch of adversarial samples and return them in an array.
+
+        :param x: Source samples.
+        :param y: Target labels.
+        :return: Adversarial examples.
         """
         import torch
         from torch.nn import functional as F
@@ -185,7 +201,10 @@ class PatchFoolPyTorch(EvasionAttack):
     def _get_patch_index(self, x: "torch.Tensor", layer: int) -> "torch.Tensor":
         """
         Select the most influencial patch according to a predefined `layer`.
-        TODO
+
+        :param x: Source samples.
+        :param layer: Layer index for guiding the attention-aware patch selection.
+        :return: Index of the most influential patch.
         """
         import torch
 
@@ -204,8 +223,11 @@ class PatchFoolPyTorch(EvasionAttack):
 
     def _get_attention_loss(self, x: "torch.Tensor", patch_idx: "torch.Tensor") -> "torch.Tensor":
         """
-        Sum the attention weights from each layer for the most influencail patches
-        TODO
+        Sum the attention weights from each layer for the most influentail patches.
+
+        :param x: Source samples.
+        :param patch_idx: Index of the most influential patch.
+        :return: Averaged sum of the attention weights.
         """
         import torch
 
@@ -222,7 +244,11 @@ class PatchFoolPyTorch(EvasionAttack):
 
     def pcgrad(self, grad1, grad2):
         """
-        TODO
+        PCGrad algorithm.
+
+        :param grad1: First loss gradient.
+        :param grad2: Second loss gradient.
+        :return: Projected gradient.
         """
         import torch
 
