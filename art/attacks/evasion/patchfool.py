@@ -21,17 +21,17 @@ This module implements the Patch-Fool attack in PyTorch.
 | Paper link: https://arxiv.org/abs/2203.08392
 """
 
-from typing import Optional, Union
+from typing import Dict, List, Optional, Union
 
 import numpy as np
 from tqdm import tqdm
 
 from art.attacks.attack import EvasionAttack
-from art.estimators.classification.pytorch import PyTorchClassifierDeiT
+from art.estimators.classification.pytorch import PyTorchClassifier
 from art.utils import get_labels_np_array
 
 
-class PatchFool(EvasionAttack):
+class PatchFoolPyTorch(EvasionAttack):
     """
     This class represents a Patch-Fool evasion attack in PyTorch.
 
@@ -40,11 +40,13 @@ class PatchFool(EvasionAttack):
 
     attack_params = EvasionAttack.attack_params
 
-    _estimator_requirements = (PyTorchClassifierDeiT,)
+    _estimator_requirements = (PyTorchClassifier,)
 
     def __init__(
         self,
         estimator: "PYTORCH_ESTIMATOR_TYPE",
+        attention_nodes: Union[Dict[str, str], List[str]],
+        patch_size: int,
         alpha: float = 0.002,
         max_iter: int = 100,
         batch_size: int = 32,
@@ -66,6 +68,8 @@ class PatchFool(EvasionAttack):
 
         super().__init__(estimator=estimator)
 
+        self.attention_nodes = attention_nodes
+        self.patch_size = patch_size
         self.alpha = alpha
         self.max_iter = max_iter
         self.batch_size = batch_size
@@ -118,13 +122,12 @@ class PatchFool(EvasionAttack):
 
         patch_list = self._get_patch_index(x, layer=self.patch_layer)
 
-        patch_size = self.estimator.patch_size
         mask = torch.zeros(x.shape).to(self.estimator.device)
 
         for n, patch_idx in enumerate(patch_list):
-            row = (patch_idx // (x.shape[2] // patch_size)) * patch_size
-            col = (patch_idx % (x.shape[2] // patch_size)) * patch_size
-            mask[n, :, row : row + patch_size, col : col + patch_size] = 1
+            row = (patch_idx // (x.shape[2] // self.patch_size)) * self.patch_size
+            col = (patch_idx % (x.shape[2] // self.patch_size)) * self.patch_size
+            mask[n, :, row : row + self.patch_size, col : col + self.patch_size] = 1
 
         x_adv = torch.clone(x).to(self.estimator.device)
         x_adv = torch.mul(x_adv, 1 - mask)
@@ -186,7 +189,7 @@ class PatchFool(EvasionAttack):
         """
         import torch
 
-        att = self.estimator.get_attention_weights(x)
+        att = self.estimator.get_attention_weights(x, self.attention_nodes)
         # shape: batch x layer x head x (token x token)
         # skip class token
         att = att[:, :, :, 1:, 1:]
@@ -206,7 +209,7 @@ class PatchFool(EvasionAttack):
         """
         import torch
 
-        att = self.estimator.get_attention_weights(x)
+        att = self.estimator.get_attention_weights(x, self.attention_nodes)
         # shape: batch x layer x head x (token x token)
         # skip class token
         att = att[:, :, :, 1:, 1:]
