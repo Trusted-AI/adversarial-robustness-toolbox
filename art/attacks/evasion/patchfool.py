@@ -138,7 +138,7 @@ class PatchFoolPyTorch(EvasionAttack):
         x = x.to(self.estimator.device)
         y = y.to(self.estimator.device)
 
-        patch_list = self._get_patch_index(x, layer=self.patch_layer)
+        patch_list = self._get_patch_index(x)
 
         mask = torch.zeros(x.shape).to(self.estimator.device)
 
@@ -200,12 +200,11 @@ class PatchFoolPyTorch(EvasionAttack):
         x_adv += torch.mul(perturbation, mask)
         return x_adv
 
-    def _get_patch_index(self, x: "torch.Tensor", layer: int) -> "torch.Tensor":
+    def _get_patch_index(self, x: "torch.Tensor") -> "torch.Tensor":
         """
         Select the most influencial patch according to a predefined `layer`.
 
         :param x: Source samples.
-        :param layer: Layer index for guiding the attention-aware patch selection.
         :return: Index of the most influential patch.
         """
         import torch
@@ -219,7 +218,7 @@ class PatchFoolPyTorch(EvasionAttack):
         # shape: batch x layer x (token x token)
         att = torch.sum(att, dim=2)
         # fix layer
-        max_patch_idx = torch.argmax(att[:, layer, :], dim=1)
+        max_patch_idx = torch.argmax(att[:, self.patch_layer, :], dim=1)
 
         return max_patch_idx
 
