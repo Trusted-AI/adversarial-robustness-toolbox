@@ -242,8 +242,14 @@ class PatchFoolPyTorch(EvasionAttack):
         """
         Apply attack-specific checks.
         """
-        if not isinstance(self.alpha, (int, float)):
-            raise TypeError("The weight coefficient `alpha` must be of type `int` or `float`.")
+        if not isinstance(self.attention_nodes, (dict, list)):
+            raise TypeError("The attention nodes `attention_nodes` must be of type `dict` or `list`.")
+
+        if self.patch_size <= 0:
+            raise ValueError("The patch size `patch_size` has to be positive.")
+
+        if not isinstance(self.alpha, float):
+            raise TypeError("The weight coefficient `alpha` must be of type `float`.")
 
         if self.max_iter < 0:
             raise ValueError("The number of iterations `max_iter` has to be a non-negative integer.")
@@ -251,11 +257,20 @@ class PatchFoolPyTorch(EvasionAttack):
         if self.batch_size <= 0:
             raise ValueError("The batch size `batch_size` has to be positive.")
 
+        if not isinstance(self.learning_rate, (int, float)):
+            raise TypeError("The learning rate must be of type `int` or `float`.")
+
         if not isinstance(self.step_size, int):
             raise TypeError("The step size must be of type `int`.")
 
         if not isinstance(self.step_size_decay, (int, float)):
             raise TypeError("The step size decay coefficient must be of type `int` or `float`.")
 
-        if not isinstance(self.learning_rate, (int, float)):
-            raise TypeError("The learning rate must be of type `int` or `float`.")
+        if self.patch_layer < 0:
+            raise ValueError("The patch layer index `patch_layer` has to be a non-negative integer.")
+
+        if not isinstance(self.random_start, bool):
+            raise TypeError("The random start has to be a Boolean.")
+
+        if not isinstance(self.skip_att_loss, bool):
+            raise TypeError("The flag `skip_att_loss` has to be a Boolean.")
