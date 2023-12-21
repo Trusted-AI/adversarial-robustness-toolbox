@@ -56,6 +56,7 @@ class PatchFoolPyTorch(EvasionAttack):
         patch_layer: int = 4,
         random_start: bool = False,
         skip_att_loss: bool = False,
+        verbose: bool = True,
     ):
         """
         Create a :class:`PatchFoolPyTorch` instance.
@@ -91,6 +92,7 @@ class PatchFoolPyTorch(EvasionAttack):
         self.patch_layer = patch_layer
         self.random_start = random_start
         self.skip_att_loss = skip_att_loss
+        self.verbose = verbose
         self._check_params()
 
     def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
@@ -157,7 +159,7 @@ class PatchFoolPyTorch(EvasionAttack):
         optim = torch.optim.Adam([perturbation], lr=self.learning_rate)
         scheduler = torch.optim.lr_scheduler.StepLR(optim, step_size=self.step_size, gamma=self.step_size_decay)
 
-        for i_max_iter in tqdm(range(self.max_iter)):
+        for _ in tqdm(range(self.max_iter), desc="PatchFool Attack", leave=False, disable=not self.verbose):
 
             self.estimator.model.zero_grad()
             optim.zero_grad()
@@ -300,3 +302,6 @@ class PatchFoolPyTorch(EvasionAttack):
 
         if not isinstance(self.skip_att_loss, bool):
             raise TypeError("The flag `skip_att_loss` has to be a Boolean.")
+
+        if not isinstance(self.verbose, bool):
+            raise ValueError("The verbose has to be a Boolean.")
