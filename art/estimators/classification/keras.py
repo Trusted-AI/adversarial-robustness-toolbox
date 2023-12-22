@@ -559,7 +559,9 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
 
         return predictions
 
-    def fit(self, x: np.ndarray, y: np.ndarray, batch_size: int = 128, nb_epochs: int = 20, **kwargs) -> None:
+    def fit(
+        self, x: np.ndarray, y: np.ndarray, batch_size: int = 128, nb_epochs: int = 20, verbose: bool = False, **kwargs
+    ) -> None:
         """
         Fit the classifier on the training set `(x, y)`.
 
@@ -568,6 +570,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
                   shape (nb_samples,).
         :param batch_size: Size of batches.
         :param nb_epochs: Number of epochs to use for training.
+        :param verbose: Display training progress bar.
         :param kwargs: Dictionary of framework-specific arguments. These should be parameters supported by the
                `fit_generator` function in Keras and will be passed to this function as such. Including the number of
                epochs or the number of steps per epoch as part of this argument will result in as error.
@@ -582,15 +585,18 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         if self._reduce_labels or y_ndim == 1:
             y_preprocessed = np.argmax(y_preprocessed, axis=1)
 
-        self._model.fit(x=x_preprocessed, y=y_preprocessed, batch_size=batch_size, epochs=nb_epochs, **kwargs)
+        self._model.fit(
+            x=x_preprocessed, y=y_preprocessed, batch_size=batch_size, epochs=nb_epochs, verbose=int(verbose), **kwargs
+        )
 
-    def fit_generator(self, generator: "DataGenerator", nb_epochs: int = 20, **kwargs) -> None:
+    def fit_generator(self, generator: "DataGenerator", nb_epochs: int = 20, verbose: bool = False, **kwargs) -> None:
         """
         Fit the classifier using the generator that yields batches as specified.
 
         :param generator: Batch generator providing `(x, y)` for each epoch. If the generator can be used for native
                           training in Keras, it will.
         :param nb_epochs: Number of epochs to use for training.
+        :param verbose: Display training progress bar.
         :param kwargs: Dictionary of framework-specific arguments. These should be parameters supported by the
                `fit_generator` function in Keras and will be passed to this function as such. Including the number of
                epochs as part of this argument will result in as error.
@@ -612,16 +618,12 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
             )
         ):
             try:
-                self._model.fit_generator(generator.iterator, epochs=nb_epochs, **kwargs)
+                self._model.fit_generator(generator.iterator, epochs=nb_epochs, verbose=int(verbose), **kwargs)
             except ValueError:  # pragma: no cover
                 logger.info("Unable to use data generator as Keras generator. Now treating as framework-independent.")
-                if "verbose" not in kwargs:
-                    kwargs["verbose"] = 0
-                super().fit_generator(generator, nb_epochs=nb_epochs, **kwargs)
+                super().fit_generator(generator, nb_epochs=nb_epochs, verbose=verbose, **kwargs)
         else:  # pragma: no cover
-            if "verbose" not in kwargs:
-                kwargs["verbose"] = 0
-            super().fit_generator(generator, nb_epochs=nb_epochs, **kwargs)
+            super().fit_generator(generator, nb_epochs=nb_epochs, verbose=verbose, **kwargs)
 
     def get_activations(
         self, x: np.ndarray, layer: Union[int, str], batch_size: int = 128, framework: bool = False

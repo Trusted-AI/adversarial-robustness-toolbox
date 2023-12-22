@@ -71,7 +71,6 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
         sample_size: int = 32,
         scale: float = 0.1,
         alpha: float = 0.001,
-        verbose: bool = False,
     ):
         """
         Create a randomized smoothing classifier.
@@ -97,7 +96,6 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
         :param sample_size: Number of samples for smoothing.
         :param scale: Standard deviation of Gaussian noise added.
         :param alpha: The failure probability of smoothing.
-        :param verbose: Show progress bars.
         """
         if preprocessing_defences is not None:
             warnings.warn(
@@ -120,7 +118,6 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
             sample_size=sample_size,
             scale=scale,
             alpha=alpha,
-            verbose=verbose,
         )
 
     def _predict_classifier(self, x: np.ndarray, batch_size: int, training_mode: bool, **kwargs) -> np.ndarray:
@@ -140,7 +137,7 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
         training_mode: bool = True,
         drop_last: bool = False,
         scheduler: Optional["torch.optim.lr_scheduler._LRScheduler"] = None,
-        verbose: Optional[Union[bool, int]] = None,
+        verbose: bool = False,
         **kwargs,
     ) -> None:
         """
@@ -156,15 +153,12 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
                           the batch size. If ``False`` and the size of dataset is not divisible by the batch size, then
                           the last batch will be smaller. (default: ``False``)
         :param scheduler: Learning rate scheduler to run at the start of every epoch.
-        :param verbose: (Optional) Display the progress bar, if not supplied will revert to the verbose level when
-                 class was initialised.
+        :param verbose: Display the training progress bar.
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
                and providing it takes no effect.
         """
         import torch
         from torch.utils.data import TensorDataset, DataLoader
-
-        display_pb = self.process_verbose(verbose)
 
         # Set model mode
         self._model.train(mode=training_mode)
@@ -187,7 +181,7 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
         dataloader = DataLoader(dataset=dataset, batch_size=batch_size, shuffle=True, drop_last=drop_last)
 
         # Start training
-        for _ in trange(nb_epochs, disable=not display_pb):
+        for _ in trange(nb_epochs, disable=not verbose):
             for x_batch, y_batch in dataloader:
                 # Move inputs to device
                 x_batch = x_batch.to(self._device)
@@ -228,17 +222,22 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
             if scheduler is not None:
                 scheduler.step()
 
-    def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> np.ndarray:  # type: ignore
+    def predict(  # type: ignore
+        self, x: np.ndarray, batch_size: int = 128, verbose: bool = False, **kwargs
+    ) -> np.ndarray:
         """
         Perform prediction of the given classifier for a batch of inputs, taking an expectation over transformations.
 
         :param x: Input samples.
         :param batch_size: Batch size.
+        :param verbose: Display training progress bar.
         :param is_abstain: True if function will abstain from prediction and return 0s. Default: True
         :type is_abstain: `boolean`
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         """
-        return RandomizedSmoothingMixin.predict(self, x, batch_size=batch_size, training_mode=False, **kwargs)
+        return RandomizedSmoothingMixin.predict(
+            self, x, batch_size=batch_size, verbose=verbose, training_mode=False, **kwargs
+        )
 
     def loss_gradient(  # type: ignore
         self, x: np.ndarray, y: np.ndarray, training_mode: bool = False, **kwargs

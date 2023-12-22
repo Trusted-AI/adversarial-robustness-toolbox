@@ -75,7 +75,6 @@ class TensorFlowV2MACER(TensorFlowV2RandomizedSmoothing):
         gamma: float = 8.0,
         lmbda: float = 12.0,
         gaussian_samples: int = 16,
-        verbose: bool = False,
     ) -> None:
         """
         Create a MACER classifier.
@@ -108,7 +107,6 @@ class TensorFlowV2MACER(TensorFlowV2RandomizedSmoothing):
         :param gamma: The hinge factor.
         :param lmbda: The trade-off factor.
         :param gaussian_samples: The number of gaussian samples per input.
-        :param verbose: Show progress bars.
         """
         super().__init__(
             model=model,
@@ -125,7 +123,6 @@ class TensorFlowV2MACER(TensorFlowV2RandomizedSmoothing):
             sample_size=sample_size,
             scale=scale,
             alpha=alpha,
-            verbose=verbose,
         )
         self.beta = beta
         self.gamma = gamma
@@ -133,13 +130,7 @@ class TensorFlowV2MACER(TensorFlowV2RandomizedSmoothing):
         self.gaussian_samples = gaussian_samples
 
     def fit(
-        self,
-        x: np.ndarray,
-        y: np.ndarray,
-        batch_size: int = 128,
-        nb_epochs: int = 10,
-        verbose: Optional[Union[bool, int]] = None,
-        **kwargs
+        self, x: np.ndarray, y: np.ndarray, batch_size: int = 128, nb_epochs: int = 10, verbose: bool = False, **kwargs
     ) -> None:
         """
         Fit the classifier on the training set `(x, y)`.
@@ -149,15 +140,12 @@ class TensorFlowV2MACER(TensorFlowV2RandomizedSmoothing):
                   shape (nb_samples,).
         :param batch_size: Size of batches.
         :param nb_epochs: Number of epochs to use for training.
-        :param verbose: (Optional) Display the progress bar, if not supplied will revert to the verbose level when
-                        class was initialised.
+        :param verbose: Display the training progress bar.
         :param kwargs: Dictionary of framework-specific arguments. This parameter currently only supports
                        "scheduler" which is an optional function that will be called at the end of every
                        epoch to adjust the learning rate.
         """
         import tensorflow as tf
-
-        display_pb = self.process_verbose(verbose)
 
         if self._train_step is None:  # pragma: no cover
             if self._optimizer is None:  # pragma: no cover
@@ -225,7 +213,7 @@ class TensorFlowV2MACER(TensorFlowV2RandomizedSmoothing):
 
         train_ds = tf.data.Dataset.from_tensor_slices((x_preprocessed, y_preprocessed)).shuffle(10000).batch(batch_size)
 
-        for epoch in trange(nb_epochs, disable=not display_pb):
+        for epoch in trange(nb_epochs, disable=not verbose):
             for images, labels in train_ds:
                 # Tile samples for Gaussian augmentation
                 input_size = len(images)

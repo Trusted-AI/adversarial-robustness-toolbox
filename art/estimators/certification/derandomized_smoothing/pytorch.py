@@ -438,7 +438,7 @@ class PyTorchDeRandomizedSmoothing(DeRandomizedSmoothingMixin, PyTorchClassifier
         training_mode: bool = True,
         drop_last: bool = False,
         scheduler: Optional[Any] = None,
-        verbose: Optional[Union[bool, int]] = None,
+        verbose: bool = False,
         update_batchnorm: bool = True,
         batchnorm_update_epochs: int = 1,
         transform: Optional["torchvision.transforms.transforms.Compose"] = None,
@@ -457,7 +457,7 @@ class PyTorchDeRandomizedSmoothing(DeRandomizedSmoothingMixin, PyTorchClassifier
                           the batch size. If ``False`` and the size of dataset is not divisible by the batch size, then
                           the last batch will be smaller. (default: ``False``)
         :param scheduler: Learning rate scheduler to run at the start of every epoch.
-        :param verbose: if to display training progress bars
+        :param verbose: Display training progress bar.
         :param update_batchnorm: ViT specific argument.
                                  If to run the training data through the model to update any batch norm statistics prior
                                  to training. Useful on small datasets when using pre-trained ViTs.
@@ -468,8 +468,6 @@ class PyTorchDeRandomizedSmoothing(DeRandomizedSmoothingMixin, PyTorchClassifier
                and providing it takes no effect.
         """
         import torch
-
-        display_pb = self.process_verbose(verbose)
 
         # Set model mode
         self._model.train(mode=training_mode)
@@ -501,7 +499,7 @@ class PyTorchDeRandomizedSmoothing(DeRandomizedSmoothingMixin, PyTorchClassifier
             epoch_loss = []
             epoch_batch_sizes = []
 
-            pbar = tqdm(range(num_batch), disable=not display_pb)
+            pbar = tqdm(range(num_batch), disable=not verbose)
 
             # Train for one epoch
             for m in pbar:
@@ -547,7 +545,7 @@ class PyTorchDeRandomizedSmoothing(DeRandomizedSmoothingMixin, PyTorchClassifier
                 epoch_loss.append(loss.cpu().detach().numpy())
                 epoch_batch_sizes.append(len(i_batch))
 
-                if display_pb:
+                if verbose:
                     pbar.set_description(
                         f"Loss {np.average(epoch_loss, weights=epoch_batch_sizes):.3f} "
                         f"Acc {np.average(epoch_acc, weights=epoch_batch_sizes):.3f} "
