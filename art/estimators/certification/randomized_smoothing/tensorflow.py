@@ -70,7 +70,6 @@ class TensorFlowV2RandomizedSmoothing(RandomizedSmoothingMixin, TensorFlowV2Clas
         sample_size: int = 32,
         scale: float = 0.1,
         alpha: float = 0.001,
-        verbose: bool = False,
     ):
         """
         Create a randomized smoothing classifier.
@@ -99,7 +98,6 @@ class TensorFlowV2RandomizedSmoothing(RandomizedSmoothingMixin, TensorFlowV2Clas
         :param sample_size: Number of samples for smoothing.
         :param scale: Standard deviation of Gaussian noise added.
         :param alpha: The failure probability of smoothing.
-        :param verbose: Show progress bars.
         """
         if preprocessing_defences is not None:
             warnings.warn(
@@ -122,7 +120,6 @@ class TensorFlowV2RandomizedSmoothing(RandomizedSmoothingMixin, TensorFlowV2Clas
             sample_size=sample_size,
             scale=scale,
             alpha=alpha,
-            verbose=verbose,
         )
 
     def _predict_classifier(self, x: np.ndarray, batch_size: int, training_mode: bool, **kwargs) -> np.ndarray:
@@ -131,7 +128,9 @@ class TensorFlowV2RandomizedSmoothing(RandomizedSmoothingMixin, TensorFlowV2Clas
     def _fit_classifier(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: int, **kwargs) -> None:
         return TensorFlowV2Classifier.fit(self, x, y, batch_size=batch_size, nb_epochs=nb_epochs, **kwargs)
 
-    def fit(self, x: np.ndarray, y: np.ndarray, batch_size: int = 128, nb_epochs: int = 10, **kwargs) -> None:
+    def fit(  # pylint: disable=W0221
+        self, x: np.ndarray, y: np.ndarray, batch_size: int = 128, nb_epochs: int = 10, verbose: bool = False, **kwargs
+    ) -> None:
         """
         Fit the classifier on the training set `(x, y)`.
 
@@ -140,6 +139,7 @@ class TensorFlowV2RandomizedSmoothing(RandomizedSmoothingMixin, TensorFlowV2Clas
                   shape (nb_samples,).
         :param batch_size: Size of batches.
         :param nb_epochs: Number of epochs to use for training.
+        :param verbose: Display the training progress bar.
         :param kwargs: Dictionary of framework-specific arguments. This parameter currently only supports
                        "scheduler" which is an optional function that will be called at the end of every
                        epoch to adjust the learning rate.
@@ -182,7 +182,7 @@ class TensorFlowV2RandomizedSmoothing(RandomizedSmoothingMixin, TensorFlowV2Clas
 
         train_ds = tf.data.Dataset.from_tensor_slices((x_preprocessed, y_preprocessed)).shuffle(10000).batch(batch_size)
 
-        for epoch in trange(nb_epochs, disable=not self.verbose):
+        for epoch in trange(nb_epochs, disable=not verbose):
             for images, labels in train_ds:
                 # Add random noise for randomized smoothing
                 images += tf.random.normal(shape=images.shape, mean=0.0, stddev=self.scale)
@@ -191,17 +191,22 @@ class TensorFlowV2RandomizedSmoothing(RandomizedSmoothingMixin, TensorFlowV2Clas
             if scheduler is not None:
                 scheduler(epoch)
 
-    def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> np.ndarray:  # type: ignore
+    def predict(  # type: ignore
+        self, x: np.ndarray, batch_size: int = 128, verbose: bool = False, **kwargs
+    ) -> np.ndarray:
         """
         Perform prediction of the given classifier for a batch of inputs, taking an expectation over transformations.
 
         :param x: Input samples.
         :param batch_size: Batch size.
+        :param verbose: Display training progress bar.
         :param is_abstain: True if function will abstain from prediction and return 0s. Default: True
         :type is_abstain: `boolean`
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         """
-        return RandomizedSmoothingMixin.predict(self, x, batch_size=batch_size, training_mode=False, **kwargs)
+        return RandomizedSmoothingMixin.predict(
+            self, x, batch_size=batch_size, verbose=verbose, training_mode=False, **kwargs
+        )
 
     def loss_gradient(self, x: np.ndarray, y: np.ndarray, training_mode: bool = False, **kwargs) -> np.ndarray:
         """
