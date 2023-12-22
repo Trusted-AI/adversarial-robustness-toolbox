@@ -13,7 +13,7 @@ resampy==0.4.2
 ffmpeg-python==0.2.0
 cma==3.3.0
 pandas==2.1.4
-librosa==0.10.0.post2
+librosa==0.10.1
 numba~=0.56.4
 opencv-python
 sortedcontainers==2.4.0
