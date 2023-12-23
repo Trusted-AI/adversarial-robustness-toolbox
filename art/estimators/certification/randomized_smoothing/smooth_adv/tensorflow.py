@@ -157,7 +157,7 @@ class TensorFlowV2SmoothAdv(TensorFlowV2RandomizedSmoothing):
                   shape (nb_samples,).
         :param batch_size: Size of batches.
         :param nb_epochs: Number of epochs to use for training.
-        :param verbose: Display the training progress bar.
+        :param verbose: Display training progress bar.
         :param kwargs: Dictionary of framework-specific arguments. This parameter currently only supports
                        "scheduler" which is an optional function that will be called at the end of every
                        epoch to adjust the learning rate.
