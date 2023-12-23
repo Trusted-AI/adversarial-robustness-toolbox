@@ -559,7 +559,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
 
         return predictions
 
-    def fit(
+    def fit(  # pylint: disable=W0221
         self, x: np.ndarray, y: np.ndarray, batch_size: int = 128, nb_epochs: int = 20, verbose: bool = False, **kwargs
     ) -> None:
         """
@@ -589,7 +589,9 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
             x=x_preprocessed, y=y_preprocessed, batch_size=batch_size, epochs=nb_epochs, verbose=int(verbose), **kwargs
         )
 
-    def fit_generator(self, generator: "DataGenerator", nb_epochs: int = 20, verbose: bool = False, **kwargs) -> None:
+    def fit_generator(  # pylint: disable=W0221
+        self, generator: "DataGenerator", nb_epochs: int = 20, verbose: bool = False, **kwargs
+    ) -> None:
         """
         Fit the classifier using the generator that yields batches as specified.
 
