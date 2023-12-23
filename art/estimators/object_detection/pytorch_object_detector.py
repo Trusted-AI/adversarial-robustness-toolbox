@@ -298,8 +298,8 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
         """
         self._model.train()
 
-        self.set_dropout(False)
-        self.set_multihead_attention(False)
+        self.set_dropout(train=False)
+        self.set_multihead_attention(train=False)
 
         # Apply preprocessing and convert to tensors
         x_preprocessed, y_preprocessed = self._preprocess_and_convert_inputs(x=x, y=y, fit=False, no_grad=False)

@@ -139,7 +139,7 @@ def test_loss_gradient(art_warning, get_pytorch_detr):
         )
 
         print("expected_gradients1")
-        print(expected_gradients1)
+        print(grads[0, 0, 10, :32])
 
         np.testing.assert_array_almost_equal(grads[0, 0, 10, :32], expected_gradients1, decimal=1)
 
@@ -181,7 +181,7 @@ def test_loss_gradient(art_warning, get_pytorch_detr):
         )
 
         print("expected_gradients2")
-        print(expected_gradients2)
+        print(grads[1, 0, 10, :32])
 
         np.testing.assert_array_almost_equal(grads[1, 0, 10, :32], expected_gradients2, decimal=2)
 
