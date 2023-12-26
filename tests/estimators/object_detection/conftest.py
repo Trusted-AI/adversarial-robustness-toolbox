@@ -274,7 +274,7 @@ def get_pytorch_detr(get_default_cifar10_subset):
         x_test_cifar10[0].transpose((1, 2, 0)), dsize=(800, 800), interpolation=cv2.INTER_CUBIC
     ).transpose((2, 0, 1))
     x_test = np.expand_dims(x_test, axis=0)
-    x_test = np.repeat(x_test, repeats=5, axis=0)
+    x_test = np.repeat(x_test, repeats=2, axis=0)
 
     # Create labels
 
@@ -291,27 +291,6 @@ def get_pytorch_detr(get_default_cifar10_subset):
             "labels": result[1]["labels"],
             "scores": np.ones_like(result[1]["labels"]),
         },
-        {
-            "boxes": result[1]["boxes"],
-            "labels": result[1]["labels"],
-            "scores": np.ones_like(result[1]["labels"]),
-        },
-        {
-            "boxes": result[1]["boxes"],
-            "labels": result[1]["labels"],
-            "scores": np.ones_like(result[1]["labels"]),
-        },
-        {
-            "boxes": result[1]["boxes"],
-            "labels": result[1]["labels"],
-            "scores": np.ones_like(result[1]["labels"]),
-        },
     ]
-
-    y_test[0]["scores"] = y_test[0]["scores"] * 0.5
-    y_test[1]["scores"] = y_test[1]["scores"] * 0.5
-    print("y_test['scores'].shape")
-    print(y_test[0])
-    print(y_test[1])
 
     yield object_detector, x_test, y_test
