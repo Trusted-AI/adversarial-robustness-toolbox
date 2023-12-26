@@ -106,6 +106,18 @@ def test_loss_gradient(art_warning, get_pytorch_detr):
 
         assert grads.shape == (2, 3, 800, 800)
 
+        print("expected_gradients1")
+        print(grads[0, 0, 10, :32])
+        print("expected_gradients2")
+        print(grads[1, 0, 10, :32])
+
+        grads = object_detector.loss_gradient(x=x_test, y=y_test)
+
+        print("expected_gradients1")
+        print(grads[0, 0, 10, :32])
+        print("expected_gradients2")
+        print(grads[1, 0, 10, :32])
+
         expected_gradients1 = np.asarray(
             [
                 -0.00757495,
@@ -142,11 +154,6 @@ def test_loss_gradient(art_warning, get_pytorch_detr):
                 -0.00052412,
             ]
         )
-
-        print("expected_gradients1")
-        print(grads[0, 0, 10, :32])
-        print("expected_gradients2")
-        print(grads[1, 0, 10, :32])
 
         np.testing.assert_array_almost_equal(grads[0, 0, 10, :32], expected_gradients1, decimal=4)
 
