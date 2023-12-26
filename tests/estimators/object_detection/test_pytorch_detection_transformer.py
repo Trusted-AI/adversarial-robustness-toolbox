@@ -104,7 +104,7 @@ def test_loss_gradient(art_warning, get_pytorch_detr):
 
         grads = object_detector.loss_gradient(x=x_test, y=y_test)
 
-        assert grads.shape == (2, 3, 800, 800)
+        assert grads.shape == (5, 3, 800, 800)
 
         print("expected_gradients1")
         print(grads[0, 0, 10, :32])

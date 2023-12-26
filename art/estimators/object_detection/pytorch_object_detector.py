@@ -340,6 +340,9 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
 
         loss_components, x_grad = self._get_losses(x=x, y=y)
 
+        print("loss_components")
+        print(loss_components)
+
         # Compute the loss
         if self.weight_dict is None:
             loss = sum(loss_components[loss_name] for loss_name in self.attack_losses if loss_name in loss_components)
@@ -354,6 +357,8 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
         self._model.zero_grad()
 
         # Compute gradients
+        print("loss")
+        print(loss)
         loss.backward(retain_graph=True)  # type: ignore
 
         if x_grad.grad is not None:
