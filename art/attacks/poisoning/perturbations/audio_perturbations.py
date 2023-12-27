@@ -21,8 +21,10 @@ Uses classes, rather than pure functions as in image_perturbations.py,
 because loading the audio trigger from disk (librosa.load()) is very slow
 and should be done only once.
 """
-import numpy as np
+from typing import Optional
+
 import librosa
+import numpy as np
 
 
 class CacheTrigger:
@@ -89,7 +91,7 @@ class CacheAudioTrigger(CacheTrigger):
         self,
         sampling_rate: int = 16000,
         backdoor_path: str = "../../../utils/data/backdoors/cough_trigger.wav",
-        duration: float = None,
+        duration: Optional[float] = None,
         **kwargs,
     ):
         """

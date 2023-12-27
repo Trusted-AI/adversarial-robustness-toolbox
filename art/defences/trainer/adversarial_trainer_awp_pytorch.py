@@ -89,7 +89,7 @@ class AdversarialTrainerAWPPyTorch(AdversarialTrainerAWP):
         validation_data: Optional[Tuple[np.ndarray, np.ndarray]] = None,
         batch_size: int = 128,
         nb_epochs: int = 20,
-        scheduler: "torch.optim.lr_scheduler._LRScheduler" = None,
+        scheduler: Optional["torch.optim.lr_scheduler._LRScheduler"] = None,
         **kwargs,
     ):  # pylint: disable=W0221
         """
@@ -198,7 +198,7 @@ class AdversarialTrainerAWPPyTorch(AdversarialTrainerAWP):
         generator: DataGenerator,
         validation_data: Optional[Tuple[np.ndarray, np.ndarray]] = None,
         nb_epochs: int = 20,
-        scheduler: "torch.optim.lr_scheduler._LRScheduler" = None,
+        scheduler: Optional["torch.optim.lr_scheduler._LRScheduler"] = None,
         **kwargs,
     ):  # pylint: disable=W0221
         """
