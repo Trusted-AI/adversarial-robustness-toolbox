@@ -155,7 +155,7 @@ class KnockoffNets(ExtractionAttack):
             y=fake_labels,
             batch_size=self.batch_size_fit,
             nb_epochs=self.nb_epochs,
-            verbose=0,
+            verbose=False,
         )
 
         return thieved_classifier
@@ -243,7 +243,7 @@ class KnockoffNets(ExtractionAttack):
                 y=fake_label,
                 batch_size=self.batch_size_fit,
                 nb_epochs=1,
-                verbose=0,
+                verbose=False,
             )
 
             # Test new labels

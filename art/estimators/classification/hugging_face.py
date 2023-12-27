@@ -156,6 +156,12 @@ class HuggingFaceClassifierPyTorch(PyTorchClassifier):
 
         input_shape = self._input_shape
         input_for_hook = torch.rand(input_shape)
+        # self.device may not match the device the raw model was passed into ART.
+        # Check if the model is on cuda, if so set the hook input accordingly
+        if next(model.parameters()).is_cuda:
+            cuda_idx = torch.cuda.current_device()
+            input_for_hook = input_for_hook.to(torch.device(f"cuda:{cuda_idx}"))
+
         input_for_hook = torch.unsqueeze(input_for_hook, dim=0)
 
         if self.processor is not None:
