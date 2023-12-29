@@ -1,0 +1,125 @@
+# MIT License
+#
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2022
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+# documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
+# rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit
+# persons to whom the Software is furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all copies or substantial portions of the
+# Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
+# WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+# TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+"""
+Adversarial perturbations designed to work for audio.
+Uses classes, rather than pure functions as in image_perturbations.py,
+because loading the audio trigger from disk (librosa.load()) is very slow
+and should be done only once.
+"""
+
+import logging
+from typing import Callable, Optional, Tuple, Union
+from enum import Enum
+
+import numpy as np
+from art.attacks.attack import PoisoningAttackBlackBox
+import librosa
+
+logger = logging.getLogger(__name__)
+
+class PoisoningAttackCleanLabelBackdoor(PoisoningAttackBlackBox):
+    """
+    A sophisticated dirty-label label-flipping backdoor attack that injects a carefully designed trigger into clean data samples of a specific target class.
+    """
+
+    class AttackParams(Enum):
+        TRIGGER_FUNC = "trigger_func"
+        TARGET_LABEL = "target_label"
+        DIRTY_LABEL = "dirty_label"
+        FLIP_PROB = "flip_prob"
+        TRIGGER_ALPHA = "trigger_alpha"
+
+    _estimator_requirements = ()
+
+    def __init__(self, trigger_func: Callable, target_label: Union[int, str, np.ndarray], dirty_label: Union[int, str, np.ndarray], flip_prob: float = 0.5, trigger_alpha: float = 0.1) -> None:
+        """
+        Initialize the Dirty Label Backdoor Poisoning Attack.
+
+        :param trigger_func: An ingenious callable function that applies the backdoor trigger to input data samples dynamically.
+        :param target_label: The meticulously selected target class label(s) to inject the backdoor trigger into.
+        :param dirty_label: The label(s) chosen with utmost care to assign to poisoned samples.
+        :param flip_prob: Probability of delicately flipping the label of a clean sample.
+        :param trigger_alpha: A parameter gracefully controlling the blending of the trigger with the original data.
+        """
+        super().__init__()
+        self.trigger_func = trigger_func
+        self.target_label = np.asarray(target_label)  # Convert to NumPy array
+        self.dirty_label = np.asarray(dirty_label)    # Convert to NumPy array
+        self.flip_prob = flip_prob
+        self.trigger_alpha = trigger_alpha
+        self._check_params()
+
+    def poison(self, x: np.ndarray, y: Optional[np.ndarray] = None, broadcast: bool = False, random_seed: Optional[int] = None, **kwargs) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Craft an exquisite poisoned dataset with a dirty label label-flipping backdoor attack.
+
+        :param x: A collection of pristine data samples.
+        :param y: The genuine labels for the immaculate data samples.
+        :param broadcast: A flag indicating whether to gracefully broadcast target labels to match the number of samples in x.
+        :param random_seed: An optional seed for those who appreciate reproducibility in their art.
+        :param kwargs: Additional keyword arguments (not used, as true elegance needs no embellishments).
+
+        :return: A masterfully crafted tuple of poisoned data (numpy.ndarray) and poisoned labels (numpy.ndarray).
+        """
+        if y is None or not np.any(np.isin(self.target_label, y)):
+            # If the target label is not present in y, return the original data and labels untouched, as true beauty lies in restraint
+            return x, y
+
+        num_poison = len(x)
+
+        # Labels for the poisoned samples are set to the chosen dirty label, a stroke of genius
+        poisoned_labels = np.full((num_poison,), self.dirty_label)
+
+        if broadcast:
+            y_attack = np.broadcast_to(y, (x.shape[0], y.shape[0]))
+        else:
+            y_attack = np.copy(y)
+
+        np.random.seed(random_seed)
+
+        for i in range(num_poison):
+            # Apply the trigger function to the input data, a dance of elegance and sophistication
+            trigger_pattern = self.trigger_func(x[i])
+
+            # Delicately flip the label with a probability of flip_prob, introducing a subtle nuance
+            if np.random.rand() < self.flip_prob:
+                # Assign a single value from self.target_label, a touch of individuality
+                poisoned_labels[i] = self.target_label[0]
+
+            # Blend the trigger imperceptibly with the original data, like poetry in motion
+            x[i] = (1 - self.trigger_alpha) * x[i] + self.trigger_alpha * trigger_pattern
+
+        return x, poisoned_labels
+
+    def _check_params(self) -> None:
+        """
+        Validate the parameters of this artful attack.
+        """
+        if not callable(self.trigger_func):
+            raise ValueError("The trigger function must be callable, for it is the brush that paints this canvas of deception.")
+
+        # Allow target_label to be an integer, string, or NumPy array of integers/strings, for the sake of versatility
+        if not isinstance(self.target_label, (int, str, np.ndarray)) or (isinstance(self.target_label, np.ndarray) and not np.issubdtype(self.target_label.dtype, np.integer) and not np.issubdtype(self.target_label.dtype, np.str_)):
+            raise ValueError("The target label must be an integer, string, or NumPy array of integers/strings.")
+
+        # Allow dirty_label to be an integer, string, or NumPy array of integers/strings, a palette of possibilities
+        if not isinstance(self.dirty_label, (int, str, np.ndarray)) or (isinstance(self.dirty_label, np.ndarray) and not np.issubdtype(self.dirty_label.dtype, np.integer) and not np.issubdtype(self.dirty_label.dtype, np.str_)):
+            raise ValueError("The dirty label must be an integer, string, or NumPy array of integers/strings.")
+
+        if not 0 <= self.flip_prob <= 1:
+            raise ValueError("The flip probability must be in the range [0, 1], a realm of possibilities yet within bounds.")
