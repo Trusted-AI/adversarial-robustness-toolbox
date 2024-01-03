@@ -438,10 +438,10 @@ class PyTorchDeRandomizedSmoothing(DeRandomizedSmoothingMixin, PyTorchClassifier
         training_mode: bool = True,
         drop_last: bool = False,
         scheduler: Optional[Any] = None,
+        verbose: bool = False,
         update_batchnorm: bool = True,
         batchnorm_update_epochs: int = 1,
         transform: Optional["torchvision.transforms.transforms.Compose"] = None,
-        verbose: bool = True,
         **kwargs,
     ) -> None:
         """
@@ -457,13 +457,13 @@ class PyTorchDeRandomizedSmoothing(DeRandomizedSmoothingMixin, PyTorchClassifier
                           the batch size. If ``False`` and the size of dataset is not divisible by the batch size, then
                           the last batch will be smaller. (default: ``False``)
         :param scheduler: Learning rate scheduler to run at the start of every epoch.
+        :param verbose: Display training progress bar.
         :param update_batchnorm: ViT specific argument.
                                  If to run the training data through the model to update any batch norm statistics prior
                                  to training. Useful on small datasets when using pre-trained ViTs.
         :param batchnorm_update_epochs: ViT specific argument. How many times to forward pass over the training data
                                         to pre-adjust the batchnorm statistics.
         :param transform: ViT specific argument. Torchvision compose of relevant augmentation transformations to apply.
-        :param verbose: if to display training progress bars
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
                and providing it takes no effect.
         """

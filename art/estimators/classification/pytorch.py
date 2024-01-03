@@ -26,6 +26,7 @@ import logging
 import os
 import time
 from typing import Any, Dict, List, Optional, Tuple, Union, TYPE_CHECKING
+from tqdm.auto import tqdm
 
 import numpy as np
 import six
@@ -374,6 +375,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         training_mode: bool = True,
         drop_last: bool = False,
         scheduler: Optional["torch.optim.lr_scheduler._LRScheduler"] = None,
+        verbose: bool = False,
         **kwargs,
     ) -> None:
         """
@@ -389,6 +391,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                           the batch size. If ``False`` and the size of dataset is not divisible by the batch size, then
                           the last batch will be smaller. (default: ``False``)
         :param scheduler: Learning rate scheduler to run at the start of every epoch.
+        :param verbose: Display training progress bar.
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
                        and providing it takes no effect.
         """
@@ -416,7 +419,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         dataloader = DataLoader(dataset=dataset, batch_size=batch_size, shuffle=True, drop_last=drop_last)
 
         # Start training
-        for _ in range(nb_epochs):
+        for _ in tqdm(range(nb_epochs), disable=not verbose, desc="Epochs"):
             for x_batch, y_batch in dataloader:
                 # Move inputs to device
                 x_batch = x_batch.to(self._device)
@@ -453,14 +456,17 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
             if scheduler is not None:
                 scheduler.step()
 
-    def fit_generator(self, generator: "DataGenerator", nb_epochs: int = 20, **kwargs) -> None:
+    def fit_generator(  # pylint: disable=W0221
+        self, generator: "DataGenerator", nb_epochs: int = 20, verbose: bool = False, **kwargs
+    ) -> None:
         """
         Fit the classifier using the generator that yields batches as specified.
 
         :param generator: Batch generator providing `(x, y)` for each epoch.
         :param nb_epochs: Number of epochs to use for training.
+        :param verbose: Display the training progress bar.
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
-               and providing it takes no effect.
+                       and providing it takes no effect.
         """
         import torch
         from art.data_generators import PyTorchDataGenerator
@@ -485,7 +491,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                 == (0, 1)
             )
         ):
-            for _ in range(nb_epochs):
+            for _ in tqdm(range(nb_epochs), disable=not verbose, desc="Epochs"):
                 for i_batch, o_batch in generator.iterator:
                     if isinstance(i_batch, np.ndarray):
                         i_batch = torch.from_numpy(i_batch).to(self._device)

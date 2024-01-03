@@ -20,6 +20,24 @@ Adversarial Training Madry PGD
    :members:
    :special-members:
 
+Adversarial Training Adversarial Weight Perturbation (AWP) - PyTorch
+--------------------------------------------------------------------
+.. autoclass:: AdversarialTrainerAWPPyTorch
+   :members:
+   :special-members:
+
+Adversarial Training Oracle Aligned Adversarial Training (OAAT) - PyTorch
+-------------------------------------------------------------------------
+.. autoclass:: AdversarialTrainerOAATPyTorch
+   :members:
+   :special-members:
+
+Adversarial Training TRADES - PyTorch
+-------------------------------------
+.. autoclass:: AdversarialTrainerTRADESPyTorch
+   :members:
+   :special-members:
+
 Base Class Adversarial Training Fast is Better than Free
 --------------------------------------------------------
 .. autoclass:: AdversarialTrainerFBF
