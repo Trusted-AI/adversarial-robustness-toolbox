@@ -191,8 +191,10 @@ def test_functional_model(art_warning, image_dl_estimator):
         art_warning(e)
 
 
-@pytest.mark.skip_framework("mxnet", "tensorflow", "pytorch", "huggingface", "non_dl_frameworks")
-def test_fit_kwargs(art_warning, image_dl_estimator, get_default_mnist_subset, default_batch_size):
+@pytest.mark.skip_framework("mxnet", "non_dl_frameworks")
+def test_fit_kwargs(
+    art_warning, image_dl_estimator, get_default_mnist_subset, image_data_generator, default_batch_size, framework
+):
     try:
         (x_train_mnist, y_train_mnist), (_, _) = get_default_mnist_subset
 
@@ -200,16 +202,14 @@ def test_fit_kwargs(art_warning, image_dl_estimator, get_default_mnist_subset, d
             return 0.01
 
         # Test a valid callback
-        classifier, _ = image_dl_estimator(from_logits=True)
+        classifier, sess = image_dl_estimator(from_logits=True)
+
         kwargs = {"callbacks": [LearningRateScheduler(get_lr)]}
-        classifier.fit(x_train_mnist, y_train_mnist, batch_size=default_batch_size, nb_epochs=1, **kwargs)
+        classifier.fit(x_train_mnist, y_train_mnist, batch_size=default_batch_size, nb_epochs=1, verbose=True, **kwargs)
 
-        # Test failure for invalid parameters
-        kwargs = {"epochs": 1}
-        with pytest.raises(TypeError) as exception:
-            classifier.fit(x_train_mnist, y_train_mnist, batch_size=default_batch_size, nb_epochs=1, **kwargs)
-
-        assert "multiple values for keyword argument" in str(exception)
+        # Check for fit_generator kwargs as well
+        data_gen = image_data_generator(sess=sess)
+        classifier.fit_generator(generator=data_gen, nb_epochs=1, **kwargs)
 
     except ARTTestException as e:
         art_warning(e)

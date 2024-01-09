@@ -86,6 +86,12 @@ Carlini and Wagner ASR Attack
    :members:
    :special-members:
 
+Composite Adversarial Attack - PyTorch
+--------------------------------------
+.. autoclass:: CompositeAdversarialAttackPyTorch
+   :members:
+   :special-members:
+
 Decision Tree Attack
 --------------------
 .. autoclass:: DecisionTreeAttack

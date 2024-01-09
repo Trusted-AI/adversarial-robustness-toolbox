@@ -77,7 +77,6 @@ class PyTorchSmoothAdv(PyTorchRandomizedSmoothing):
         num_noise_vec: int = 1,
         num_steps: int = 10,
         warmup: int = 1,
-        verbose: bool = False,
     ) -> None:
         """
         Create a SmoothAdv classifier.
@@ -107,7 +106,6 @@ class PyTorchSmoothAdv(PyTorchRandomizedSmoothing):
         :param num_noise_vec: The number of noise vectors.
         :param num_steps: The number of attack updates.
         :param warmup: The warm-up strategy that is gradually increased up to the original value.
-        :param verbose: Show progress bars.
         """
         super().__init__(
             model=model,
@@ -124,7 +122,6 @@ class PyTorchSmoothAdv(PyTorchRandomizedSmoothing):
             sample_size=sample_size,
             scale=scale,
             alpha=alpha,
-            verbose=verbose,
         )
         self.epsilon = epsilon
         self.num_noise_vec = num_noise_vec
@@ -155,6 +152,7 @@ class PyTorchSmoothAdv(PyTorchRandomizedSmoothing):
         training_mode: bool = True,
         drop_last: bool = False,
         scheduler: Optional["torch.optim.lr_scheduler._LRScheduler"] = None,
+        verbose: bool = False,
         **kwargs,
     ) -> None:
         """
@@ -170,6 +168,7 @@ class PyTorchSmoothAdv(PyTorchRandomizedSmoothing):
                           the batch size. If ``False`` and the size of dataset is not divisible by the batch size, then
                           the last batch will be smaller. (default: ``False``)
         :param scheduler: Learning rate scheduler to run at the start of every epoch.
+        :param verbose: Display the training progress bar.
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
                and providing it takes no effect.
         """
@@ -197,7 +196,7 @@ class PyTorchSmoothAdv(PyTorchRandomizedSmoothing):
         dataloader = DataLoader(dataset=dataset, batch_size=batch_size, shuffle=True, drop_last=drop_last)
 
         # Start training
-        for epoch in trange(nb_epochs, disable=not self.verbose):
+        for epoch in trange(nb_epochs, disable=not verbose):
             self.attack.norm = min(self.epsilon, (epoch + 1) * self.epsilon / self.warmup)
 
             for x_batch, y_batch in dataloader:
