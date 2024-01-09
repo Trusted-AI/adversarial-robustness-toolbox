@@ -188,7 +188,9 @@ class AdversarialTrainer(Trainer):
                     x_batch[adv_ids] = x_adv
 
                 # Fit batch
-                self._classifier.fit(x_batch, y_batch, nb_epochs=1, batch_size=x_batch.shape[0], verbose=0, **kwargs)
+                self._classifier.fit(
+                    x_batch, y_batch, nb_epochs=1, batch_size=x_batch.shape[0], verbose=False, **kwargs
+                )
                 attack_id = (attack_id + 1) % len(self.attacks)
 
     def fit(  # pylint: disable=W0221
@@ -260,7 +262,9 @@ class AdversarialTrainer(Trainer):
                     x_batch[adv_ids] = x_adv
 
                 # Fit batch
-                self._classifier.fit(x_batch, y_batch, nb_epochs=1, batch_size=x_batch.shape[0], verbose=0, **kwargs)
+                self._classifier.fit(
+                    x_batch, y_batch, nb_epochs=1, batch_size=x_batch.shape[0], verbose=False, **kwargs
+                )
                 attack_id = (attack_id + 1) % len(self.attacks)
 
     def predict(self, x: np.ndarray, **kwargs) -> np.ndarray:

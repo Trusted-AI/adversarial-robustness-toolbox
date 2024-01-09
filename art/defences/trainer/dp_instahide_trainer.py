@@ -155,7 +155,7 @@ class DPInstaHideTrainer(Trainer):
                 x_aug = self._generate_noise(x_aug)
 
                 # fit batch
-                self._classifier.fit(x_aug, y_aug, nb_epochs=1, batch_size=x_aug.shape[0], verbose=0, **kwargs)
+                self._classifier.fit(x_aug, y_aug, nb_epochs=1, batch_size=x_aug.shape[0], verbose=False, **kwargs)
 
                 # get metrics
                 loss = self._classifier.compute_loss(x_aug, y_aug, reduction="mean")
@@ -234,7 +234,7 @@ class DPInstaHideTrainer(Trainer):
                 x_aug = self._generate_noise(x_aug)
 
                 # fit batch
-                self._classifier.fit(x_aug, y_aug, nb_epochs=1, batch_size=x_aug.shape[0], verbose=0, **kwargs)
+                self._classifier.fit(x_aug, y_aug, nb_epochs=1, batch_size=x_aug.shape[0], verbose=False, **kwargs)
 
                 # get metrics
                 loss = self._classifier.compute_loss(x_aug, y_aug, reduction="mean")
