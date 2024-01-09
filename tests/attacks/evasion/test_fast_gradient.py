@@ -162,6 +162,7 @@ def test_norm_images(art_warning, norm, fix_get_mnist_subset, image_dl_estimator
             }
 
         elif norm == 1:
+            raise NotImplementedError("TO DO (New expected values to fill)")
             expected_values = {
                 "x_test_mean": ExpectedValue(0.00051374, 0.002),
                 "x_test_min": ExpectedValue(-0.01486498, 0.001),

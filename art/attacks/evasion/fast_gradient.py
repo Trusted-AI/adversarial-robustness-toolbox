@@ -438,7 +438,12 @@ class FastGradientMethod(EvasionAttack):
                     ind = tuple(range(1, len(x.shape)))
                 else:
                     ind = None
-                grad = grad / (np.sum(np.abs(grad), axis=ind, keepdims=True) + tol)
+                if grad.ndim != 1:
+                    raise NotImplementedError("TO DO (grad.ndim != 1)")
+                i_max = np.argmax(np.abs(g), axis=None)
+                pos = grad[i_max] >= 0
+                grad = np.zeros_like(grad)
+                grad[i_max] = 1 if pos else -1
             elif norm == 2:
                 if not object_type:
                     ind = tuple(range(1, len(x.shape)))
