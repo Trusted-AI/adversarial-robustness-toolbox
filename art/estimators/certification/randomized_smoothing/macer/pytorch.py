@@ -75,7 +75,6 @@ class PyTorchMACER(PyTorchRandomizedSmoothing):
         gamma: float = 8.0,
         lmbda: float = 12.0,
         gaussian_samples: int = 16,
-        verbose: bool = False,
     ) -> None:
         """
         Create a MACER classifier.
@@ -105,7 +104,6 @@ class PyTorchMACER(PyTorchRandomizedSmoothing):
         :param gamma: The hinge factor.
         :param lmbda: The trade-off factor.
         :param gaussian_samples: The number of gaussian samples per input.
-        :param verbose: Show progress bars.
         """
         super().__init__(
             model=model,
@@ -122,7 +120,6 @@ class PyTorchMACER(PyTorchRandomizedSmoothing):
             sample_size=sample_size,
             scale=scale,
             alpha=alpha,
-            verbose=verbose,
         )
         self.beta = beta
         self.gamma = gamma
@@ -138,6 +135,7 @@ class PyTorchMACER(PyTorchRandomizedSmoothing):
         training_mode: bool = True,
         drop_last: bool = False,
         scheduler: Optional["torch.optim.lr_scheduler._LRScheduler"] = None,
+        verbose: bool = False,
         **kwargs,
     ) -> None:
         """
@@ -153,6 +151,7 @@ class PyTorchMACER(PyTorchRandomizedSmoothing):
                           the batch size. If ``False`` and the size of dataset is not divisible by the batch size, then
                           the last batch will be smaller. (default: ``False``)
         :param scheduler: Learning rate scheduler to run at the start of every epoch.
+        :param verbose: Display the training progress bar.
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
                and providing it takes no effect.
         """
@@ -185,7 +184,7 @@ class PyTorchMACER(PyTorchRandomizedSmoothing):
         )
 
         # Start training
-        for _ in trange(nb_epochs, disable=not self.verbose):
+        for _ in trange(nb_epochs, disable=not verbose):
             for x_batch, y_batch in dataloader:
                 # Move inputs to GPU
                 x_batch = x_batch.to(self.device)
