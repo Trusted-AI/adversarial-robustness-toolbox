@@ -62,11 +62,11 @@ def insert_transformed_patch(x: np.ndarray, patch: np.ndarray, image_coords: np.
     height, _ = cv2.findHomography(patch_coords, image_coords)
 
     # warp patch to destination coordinates
-    x_out = cv2.warpPerspective(patch, height, (x.shape[1], x.shape[0]), cv2.INTER_CUBIC)
+    x_out = cv2.warpPerspective(patch, height, (x.shape[1], x.shape[0]), cv2.INTER_CUBIC)  # type: ignore
 
     # mask to aid with insertion
     mask = np.ones(patch.shape)
-    mask_out = cv2.warpPerspective(mask, height, (x.shape[1], x.shape[0]), cv2.INTER_CUBIC)
+    mask_out = cv2.warpPerspective(mask, height, (x.shape[1], x.shape[0]), cv2.INTER_CUBIC)  # type: ignore
 
     # save image before adding shadows
     x_neg_patch = np.copy(x)
