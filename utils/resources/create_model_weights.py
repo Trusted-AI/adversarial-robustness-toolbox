@@ -140,17 +140,12 @@ def create_scikit_model_weights():
         "linearSVC": LinearSVC(),
     }
 
-    clipped_models = {
-        model_name: model for model_name, model in model_list.items()
-    }
+    clipped_models = {model_name: model for model_name, model in model_list.items()}
     unclipped_models = {model_name: model for model_name, model in model_list.items()}
 
     (x_train_iris, y_train_iris), (_, _), _, _ = load_dataset("iris")
 
     y_train_iris = np.argmax(y_train_iris, axis=1)
-
-    print(sklearn.__version__)
-    dfg
 
     for model_name, model in clipped_models.items():
         model.fit(X=x_train_iris, y=y_train_iris)
