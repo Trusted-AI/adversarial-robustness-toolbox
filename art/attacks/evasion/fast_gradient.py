@@ -84,7 +84,7 @@ class FastGradientMethod(EvasionAttack):
         Create a :class:`.FastGradientMethod` instance.
 
         :param estimator: A trained classifier.
-        :param norm: The norm of the adversarial perturbation. Possible values: "inf", np.inf, 1 or 2.
+        :param norm: The norm of the adversarial perturbation. Possible values: "inf", `np.inf` or a real `p >= 1`.
         :param eps: Attack step size (input variation).
         :param eps_step: Step size of input variation for minimal perturbation computation.
         :param targeted: Indicates whether the attack is targeted (True) or untargeted (False)
@@ -334,8 +334,11 @@ class FastGradientMethod(EvasionAttack):
 
     def _check_params(self) -> None:
 
-        if self.norm not in [1, 2, np.inf, "inf"]:
-            raise ValueError('Norm order must be either 1, 2, `np.inf` or "inf".')
+        if not (
+            self.norm == "inf"
+            or self.norm >= 1
+        ):
+            raise ValueError('Norm order must be either "inf", `np.inf` or a real `p >= 1`.')
 
         if not (
             isinstance(self.eps, (int, float))
@@ -431,25 +434,17 @@ class FastGradientMethod(EvasionAttack):
             ).any():
                 logger.info("The loss gradient array contains at least one positive or negative infinity.")
 
+            flat = grad.reshape(1 if object_type else len(grad), -1)
             if norm in [np.inf, "inf"]:
-                grad = np.sign(grad)
+                flat = np.ones_like(flat)
             elif norm == 1:
-                if not object_type:
-                    ind = tuple(range(1, len(x.shape)))
-                else:
-                    ind = None
-                if grad.ndim != 1:
-                    raise NotImplementedError("TO DO (grad.ndim != 1)")
-                i_max = np.argmax(np.abs(g), axis=None)
-                pos = grad[i_max] >= 0
-                grad = np.zeros_like(grad)
-                grad[i_max] = 1 if pos else -1
-            elif norm == 2:
-                if not object_type:
-                    ind = tuple(range(1, len(x.shape)))
-                else:
-                    ind = None
-                grad = grad / (np.sqrt(np.sum(np.square(grad), axis=ind, keepdims=True)) + tol)
+                i_max = np.argmax(np.abs(flat), axis=-1)
+                flat = np.zeros_like(flat)
+                flat[range(len(flat)), i_max] = 1
+            elif norm > 1:
+                q = norm / (norm - 1)
+                flat = (np.abs(flat) / (np.linalg.norm(flat, ord=q, axis=-1, keepdims=True) + tol)) ** (q - 1)
+            grad = flat.reshape(grad.shape) * np.sign(grad)
             return grad
 
         # Add momentum
