@@ -563,6 +563,7 @@ def projection(values: np.ndarray, eps: Union[int, float, np.ndarray], norm_p: U
         values_tmp = np.sign(values_tmp) * np.minimum(abs(values_tmp), eps)
 
     else:
+        raise NotImplementedError("TO DO (properly generalize to any `p >= 1`)")
         raise NotImplementedError(
             'Values of `norm_p` different from 1, 2, `np.inf` and "inf" are currently not ' "supported."
         )
