@@ -78,7 +78,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         Create a :class:`.ProjectedGradientDescentPyTorch` instance.
 
         :param estimator: An trained estimator.
-        :param norm: The norm of the adversarial perturbation. Possible values: "inf", np.inf, 1 or 2.
+        :param norm: The norm of the adversarial perturbation. Possible values: "inf", `np.inf` or a real `p >= 1`.
         :param eps: Maximum perturbation that the attacker can introduce.
         :param eps_step: Attack step size (input variation) at each iteration.
         :param random_eps: When True, epsilon is drawn randomly from truncated normal distribution. The literature
@@ -344,10 +344,12 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
             grad = grad.sign()
 
         elif self.norm == 1:
+            raise NotImplementedError("TO DO (fix L1)")
             ind = tuple(range(1, len(x.shape)))
             grad = grad / (torch.sum(grad.abs(), dim=ind, keepdims=True) + tol)  # type: ignore
 
-        elif self.norm == 2:
+        elif self.norm > 1:
+            raise NotImplementedError("TO DO (properly generalize to `1 < p < inf`)")
             ind = tuple(range(1, len(x.shape)))
             grad = grad / (torch.sqrt(torch.sum(grad * grad, axis=ind, keepdims=True)) + tol)  # type: ignore
 
@@ -456,7 +458,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
 
         :param values: Values to clip.
         :param eps: Maximum norm allowed.
-        :param norm_p: L_p norm to use for clipping supporting 1, 2, `np.Inf` and "inf".
+        :param norm_p: L_p norm to use for clipping supporting "inf", `np.inf` or a real `p >= 1`.
         :return: Values of `values` after projection.
         """
         import torch
@@ -465,31 +467,17 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         tol = 10e-8
         values_tmp = values.reshape(values.shape[0], -1)
 
-        if norm_p == 2:
+        if 1 <= norm_p < np.inf:
             if isinstance(eps, np.ndarray):
                 raise NotImplementedError(
-                    "The parameter `eps` of type `np.ndarray` is not supported to use with norm 2."
+                    "The parameter `eps` of type `np.ndarray` is not supported to use with norm `1 <= p < np.inf`."
                 )
 
             values_tmp = (
                 values_tmp
                 * torch.min(
                     torch.tensor([1.0], dtype=torch.float32).to(self.estimator.device),
-                    eps / (torch.norm(values_tmp, p=2, dim=1) + tol),
-                ).unsqueeze_(-1)
-            )
-
-        elif norm_p == 1:
-            if isinstance(eps, np.ndarray):
-                raise NotImplementedError(
-                    "The parameter `eps` of type `np.ndarray` is not supported to use with norm 1."
-                )
-
-            values_tmp = (
-                values_tmp
-                * torch.min(
-                    torch.tensor([1.0], dtype=torch.float32).to(self.estimator.device),
-                    eps / (torch.norm(values_tmp, p=1, dim=1) + tol),
+                    eps / (torch.norm(values_tmp, p=norm_p, dim=1) + tol),
                 ).unsqueeze_(-1)
             )
 
@@ -504,7 +492,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
 
         else:
             raise NotImplementedError(
-                "Values of `norm_p` different from 1, 2 and `np.inf` are currently not supported."
+                "Values of `norm_p < 1` are currently not supported."
             )
 
         values = values_tmp.reshape(values.shape)
