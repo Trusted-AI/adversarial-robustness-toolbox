@@ -444,8 +444,7 @@ class FastGradientMethod(EvasionAttack):
             elif norm > 1:
                 q = norm / (norm - 1)
                 flat = (np.abs(flat) / (np.linalg.norm(flat, ord=q, axis=-1, keepdims=True) + tol)) ** (q - 1)
-            grad = flat.reshape(grad.shape)
-            grad *= np.sign(grad)
+            grad = flat.reshape(grad.shape) * np.sign(grad)
             return grad
 
         # Add momentum
