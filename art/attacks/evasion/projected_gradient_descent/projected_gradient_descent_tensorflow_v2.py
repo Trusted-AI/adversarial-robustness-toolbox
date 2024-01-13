@@ -78,7 +78,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         Create a :class:`.ProjectedGradientDescentTensorFlowV2` instance.
 
         :param estimator: An trained estimator.
-        :param norm: The norm of the adversarial perturbation. Possible values: np.inf, 1 or 2.
+        :param norm: The norm of the adversarial perturbation. Possible values: "inf", `np.inf` or a real `p >= 1`.
         :param eps: Maximum perturbation that the attacker can introduce.
         :param eps_step: Attack step size (input variation) at each iteration.
         :param random_eps: When True, epsilon is drawn randomly from truncated normal distribution. The literature
@@ -351,14 +351,16 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
             momentum += grad
 
         # Apply norm bound
-        if self.norm == np.inf:
+        if self.norm in [np.inf, "inf"]:
             grad = tf.sign(grad)
 
         elif self.norm == 1:
+            raise NotImplementedError("TO DO (fix L1)")
             ind = tuple(range(1, len(x.shape)))
             grad = tf.divide(grad, (tf.math.reduce_sum(tf.abs(grad), axis=ind, keepdims=True) + tol))
 
-        elif self.norm == 2:
+        elif self.norm > 1:
+            raise NotImplementedError("TO DO (properly generalize to `1 < p < inf`)")
             ind = tuple(range(1, len(x.shape)))
             grad = tf.divide(
                 grad, (tf.math.sqrt(tf.math.reduce_sum(tf.math.square(grad), axis=ind, keepdims=True)) + tol)
@@ -463,7 +465,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
 
         :param values: Values to clip.
         :param eps: Maximum norm allowed.
-        :param norm_p: L_p norm to use for clipping supporting 1, 2 and `np.Inf`.
+        :param norm_p: L_p norm to use for clipping supporting "inf", `np.inf` or a real `p >= 1`.
         :return: Values of `values` after projection.
         """
         import tensorflow as tf
@@ -472,27 +474,17 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         tol = 10e-8
         values_tmp = tf.reshape(values, (values.shape[0], -1))
 
-        if norm_p == 2:
+        if 1 <= norm_p < np.inf:
             if isinstance(eps, np.ndarray):
                 raise NotImplementedError(
-                    "The parameter `eps` of type `np.ndarray` is not supported to use with norm 2."
+                    "The parameter `eps` of type `np.ndarray` is not supported to use with norm `1 <= p < np.inf`."
                 )
 
             values_tmp = values_tmp * tf.expand_dims(
-                tf.minimum(1.0, eps / (tf.norm(values_tmp, ord=2, axis=1) + tol)), axis=1
+                tf.minimum(1.0, eps / (tf.norm(values_tmp, ord=norm_p, axis=1) + tol)), axis=1
             )
 
-        elif norm_p == 1:
-            if isinstance(eps, np.ndarray):
-                raise NotImplementedError(
-                    "The parameter `eps` of type `np.ndarray` is not supported to use with norm 1."
-                )
-
-            values_tmp = values_tmp * tf.expand_dims(
-                tf.minimum(1.0, eps / (tf.norm(values_tmp, ord=1, axis=1) + tol)), axis=1
-            )
-
-        elif norm_p in ["inf", np.inf]:
+        elif norm_p in [np.inf, "inf"]:
             if isinstance(eps, np.ndarray):
                 eps = eps * np.ones(shape=values.shape)
                 eps = eps.reshape([eps.shape[0], -1])  # type: ignore
@@ -501,7 +493,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
 
         else:
             raise NotImplementedError(
-                'Values of `norm_p` different from 1, 2 "inf" and `np.inf` are currently not supported.'
+                'Values of `norm_p < 1` are currently not supported.'
             )
 
         values = tf.reshape(values_tmp, values.shape)
