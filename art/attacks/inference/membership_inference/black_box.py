@@ -60,7 +60,7 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
         "scaler_type",
         "nn_model_epochs",
         "nn_model_batch_size",
-        "nn_model_learning_rate"
+        "nn_model_learning_rate",
     ]
     _estimator_requirements = (BaseEstimator, (ClassifierMixin, RegressorMixin))
 
@@ -256,7 +256,6 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
         if x_2 is None:
             self.use_label = False
 
-        scaler: Optional[Any] = None
         if self.scaler_type:
             if self.scaler_type == "standard":
                 self.scaler = StandardScaler()
@@ -266,7 +265,6 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
                 self.scaler = RobustScaler()
             else:
                 raise ValueError("Illegal scaler_type: ", self.scaler_type)
-
 
         if self.default_model and self.attack_model_type == "nn":
             import torch
