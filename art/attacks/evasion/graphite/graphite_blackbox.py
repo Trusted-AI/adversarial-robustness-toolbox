@@ -346,7 +346,7 @@ class GRAPHITEBlackbox(EvasionAttack):
         mask_copy = mask_array.copy()
         x_noise = cv2.resize(x_copy, self.noise_size)
         x_tar_noise = cv2.resize(x_tar_copy, self.noise_size)
-        mask_noise = cv2.resize(mask_copy, self.noise_size)
+        mask_noise = cv2.resize(mask_copy, self.noise_size).astype(float)
         mask_noise = np.where(mask_noise > 0.5, 1.0, 0.0)
 
         if len(x_noise.shape) < 3:
