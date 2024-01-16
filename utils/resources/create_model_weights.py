@@ -15,13 +15,13 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-import tensorflow as tf
 import os
 import pickle
+
+import tensorflow as tf
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
 from sklearn.linear_model import LogisticRegression
-from art.estimators.classification import SklearnClassifier
 from sklearn.svm import SVC, LinearSVC
 from sklearn.tree import DecisionTreeClassifier, ExtraTreeClassifier
 from sklearn.ensemble import AdaBoostClassifier, BaggingClassifier, ExtraTreesClassifier
@@ -139,36 +139,36 @@ def create_scikit_model_weights():
         "linearSVC": LinearSVC(),
     }
 
-    clipped_models = {
-        model_name: SklearnClassifier(model=model, clip_values=(0, 1)) for model_name, model in model_list.items()
-    }
-    unclipped_models = {model_name: SklearnClassifier(model=model) for model_name, model in model_list.items()}
+    clipped_models = {model_name: model for model_name, model in model_list.items()}
+    unclipped_models = {model_name: model for model_name, model in model_list.items()}
 
     (x_train_iris, y_train_iris), (_, _), _, _ = load_dataset("iris")
 
+    y_train_iris = np.argmax(y_train_iris, axis=1)
+
     for model_name, model in clipped_models.items():
-        model.fit(x=x_train_iris, y=y_train_iris)
+        model.fit(X=x_train_iris, y=y_train_iris)
         pickle.dump(
             model,
             open(
                 os.path.join(
                     os.path.dirname(os.path.dirname(__file__)),
-                    "utils/resources/models/scikit/",
-                    model_name + "iris_clipped.sav",
+                    "resources/models/scikit/",
+                    "scikit-" + model_name + "-iris-clipped-ge-1.3.0.pickle",
                 ),
                 "wb",
             ),
         )
 
     for model_name, model in unclipped_models.items():
-        model.fit(x=x_train_iris, y=y_train_iris)
+        model.fit(X=x_train_iris, y=y_train_iris)
         pickle.dump(
             model,
             open(
                 os.path.join(
                     os.path.dirname(os.path.dirname(__file__)),
-                    "utils/resources/models/scikit/",
-                    model_name + "iris_unclipped.sav",
+                    "resources/models/scikit/",
+                    "scikit-" + model_name + "-iris-unclipped-ge-1.3.0.pickle",
                 ),
                 "wb",
             ),
@@ -176,6 +176,6 @@ def create_scikit_model_weights():
 
 
 if __name__ == "__main__":
-    main_mnist_binary()
+    # main_mnist_binary()
     create_scikit_model_weights()
-    main_diabetes()
+    # main_diabetes()

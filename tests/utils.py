@@ -28,6 +28,7 @@ import time
 import unittest
 import warnings
 
+import sklearn
 import numpy as np
 
 from art.estimators.classification.tensorflow import TensorFlowV2Classifier
@@ -1746,6 +1747,13 @@ def get_tabular_classifier_scikit_list(clipped=False, model_list_names=None):
         ScikitlearnSVC,
     )
 
+    sklearn_version = list(map(int, sklearn.__version__.split(".")))
+    sklearn_ge_1_3_0 = sklearn_version[0] == 1 and sklearn_version[1] >= 3
+    if sklearn_ge_1_3_0:
+        suffix = "-ge-1.3.0"
+    else:
+        suffix = ""
+
     available_models = {
         "decisionTreeClassifier": ScikitlearnDecisionTreeClassifier,
         # "extraTreeClassifier": ScikitlearnExtraTreeClassifier,
@@ -1775,7 +1783,7 @@ def get_tabular_classifier_scikit_list(clipped=False, model_list_names=None):
                     os.path.join(
                         os.path.dirname(os.path.dirname(__file__)),
                         "utils/resources/models/scikit/",
-                        "scikit-" + model_name + "-iris-clipped.pickle",
+                        "scikit-" + model_name + "-iris-clipped" + suffix + ".pickle",
                     ),
                     "rb",
                 )
@@ -1788,7 +1796,7 @@ def get_tabular_classifier_scikit_list(clipped=False, model_list_names=None):
                     os.path.join(
                         os.path.dirname(os.path.dirname(__file__)),
                         "utils/resources/models/scikit/",
-                        "scikit-" + model_name + "-iris-unclipped.pickle",
+                        "scikit-" + model_name + "-iris-unclipped" + suffix + ".pickle",
                     ),
                     "rb",
                 )
