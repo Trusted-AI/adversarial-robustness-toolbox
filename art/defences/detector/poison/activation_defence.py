@@ -695,7 +695,9 @@ class ActivationDefence(PoisonFilteringDefence):
 
         # wrong way to get activations activations = self.classifier.predict(self.x_train)
         if isinstance(activations, np.ndarray):
-            nodes_last_layer = np.shape(activations)[1]
+            # flatten activations across batch
+            activations = np.reshape(activations, (activations.shape[0], -1))
+            nodes_last_layer = activations.shape[1]
         else:
             raise ValueError("activations is None or tensor.")
 

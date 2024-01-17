@@ -48,7 +48,38 @@ def test_black_box_image(art_warning, get_default_mnist_subset, image_dl_estimat
 
 
 @pytest.mark.parametrize("model_type", ["nn", "rf", "gb", "lr", "dt", "knn", "svm"])
-def test_black_box_tabular(art_warning, model_type, tabular_dl_estimator_for_attack, get_iris_dataset):
+def test_black_box_tabular(art_warning, model_type, decision_tree_estimator, get_iris_dataset):
+    try:
+        classifier = decision_tree_estimator()
+        attack = MembershipInferenceBlackBox(classifier, attack_model_type=model_type)
+        backend_check_membership_accuracy(attack, get_iris_dataset, attack_train_ratio, 0.25)
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.parametrize("model_type", ["nn", "rf", "gb", "lr", "dt", "knn", "svm"])
+def test_black_box_tabular_no_label(art_warning, model_type, decision_tree_estimator, get_iris_dataset):
+    try:
+        classifier = decision_tree_estimator()
+        attack = MembershipInferenceBlackBox(classifier, attack_model_type=model_type)
+        backend_check_membership_accuracy(attack, get_iris_dataset, attack_train_ratio, 0.25, False)
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.parametrize("model_type", ["nn", "rf", "gb", "lr", "dt", "knn", "svm"])
+def test_black_box_loss_tabular(art_warning, model_type, decision_tree_estimator, get_iris_dataset):
+    try:
+        classifier = decision_tree_estimator()
+        if type(classifier).__name__ == "PyTorchClassifier" or type(classifier).__name__ == "TensorFlowV2Classifier":
+            attack = MembershipInferenceBlackBox(classifier, input_type="loss", attack_model_type=model_type)
+            backend_check_membership_accuracy(attack, get_iris_dataset, attack_train_ratio, 0.25)
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.parametrize("model_type", ["nn", "rf", "gb", "lr", "dt", "knn", "svm"])
+def test_black_box_tabular_dl(art_warning, model_type, tabular_dl_estimator_for_attack, get_iris_dataset):
     try:
         classifier = tabular_dl_estimator_for_attack(MembershipInferenceBlackBox)
         attack = MembershipInferenceBlackBox(classifier, attack_model_type=model_type)
@@ -58,7 +89,17 @@ def test_black_box_tabular(art_warning, model_type, tabular_dl_estimator_for_att
 
 
 @pytest.mark.parametrize("model_type", ["nn", "rf", "gb", "lr", "dt", "knn", "svm"])
-def test_black_box_loss_tabular(art_warning, model_type, tabular_dl_estimator_for_attack, get_iris_dataset):
+def test_black_box_tabular_no_label_dl(art_warning, model_type, tabular_dl_estimator_for_attack, get_iris_dataset):
+    try:
+        classifier = tabular_dl_estimator_for_attack(MembershipInferenceBlackBox)
+        attack = MembershipInferenceBlackBox(classifier, attack_model_type=model_type)
+        backend_check_membership_accuracy(attack, get_iris_dataset, attack_train_ratio, 0.25, False)
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.parametrize("model_type", ["nn", "rf", "gb", "lr", "dt", "knn", "svm"])
+def test_black_box_loss_tabular_dl(art_warning, model_type, tabular_dl_estimator_for_attack, get_iris_dataset):
     try:
         classifier = tabular_dl_estimator_for_attack(MembershipInferenceBlackBox)
         if type(classifier).__name__ == "PyTorchClassifier" or type(classifier).__name__ == "TensorFlowV2Classifier":
@@ -115,25 +156,6 @@ def test_black_box_keras_loss(art_warning, get_iris_dataset):
         art_warning(e)
 
 
-def test_black_box_tabular_rf(art_warning, tabular_dl_estimator_for_attack, get_iris_dataset):
-    try:
-        classifier = tabular_dl_estimator_for_attack(MembershipInferenceBlackBox)
-        attack = MembershipInferenceBlackBox(classifier, attack_model_type="rf")
-        backend_check_membership_accuracy(attack, get_iris_dataset, attack_train_ratio, 0.2)
-    except ARTTestException as e:
-        art_warning(e)
-
-
-def test_black_box_tabular_gb(art_warning, tabular_dl_estimator_for_attack, get_iris_dataset):
-    try:
-        classifier = tabular_dl_estimator_for_attack(MembershipInferenceBlackBox)
-        attack = MembershipInferenceBlackBox(classifier, attack_model_type="gb")
-        # train attack model using only attack_train_ratio of data
-        backend_check_membership_accuracy(attack, get_iris_dataset, attack_train_ratio, 0.25)
-    except ARTTestException as e:
-        art_warning(e)
-
-
 @pytest.mark.skip_framework("tensorflow", "keras", "scikitlearn", "mxnet", "kerastf")
 def test_black_box_with_model(art_warning, tabular_dl_estimator_for_attack, estimator_for_attack, get_iris_dataset):
     try:
@@ -145,25 +167,51 @@ def test_black_box_with_model(art_warning, tabular_dl_estimator_for_attack, esti
         art_warning(e)
 
 
-def test_black_box_tabular_prob_rf(art_warning, tabular_dl_estimator_for_attack, get_iris_dataset):
+@pytest.mark.parametrize("model_type", ["nn", "rf", "gb", "lr", "dt", "knn", "svm"])
+def test_black_box_tabular_prob(art_warning, decision_tree_estimator, get_iris_dataset, model_type):
     try:
-        classifier = tabular_dl_estimator_for_attack(MembershipInferenceBlackBox)
-        attack = MembershipInferenceBlackBox(classifier, attack_model_type="rf")
+        classifier = decision_tree_estimator()
+        attack = MembershipInferenceBlackBox(classifier, attack_model_type=model_type)
         backend_check_membership_probabilities(attack, get_iris_dataset, attack_train_ratio)
     except ARTTestException as e:
         art_warning(e)
 
 
-def test_black_box_tabular_prob_nn(art_warning, tabular_dl_estimator_for_attack, get_iris_dataset):
+def test_black_box_with_model_prob(art_warning, decision_tree_estimator, estimator_for_attack, get_iris_dataset):
     try:
-        classifier = tabular_dl_estimator_for_attack(MembershipInferenceBlackBox)
-        attack = MembershipInferenceBlackBox(classifier, attack_model_type="nn")
+        classifier = decision_tree_estimator()
+        attack_model = estimator_for_attack(num_features=2 * num_classes_iris)
+        attack = MembershipInferenceBlackBox(classifier, attack_model=attack_model)
         backend_check_membership_probabilities(attack, get_iris_dataset, attack_train_ratio)
     except ARTTestException as e:
         art_warning(e)
 
 
-def test_black_box_with_model_prob(
+@pytest.mark.parametrize("model_type", ["nn", "rf", "gb", "lr", "dt", "knn", "svm"])
+def test_black_box_pred(art_warning, model_type, decision_tree_estimator, get_iris_dataset):
+    try:
+        (x_train, _), (x_test, _) = get_iris_dataset
+        classifier = decision_tree_estimator()
+        attack = MembershipInferenceBlackBox(classifier, attack_model_type=model_type)
+        pred_x = classifier.predict(x_train)
+        test_pred_x = classifier.predict(x_test)
+        pred = (pred_x, test_pred_x)
+        backend_check_membership_accuracy_pred(attack, get_iris_dataset, pred, attack_train_ratio, 0.25)
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.parametrize("model_type", ["nn", "rf", "gb", "lr", "dt", "knn", "svm"])
+def test_black_box_tabular_prob_dl(art_warning, tabular_dl_estimator_for_attack, get_iris_dataset, model_type):
+    try:
+        classifier = tabular_dl_estimator_for_attack(MembershipInferenceBlackBox)
+        attack = MembershipInferenceBlackBox(classifier, attack_model_type=model_type)
+        backend_check_membership_probabilities(attack, get_iris_dataset, attack_train_ratio)
+    except ARTTestException as e:
+        art_warning(e)
+
+
+def test_black_box_with_model_prob_dl(
     art_warning, tabular_dl_estimator_for_attack, estimator_for_attack, get_iris_dataset
 ):
     try:
@@ -176,7 +224,7 @@ def test_black_box_with_model_prob(
 
 
 @pytest.mark.parametrize("model_type", ["nn", "rf", "gb", "lr", "dt", "knn", "svm"])
-def test_black_box_pred(art_warning, model_type, tabular_dl_estimator_for_attack, get_iris_dataset):
+def test_black_box_pred_dl(art_warning, model_type, tabular_dl_estimator_for_attack, get_iris_dataset):
     try:
         (x_train, _), (x_test, _) = get_iris_dataset
         classifier = tabular_dl_estimator_for_attack(MembershipInferenceBlackBox)
@@ -207,7 +255,29 @@ def test_black_box_loss_regression_pred(art_warning, model_type, get_diabetes_da
         art_warning(e)
 
 
-def test_errors(art_warning, tabular_dl_estimator_for_attack, get_iris_dataset):
+def test_errors(art_warning, decision_tree_estimator, get_iris_dataset):
+    try:
+        classifier = decision_tree_estimator()
+        (x_train, y_train), (x_test, y_test) = get_iris_dataset
+        with pytest.raises(ValueError):
+            MembershipInferenceBlackBox(classifier, attack_model_type="a")
+        with pytest.raises(ValueError):
+            MembershipInferenceBlackBox(classifier, input_type="a")
+        attack = MembershipInferenceBlackBox(classifier)
+        with pytest.raises(ValueError):
+            attack.fit(x_train, y_test, x_test, y_test)
+        with pytest.raises(ValueError):
+            attack.fit(x_train, y_train, x_test, y_train)
+        with pytest.raises(ValueError):
+            attack.infer(x_train, y_test)
+        attack.fit(x_train, y_train, x_test, y_test)
+        with pytest.raises(ValueError):
+            attack.infer(x_test, y_test=None)
+    except ARTTestException as e:
+        art_warning(e)
+
+
+def test_errors_dl(art_warning, tabular_dl_estimator_for_attack, get_iris_dataset):
     try:
         classifier = tabular_dl_estimator_for_attack(MembershipInferenceBlackBox)
         (x_train, y_train), (x_test, y_test) = get_iris_dataset
@@ -223,10 +293,17 @@ def test_errors(art_warning, tabular_dl_estimator_for_attack, get_iris_dataset):
             attack.fit(x_train, y_train, x_test, y_train)
         with pytest.raises(ValueError):
             attack.infer(x_train, y_test)
+        attack.fit(x_train, y_train, x_test, y_test)
+        with pytest.raises(ValueError):
+            attack.infer(x_test, y_test=None)
         attack = MembershipInferenceBlackBox(classifier, input_type="loss")
+        with pytest.raises(ValueError):
+            attack.fit(x_train, test_x=x_test)
         attack.fit(x_train, y_train, x_test, y_test)
         with pytest.raises(ValueError):
             attack.infer(None, y_test, pred=pred_test)
+        with pytest.raises(ValueError):
+            attack.infer(x_test, y_test=None)
     except ARTTestException as e:
         art_warning(e)
 
@@ -240,19 +317,27 @@ def test_classifier_type_check_fail(art_warning):
         art_warning(e)
 
 
-def backend_check_membership_accuracy(attack, dataset, attack_train_ratio, approx):
+def backend_check_membership_accuracy(attack, dataset, attack_train_ratio, approx, use_label=True):
     (x_train, y_train), (x_test, y_test) = dataset
     attack_train_size = int(len(x_train) * attack_train_ratio)
     attack_test_size = int(len(x_test) * attack_train_ratio)
 
     # train attack model using only attack_train_ratio of data
-    attack.fit(
-        x_train[:attack_train_size], y_train[:attack_train_size], x_test[:attack_test_size], y_test[:attack_test_size]
-    )
-
-    # infer attacked feature on remainder of data
-    inferred_train = attack.infer(x_train[attack_train_size:], y_train[attack_train_size:])
-    inferred_test = attack.infer(x_test[attack_test_size:], y_test[attack_test_size:])
+    if use_label:
+        attack.fit(
+            x_train[:attack_train_size],
+            y_train[:attack_train_size],
+            x_test[:attack_test_size],
+            y_test[:attack_test_size],
+        )
+        # infer attacked feature on remainder of data
+        inferred_train = attack.infer(x_train[attack_train_size:], y_train[attack_train_size:])
+        inferred_test = attack.infer(x_test[attack_test_size:], y_test[attack_test_size:])
+    else:
+        attack.fit(x_train[:attack_train_size], test_x=x_test[:attack_test_size])
+        # infer attacked feature on remainder of data
+        inferred_train = attack.infer(x_train[attack_train_size:])
+        inferred_test = attack.infer(x_test[attack_test_size:])
 
     # check accuracy
     backend_check_accuracy(inferred_train, inferred_test, approx)
