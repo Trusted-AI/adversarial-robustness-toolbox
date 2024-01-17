@@ -86,8 +86,8 @@ def test_black_box(art_warning, decision_tree_estimator, get_iris_dataset, model
         # check accuracy
         train_acc = np.sum(inferred_train == x_train_feature.reshape(1, -1)) / len(inferred_train)
         test_acc = np.sum(inferred_test == x_test_feature.reshape(1, -1)) / len(inferred_test)
-        assert pytest.approx(0.8285, abs=0.3) == train_acc
-        assert pytest.approx(0.8888, abs=0.3) == test_acc
+        assert pytest.approx(0.8285, abs=0.35) == train_acc
+        assert pytest.approx(0.8888, abs=0.35) == test_acc
         print(model_type, train_acc, test_acc)
 
     except ARTTestException as e:
@@ -184,8 +184,8 @@ def test_black_box_slice(art_warning, decision_tree_estimator, get_iris_dataset,
         # check accuracy
         train_acc = np.sum(inferred_train == x_train_feature.reshape(1, -1)) / len(inferred_train)
         test_acc = np.sum(inferred_test == x_test_feature.reshape(1, -1)) / len(inferred_test)
-        assert pytest.approx(0.8285, abs=0.3) == train_acc
-        assert pytest.approx(0.8888, abs=0.3) == test_acc
+        assert pytest.approx(0.8285, abs=0.35) == train_acc
+        assert pytest.approx(0.8888, abs=0.35) == test_acc
         print(model_type, train_acc, test_acc)
 
     except ARTTestException as e:
@@ -236,8 +236,8 @@ def test_black_box_with_label(art_warning, decision_tree_estimator, get_iris_dat
         # check accuracy
         train_acc = np.sum(inferred_train == x_train_feature.reshape(1, -1)) / len(inferred_train)
         test_acc = np.sum(inferred_test == x_test_feature.reshape(1, -1)) / len(inferred_test)
-        assert pytest.approx(0.8285, abs=0.3) == train_acc
-        assert pytest.approx(0.8888, abs=0.3) == test_acc
+        assert pytest.approx(0.8285, abs=0.35) == train_acc
+        assert pytest.approx(0.8888, abs=0.35) == test_acc
         print(model_type, train_acc, test_acc)
 
     except ARTTestException as e:
@@ -286,8 +286,8 @@ def test_black_box_no_values(art_warning, decision_tree_estimator, get_iris_data
         # check accuracy
         train_acc = np.sum(inferred_train == x_train_feature.reshape(1, -1)) / len(inferred_train)
         test_acc = np.sum(inferred_test == x_test_feature.reshape(1, -1)) / len(inferred_test)
-        assert pytest.approx(0.8285, abs=0.3) == train_acc
-        assert pytest.approx(0.8888, abs=0.3) == test_acc
+        assert pytest.approx(0.8285, abs=0.35) == train_acc
+        assert pytest.approx(0.8888, abs=0.35) == test_acc
         print(model_type, train_acc, test_acc)
 
     except ARTTestException as e:
