@@ -394,9 +394,6 @@ class FastGradientMethod(EvasionAttack):
         decay: Optional[float] = None,
         momentum: Optional[np.ndarray] = None,
     ) -> np.ndarray:
-        # Pick a small scalar to avoid division by 0
-        tol = 10e-8
-
         # Get gradient wrt loss; invert it if attack is targeted
         grad = self.estimator.loss_gradient(x, y) * (1 - 2 * int(self.targeted))
 
@@ -443,7 +440,9 @@ class FastGradientMethod(EvasionAttack):
                 flat[range(len(flat)), i_max] = 1
             elif norm > 1:
                 q = norm / (norm - 1)
-                flat = (np.abs(flat) / (np.linalg.norm(flat, ord=q, axis=-1, keepdims=True) + tol)) ** (q - 1)
+                q_norm = np.linalg.norm(flat, ord=q, axis=-1, keepdims=True)
+                with np.errstate(divide='ignore'):
+                    flat = (np.abs(flat) * np.where(q_norm, 1 / q_norm, 0)) ** (q - 1)
             grad = flat.reshape(grad.shape) * np.sign(grad)
             return grad
 

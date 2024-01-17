@@ -180,7 +180,7 @@ def test_norm_images(art_warning, norm, fix_get_mnist_subset, image_dl_estimator
                 "x_test_mean": ExpectedValue(0.007636416, 0.001),
                 "x_test_min": ExpectedValue(-0.211054801, 0.001),
                 "x_test_max": ExpectedValue(0.209592223, 0.001),
-                "y_test_pred_adv_expected": ExpectedValue(np.asarray([7, 2, 4, 4, 4, 7, 7, 4, 0, 4, 4]), 2),
+                "y_test_pred_adv_expected": ExpectedValue(np.asarray([4, 2, 4, 7, 0, 4, 7, 7, 2, 3, 0]), 2),
             }
         else:
             raise ValueError("Value of `expected_values` not recognized.")
