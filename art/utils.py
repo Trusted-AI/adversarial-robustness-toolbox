@@ -519,54 +519,47 @@ def projection_l1_2(values: np.ndarray, eps: Union[int, float, np.ndarray]) -> n
     return proj
 
 
-def projection(values: np.ndarray, eps: Union[int, float, np.ndarray], norm_p: Union[int, float, str]) -> np.ndarray:
+def projection(
+    values: np.ndarray,
+    eps: Union[int, float, np.ndarray],
+    norm_p: Union[int, float, str],
+    *,
+    suboptimal: bool = True,
+) -> np.ndarray:
     """
     Project `values` on the L_p norm ball of size `eps`.
 
     :param values: Array of perturbations to clip.
-    :param eps: Maximum norm allowed.
-    :param norm_p: L_p norm to use for clipping.
-            Only 1, 2 , `np.Inf` 1.1 and 1.2 supported for now.
-            1.1 and 1.2 compute orthogonal projections on l1-ball, using two different algorithms
+    :param eps: Maximum norm allowed. One scalar or one per sample in `values`.
+    :param norm_p: L_p norm to use for clipping. Only 1, 2 , `np.inf` and "inf" are supported with `suboptimal=False`
+            for now.
+    :param suboptimal: If `True` simply projects by rescaling to Lp ball. Fast but may be suboptimal for `norm_p != 2`.
+            Ignored when `norm_p in [np.inf, "inf"]` because the optimal solution is explicit. Defaults to `True`.
     :return: Values of `values` after projection.
     """
-    # Pick a small scalar to avoid division by 0
-    tol = 10e-8
-    values_tmp = values.reshape((values.shape[0], -1))
+    p = np.inf if norm_p == "inf" else float(norm_p)
+    assert p > 0
 
-    if norm_p == 2:
-        if isinstance(eps, np.ndarray):
-            raise NotImplementedError("The parameter `eps` of type `np.ndarray` is not supported to use with norm 2.")
+    values_tmp = values.reshape(len(np.atleast_2d(values)), -1)  # (n_samples, d)
+    eps = np.atleast_2d(eps).T  # (1 or n_samples, 1)
 
-        values_tmp = values_tmp * np.expand_dims(
-            np.minimum(1.0, eps / (np.linalg.norm(values_tmp, axis=1) + tol)), axis=1
-        )
-
-    elif norm_p == 1:
-        if isinstance(eps, np.ndarray):
-            raise NotImplementedError("The parameter `eps` of type `np.ndarray` is not supported to use with norm 1.")
-
-        values_tmp = values_tmp * np.expand_dims(
-            np.minimum(1.0, eps / (np.linalg.norm(values_tmp, axis=1, ord=1) + tol)),
-            axis=1,
-        )
-    elif norm_p == 1.1:
-        values_tmp = projection_l1_1(values_tmp, eps)
-    elif norm_p == 1.2:
-        values_tmp = projection_l1_2(values_tmp, eps)
-
-    elif norm_p in [np.inf, "inf"]:
-        if isinstance(eps, np.ndarray):
-            eps = eps * np.ones_like(values)
-            eps = eps.reshape([eps.shape[0], -1])  # type: ignore
-
-        values_tmp = np.sign(values_tmp) * np.minimum(abs(values_tmp), eps)
-
-    else:
-        raise NotImplementedError("TO DO (properly generalize to any `p >= 1`)")
-        raise NotImplementedError(
-            'Values of `norm_p` different from 1, 2, `np.inf` and "inf" are currently not ' "supported."
-        )
+    if (suboptimal or p == 2) and p != np.inf:  # Simple rescaling
+        values_norm = np.linalg.norm(values_tmp, ord=p, axis=1, keepdims=True)  # (n_samples, 1)
+        with np.errstate(divide='ignore'):
+            values_tmp = values_tmp * np.where(values_norm, np.minimum(1, eps / values_norm), 0)
+    else:  # Optimal
+        if p == np.inf:  # Easy exact case
+            values_tmp = np.sign(values_tmp) * np.minimum(abs(values_tmp), eps)
+        elif p == 1:  # Harder exact case
+            projection_l1 = projection_l1_1 if values_tmp.shape[1] > 29 else projection_l1_2  # From weak empirical tests
+            values_tmp = projection_l1(values_tmp, eps[:, 0])
+        elif p > 1:  # Convex optim
+            raise NotImplementedError(
+                'Values of `norm_p > 1` different from 2, `np.inf` and "inf" are currently not supported with '
+                '`suboptimal=False`.'
+            )
+        else:  # Non-convex optim
+            raise NotImplementedError('Values of `norm_p < 1` are currently not supported with `suboptimal=False`.')
 
     values = values_tmp.reshape(values.shape)
 
