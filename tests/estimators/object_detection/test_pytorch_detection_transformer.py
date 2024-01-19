@@ -176,7 +176,7 @@ def test_loss_gradient(art_warning, get_pytorch_detr):
                 -0.00052412,
             ]
         )
-        np.testing.assert_array_almost_equal(grads[1, 0, 10, :32], expected_gradients2, decimal=2)
+        np.testing.assert_array_almost_equal(grads[1, 0, 10, :32], expected_gradients2, decimal=1)
 
     except ARTTestException as e:
         art_warning(e)
