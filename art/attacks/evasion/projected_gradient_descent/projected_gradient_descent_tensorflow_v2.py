@@ -476,6 +476,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         tol = 10e-8
         values_tmp = tf.reshape(values, (values.shape[0], -1))
 
+        raise NotImplementedError("TO DO (Follow `art.utils.projection` implementation)")
         if 1 <= norm_p < np.inf:
             if isinstance(eps, np.ndarray):
                 raise NotImplementedError(
