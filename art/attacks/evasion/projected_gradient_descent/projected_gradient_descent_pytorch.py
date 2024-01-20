@@ -305,11 +305,8 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         """
         import torch
 
-        # Pick a small scalar to avoid division by 0
-        tol = 10e-8
-
         # Get gradient wrt loss; invert it if attack is targeted
-        grad = self.estimator.loss_gradient(x=x, y=y) * (1 - 2 * int(self.targeted))
+        grad = self.estimator.loss_gradient(x=x, y=y) * (-1 if self.targeted else 1)
 
         # Write summary
         if self.summary_writer is not None:  # pragma: no cover
@@ -342,18 +339,19 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
             momentum += grad
 
         # Apply norm bound
-        if self.norm in ["inf", np.inf]:
-            grad = grad.sign()
-
+        flat = grad.reshape(len(grad), -1)
+        if self.norm in [np.inf, "inf"]:
+            flat = torch.ones_like(flat)
         elif self.norm == 1:
-            raise NotImplementedError("TO DO (fix L1)")
-            ind = tuple(range(1, len(x.shape)))
-            grad = grad / (torch.sum(grad.abs(), dim=ind, keepdims=True) + tol)  # type: ignore
-
+            i_max = torch.argmax(flat.abs_(), dim=1)
+            flat = torch.zeros_like(flat)
+            flat[range(len(flat)), i_max] = 1
         elif self.norm > 1:
-            raise NotImplementedError("TO DO (properly generalize to `1 < p < inf`)")
-            ind = tuple(range(1, len(x.shape)))
-            grad = grad / (torch.sqrt(torch.sum(grad * grad, axis=ind, keepdims=True)) + tol)  # type: ignore
+            q = self.norm / (self.norm - 1)
+            q_norm = torch.linalg.norm(flat, ord=q, dim=1, keepdim=True)
+            flat = (flat.abs_() * q_norm.where(q_norm == 0, 1 / q_norm)) ** (q - 1)
+
+        grad = flat.reshape(grad.shape) * grad.sign(grad)
 
         assert x.shape == grad.shape
 
