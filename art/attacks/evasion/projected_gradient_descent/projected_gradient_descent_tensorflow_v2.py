@@ -314,12 +314,9 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         """
         import tensorflow as tf
 
-        # Pick a small scalar to avoid division by 0
-        tol = 10e-8
-
         # Get gradient wrt loss; invert it if attack is targeted
         grad: tf.Tensor = self.estimator.loss_gradient(x, y) * tf.constant(
-            1 - 2 * int(self.targeted), dtype=ART_NUMPY_DTYPE
+            -1 if self.targeted else 1, dtype=ART_NUMPY_DTYPE
         )
 
         # Write summary
@@ -353,6 +350,23 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
             momentum += grad
 
         # Apply norm bound
+        flat = grad.reshape(len(grad), -1)
+        if self.norm in [np.inf, "inf"]:
+            flat = torch.ones_like(flat)
+        elif self.norm == 1:
+            i_max = torch.argmax(flat.abs_(), dim=1)
+            flat = torch.zeros_like(flat)
+            flat[range(len(flat)), i_max] = 1
+        elif self.norm > 1:
+            q = self.norm / (self.norm - 1)
+            q_norm = torch.linalg.norm(flat, ord=q, dim=1, keepdim=True)
+            flat = (flat.abs_() * q_norm.where(q_norm == 0, 1 / q_norm)) ** (q - 1)
+
+        grad = flat.reshape(grad.shape) * grad.sign(grad)
+
+        assert x.shape == grad.shape
+
+        # OLDDDD
         if self.norm in [np.inf, "inf"]:
             grad = tf.sign(grad)
 
@@ -367,8 +381,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
             grad = tf.divide(
                 grad, (tf.math.sqrt(tf.math.reduce_sum(tf.math.square(grad), axis=ind, keepdims=True)) + tol)
             )
-
-        assert x.shape == grad.shape
+        # END OLDDDD
 
         return grad
 
