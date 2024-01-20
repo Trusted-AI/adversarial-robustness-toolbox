@@ -531,10 +531,10 @@ def projection(
 
     :param values: Array of perturbations to clip.
     :param eps: Maximum norm allowed. One scalar or one per sample in `values`.
-    :param norm_p: L_p norm to use for clipping. Only 1, 2 , `np.inf` and "inf" are supported with `suboptimal=False`
-            for now.
+    :param norm_p: Lp norm to use for clipping, with `norm_p > 0`. Only 1, 2 , `np.inf` and "inf" are currently
+                   supported with `suboptimal=False` for now.
     :param suboptimal: If `True` simply projects by rescaling to Lp ball. Fast but may be suboptimal for `norm_p != 2`.
-            Ignored when `norm_p in [np.inf, "inf"]` because the optimal solution is explicit. Defaults to `True`.
+                       Ignored when `norm_p in [np.inf, "inf"]` because optimal solution is fast. Defaults to `True`.
     :return: Values of `values` after projection.
     """
     p = np.inf if norm_p == "inf" else float(norm_p)
