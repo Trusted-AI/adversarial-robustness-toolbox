@@ -435,12 +435,12 @@ class FastGradientMethod(EvasionAttack):
             if norm in [np.inf, "inf"]:
                 flat = np.ones_like(flat)
             elif norm == 1:
-                i_max = np.argmax(np.abs(flat), axis=-1)
+                i_max = np.argmax(np.abs(flat), axis=1)
                 flat = np.zeros_like(flat)
                 flat[range(len(flat)), i_max] = 1
             elif norm > 1:
                 q = norm / (norm - 1)
-                q_norm = np.linalg.norm(flat, ord=q, axis=-1, keepdims=True)
+                q_norm = np.linalg.norm(flat, ord=q, axis=1, keepdims=True)
                 with np.errstate(divide='ignore'):
                     flat = (np.abs(flat) * np.where(q_norm, 1 / q_norm, 0)) ** (q - 1)
             grad = flat.reshape(grad.shape) * np.sign(grad)
