@@ -350,38 +350,21 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
             momentum += grad
 
         # Apply norm bound
-        flat = grad.reshape(len(grad), -1)
+        flat = tf.reshape(grad, (len(grad), -1))
         if self.norm in [np.inf, "inf"]:
-            flat = torch.ones_like(flat)
+            flat = tf.ones_like(flat)
         elif self.norm == 1:
-            i_max = torch.argmax(flat.abs_(), dim=1)
-            flat = torch.zeros_like(flat)
-            flat[range(len(flat)), i_max] = 1
+            flat = tf.abs(flat)
+            flat = tf.where(flat == tf.reduce_max(flat, axis=1, keepdims=True), 1, 0)
+            flat /= tf.reduce_sum(flat, axis=1, keepdims=True)
         elif self.norm > 1:
             q = self.norm / (self.norm - 1)
-            q_norm = torch.linalg.norm(flat, ord=q, dim=1, keepdim=True)
-            flat = (flat.abs_() * q_norm.where(q_norm == 0, 1 / q_norm)) ** (q - 1)
+            q_norm = tf.norm(flat, ord=q, axis=1, keepdims=True)
+            flat = (tf.abs(flat) * tf.where(q_norm == 0, 0, 1 / q_norm)) ** (q - 1)
 
-        grad = flat.reshape(grad.shape) * grad.sign(grad)
+        grad = tf.reshape(flat, grad.shape) * tf.sign(grad)
 
         assert x.shape == grad.shape
-
-        # OLDDDD
-        if self.norm in [np.inf, "inf"]:
-            grad = tf.sign(grad)
-
-        elif self.norm == 1:
-            raise NotImplementedError("TO DO (fix L1)")
-            ind = tuple(range(1, len(x.shape)))
-            grad = tf.divide(grad, (tf.math.reduce_sum(tf.abs(grad), axis=ind, keepdims=True) + tol))
-
-        elif self.norm > 1:
-            raise NotImplementedError("TO DO (properly generalize to `1 < p < inf`)")
-            ind = tuple(range(1, len(x.shape)))
-            grad = tf.divide(
-                grad, (tf.math.sqrt(tf.math.reduce_sum(tf.math.square(grad), axis=ind, keepdims=True)) + tol)
-            )
-        # END OLDDDD
 
         return grad
 
