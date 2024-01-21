@@ -351,7 +351,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
             q_norm = torch.linalg.norm(flat, ord=q, dim=1, keepdim=True)
             flat = (flat.abs_() * q_norm.where(q_norm == 0, 1 / q_norm)) ** (q - 1)
 
-        grad = flat.reshape(grad.shape) * grad.sign(grad)
+        grad = flat.reshape(grad.shape) * grad.sign()
 
         assert x.shape == grad.shape
 
