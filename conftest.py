@@ -66,7 +66,15 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 deep_learning_frameworks = [
-    "keras", "tensorflow1", "tensorflow2", "tensorflow2v1", "pytorch", "kerastf", "mxnet", "jax", "huggingface",
+    "keras",
+    "tensorflow1",
+    "tensorflow2",
+    "tensorflow2v1",
+    "pytorch",
+    "kerastf",
+    "mxnet",
+    "jax",
+    "huggingface",
 ]
 non_deep_learning_frameworks = ["scikitlearn"]
 
@@ -335,7 +343,7 @@ def store_expected_values(request):
         expected_values[test_name] = values_to_store
 
         with open(
-                os.path.join(os.path.dirname(__file__), os.path.dirname(request.node.location[0]), file_name), "w"
+            os.path.join(os.path.dirname(__file__), os.path.dirname(request.node.location[0]), file_name), "w"
         ) as f:
             json.dump(expected_values, f, indent=4)
 

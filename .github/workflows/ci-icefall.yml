@@ -1,0 +1,88 @@
+name: CI PyTorchIcefall
+on:
+  # on manual trigger
+  workflow_dispatch:
+
+  # on pull requests
+  pull_request:
+    paths-ignore:
+      - '*.md'
+
+  # on merge queue
+  merge_group:
+
+  # when pushing to main or dev branches
+  push:
+    branches:
+      - main
+      - dev*
+
+  # scheduled CI flow daily
+  schedule:
+    - cron: '0 8 * * 0'
+
+jobs:
+  test_icefall:
+    name: PyTorchIcefall
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -l {0}
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v3
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get -y -q install ffmpeg libavcodec-extra
+          python -m pip install --upgrade pip setuptools wheel
+          pip3 install -r requirements_test.txt
+          apt-get update \
+          && apt-get install -y \
+              libgl1-mesa-glx \
+              libx11-xcb1 \
+              git \
+              gcc \
+              mono-mcs \
+              libavcodec-extra \
+              ffmpeg \
+              curl \
+              libsndfile-dev \
+              libsndfile1 \
+          && apt-get clean all \
+          && rm -r /var/lib/apt/lists/*
+          pip install astropy
+          pip install matplotlib
+          pip install pandas
+          pip install -U scikit-learn
+          pip install -u scikit-image
+          pip install -U torch==2.0.0 torchaudio==2.0.1 --index-url https://download.pytorch.org/whl/cpu
+          pip install k2==1.24.3.dev20230726+cpu.torch2.0.1 -f https://k2-fsa.github.io/k2/cpu.html
+          pip install lhotse
+          git clone https://github.com/HSTEHSTEHSTE/icefall_st.git
+          cd icefall_st
+          git checkout slu
+          pip install -r requirements.txt
+          pip install pytest
+          pip install pytest-cov
+          pip install kaldiio
+          pip install tensorflow
+          cd egs/slu
+          wget -O epoch-6.pt https://www.dropbox.com/scl/fi/97wvdjmbuyj13kpzhricc/epoch-6.pt?rlkey=7mehc4v41fovfz0ksbt98krry&dl=0
+          wget --load-cookies /tmp/cookies.txt "https://docs.google.com/uc?export=download&confirm=$(wget --quiet --save-cookies /tmp/cookies.txt --keep-session-cookies --no-check-certificate 'https://docs.google.com/uc?export=download&id=1K-CaHTtJ-zZ5oW0us0OaKQmsD2-cO0xN' -O- | sed -rn 's/.*confirm=([0-9A-Za-z_]+).*/\1\n/p')&id=1K-CaHTtJ-zZ5oW0us0OaKQmsD2-cO0xN" -O frames.zip && rm -rf /tmp/cookies.txt1K-CaHTtJ-zZ5oW0us0OaKQmsD2-cO0xN
+          unzip frames.zip
+      - name: Test Action
+        run: | 
+          cd icefall_st
+          export PYTHONPATH=$PYTHONPATH:$(pwd)
+          cd egs/slu/
+          export PYTHONPATH=$PYTHONPATH:$(pwd)
+          pytest --cov-report=xml --cov=art --cov-append -q -vv ../../../tests/estimators/speech_recognition/test_pytorch_icefall.py --framework=pytorch --durations=0
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          fail_ci_if_error: true
