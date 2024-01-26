@@ -456,44 +456,43 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
 
     @staticmethod
     def _projection(
-        values: "tf.Tensor", eps: Union[int, float, np.ndarray], norm_p: Union[int, float, str]
-    ) -> "tf.Tensor":
+        values: "torch.Tensor",
+        eps: Union[int, float, np.ndarray],
+        norm_p: Union[int, float, str],
+        *,
+        suboptimal: bool = True,
+    ) -> "torch.Tensor":
         """
         Project `values` on the L_p norm ball of size `eps`.
 
         :param values: Values to clip.
-        :param eps: Maximum norm allowed.
-        :param norm_p: L_p norm to use for clipping supporting "inf", `np.inf` or a real `p >= 1`.
+        :param eps: Maximum norm allowed. One scalar or one per sample in `values`.
+        :param norm_p: Lp norm to use for clipping, with `norm_p > 0`. Only 2, `np.inf` and "inf" are supported
+                       with `suboptimal=False` for now.
+        :param suboptimal: If `True` simply projects by rescaling to Lp ball. Fast but may be suboptimal for `norm_p != 2`.
+                       Ignored when `norm_p in [np.inf, "inf"]` because optimal solution is fast. Defaults to `True`.
         :return: Values of `values` after projection.
         """
         import tensorflow as tf
 
-        # Pick a small scalar to avoid division by 0
-        tol = 10e-8
-        values_tmp = tf.reshape(values, (values.shape[0], -1))
-
-        raise NotImplementedError("TO DO (Follow `art.utils.projection` implementation)")
-        if 1 <= norm_p < np.inf:
-            if isinstance(eps, np.ndarray):
+        p = np.inf if norm_p == "inf" else float(norm_p)
+        assert p > 0
+    
+        values_tmp = tf.reshape.reshape(values, (len(values), -1))  # (n_samples, d)
+        eps = np.atleast_2d(eps).T  # (1 or n_samples, 1)
+    
+        if (suboptimal or p == 2) and p != np.inf:  # Simple rescaling
+            values_norm = tf.norm(values_tmp, ord=p, axis=1, keepdims=True)  # (n_samples, 1)
+            values_tmp = values_tmp * tf.where(values_norm == 0, 0, tf.minimum(1, eps / values_norm))
+        else:  # Optimal
+            if p == np.inf:  # Easy exact case
+                values_tmp = tf.sign(values_tmp) * tf.minimum(tf.abs(values_tmp), eps)
+            elif p >= 1:  # Convex optim
                 raise NotImplementedError(
-                    "The parameter `eps` of type `np.ndarray` is not supported to use with norm `1 <= p < np.inf`."
+                    'Finite values of `norm_p >= 1` are currently not supported with `suboptimal=False`.'
                 )
-
-            values_tmp = values_tmp * tf.expand_dims(
-                tf.minimum(1.0, eps / (tf.norm(values_tmp, ord=norm_p, axis=1) + tol)), axis=1
-            )
-
-        elif norm_p in [np.inf, "inf"]:
-            if isinstance(eps, np.ndarray):
-                eps = eps * np.ones(shape=values.shape)
-                eps = eps.reshape([eps.shape[0], -1])  # type: ignore
-
-            values_tmp = tf.sign(values_tmp) * tf.minimum(tf.math.abs(values_tmp), eps)
-
-        else:
-            raise NotImplementedError(
-                'Values of `norm_p < 1` are currently not supported.'
-            )
+            else:  # Non-convex optim
+                raise NotImplementedError('Values of `norm_p < 1` are currently not supported with `suboptimal=False`.')
 
         values = tf.reshape(values_tmp, values.shape)
 
