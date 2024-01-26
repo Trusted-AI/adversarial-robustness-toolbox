@@ -450,8 +450,8 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
 
         return x_adv
 
+    @staticmethod
     def _projection(
-        self,
         values: "torch.Tensor",
         eps: Union[int, float, np.ndarray],
         norm_p: Union[int, float, str],
