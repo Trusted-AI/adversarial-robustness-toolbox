@@ -478,7 +478,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         p = np.inf if norm_p == "inf" else float(norm_p)
         assert p > 0
     
-        values_tmp = tf.reshape.reshape(values, (len(values), -1))  # (n_samples, d)
+        values_tmp = tf.reshape(values, (len(values), -1))  # (n_samples, d)
         eps = np.atleast_2d(eps).T  # (1 or n_samples, 1)
     
         if (suboptimal or p == 2) and p != np.inf:  # Simple rescaling
