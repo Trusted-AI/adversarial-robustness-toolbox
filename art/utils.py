@@ -531,7 +531,7 @@ def projection(
 
     :param values: Array of perturbations to clip.
     :param eps: Maximum norm allowed. One scalar or one per sample in `values`.
-    :param norm_p: Lp norm to use for clipping, with `norm_p > 0`. Only 1, 2 , `np.inf` and "inf" are currently
+    :param norm_p: Lp norm to use for clipping, with `norm_p > 0`. Only 1, 2, `np.inf` and "inf" are currently
                    supported with `suboptimal=False` for now.
     :param suboptimal: If `True` simply projects by rescaling to Lp ball. Fast but may be suboptimal for `norm_p != 2`.
                        Ignored when `norm_p in [np.inf, "inf"]` because optimal solution is fast. Defaults to `True`.
@@ -549,7 +549,7 @@ def projection(
             values_tmp = values_tmp * np.where(values_norm, np.minimum(1, eps / values_norm), 0)
     else:  # Optimal
         if p == np.inf:  # Easy exact case
-            values_tmp = np.sign(values_tmp) * np.minimum(abs(values_tmp), eps)
+            values_tmp = np.sign(values_tmp) * np.minimum(np.abs(values_tmp), eps)
         elif p == 1:  # Harder exact case
             projection_l1 = projection_l1_1 if values_tmp.shape[1] > 29 else projection_l1_2  # From weak empirical tests
             values_tmp = projection_l1(values_tmp, eps[:, 0])
