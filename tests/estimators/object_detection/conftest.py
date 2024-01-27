@@ -37,6 +37,7 @@ def get_pytorch_object_detector_data(get_default_cifar10_subset):
         {
             "boxes": np.asarray([[6, 22, 413, 346], [0, 24, 406, 342]], dtype=np.float32),
             "labels": np.asarray([21, 18]),
+            "scores": np.asarray([1, 1], dtype=np.float32),
             "masks": np.ones((1, 416, 416)) / 2,
         }
     ]
