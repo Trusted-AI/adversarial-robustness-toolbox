@@ -530,7 +530,11 @@ def projection(
     Project `values` on the L_p norm ball of size `eps`.
 
     :param values: Array of perturbations to clip.
-    :param eps: Maximum norm allowed. One scalar or one per sample in `values`.
+    :param eps: If a scalar, the norm of the L_p ball onto which samples are projected. Equivalently in general, can be
+                any array of non-negatives broadcastable with `values`, and the projection occurs onto the unit ball
+                for the weighted L_{p, w} norm with `w = 1 / eps`. Currently, for any given sample, non-uniform weights
+                are only supported with infinity norm. Example: To specify sample-wise scalar, you can provide
+                `eps.shape = (n_samples,) + (1,) * values[0].ndim`.
     :param norm_p: Lp norm to use for clipping, with `norm_p > 0`. Only 1, 2, `np.inf` and "inf" are currently
                    supported with `suboptimal=False` for now.
     :param suboptimal: If `True` simply projects by rescaling to Lp ball. Fast but may be suboptimal for `norm_p != 2`.
@@ -540,8 +544,15 @@ def projection(
     p = np.inf if norm_p == "inf" else float(norm_p)
     assert p > 0
 
-    values_tmp = values.reshape(len(np.atleast_2d(values)), -1)  # (n_samples, d)
-    eps = np.atleast_2d(eps).T  # (1 or n_samples, 1)
+    values_tmp = values.reshape(len(values), -1)  # (n_samples, d)
+
+    eps = np.broadcast_to(eps, values.shape)
+    eps = eps.reshape(len(eps), -1)  # (n_samples, d)
+    assert np.all(eps >= 0)
+    if p != np.inf and not np.all(eps == eps[:, [0]]):
+        raise NotImplementedError(
+            'Projection onto the weighted L_p ball is currently not supported with finite `norm_p`.'
+        )
 
     if (suboptimal or p == 2) and p != np.inf:  # Simple rescaling
         values_norm = np.linalg.norm(values_tmp, ord=p, axis=1, keepdims=True)  # (n_samples, 1)
@@ -551,7 +562,7 @@ def projection(
         if p == np.inf:  # Easy exact case
             values_tmp = np.sign(values_tmp) * np.minimum(np.abs(values_tmp), eps)
         elif p == 1:  # Harder exact case
-            projection_l1 = projection_l1_1 if values_tmp.shape[1] > 29 else projection_l1_2  # From weak empirical tests
+            projection_l1 = projection_l1_1 if values_tmp.shape[1] > 29 else projection_l1_2  # From empirical tests
             values_tmp = projection_l1(values_tmp, eps[:, 0])
         elif p > 1:  # Convex optim
             raise NotImplementedError(

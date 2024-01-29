@@ -462,10 +462,15 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         Project `values` on the L_p norm ball of size `eps`.
 
         :param values: Values to clip.
-        :param eps: Maximum norm allowed. One scalar or one per sample in `values`.
+        :param eps: If a scalar, the norm of the L_p ball onto which samples are projected. Equivalently in general,
+                    can be any array of non-negatives broadcastable with `values`, and the projection occurs onto the
+                    unit ball for the weighted L_{p, w} norm with `w = 1 / eps`. Currently, for any given sample,
+                    non-uniform weights are only supported with infinity norm. Example: To specify sample-wise scalar,
+                    you can provide `eps.shape = (n_samples,) + (1,) * values[0].ndim`.
         :param norm_p: Lp norm to use for clipping, with `norm_p > 0`. Only 2, `np.inf` and "inf" are supported
                        with `suboptimal=False` for now.
-        :param suboptimal: If `True` simply projects by rescaling to Lp ball. Fast but may be suboptimal for `norm_p != 2`.
+        :param suboptimal: If `True` simply projects by rescaling to Lp ball. Fast but may be suboptimal for
+                           `norm_p != 2`.
                        Ignored when `norm_p in [np.inf, "inf"]` because optimal solution is fast. Defaults to `True`.
         :return: Values of `values` after projection.
         """
@@ -473,10 +478,17 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
 
         p = np.inf if norm_p == "inf" else float(norm_p)
         assert p > 0
-    
+
         values_tmp = values.reshape(len(values), -1)  # (n_samples, d)
-        eps = np.atleast_2d(eps).T  # (1 or n_samples, 1)
-    
+
+        eps = np.broadcast_to(eps, values.shape)
+        eps = eps.reshape(len(eps), -1)  # (n_samples, d)
+        assert np.all(eps >= 0)
+        if p != np.inf and not np.all(eps == eps[:, [0]]):
+            raise NotImplementedError(
+                'Projection onto the weighted L_p ball is currently not supported with finite `norm_p`.'
+            )
+
         if (suboptimal or p == 2) and p != np.inf:  # Simple rescaling
             values_norm = torch.linalg.norm(values_tmp, ord=p, dim=1, keepdim=True)  # (n_samples, 1)
             values_tmp = values_tmp * values_norm.where(values_norm == 0, torch.minimum(torch.ones(1), eps / values_norm))
@@ -488,7 +500,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
                     'Finite values of `norm_p >= 1` are currently not supported with `suboptimal=False`.'
                 )
             else:  # Non-convex optim
-                raise NotImplementedError('Values of `norm_p < 1` are currently not supported with `suboptimal=False`.')
+                raise NotImplementedError('Values of `norm_p < 1` are currently not supported with `suboptimal=False`')
 
         values = values_tmp.reshape(values.shape)
 
