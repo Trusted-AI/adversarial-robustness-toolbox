@@ -352,15 +352,15 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         # Apply norm bound
         flat = tf.reshape(grad, (len(grad), -1))
         if self.norm in [np.inf, "inf"]:
-            flat = tf.ones_like(flat)
+            flat = tf.ones_like(flat, dtype=flat.dtype)
         elif self.norm == 1:
             flat = tf.abs(flat)
-            flat = tf.where(flat == tf.reduce_max(flat, axis=1, keepdims=True), 1, 0)
+            flat = tf.where(flat == tf.reduce_max(flat, axis=1, keepdims=True), 1., 0.)
             flat /= tf.reduce_sum(flat, axis=1, keepdims=True)
         elif self.norm > 1:
             q = self.norm / (self.norm - 1)
             q_norm = tf.norm(flat, ord=q, axis=1, keepdims=True)
-            flat = (tf.abs(flat) * tf.where(q_norm == 0, 0, 1 / q_norm)) ** (q - 1)
+            flat = (tf.abs(flat) * tf.where(q_norm == 0, 0., 1 / q_norm)) ** (q - 1)
 
         grad = tf.reshape(flat, grad.shape) * tf.sign(grad)
 
