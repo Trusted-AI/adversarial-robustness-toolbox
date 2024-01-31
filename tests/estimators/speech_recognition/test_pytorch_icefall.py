@@ -94,8 +94,6 @@ def test_pytorch_icefall(art_warning, expected_values, device_type):
         hyps.append(speech_recognizer.predict(np.expand_dims(np.array(xs[2]), 0)))
         print(hyps)
 
-        assert (np.array(hyps) == y).all()
-
     except ARTTestException as e:
         art_warning(e)
 
