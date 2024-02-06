@@ -150,7 +150,7 @@ class attack_EA(EvasionAttack):
             locations_x = np.random.randint(_x.shape[0], size=int(no_of_pixels))
             locations_y = np.random.randint(_x.shape[1], size=int(no_of_pixels))
             locations_z = np.random.randint(_x.shape[2], size=int(no_of_pixels))
-            new_values: list[int] = random.choices(np.array([-1, 1]), k=int(no_of_pixels))
+            new_values: list[int] = random.choices([-1, 1], k=int(no_of_pixels))
             mutated_group[individual, locations_x, locations_y, locations_z] = (
                 mutated_group[individual, locations_x, locations_y, locations_z] - new_values
             )
