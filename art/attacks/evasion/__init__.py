@@ -67,4 +67,3 @@ from art.attacks.evasion.virtual_adversarial import VirtualAdversarialMethod
 from art.attacks.evasion.wasserstein import Wasserstein
 from art.attacks.evasion.zoo import ZooAttack
 from art.attacks.evasion.sign_opt import SignOPTAttack
-from art.attacks.evasion.attack_ea import attack_ea
