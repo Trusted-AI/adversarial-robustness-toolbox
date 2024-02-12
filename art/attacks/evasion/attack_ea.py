@@ -21,7 +21,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class attack_ea(EvasionAttack):
+class EA(EvasionAttack):
     """
     This class implements the black-box attack `attack_ea`.
 
