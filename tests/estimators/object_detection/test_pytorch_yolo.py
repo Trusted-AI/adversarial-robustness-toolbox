@@ -119,7 +119,7 @@ def test_loss_gradient(art_warning, get_pytorch_yolo):
                 0.00232432,
             ]
         )
-        np.testing.assert_array_almost_equal(grads[0, 0, 208, 192:224], expected_gradients1, decimal=1)
+        np.testing.assert_array_almost_equal(grads[0, 0, 208, 192:224], expected_gradients1, decimal=2)
 
         expected_gradients2 = np.asarray(
             [
@@ -157,7 +157,7 @@ def test_loss_gradient(art_warning, get_pytorch_yolo):
                 0.00860081,
             ]
         )
-        np.testing.assert_array_almost_equal(grads[0, 0, 192:224, 208], expected_gradients2, decimal=1)
+        np.testing.assert_array_almost_equal(grads[0, 0, 192:224, 208], expected_gradients2, decimal=2)
 
     except ARTTestException as e:
         art_warning(e)
