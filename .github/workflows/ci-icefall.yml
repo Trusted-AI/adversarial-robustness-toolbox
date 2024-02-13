@@ -37,12 +37,11 @@ jobs:
           python-version: ${{ matrix.python }}
       - name: Install Dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get -y -q install ffmpeg libavcodec-extra
           python -m pip install --upgrade pip setuptools wheel
           pip3 install -r requirements_test.txt
-          apt-get update \
-          && apt-get install -y \
+          sudo apt-get update \
+          && sudo apt-get install -y -q \
+              ffmpeg \
               libgl1-mesa-glx \
               libx11-xcb1 \
               git \
@@ -72,8 +71,8 @@ jobs:
           pip install tensorflow
           cd egs/fluent_speech_commands/SLU/transducer
           wget -O epoch-6.pt https://www.dropbox.com/scl/fi/97wvdjmbuyj13kpzhricc/epoch-6.pt?rlkey=7mehc4v41fovfz0ksbt98krry&dl=0
-          wget --load-cookies /tmp/cookies.txt "https://docs.google.com/uc?export=download&confirm=$(wget --quiet --save-cookies /tmp/cookies.txt --keep-session-cookies --no-check-certificate 'https://docs.google.com/uc?export=download&id=1K-CaHTtJ-zZ5oW0us0OaKQmsD2-cO0xN' -O- | sed -rn 's/.*confirm=([0-9A-Za-z_]+).*/\1\n/p')&id=1K-CaHTtJ-zZ5oW0us0OaKQmsD2-cO0xN" -O frames.zip && rm -rf /tmp/cookies.txt1K-CaHTtJ-zZ5oW0us0OaKQmsD2-cO0xN
-          unzip frames.zip
+          wget -O frames.tar.gz https://www.dropbox.com/scl/fi/4tvkvvv4w2zoeei238sfj/frames.tar.gz?rlkey=5ubi7j9xokz57xqwtb0o6y2oe&dl=0
+          tar -xvzf frames.tar.gz
       - name: Test Action
         run: | 
           cd icefall
