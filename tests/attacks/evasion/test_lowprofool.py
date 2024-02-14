@@ -128,6 +128,7 @@ class NeuralNetwork:
             optimizer.step()
 
 
+@pytest.mark.only_with_platform("scikitlearn")
 def test_general_iris_lr(iris_dataset):
     """
     Check whether the produced adversaries are correct,
@@ -140,7 +141,7 @@ def test_general_iris_lr(iris_dataset):
     lr_clf.fit(x_train, y_train)
     clf_slr = ScikitlearnLogisticRegression(model=lr_clf, clip_values=clip_values)
 
-    lpf_slr = LowProFool(classifier=clf_slr, n_steps=25, eta=0.02, lambd=1.5)
+    lpf_slr = LowProFool(classifier=clf_slr, n_steps=2500, eta=0.02, lambd=1.5)
     lpf_slr.fit_importances(x_train, y_train)
 
     sample = x_valid
@@ -170,6 +171,7 @@ def test_general_iris_lr(iris_dataset):
         _ = lpf_slr.generate(x=np.ones((sample.shape[0], 11)), y=target)
 
 
+@pytest.mark.only_with_platform("scikitlearn")
 def test_general_wines_lr(wine_dataset):
     """
     Check whether the produced adversaries are correct,
@@ -204,6 +206,7 @@ def test_general_wines_lr(wine_dataset):
     assert success_rate > expected
 
 
+@pytest.mark.only_with_platform("scikitlearn")
 def test_general_cancer_lr(breast_cancer_dataset):
     """
     Check whether the produced adversaries are correct,
@@ -281,6 +284,7 @@ def test_general_iris_nn(iris_dataset):
     assert success_rate > expected
 
 
+@pytest.mark.only_with_platform("scikitlearn")
 def test_general_cancer_svc(breast_cancer_dataset):
     """
     Check whether the produced adversaries are correct,
@@ -316,6 +320,7 @@ def test_general_cancer_svc(breast_cancer_dataset):
     assert success_rate > expected
 
 
+@pytest.mark.only_with_platform("scikitlearn")
 def test_fit_importances(iris_dataset):
     """
     Check whether feature importance is calculated properly.
@@ -329,7 +334,7 @@ def test_fit_importances(iris_dataset):
         return result
 
     # Setup classifier
-    lr_clf = LogisticRegression(penalty="l2")
+    lr_clf = LogisticRegression(penalty=None)
     lr_clf.fit(x_train, y_train)
     clf_slr = ScikitlearnLogisticRegression(model=lr_clf, clip_values=clip_values)
 
@@ -385,6 +390,7 @@ def test_fit_importances(iris_dataset):
     assert is_vec_fit_valid
 
 
+@pytest.mark.only_with_platform("scikitlearn")
 def test_clipping(iris_dataset):
     """
     Check weather adversaries are clipped properly.
@@ -392,7 +398,7 @@ def test_clipping(iris_dataset):
     (x_train, y_train, x_valid, y_valid), _, clip_values = iris_dataset
 
     # Setup classifier
-    lr_clf = LogisticRegression(penalty="l2")
+    lr_clf = LogisticRegression(penalty=None)
     lr_clf.fit(x_train, y_train)
 
     # Dataset min-max clipping values
