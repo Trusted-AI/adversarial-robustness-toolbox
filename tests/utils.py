@@ -1748,9 +1748,10 @@ def get_tabular_classifier_scikit_list(clipped=False, model_list_names=None):
     )
 
     sklearn_version = list(map(int, sklearn.__version__.split(".")))
-    sklearn_ge_1_3_0 = sklearn_version[0] == 1 and sklearn_version[1] >= 3
-    if sklearn_ge_1_3_0:
-        suffix = "-ge-1.3.0"
+    if sklearn_version[0] == 1 and sklearn_version[1] == 3:
+        suffix = "-eq-1.3.0"
+    elif sklearn_version[0] == 1 and sklearn_version[1] == 4:
+        suffix = "-eq-1.4.0"
     else:
         suffix = ""
 
