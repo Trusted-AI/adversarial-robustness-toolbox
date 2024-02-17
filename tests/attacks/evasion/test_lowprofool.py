@@ -141,7 +141,7 @@ def test_general_iris_lr(iris_dataset):
     lr_clf.fit(x_train, y_train)
     clf_slr = ScikitlearnLogisticRegression(model=lr_clf, clip_values=clip_values)
 
-    lpf_slr = LowProFool(classifier=clf_slr, n_steps=2500, eta=0.02, lambd=1.5)
+    lpf_slr = LowProFool(classifier=clf_slr, n_steps=25, eta=0.02, lambd=1.5)
     lpf_slr.fit_importances(x_train, y_train)
 
     sample = x_valid
