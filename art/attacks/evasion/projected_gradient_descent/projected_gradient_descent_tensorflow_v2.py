@@ -506,6 +506,6 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
             else:  # Non-convex optim
                 raise NotImplementedError('Values of `norm_p < 1` are currently not supported with `suboptimal=False`')
 
-        values = tf.reshape(values_tmp, values.shape)
+        values = tf.cast(tf.reshape(values_tmp, values.shape), values.dtype)
 
         return values

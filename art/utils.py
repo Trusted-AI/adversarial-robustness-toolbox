@@ -572,8 +572,7 @@ def projection(
         else:  # Non-convex optim
             raise NotImplementedError('Values of `norm_p < 1` are currently not supported with `suboptimal=False`.')
 
-    values = values_tmp.reshape(values.shape)
-
+    values = values_tmp.reshape(values.shape).astype(values.dtype)
     return values
 
 
