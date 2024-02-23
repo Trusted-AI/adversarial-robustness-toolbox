@@ -343,6 +343,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
 
         # Add momentum
         if decay is not None and momentum is not None:
+            tol = 1e-7
             ind = tuple(range(1, len(x.shape)))
             grad = tf.divide(grad, (tf.math.reduce_sum(tf.abs(grad), axis=ind, keepdims=True) + tol))
             grad = self.decay * momentum + grad
@@ -350,19 +351,19 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
             momentum += grad
 
         # Apply norm bound
-        flat = tf.reshape(grad, (len(grad), -1))
+        grad_2d = tf.reshape(grad, (len(grad), -1))
         if self.norm in [np.inf, "inf"]:
-            flat = tf.ones_like(flat, dtype=flat.dtype)
+            grad_2d = tf.ones_like(grad_2d, dtype=grad_2d.dtype)
         elif self.norm == 1:
-            flat = tf.abs(flat)
-            flat = tf.where(flat == tf.reduce_max(flat, axis=1, keepdims=True), 1., 0.)
-            flat /= tf.reduce_sum(flat, axis=1, keepdims=True)
+            grad_2d = tf.abs(grad_2d)
+            grad_2d = tf.where(grad_2d == tf.reduce_max(grad_2d, axis=1, keepdims=True), 1., 0.)
+            grad_2d /= tf.reduce_sum(grad_2d, axis=1, keepdims=True)
         elif self.norm > 1:
             q = self.norm / (self.norm - 1)
-            q_norm = tf.norm(flat, ord=q, axis=1, keepdims=True)
-            flat = (tf.abs(flat) * tf.where(q_norm == 0, 0., 1 / q_norm)) ** (q - 1)
+            q_norm = tf.norm(grad_2d, ord=q, axis=1, keepdims=True)
+            grad_2d = (tf.abs(grad_2d) * tf.where(q_norm == 0, 0., 1 / q_norm)) ** (q - 1)
 
-        grad = tf.reshape(flat, grad.shape) * tf.sign(grad)
+        grad = tf.reshape(grad_2d, grad.shape) * tf.sign(grad)
 
         assert x.shape == grad.shape
 

@@ -431,19 +431,19 @@ class FastGradientMethod(EvasionAttack):
             ).any():
                 logger.info("The loss gradient array contains at least one positive or negative infinity.")
 
-            flat = grad.reshape(1 if object_type else len(grad), -1)
+            grad_2d = grad.reshape(1 if object_type else len(grad), -1)
             if norm in [np.inf, "inf"]:
-                flat = np.ones_like(flat)
+                grad_2d = np.ones_like(grad_2d)
             elif norm == 1:
-                i_max = np.argmax(np.abs(flat), axis=1)
-                flat = np.zeros_like(flat)
-                flat[range(len(flat)), i_max] = 1
+                i_max = np.argmax(np.abs(grad_2d), axis=1)
+                grad_2d = np.zeros_like(grad_2d)
+                grad_2d[range(len(grad_2d)), i_max] = 1
             elif norm > 1:
                 q = norm / (norm - 1)
-                q_norm = np.linalg.norm(flat, ord=q, axis=1, keepdims=True)
+                q_norm = np.linalg.norm(grad_2d, ord=q, axis=1, keepdims=True)
                 with np.errstate(divide='ignore'):
-                    flat = (np.abs(flat) * np.where(q_norm, 1 / q_norm, 0)) ** (q - 1)
-            grad = flat.reshape(grad.shape) * np.sign(grad)
+                    grad_2d = (np.abs(grad_2d) * np.where(q_norm, 1 / q_norm, 0)) ** (q - 1)
+            grad = grad_2d.reshape(grad.shape) * np.sign(grad)
             return grad
 
         # Add momentum
