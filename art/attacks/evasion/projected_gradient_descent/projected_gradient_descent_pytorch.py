@@ -332,6 +332,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
 
         # Apply momentum
         if self.decay is not None:
+            tol = 1e-7
             ind = tuple(range(1, len(x.shape)))
             grad = grad / (torch.sum(grad.abs(), dim=ind, keepdims=True) + tol)  # type: ignore
             grad = self.decay * momentum + grad
@@ -339,19 +340,19 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
             momentum += grad
 
         # Apply norm bound
-        flat = grad.reshape(len(grad), -1)
+        grad_2d = grad.reshape(len(grad), -1)
         if self.norm in [np.inf, "inf"]:
-            flat = torch.ones_like(flat)
+            grad_2d = torch.ones_like(grad_2d)
         elif self.norm == 1:
-            i_max = torch.argmax(flat.abs(), dim=1)
-            flat = torch.zeros_like(flat)
-            flat[range(len(flat)), i_max] = 1
+            i_max = torch.argmax(grad_2d.abs(), dim=1)
+            grad_2d = torch.zeros_like(grad_2d)
+            grad_2d[range(len(grad_2d)), i_max] = 1
         elif self.norm > 1:
             q = self.norm / (self.norm - 1)
-            q_norm = torch.linalg.norm(flat, ord=q, dim=1, keepdim=True)
-            flat = (flat.abs() * q_norm.where(q_norm == 0, 1 / q_norm)) ** (q - 1)
+            q_norm = torch.linalg.norm(grad_2d, ord=q, dim=1, keepdim=True)
+            grad_2d = (grad_2d.abs() * q_norm.where(q_norm == 0, 1 / q_norm)) ** (q - 1)
 
-        grad = flat.reshape(grad.shape) * grad.sign()
+        grad = grad_2d.reshape(grad.shape) * grad.sign()
 
         assert x.shape == grad.shape
 
