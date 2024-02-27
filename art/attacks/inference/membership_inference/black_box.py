@@ -31,6 +31,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.svm import SVC
+from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
 
 from art.attacks.attack import MembershipInferenceAttack
 from art.estimators.estimator import BaseEstimator
@@ -56,6 +57,10 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
         "input_type",
         "attack_model_type",
         "attack_model",
+        "scaler_type",
+        "nn_model_epochs",
+        "nn_model_batch_size",
+        "nn_model_learning_rate",
     ]
     _estimator_requirements = (BaseEstimator, (ClassifierMixin, RegressorMixin))
 
@@ -65,6 +70,7 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
         input_type: str = "prediction",
         attack_model_type: str = "nn",
         attack_model: Optional[Any] = None,
+        scaler_type: Optional[str] = "standard",
         nn_model_epochs: int = 100,
         nn_model_batch_size: int = 100,
         nn_model_learning_rate: float = 0.0001,
@@ -73,6 +79,9 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
         Create a MembershipInferenceBlackBox attack instance.
 
         :param estimator: Target estimator.
+        :param input_type: the type of input to train the attack on. Can be one of: 'prediction' or 'loss'. Default is
+                           `prediction`. Predictions can be either probabilities or logits, depending on the return type
+                           of the model. If the model is a regressor, only `loss` can be used.
         :param attack_model_type: the type of default attack model to train, optional. Should be one of:
                                  `nn` (neural network, default),
                                  `rf` (random forest),
@@ -82,10 +91,10 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
                                  `knn` (k nearest neighbors),
                                  `svm` (support vector machine).
                                  If `attack_model` is supplied, this option will be ignored.
-        :param input_type: the type of input to train the attack on. Can be one of: 'prediction' or 'loss'. Default is
-                           `prediction`. Predictions can be either probabilities or logits, depending on the return type
-                           of the model. If the model is a regressor, only `loss` can be used.
         :param attack_model: The attack model to train, optional. If none is provided, a default model will be created.
+        :param scaler_type: The type of scaling to apply to the input features to the attack. Can be one of: "standard",
+                            "minmax", "robust" or None. If not None, the appropriate scaler from scikit-learn will be
+                            applied. If None, no scaling will be applied.
         :param nn_model_epochs: the number of epochs to use when training a nn attack model
         :param nn_model_batch_size: the batch size to use when training a nn attack model
         :param nn_model_learning_rate: the learning rate to use when training a nn attack model
@@ -95,6 +104,8 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
         self.input_type = input_type
         self.attack_model_type = attack_model_type
         self.attack_model = attack_model
+        self.scaler_type = scaler_type
+        self.scaler: Optional[Any] = None
         self.epochs = nn_model_epochs
         self.batch_size = nn_model_batch_size
         self.learning_rate = nn_model_learning_rate
@@ -245,12 +256,26 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
         if x_2 is None:
             self.use_label = False
 
+        if self.scaler_type:
+            if self.scaler_type == "standard":
+                self.scaler = StandardScaler()
+            elif self.scaler_type == "minmax":
+                self.scaler = MinMaxScaler()
+            elif self.scaler_type == "robust":
+                self.scaler = RobustScaler()
+            else:
+                raise ValueError("Illegal scaler_type: ", self.scaler_type)
+
         if self.default_model and self.attack_model_type == "nn":
             import torch
             from torch import nn
             from torch import optim
             from torch.utils.data import DataLoader
             from art.utils import to_cuda
+
+            if self.scaler:
+                self.scaler.fit(x_1)
+                x_1 = self.scaler.transform(x_1)
 
             if x_2 is not None:
 
@@ -393,8 +418,15 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
         else:  # not nn
             y_ready = check_and_transform_label_format(y_new, nb_classes=2, return_one_hot=False)
             if x_2 is not None:
-                self.attack_model.fit(np.c_[x_1, x_2], y_ready.ravel())  # type: ignore
+                x = np.c_[x_1, x_2]
+                if self.scaler:
+                    self.scaler.fit(x)
+                    x = self.scaler.transform(x)
+                self.attack_model.fit(x, y_ready.ravel())  # type: ignore
             else:
+                if self.scaler:
+                    self.scaler.fit(x_1)
+                    x_1 = self.scaler.transform(x_1)
                 self.attack_model.fit(x_1, y_ready.ravel())  # type: ignore
 
     def infer(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
@@ -467,6 +499,9 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
             from torch.utils.data import DataLoader
             from art.utils import to_cuda, from_cuda
 
+            if self.scaler:
+                features = self.scaler.transform(features)
+
             self.attack_model.eval()  # type: ignore
             predictions: Optional[np.ndarray] = None
 
@@ -512,8 +547,13 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
         elif not self.default_model:
             # assumes the predict method of the supplied model returns probabilities
             if y is not None and self.use_label:
-                inferred = self.attack_model.predict(np.c_[features, y])  # type: ignore
+                features = np.c_[features, y]
+                if self.scaler:
+                    features = self.scaler.transform(features)
+                inferred = self.attack_model.predict(features)  # type: ignore
             else:
+                if self.scaler:
+                    features = self.scaler.transform(features)
                 inferred = self.attack_model.predict(features)  # type: ignore
             if probabilities:
                 inferred_return = inferred
@@ -521,8 +561,13 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
                 inferred_return = np.round(inferred)
         else:
             if y is not None and self.use_label:
-                inferred = self.attack_model.predict_proba(np.c_[features, y])  # type: ignore
+                features = np.c_[features, y]
+                if self.scaler:
+                    features = self.scaler.transform(features)
+                inferred = self.attack_model.predict_proba(features)  # type: ignore
             else:
+                if self.scaler:
+                    features = self.scaler.transform(features)
                 inferred = self.attack_model.predict_proba(features)  # type: ignore
             if probabilities:
                 inferred_return = inferred[:, [1]]

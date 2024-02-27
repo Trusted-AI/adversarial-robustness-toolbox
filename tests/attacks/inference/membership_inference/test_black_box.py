@@ -57,6 +57,25 @@ def test_black_box_tabular(art_warning, model_type, decision_tree_estimator, get
         art_warning(e)
 
 
+@pytest.mark.parametrize("scaler_type", ["standard", "robust", "minmax"])
+def test_black_box_tabular_scalers(art_warning, scaler_type, decision_tree_estimator, get_iris_dataset):
+    try:
+        classifier = decision_tree_estimator()
+        attack = MembershipInferenceBlackBox(classifier, scaler_type=scaler_type)
+        backend_check_membership_accuracy(attack, get_iris_dataset, attack_train_ratio, 0.25)
+    except ARTTestException as e:
+        art_warning(e)
+
+
+def test_black_box_tabular_no_scaler(art_warning, decision_tree_estimator, get_iris_dataset):
+    try:
+        classifier = decision_tree_estimator()
+        attack = MembershipInferenceBlackBox(classifier, scaler_type=None)
+        backend_check_membership_accuracy(attack, get_iris_dataset, attack_train_ratio, 0.25)
+    except ARTTestException as e:
+        art_warning(e)
+
+
 @pytest.mark.parametrize("model_type", ["nn", "rf", "gb", "lr", "dt", "knn", "svm"])
 def test_black_box_tabular_no_label(art_warning, model_type, decision_tree_estimator, get_iris_dataset):
     try:

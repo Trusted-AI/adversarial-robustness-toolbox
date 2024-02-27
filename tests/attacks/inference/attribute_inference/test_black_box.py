@@ -95,6 +95,107 @@ def test_black_box(art_warning, decision_tree_estimator, get_iris_dataset, model
 
 
 @pytest.mark.skip_framework("dl_frameworks")
+@pytest.mark.parametrize("scaler_type", ["standard", "robust", "minmax"])
+def test_black_box_scalers(art_warning, scaler_type, decision_tree_estimator, get_iris_dataset):
+    try:
+        attack_feature = 2  # petal length
+
+        # need to transform attacked feature into categorical
+        def transform_feature(x):
+            x[x > 0.5] = 2.0
+            x[(x > 0.2) & (x <= 0.5)] = 1.0
+            x[x <= 0.2] = 0.0
+
+        values = [0.0, 1.0, 2.0]
+
+        (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = get_iris_dataset
+        # training data without attacked feature
+        x_train_for_attack = np.delete(x_train_iris, attack_feature, 1)
+        # only attacked feature
+        x_train_feature = x_train_iris[:, attack_feature].copy().reshape(-1, 1)
+        transform_feature(x_train_feature)
+        # training data with attacked feature (after transformation)
+        x_train = np.concatenate((x_train_for_attack[:, :attack_feature], x_train_feature), axis=1)
+        x_train = np.concatenate((x_train, x_train_for_attack[:, attack_feature:]), axis=1)
+
+        # test data without attacked feature
+        x_test_for_attack = np.delete(x_test_iris, attack_feature, 1)
+        # only attacked feature
+        x_test_feature = x_test_iris[:, attack_feature].copy().reshape(-1, 1)
+        transform_feature(x_test_feature)
+
+        classifier = decision_tree_estimator()
+
+        attack = AttributeInferenceBlackBox(classifier, attack_feature=attack_feature, scaler_type=scaler_type)
+        # get original model's predictions
+        x_train_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_train_iris)]).reshape(-1, 1)
+        x_test_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_test_iris)]).reshape(-1, 1)
+        # train attack model
+        attack.fit(x_train)
+        # infer attacked feature
+        inferred_train = attack.infer(x_train_for_attack, pred=x_train_predictions, values=values)
+        inferred_test = attack.infer(x_test_for_attack, pred=x_test_predictions, values=values)
+        # check accuracy
+        train_acc = np.sum(inferred_train == x_train_feature.reshape(1, -1)) / len(inferred_train)
+        test_acc = np.sum(inferred_test == x_test_feature.reshape(1, -1)) / len(inferred_test)
+        assert pytest.approx(0.8285, abs=0.3) == train_acc
+        assert pytest.approx(0.8888, abs=0.3) == test_acc
+
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.skip_framework("dl_frameworks")
+def test_black_box_tabular_no_scaler(art_warning, decision_tree_estimator, get_iris_dataset):
+    try:
+        attack_feature = 2  # petal length
+
+        # need to transform attacked feature into categorical
+        def transform_feature(x):
+            x[x > 0.5] = 2.0
+            x[(x > 0.2) & (x <= 0.5)] = 1.0
+            x[x <= 0.2] = 0.0
+
+        values = [0.0, 1.0, 2.0]
+
+        (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = get_iris_dataset
+        # training data without attacked feature
+        x_train_for_attack = np.delete(x_train_iris, attack_feature, 1)
+        # only attacked feature
+        x_train_feature = x_train_iris[:, attack_feature].copy().reshape(-1, 1)
+        transform_feature(x_train_feature)
+        # training data with attacked feature (after transformation)
+        x_train = np.concatenate((x_train_for_attack[:, :attack_feature], x_train_feature), axis=1)
+        x_train = np.concatenate((x_train, x_train_for_attack[:, attack_feature:]), axis=1)
+
+        # test data without attacked feature
+        x_test_for_attack = np.delete(x_test_iris, attack_feature, 1)
+        # only attacked feature
+        x_test_feature = x_test_iris[:, attack_feature].copy().reshape(-1, 1)
+        transform_feature(x_test_feature)
+
+        classifier = decision_tree_estimator()
+
+        attack = AttributeInferenceBlackBox(classifier, attack_feature=attack_feature, scaler_type=None)
+        # get original model's predictions
+        x_train_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_train_iris)]).reshape(-1, 1)
+        x_test_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_test_iris)]).reshape(-1, 1)
+        # train attack model
+        attack.fit(x_train)
+        # infer attacked feature
+        inferred_train = attack.infer(x_train_for_attack, pred=x_train_predictions, values=values)
+        inferred_test = attack.infer(x_test_for_attack, pred=x_test_predictions, values=values)
+        # check accuracy
+        train_acc = np.sum(inferred_train == x_train_feature.reshape(1, -1)) / len(inferred_train)
+        test_acc = np.sum(inferred_test == x_test_feature.reshape(1, -1)) / len(inferred_test)
+        assert pytest.approx(0.8285, abs=0.3) == train_acc
+        assert pytest.approx(0.8888, abs=0.3) == test_acc
+
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.skip_framework("dl_frameworks")
 @pytest.mark.parametrize("model_type", ["nn", "rf", "gb", "lr", "dt", "knn", "svm"])
 def test_black_box_continuous(art_warning, decision_tree_estimator, get_iris_dataset, model_type):
     try:
