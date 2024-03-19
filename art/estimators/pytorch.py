@@ -19,7 +19,7 @@
 This module implements the abstract estimator `PyTorchEstimator` for PyTorch models.
 """
 import logging
-from typing import TYPE_CHECKING, Any, List, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Tuple, Union
 
 import numpy as np
 
@@ -340,3 +340,43 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
 
         # pylint: disable=W0212
         self._set_layer(train=train, layerinfo=[torch.nn.modules.MultiheadAttention])  # type: ignore
+
+    def get_node_names(self) -> Tuple[List[str], List[str]]:
+        """
+        Get node names in order of execution.
+
+        Wrapper of :func:`torchvision.models.feature_extraction.get_graph_node_names`
+        Useful for seeing which node names are available for feature extraction and passing
+        them as a parameter to :func:`get_attention_weights`.
+
+        :return: A tuple of a list of node names in train mode and a list of node names in
+                 eval mode.
+        """
+        import torch
+        from torchvision.models.feature_extraction import get_graph_node_names
+
+        return get_graph_node_names(self._model)
+
+    def get_attention_weights(
+        self, x: Union[np.ndarray, "torch.Tensor"], return_nodes: Union[Dict[str, str], List[str]]
+    ) -> "torch.Tensor":
+        """
+        Get the attention weights of the `model` by passing either a List or a Dict
+        containing the names of the nodes for which the activations will be returned.
+
+        :param x: Samples.
+        :param return_nodes: A List or a Dict containing the names of the nodes for
+               which the activations will be returned.
+        :return: A tensor containing the attention weights.
+        """
+
+        import torch
+        from torchvision.models.feature_extraction import create_feature_extractor
+
+        feature_extractor = create_feature_extractor(self._model, return_nodes=return_nodes)
+
+        x_preprocessed, _ = self._apply_preprocessing(x=x, y=None, no_grad=False)
+        out = feature_extractor(x_preprocessed)
+        att_weights = [v for v in out.values()]
+
+        return torch.stack(att_weights, dim=1)
