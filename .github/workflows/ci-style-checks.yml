@@ -39,16 +39,14 @@ jobs:
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip setuptools wheel
-          pip install -q pylint==2.12.2 mypy==1.7.1 pycodestyle==2.8.0 black==21.12b0
-          pip install -q -r <(sed '/^numpy/d;/^pluggy/d;/^tensorflow/d;/^keras/d' requirements_test.txt)
+          pip install -q pylint==2.12.2 mypy==1.7.1 pycodestyle==2.8.0 black==21.12b0, ruff==0.3.3
+          pip install -q -r <(sed '/^numpy/d;/^tensorflow/d;/^keras/d' requirements_test.txt)
           pip install numpy==1.22.4
-          pip install pluggy==1.4.0
           pip install tensorflow==2.13.1
           pip install keras==2.13.1
           pip install types-six
           pip install types-PyYAML
           pip install types-setuptools
-          pip install click==8.0.2
           pip list
       - name: pycodestyle
         run: pycodestyle --ignore=C0330,C0415,E203,E231,W503 --max-line-length=120 art
@@ -60,7 +58,7 @@ jobs:
         run: mypy art
       - name: pytest-flake8
         if: ${{ always() }}
-        run: pytest --flake8 -v -m flake8 --ignore=contrib
+        run: ruff check
       - name: black
         if: ${{ always() }}
         run: |

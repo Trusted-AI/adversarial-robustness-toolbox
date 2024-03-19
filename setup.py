@@ -106,7 +106,6 @@ setup(
             "librosa",
             "opencv-python",
             "pytest",
-            "pytest-flake8",
             "pytest-mock",
             "pytest-cov",
             "requests",
