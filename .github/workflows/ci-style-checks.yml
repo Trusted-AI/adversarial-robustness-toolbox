@@ -47,6 +47,7 @@ jobs:
           pip install types-six
           pip install types-PyYAML
           pip install types-setuptools
+          pip install click==8.0.2
           pip list
       - name: pycodestyle
         run: pycodestyle --ignore=C0330,C0415,E203,E231,W503 --max-line-length=120 art

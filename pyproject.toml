@@ -2,3 +2,4 @@
 line-length=120
 [tool.ruff]
 exclude = ["contrib/*"]
+ignore = ["F401", "F402"]
