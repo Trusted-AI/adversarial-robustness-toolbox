@@ -38,7 +38,7 @@ jobs:
           - name: Keras 3.1.1 (PyTorch 2.2.1 Python 3.10)
             framework: keras
             python: '3.10'
-            backend: pytorch
+            backend: torch
             backend_version: 2.2.1
             keras: 3.1.1
             tf_addons: 0.20.0
@@ -70,7 +70,7 @@ jobs:
           sudo apt-get update
           sudo apt-get -y -q install ffmpeg libavcodec-extra
           python -m pip install --upgrade pip setuptools wheel
-          pip install -q -r <(sed '/^tensorflow/d;/^keras/d;/^tensorflow-addons/d;/^torch/d;/^jax/d' requirements_test.txt)
+          pip install -q -r <(sed '/^${{ matrix.backend }}/d;/^keras/d;/^tensorflow-addons/d' requirements_test.txt)
           pip install ${{ matrix.backend }}==${{ matrix.backend_version }}
           pip install keras==${{ matrix.keras }}
           pip install tensorflow-addons==${{ matrix.tf_addons }}
