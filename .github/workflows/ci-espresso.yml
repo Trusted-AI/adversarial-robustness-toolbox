@@ -28,7 +28,7 @@ jobs:
     container: adversarialrobustnesstoolbox/art_testing_envs:espresso
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Run Test Action
         uses: ./.github/actions/espresso
       - name: Upload coverage to Codecov
