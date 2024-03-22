@@ -22,7 +22,7 @@ multiprocess>=0.70.12
 
 # frameworks
 
-tensorflow==2.14.0
+tensorflow==2.16.1
 keras==3.1.1
 tensorflow-addons>=0.13.0
 
