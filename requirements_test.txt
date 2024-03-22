@@ -45,7 +45,7 @@ xgboost==2.0.3
 
 kornia~=0.7.1
 tensorboardX==2.6.2.2
-lief==0.12.3
+lief==0.14.1
 jax[cpu]==0.4.23
 
 # Lingvo ASR dependencies
