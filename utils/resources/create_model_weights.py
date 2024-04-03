@@ -154,7 +154,7 @@ def create_scikit_model_weights():
                 os.path.join(
                     os.path.dirname(os.path.dirname(__file__)),
                     "resources/models/scikit/",
-                    "scikit-" + model_name + "-iris-clipped-ge-1.3.0.pickle",
+                    "scikit-" + model_name + "-iris-clipped-eq-1.4.0.pickle",
                 ),
                 "wb",
             ),
@@ -168,7 +168,7 @@ def create_scikit_model_weights():
                 os.path.join(
                     os.path.dirname(os.path.dirname(__file__)),
                     "resources/models/scikit/",
-                    "scikit-" + model_name + "-iris-unclipped-ge-1.3.0.pickle",
+                    "scikit-" + model_name + "-iris-unclipped-eq-1.4.0.pickle",
                 ),
                 "wb",
             ),
