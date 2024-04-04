@@ -155,7 +155,7 @@ def apply_transformation(
     table = np.empty((256), np.uint8)
     for i in range(256):
         table[i] = np.clip(pow(i / 255.0, gamma) * 255.0, 0, 255)
-    att_uint = cv2.LUT(att_uint, table)
+    att_uint = cv2.LUT(att_uint, table)  # type: ignore
     att = (att_uint / 255.0).astype(np.float32)
     att = np.clip(att, 0.0, 1.0)
 
@@ -227,12 +227,12 @@ def add_noise(
     """
     import cv2
 
-    theta_full = cv2.resize(theta, (x.shape[1], x.shape[0]))
+    theta_full = cv2.resize(theta, (x.shape[1], x.shape[0])).astype(float)
     if len(theta_full.shape) < 3:
         theta_full = theta_full[:, :, np.newaxis]
     comb = x + lbd * theta_full
 
-    mask_full = cv2.resize(mask, (x.shape[1], x.shape[0]))
+    mask_full = cv2.resize(mask, (x.shape[1], x.shape[0])).astype(float)
     if len(mask_full.shape) < 3:
         mask_full = mask_full[:, :, np.newaxis]
     mask_full = np.where(mask_full > 0.5, 1.0, 0.0)
@@ -334,7 +334,7 @@ def transform_wb(
     if blur != 0:
         kernel = np.zeros((blur * 2 - 1, blur * 2 - 1))
         kernel[blur - 1, blur - 1] = 1
-        kernel = cv2.GaussianBlur(kernel, (blur, blur), 0)
+        kernel = cv2.GaussianBlur(kernel, (blur, blur), 0).astype(float)
         kernel = kernel[blur // 2 : blur // 2 + blur, blur // 2 : blur // 2 + blur]
         kernel = kernel[np.newaxis, :, :]
         kernel = np.repeat(kernel[np.newaxis, :, :, :], x_adv.size()[1], axis=0)
