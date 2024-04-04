@@ -1,5 +1,5 @@
 [tool.black]
 line-length=120
-[tool.ruff]
+[tool.ruff.lint]
 exclude = ["contrib/*"]
 ignore = ["F401", "F402"]
