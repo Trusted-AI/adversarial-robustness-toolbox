@@ -181,10 +181,8 @@ class ProjectedGradientDescentCommon(FastGradientMethod):
 
     def _check_params(self) -> None:  # pragma: no cover
 
-        if not (
-            self.norm == "inf"
-            or self.norm >= 1
-        ):
+        norm: float = np.inf if self.norm == "inf" else float(norm)
+        if norm < 1:
             raise ValueError('Norm order must be either "inf", `np.inf` or a real `p >= 1`.')
 
         if not (

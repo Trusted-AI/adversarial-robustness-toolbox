@@ -288,16 +288,18 @@ class FastGradientMethod(EvasionAttack):
 
             logger.info(
                 "Success rate of FGM attack: %.2f%%",
-                rate_best
-                if rate_best is not None
-                else 100
-                * compute_success(
-                    self.estimator,  # type: ignore
-                    x,
-                    y_array,
-                    adv_x_best,
-                    self.targeted,
-                    batch_size=self.batch_size,
+                (
+                    rate_best
+                    if rate_best is not None
+                    else 100
+                    * compute_success(
+                        self.estimator,  # type: ignore
+                        x,
+                        y_array,
+                        adv_x_best,
+                        self.targeted,
+                        batch_size=self.batch_size,
+                    )
                 ),
             )
 
@@ -334,10 +336,8 @@ class FastGradientMethod(EvasionAttack):
 
     def _check_params(self) -> None:
 
-        if not (
-            self.norm == "inf"
-            or self.norm >= 1
-        ):
+        norm: float = np.inf if self.norm == "inf" else float(norm)
+        if norm < 1:
             raise ValueError('Norm order must be either "inf", `np.inf` or a real `p >= 1`.')
 
         if not (
@@ -439,10 +439,10 @@ class FastGradientMethod(EvasionAttack):
                 grad_2d = np.zeros_like(grad_2d)
                 grad_2d[range(len(grad_2d)), i_max] = 1
             elif norm > 1:
-                q = norm / (norm - 1)
-                q_norm = np.linalg.norm(grad_2d, ord=q, axis=1, keepdims=True)
-                with np.errstate(divide='ignore'):
-                    grad_2d = (np.abs(grad_2d) * np.where(q_norm, 1 / q_norm, 0)) ** (q - 1)
+                conjugate = norm / (norm - 1)
+                q_norm = np.linalg.norm(grad_2d, ord=conjugate, axis=1, keepdims=True)
+                with np.errstate(divide="ignore"):
+                    grad_2d = (np.abs(grad_2d) * np.where(q_norm, 1 / q_norm, 0)) ** (conjugate - 1)
             grad = grad_2d.reshape(grad.shape) * np.sign(grad)
             return grad
 

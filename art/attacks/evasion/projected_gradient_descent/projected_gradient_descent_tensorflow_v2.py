@@ -188,7 +188,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         data_loader = iter(dataset)
 
         # Compute perturbation with batching
-        for (batch_id, batch_all) in enumerate(
+        for batch_id, batch_all in enumerate(
             tqdm(data_loader, desc="PGD - Batches", leave=False, disable=not self.verbose)
         ):
 
@@ -339,7 +339,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
 
         # Apply mask
         if mask is not None:
-            grad = tf.where(mask == 0., 0., grad)
+            grad = tf.where(mask == 0.0, 0.0, grad)
 
         # Add momentum
         if decay is not None and momentum is not None:
@@ -351,17 +351,18 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
             momentum += grad
 
         # Apply norm bound
+        norm: float = np.inf if self.norm == "inf" else float(norm)
         grad_2d = tf.reshape(grad, (len(grad), -1))
-        if self.norm in [np.inf, "inf"]:
+        if norm == np.inf:
             grad_2d = tf.ones_like(grad_2d, dtype=grad_2d.dtype)
-        elif self.norm == 1:
+        elif norm == 1:
             grad_2d = tf.abs(grad_2d)
-            grad_2d = tf.where(grad_2d == tf.reduce_max(grad_2d, axis=1, keepdims=True), 1., 0.)
+            grad_2d = tf.where(grad_2d == tf.reduce_max(grad_2d, axis=1, keepdims=True), 1.0, 0.0)
             grad_2d /= tf.reduce_sum(grad_2d, axis=1, keepdims=True)
-        elif self.norm > 1:
-            q = self.norm / (self.norm - 1)
-            q_norm = tf.norm(grad_2d, ord=q, axis=1, keepdims=True)
-            grad_2d = (tf.abs(grad_2d) * tf.where(q_norm == 0, 0., 1 / q_norm)) ** (q - 1)
+        elif norm > 1:
+            conjugate = norm / (norm - 1)
+            q_norm = tf.norm(grad_2d, ord=conjugate, axis=1, keepdims=True)
+            grad_2d = (tf.abs(grad_2d) * tf.where(q_norm == 0, 0.0, 1 / q_norm)) ** (conjugate - 1)
 
         grad = tf.reshape(grad_2d, grad.shape) * tf.sign(grad)
 
@@ -457,12 +458,12 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
 
     @staticmethod
     def _projection(
-        values: "torch.Tensor",
+        values: "tf.Tensor",
         eps: Union[int, float, np.ndarray],
         norm_p: Union[int, float, str],
         *,
         suboptimal: bool = True,
-    ) -> "torch.Tensor":
+    ) -> "tf.Tensor":
         """
         Project `values` on the L_p norm ball of size `eps`.
 
@@ -481,31 +482,31 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         """
         import tensorflow as tf
 
-        p = np.inf if norm_p == "inf" else float(norm_p)
-        assert p > 0
-    
+        norm = np.inf if norm_p == "inf" else float(norm_p)
+        assert norm > 0
+
         values_tmp = tf.reshape(values, (len(values), -1))  # (n_samples, d)
 
         eps = np.broadcast_to(eps, values.shape)
         eps = eps.reshape(len(eps), -1)  # (n_samples, d)
         assert np.all(eps >= 0)
-        if p != np.inf and not np.all(eps == eps[:, [0]]):
+        if norm != np.inf and not np.all(eps == eps[:, [0]]):
             raise NotImplementedError(
-                'Projection onto the weighted L_p ball is currently not supported with finite `norm_p`.'
+                "Projection onto the weighted L_p ball is currently not supported with finite `norm_p`."
             )
 
-        if (suboptimal or p == 2) and p != np.inf:  # Simple rescaling
-            values_norm = tf.norm(values_tmp, ord=p, axis=1, keepdims=True)  # (n_samples, 1)
+        if (suboptimal or norm == 2) and norm != np.inf:  # Simple rescaling
+            values_norm = tf.norm(values_tmp, ord=norm, axis=1, keepdims=True)  # (n_samples, 1)
             values_tmp = values_tmp * tf.where(values_norm == 0, 0, tf.minimum(1, eps / values_norm))
         else:  # Optimal
-            if p == np.inf:  # Easy exact case
+            if norm == np.inf:  # Easy exact case
                 values_tmp = tf.sign(values_tmp) * tf.minimum(tf.abs(values_tmp), eps)
-            elif p >= 1:  # Convex optim
+            elif norm >= 1:  # Convex optim
                 raise NotImplementedError(
-                    'Finite values of `norm_p >= 1` are currently not supported with `suboptimal=False`.'
+                    "Finite values of `norm_p >= 1` are currently not supported with `suboptimal=False`."
                 )
             else:  # Non-convex optim
-                raise NotImplementedError('Values of `norm_p < 1` are currently not supported with `suboptimal=False`')
+                raise NotImplementedError("Values of `norm_p < 1` are currently not supported with `suboptimal=False`")
 
         values = tf.cast(tf.reshape(values_tmp, values.shape), values.dtype)
 

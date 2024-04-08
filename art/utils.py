@@ -541,36 +541,36 @@ def projection(
                        Ignored when `norm_p in [np.inf, "inf"]` because optimal solution is fast. Defaults to `True`.
     :return: Values of `values` after projection.
     """
-    p = np.inf if norm_p == "inf" else float(norm_p)
-    assert p > 0
+    norm = np.inf if norm_p == "inf" else float(norm_p)
+    assert norm > 0
 
     values_tmp = values.reshape(len(values), -1)  # (n_samples, d)
 
     eps = np.broadcast_to(eps, values.shape)
     eps = eps.reshape(len(eps), -1)  # (n_samples, d)
     assert np.all(eps >= 0)
-    if p != np.inf and not np.all(eps == eps[:, [0]]):
+    if norm != np.inf and not np.all(eps == eps[:, [0]]):
         raise NotImplementedError(
-            'Projection onto the weighted L_p ball is currently not supported with finite `norm_p`.'
+            "Projection onto the weighted L_p ball is currently not supported with finite `norm_p`."
         )
 
-    if (suboptimal or p == 2) and p != np.inf:  # Simple rescaling
-        values_norm = np.linalg.norm(values_tmp, ord=p, axis=1, keepdims=True)  # (n_samples, 1)
-        with np.errstate(divide='ignore'):
+    if (suboptimal or norm == 2) and norm != np.inf:  # Simple rescaling
+        values_norm = np.linalg.norm(values_tmp, ord=norm, axis=1, keepdims=True)  # (n_samples, 1)
+        with np.errstate(divide="ignore"):
             values_tmp = values_tmp * np.where(values_norm, np.minimum(1, eps / values_norm), 0)
     else:  # Optimal
-        if p == np.inf:  # Easy exact case
+        if norm == np.inf:  # Easy exact case
             values_tmp = np.sign(values_tmp) * np.minimum(np.abs(values_tmp), eps)
-        elif p == 1:  # Harder exact case
+        elif norm == 1:  # Harder exact case
             projection_l1 = projection_l1_1 if values_tmp.shape[1] > 29 else projection_l1_2  # From empirical tests
             values_tmp = projection_l1(values_tmp, eps[:, 0])
-        elif p > 1:  # Convex optim
+        elif norm > 1:  # Convex optim
             raise NotImplementedError(
                 'Values of `norm_p > 1` different from 2, `np.inf` and "inf" are currently not supported with '
-                '`suboptimal=False`.'
+                "`suboptimal=False`."
             )
         else:  # Non-convex optim
-            raise NotImplementedError('Values of `norm_p < 1` are currently not supported with `suboptimal=False`.')
+            raise NotImplementedError("Values of `norm_p < 1` are currently not supported with `suboptimal=False`.")
 
     values = values_tmp.reshape(values.shape).astype(values.dtype)
     return values

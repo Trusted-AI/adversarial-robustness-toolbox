@@ -187,7 +187,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         adv_x = x.astype(ART_NUMPY_DTYPE)
 
         # Compute perturbation with batching
-        for (batch_id, batch_all) in enumerate(
+        for batch_id, batch_all in enumerate(
             tqdm(data_loader, desc="PGD - Batches", leave=False, disable=not self.verbose)
         ):
 
@@ -340,17 +340,18 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
             momentum += grad
 
         # Apply norm bound
+        norm: float = np.inf if self.norm == "inf" else float(norm)
         grad_2d = grad.reshape(len(grad), -1)
-        if self.norm in [np.inf, "inf"]:
+        if norm == np.inf:
             grad_2d = torch.ones_like(grad_2d)
-        elif self.norm == 1:
+        elif norm == 1:
             i_max = torch.argmax(grad_2d.abs(), dim=1)
             grad_2d = torch.zeros_like(grad_2d)
             grad_2d[range(len(grad_2d)), i_max] = 1
-        elif self.norm > 1:
-            q = self.norm / (self.norm - 1)
-            q_norm = torch.linalg.norm(grad_2d, ord=q, dim=1, keepdim=True)
-            grad_2d = (grad_2d.abs() * q_norm.where(q_norm == 0, 1 / q_norm)) ** (q - 1)
+        elif norm > 1:
+            conjugate = norm / (norm - 1)
+            q_norm = torch.linalg.norm(grad_2d, ord=conjugate, dim=1, keepdim=True)
+            grad_2d = (grad_2d.abs() * q_norm.where(q_norm == 0, 1 / q_norm)) ** (conjugate - 1)
 
         grad = grad_2d.reshape(grad.shape) * grad.sign()
 
@@ -477,33 +478,33 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         """
         import torch
 
-        p = np.inf if norm_p == "inf" else float(norm_p)
-        assert p > 0
+        norm = np.inf if norm_p == "inf" else float(norm_p)
+        assert norm > 0
 
         values_tmp = values.reshape(len(values), -1)  # (n_samples, d)
 
         eps = np.broadcast_to(eps, values.shape)
         eps = eps.reshape(len(eps), -1)  # (n_samples, d)
         assert np.all(eps >= 0)
-        if p != np.inf and not np.all(eps == eps[:, [0]]):
+        if norm != np.inf and not np.all(eps == eps[:, [0]]):
             raise NotImplementedError(
-                'Projection onto the weighted L_p ball is currently not supported with finite `norm_p`.'
+                "Projection onto the weighted L_p ball is currently not supported with finite `norm_p`."
             )
 
-        if (suboptimal or p == 2) and p != np.inf:  # Simple rescaling
-            values_norm = torch.linalg.norm(values_tmp, ord=p, dim=1, keepdim=True)  # (n_samples, 1)
+        if (suboptimal or norm == 2) and norm != np.inf:  # Simple rescaling
+            values_norm = torch.linalg.norm(values_tmp, ord=norm, dim=1, keepdim=True)  # (n_samples, 1)
             values_tmp = values_tmp * values_norm.where(
                 values_norm == 0, torch.minimum(torch.ones(1), torch.Tensor(eps) / values_norm)
             )
         else:  # Optimal
-            if p == np.inf:  # Easy exact case
+            if norm == np.inf:  # Easy exact case
                 values_tmp = values_tmp.sign() * torch.minimum(values_tmp.abs(), torch.Tensor(eps))
-            elif p >= 1:  # Convex optim
+            elif norm >= 1:  # Convex optim
                 raise NotImplementedError(
-                    'Finite values of `norm_p >= 1` are currently not supported with `suboptimal=False`.'
+                    "Finite values of `norm_p >= 1` are currently not supported with `suboptimal=False`."
                 )
             else:  # Non-convex optim
-                raise NotImplementedError('Values of `norm_p < 1` are currently not supported with `suboptimal=False`')
+                raise NotImplementedError("Values of `norm_p < 1` are currently not supported with `suboptimal=False`")
 
         values = values_tmp.reshape(values.shape).to(values.dtype)
 
