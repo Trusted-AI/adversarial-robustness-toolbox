@@ -32,6 +32,7 @@ from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 from sklearn.svm import SVC, SVR
 from sklearn.preprocessing import minmax_scale, OneHotEncoder, OrdinalEncoder
 from sklearn.compose import ColumnTransformer
+from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
 
 from art.estimators.estimator import BaseEstimator
 from art.estimators.classification.classifier import ClassifierMixin
@@ -80,6 +81,7 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
         is_continuous: Optional[bool] = False,
         scale_range: Optional[Tuple[float, float]] = None,
         prediction_normal_factor: Optional[float] = 1,
+        scaler_type: Optional[str] = "standard",
         non_numerical_features: Optional[List[int]] = None,
         encoder: Optional[Union[OrdinalEncoder, OneHotEncoder, ColumnTransformer]] = None,
         nn_model_epochs: int = 100,
@@ -109,7 +111,11 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
                             Only applicable when `estimator` is a regressor.
         :param prediction_normal_factor: If supplied, the class labels (both true and predicted) are multiplied by the
                                          factor when used as inputs to the attack-model. Only applicable when
-                                         `estimator` is a regressor and if `scale_range` is not supplied
+                                         `estimator` is a regressor and if `scale_range` is not supplied.
+        :param scaler_type: The type of scaling to apply to all input features to the attack. Can be one of: "standard",
+                            "minmax", "robust" or None. If not None, the appropriate scaler from scikit-learn will be
+                            applied. If None, no scaling will be applied. This is in addition to any specific scaling
+                            performed on the class labels based on the params scale_range or prediction_normal_factor.
         :param non_numerical_features: a list of feature indexes that require encoding in order to feed into an ML model
                                        (i.e., strings), not including the attacked feature. Should only be supplied if
                                        non-numeric features exist in the input data not including the attacked feature,
@@ -130,6 +136,8 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
         self.attack_model: Optional[Any] = None
         self.prediction_normal_factor = prediction_normal_factor
         self.scale_range = scale_range
+        self.scaler_type = scaler_type
+        self.scaler: Optional[Any] = None
         self.epochs = nn_model_epochs
         self.batch_size = nn_model_batch_size
         self.learning_rate = nn_model_learning_rate
@@ -251,6 +259,19 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
 
         if y is not None:
             x_train = np.concatenate((x_train, y), axis=1)
+
+        if self.scaler_type:
+            if self.scaler_type == "standard":
+                self.scaler = StandardScaler()
+            elif self.scaler_type == "minmax":
+                self.scaler = MinMaxScaler()
+            elif self.scaler_type == "robust":
+                self.scaler = RobustScaler()
+            else:
+                raise ValueError("Illegal scaler_type: ", self.scaler_type)
+        if self.scaler:
+            self.scaler.fit(x_train)
+            x_train = self.scaler.transform(x_train)
 
         # train attack model
         if self._attack_model_type == "nn":
@@ -406,6 +427,9 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
 
         if y is not None:
             x_test = np.concatenate((x_test, y), axis=1)
+
+        if self.scaler:
+            x_test = self.scaler.transform(x_test)
 
         if self._attack_model_type == "nn":
             from torch.utils.data import DataLoader

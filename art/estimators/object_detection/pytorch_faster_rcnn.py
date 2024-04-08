@@ -17,10 +17,11 @@
 # SOFTWARE.
 """
 This module implements the task specific estimator for Faster R-CNN v3 in PyTorch.
+
+| Paper link: https://arxiv.org/abs/1506.01497
 """
 import logging
 from typing import List, Optional, Tuple, Union, TYPE_CHECKING
-
 
 from art.estimators.object_detection.pytorch_object_detector import PyTorchObjectDetector
 
@@ -40,6 +41,8 @@ class PyTorchFasterRCNN(PyTorchObjectDetector):
     """
     This class implements a model-specific object detector using Faster R-CNN and PyTorch following the input and output
     formats of torchvision.
+
+    | Paper link: https://arxiv.org/abs/1506.01497
     """
 
     def __init__(
@@ -48,7 +51,7 @@ class PyTorchFasterRCNN(PyTorchObjectDetector):
         input_shape: Tuple[int, ...] = (-1, -1, -1),
         optimizer: Optional["torch.optim.Optimizer"] = None,
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
-        channels_first: Optional[bool] = True,
+        channels_first: bool = True,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
         preprocessing: "PREPROCESSING_TYPE" = None,
