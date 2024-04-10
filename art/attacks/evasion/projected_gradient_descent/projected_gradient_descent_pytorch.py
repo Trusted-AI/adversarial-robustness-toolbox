@@ -340,7 +340,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
             momentum += grad
 
         # Apply norm bound
-        norm: float = np.inf if self.norm == "inf" else float(norm)
+        norm: float = np.inf if self.norm == "inf" else float(self.norm)
         grad_2d = grad.reshape(len(grad), -1)
         if norm == np.inf:
             grad_2d = torch.ones_like(grad_2d)

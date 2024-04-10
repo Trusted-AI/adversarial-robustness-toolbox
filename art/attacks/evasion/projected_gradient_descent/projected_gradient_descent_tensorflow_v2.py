@@ -351,7 +351,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
             momentum += grad
 
         # Apply norm bound
-        norm: float = np.inf if self.norm == "inf" else float(norm)
+        norm: float = np.inf if self.norm == "inf" else float(self.norm)
         grad_2d = tf.reshape(grad, (len(grad), -1))
         if norm == np.inf:
             grad_2d = tf.ones_like(grad_2d, dtype=grad_2d.dtype)

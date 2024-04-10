@@ -336,7 +336,7 @@ class FastGradientMethod(EvasionAttack):
 
     def _check_params(self) -> None:
 
-        norm: float = np.inf if self.norm == "inf" else float(norm)
+        norm: float = np.inf if self.norm == "inf" else float(self.norm)
         if norm < 1:
             raise ValueError('Norm order must be either "inf", `np.inf` or a real `p >= 1`.')
 
