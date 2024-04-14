@@ -5,7 +5,7 @@ scipy==1.10.1
 matplotlib==3.7.1
 scikit-learn==1.4.1.post1
 six==1.16.0
-Pillow==10.2.0
+Pillow==10.3.0
 tqdm==4.66.1
 statsmodels==0.14.1
 pydub==0.25.1
@@ -46,7 +46,7 @@ xgboost==2.0.3
 kornia~=0.7.1
 tensorboardX==2.6.2.2
 lief==0.14.1
-jax[cpu]==0.4.23
+jax[cpu]==0.4.26
 
 # Lingvo ASR dependencies
 # supported versions: (lingvo==0.6.4 with tensorflow-gpu==2.1.0)
@@ -58,7 +58,7 @@ jax[cpu]==0.4.23
 pytest~=7.4.3
 pytest-flake8~=1.1.1
 flake8~=4.0.1
-pytest-mock~=3.12.0
+pytest-mock~=3.14.0
 pytest-cov~=4.1.0
 requests~=2.31.0
 
