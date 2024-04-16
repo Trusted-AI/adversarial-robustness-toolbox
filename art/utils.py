@@ -801,7 +801,7 @@ def check_and_transform_label_format(
     """
     labels_return = labels
 
-    if nb_classes is not None and not isinstance(nb_classes, int):
+    if nb_classes is not None and not isinstance(nb_classes, (int, np.integer)):
         raise TypeError("nb_classes that is not an integer is not supported")
 
     if len(labels.shape) == 2 and labels.shape[1] > 1:  # multi-class, one-hot encoded
