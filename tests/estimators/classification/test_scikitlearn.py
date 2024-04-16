@@ -47,6 +47,7 @@ from art.estimators.classification.scikitlearn import (
     ScikitlearnSVC,
 )
 from art.estimators.classification.scikitlearn import SklearnClassifier
+from art.utils import check_and_transform_label_format
 
 from tests.utils import TestBase, master_seed
 
@@ -79,6 +80,28 @@ class TestScikitlearnDecisionTreeClassifier(TestBase):
 
     def test_clone_for_refitting(self):
         _ = self.classifier.clone_for_refitting()
+
+    def test_multi_label(self):
+        x_train = self.x_train_iris
+        y_train = self.y_train_iris
+        x_test = self.x_test_iris
+        y_test = self.y_test_iris
+
+        # make multi-label binary
+        y_train = np.column_stack((y_train, y_train, y_train))
+        y_train[y_train > 1] = 1
+        y_test = np.column_stack((y_test, y_test, y_test))
+        y_test[y_test > 1] = 1
+
+        underlying_model = DecisionTreeClassifier()
+        underlying_model.fit(x_train, y_train)
+        model = ScikitlearnDecisionTreeClassifier(model=underlying_model)
+
+        pred = model.predict(x_test)
+        assert (pred[0].shape[0] == x_test.shape[0])
+        assert (isinstance(model.nb_classes, np.ndarray))
+        with self.assertRaises(TypeError):
+            check_and_transform_label_format(y_train, nb_classes=model.nb_classes)
 
 
 class TestScikitlearnExtraTreeClassifier(TestBase):

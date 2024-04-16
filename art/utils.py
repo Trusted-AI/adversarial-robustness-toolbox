@@ -792,14 +792,17 @@ def check_and_transform_label_format(
     labels: np.ndarray, nb_classes: Optional[int], return_one_hot: bool = True
 ) -> np.ndarray:
     """
-    Check label format and transform to one-hot-encoded labels if necessary
+    Check label format and transform to one-hot-encoded labels if necessary. Only supports single-output classification.
 
     :param labels: An array of integer labels of shape `(nb_samples,)`, `(nb_samples, 1)` or `(nb_samples, nb_classes)`.
-    :param nb_classes: The number of classes. If None the number of classes is determined automatically.
+    :param nb_classes: The number of classes, as an integer. If None the number of classes is determined automatically.
     :param return_one_hot: True if returning one-hot encoded labels, False if returning index labels.
     :return: Labels with shape `(nb_samples, nb_classes)` (one-hot) or `(nb_samples,)` (index).
     """
     labels_return = labels
+
+    if nb_classes is not None and not isinstance(nb_classes, int):
+        raise TypeError("nb_classes that is not an integer is not supported")
 
     if len(labels.shape) == 2 and labels.shape[1] > 1:  # multi-class, one-hot encoded
         if not return_one_hot:
