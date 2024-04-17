@@ -25,7 +25,7 @@ jobs:
   test_tf_faster_rcnn:
     name: TensorFlowFasterRCNN
     runs-on: ubuntu-latest
-    container: minhitbk/art_testing_envs:tf_fasterrcnn
+    container: adversarialrobustnesstoolbox/art_testing_envs:tf_fasterrcnn
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v3
