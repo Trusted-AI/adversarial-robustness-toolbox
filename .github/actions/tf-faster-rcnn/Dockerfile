@@ -1,4 +1,4 @@
-# Get base from a TensorFlow image
+# Get base image
 FROM python:3.7.17-slim
 
 # Install system wide software
