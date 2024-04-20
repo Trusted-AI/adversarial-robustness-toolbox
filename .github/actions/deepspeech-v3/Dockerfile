@@ -1,10 +1,10 @@
-# Get base from a pytorch image
+# Get base image
 FROM python:3.10.13-slim-bullseye
 
 # Set to install things in non-interactive mode
 ENV DEBIAN_FRONTEND noninteractive
 
-# Install system wide softwares
+# Install system wide software
 RUN apt-get update \
      && apt-get install -y \
         libgl1-mesa-glx \
@@ -19,6 +19,8 @@ RUN apt-get update \
         libsndfile1 \
         vim \
         curl \
+        gpg \
+        gpg-agent \
      && apt-get clean all \
      && rm -r /var/lib/apt/lists/*
 

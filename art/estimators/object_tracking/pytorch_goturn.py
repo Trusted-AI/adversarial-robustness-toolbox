@@ -743,11 +743,12 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
 
         return output
 
-    def init(self, image: "PIL.JpegImagePlugin.JpegImageFile", box: np.ndarray):
+    def init(self, image: "PIL.JpegImagePlugin.JpegImageFile", box: np.ndarray):  # type: ignore
         """
         Method `init` for GOT-10k trackers.
 
         :param image: Current image.
+        :param box: Initial boxes.
         :return: Predicted box.
         """
         import torch
@@ -766,7 +767,7 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
         """
         import torch
 
-        curr = torch.from_numpy(np.array(image) / 255.0)
+        curr = torch.from_numpy(image / 255.0)
         if self.clip_values is not None:
             curr = curr * self.clip_values[1]
         curr = curr.to(self.device)
@@ -809,7 +810,7 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
             if i_f == 0:
                 self.init(image, box)
             else:
-                boxes[i_f, :] = self.update(image)
+                boxes[i_f, :] = self.update(np.array(image))
             times[i_f] = time.time() - start_time
 
             if visualize:
