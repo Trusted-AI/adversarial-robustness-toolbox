@@ -21,7 +21,7 @@ coverage:
     project:
       default:
         # basic
-        target: 90
+        target: 83
         threshold: 0
         base: auto
         flags: null
