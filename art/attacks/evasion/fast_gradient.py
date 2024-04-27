@@ -426,6 +426,7 @@ class FastGradientMethod(EvasionAttack):
 
         # Apply norm bound
         def _apply_norm(norm, grad, object_type=False):
+            """Returns an x maximizing <grad, x> subject to ||x||_norm<=1."""
             if (grad.dtype != object and np.isinf(grad).any()) or np.isnan(  # pragma: no cover
                 grad.astype(np.float32)
             ).any():
@@ -441,16 +442,23 @@ class FastGradientMethod(EvasionAttack):
             elif norm > 1:
                 conjugate = norm / (norm - 1)
                 q_norm = np.linalg.norm(grad_2d, ord=conjugate, axis=1, keepdims=True)
-                with np.errstate(divide="ignore"):
-                    grad_2d = (np.abs(grad_2d) * np.where(q_norm, 1 / q_norm, 0)) ** (conjugate - 1)
+                grad_2d = (np.abs(grad_2d) / np.where(q_norm, q_norm, np.inf)) ** (conjugate - 1)
             grad = grad_2d.reshape(grad.shape) * np.sign(grad)
             return grad
 
-        # Add momentum
+        # Compute gradient momentum
         if decay is not None and momentum is not None:
-            grad = _apply_norm(norm=1, grad=grad)
-            grad = decay * momentum + grad
-            momentum += grad
+            if x.dtype == object:
+                raise NotImplementedError("Momentum Iterative Method not yet implemented for object type input.")
+            # Update momentum in-place (important).
+            # The L1 normalization for accumulation is an arbitrary choice of the paper.
+            grad_2d = grad.reshape(len(grad), -1)
+            norm1 = np.linalg.norm(grad_2d, ord=1, axis=1, keepdims=True)
+            normalized_grad = (grad_2d / np.where(norm1, norm1, np.inf)).reshape(grad.shape)
+            momentum *= decay
+            momentum += normalized_grad
+            # Use the momentum to compute the perturbation, instead of the gradient
+            grad = momentum
 
         if x.dtype == object:
             for i_sample in range(x.shape[0]):

@@ -330,14 +330,17 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         if mask is not None:
             grad = torch.where(mask == 0.0, torch.tensor(0.0).to(self.estimator.device), grad)
 
-        # Apply momentum
+        # Compute gradient momentum
         if self.decay is not None:
-            tol = 1e-7
-            ind = tuple(range(1, len(x.shape)))
-            grad = grad / (torch.sum(grad.abs(), dim=ind, keepdims=True) + tol)  # type: ignore
-            grad = self.decay * momentum + grad
-            # Accumulate the gradient for the next iter
-            momentum += grad
+            # Update momentum in-place (important).
+            # The L1 normalization for accumulation is an arbitrary choice of the paper.
+            grad_2d = grad.reshape(len(grad), -1)
+            norm1 = torch.linalg.norm(grad_2d, ord=1, dim=1, keepdim=True)
+            normalized_grad = (grad_2d * norm1.where(norm1 == 0, 1 / norm1)).reshape(grad.shape)
+            momentum *= self.decay
+            momentum += normalized_grad
+            # Use the momentum to compute the perturbation, instead of the gradient
+            grad = momentum
 
         # Apply norm bound
         norm: float = np.inf if self.norm == "inf" else float(self.norm)

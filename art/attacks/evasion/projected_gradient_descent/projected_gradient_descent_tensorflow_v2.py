@@ -341,14 +341,17 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         if mask is not None:
             grad = tf.where(mask == 0.0, 0.0, grad)
 
-        # Add momentum
+        # Compute gradient momentum
         if decay is not None and momentum is not None:
-            tol = 1e-7
-            ind = tuple(range(1, len(x.shape)))
-            grad = tf.divide(grad, (tf.math.reduce_sum(tf.abs(grad), axis=ind, keepdims=True) + tol))
-            grad = self.decay * momentum + grad
-            # Accumulate the gradient for the next iter
-            momentum += grad
+            # Update momentum in-place (important).
+            # The L1 normalization for accumulation is an arbitrary choice of the paper.
+            grad_2d = tf.reshape(grad, (len(grad), -1))
+            norm1 = tf.norm(grad_2d, ord=1, axis=1, keepdims=True)
+            normalized_grad = tf.reshape((grad_2d * tf.where(norm1 == 0, 0.0, 1 / norm1)), grad.shape)
+            momentum *= self.decay
+            momentum += normalized_grad
+            # Use the momentum to compute the perturbation, instead of the gradient
+            grad = momentum
 
         # Apply norm bound
         norm: float = np.inf if self.norm == "inf" else float(self.norm)

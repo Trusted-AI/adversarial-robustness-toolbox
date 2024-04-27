@@ -48,7 +48,7 @@ def test_images(art_warning, fix_get_mnist_subset, image_dl_estimator_for_attack
         x_train_mnist_adv = attack.generate(x=x_train_mnist)
 
         assert np.mean(x_train_mnist) == pytest.approx(0.12659499049186707, 0.01)
-        assert np.mean(np.abs(x_train_mnist - x_train_mnist_adv)) == pytest.approx(0.09437845647335052, abs=0.05)
+        assert np.mean(np.abs(x_train_mnist - x_train_mnist_adv)) == pytest.approx(0.1288, 0.003)
         assert np.max(np.abs(x_train_mnist - x_train_mnist_adv)) == pytest.approx(0.3)
 
     except ARTTestException as e:
@@ -64,7 +64,7 @@ def test_images_targeted(art_warning, fix_get_mnist_subset, image_dl_estimator_f
         attack = MomentumIterativeMethod(classifier, eps=0.3, eps_step=0.1, decay=1.0, max_iter=10)
         x_train_mnist_adv = attack.generate(x=x_train_mnist, y=y_train_mnist)
 
-        assert np.mean(np.abs(x_train_mnist - x_train_mnist_adv)) == pytest.approx(0.08690829575061798, abs=0.05)
+        assert np.mean(np.abs(x_train_mnist - x_train_mnist_adv)) == pytest.approx(0.1068, 0.003)
         assert np.max(np.abs(x_train_mnist - x_train_mnist_adv)) == pytest.approx(0.3)
 
     except ARTTestException as e:
