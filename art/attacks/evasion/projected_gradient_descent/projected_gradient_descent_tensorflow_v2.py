@@ -343,6 +343,9 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
 
         # Compute gradient momentum
         if decay is not None and momentum is not None:
+            raise NotImplementedError(
+                "Momentum Iterative Attack currently not working with the Tensorflow framework. See issue #2439"
+            )
             # Update momentum in-place (important).
             # The L1 normalization for accumulation is an arbitrary choice of the paper.
             grad_2d = tf.reshape(grad, (len(grad), -1))
