@@ -1,1 +1,354 @@
+import numpy as np
+import pymc as pm
+from typing import Callable, Optional, Union,Tuple,Any
+from scipy.stats import norm
+from pymc import Model, Normal, sample, traceplot
+import arviz as az
+import pandas as pd
 
+# Assuming the existence of the following constants and imports
+DEFAULT_FLIP_PROB = 0.5
+DEFAULT_TRIGGER_ALPHA = 0.1
+DEFAULT_POISON_RATE = 0.01
+time_steps = 10
+
+import scipy.stats as stats
+
+
+class PoisoningAttackCleanLabelBackdoor:
+    """
+    This class implements a poisoning attack with a clean label backdoor.
+    """
+
+    def __init__(
+        self,
+        trigger_func: Callable,
+        target_label: Union[int, str, np.ndarray],
+        dirty_label: Union[int, str, np.ndarray],
+        flip_prob: float = DEFAULT_FLIP_PROB,
+        trigger_alpha: float = DEFAULT_TRIGGER_ALPHA,
+        poison_rate: float = DEFAULT_POISON_RATE,
+        backdoor_trigger: Optional[Union[int, str, np.ndarray]] = None,
+        backdoor_target: Optional[Union[int, str, np.ndarray]] = None,
+        training_dataset: Optional[np.ndarray] = None,
+        training_params: Optional[dict] = None,
+        prior_mean: float = 0,
+        prior_std: float = 1
+    ) -> None:
+        """
+        Initialize the PoisoningAttackCleanLabelBackdoor instance.
+        """
+        self.trigger_func = trigger_func
+        self.target_label = target_label
+        self.dirty_label = dirty_label
+        self.flip_prob = flip_prob
+        self.trigger_alpha = trigger_alpha
+        self.poison_rate = poison_rate
+        self.backdoor_trigger = backdoor_trigger if backdoor_trigger is not None else 0  # Initialize backdoor_trigger
+        self.backdoor_target = backdoor_target
+        self.training_dataset = training_dataset
+        self.training_params = training_params
+        self.prior_mean = prior_mean
+        self.prior_std = prior_std
+        self.prior = norm(loc=prior_mean, scale=prior_std)
+
+    def poison(
+        self,
+        x_audio: np.ndarray,
+        y: Optional[np.ndarray] = None,
+        broadcast: bool = False,
+        random_seed: Optional[int] = None
+    ) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Apply the poisoning attack to the given audio data.
+        """
+        if y is None or not np.any(np.isin(self.target_label, y)):
+            return x_audio, y
+
+        num_poison = int(len(x_audio) * self.poison_rate)
+
+        poisoned_labels = np.full((num_poison,), self.dirty_label)
+
+        if broadcast:
+            y_attack = np.broadcast_to(y, (x_audio.shape[0], y.shape[0]))
+        else:
+            y_attack = np.copy(y)
+
+        np.random.seed(random_seed)
+
+        for i in range(num_poison):
+            trigger_pattern = self.trigger_func(x_audio[i])
+
+            if np.random.rand() < self.flip_prob:
+                poisoned_labels[i] = self.target_label[0]
+
+            x_audio[i] = (1 - self.trigger_alpha) * x_audio[i] + self.trigger_alpha * trigger_pattern
+
+        try:
+            # Calculate the sample mean and variance using NumPy functions
+            sample_mean = np.mean(x_audio)
+            sample_variance = np.var(x_audio)
+
+            # Update the prior with the sample statistics
+            self.prior = norm(loc=sample_mean, scale=np.sqrt(sample_variance))
+
+            # Execute Bayesian sampling diffusion model and store the results
+            self.execute_bayesian_sampling_diffusion_model(x_audio, y_attack)
+
+        except Exception as e:
+            print(f"An error occurred during poisoning: {e}")
+            raise
+
+             # After poisoning, simulate the spread and effects of the backdoor
+            self.simulate_performance_fluctuations(self.x_audio, self.time_steps, np.linspace(0.1, 1.0, 10), np.linspace(0.2, 2.0, 10), np.linspace(0.3, 3.0, 10), lambda _: np.random.normal(0, 1), lambda x, t: x * t + 0.5 * x**2 * np.sin(t))
+            self.simulate_effect_spread(self.x_audio, self.time_steps, np.linspace(0.1, 1.0, 10), 1.0, np.linspace(0.1, 1.0, 10), 0.0)
+            self.simulate_continuous_performance_change(self.x_audio, self.time_steps, 0.5, np.linspace(0.1, 1.0, 10), lambda _: np.random.normal(0, 1))
+            self.simulate_backdoor_spread(self.x_audio, self.time_steps, 0.5, 0.5, np.linspace(0.1, 1.0, 10), lambda _: np.random.normal(0, 1))
+
+        except Exception as e:
+            print(f"An error occurred during poisoning: {e}")
+            raise
+
+        return x_audio, poisoned_labels
+
+    def _bayesian_sampling_diffusion_model(
+        self,
+        T: int,
+        alpha: np.ndarray,
+        beta: np.ndarray,
+        sigma: np.ndarray,
+        noise_dist: Callable[[Any], np.ndarray],
+        initial_state: np.ndarray,
+        time_steps: int,
+        theta: float,
+        jump_size_dist: Callable[[Any], np.ndarray],
+        non_linear_drift: Callable[[float, int], float]
+) -> pm.backends.base.MultiTrace:
+     """
+     Perform Bayesian sampling diffusion for a given time period, alpha, beta, sigma, and noise distribution.
+     Incorporates the dynamics of simulate_performance_fluctuations, simulate_effect_spread, 
+     simulate_continuous_performance_change, and simulate_backdoor_spread.
+     """
+     assert isinstance(T, int), "Expected T to be an integer"
+     assert isinstance(alpha, np.ndarray) and alpha.ndim == 1, "Expected alpha to be a 1D numpy array"
+     assert isinstance(beta, np.ndarray) and beta.ndim == 1, "Expected beta to be a 1D numpy array"
+     assert isinstance(sigma, np.ndarray) and sigma.ndim == 1, "Expected sigma to be a 1D numpy array"
+     assert callable(noise_dist), "Expected noise_dist to be a callable function"
+     assert isinstance(initial_state, np.ndarray), "Expected initial_state to be a numpy array"
+     assert isinstance(time_steps, int), "Expected time_steps to be an integer"
+     assert isinstance(theta, float), "Expected theta to be a float"
+     assert callable(jump_size_dist), "Expected jump_size_dist to be a callable function"
+     assert callable(non_linear_drift), "Expected non_linear_drift to be a callable function"
+
+     try:
+         with pm.Model() as model:
+             # Use the initial_state as the starting point for the Bayesian model
+             x_T = pm.Normal('x_T', mu=noise_dist(initial_state), sigma=1)
+
+             for t in range(T - 1, -1, -1):
+                 z = noise_dist(0) if t > 1 else 0
+                 x_t_minus_1 = pm.Normal(f'x_{t}', mu=np.sqrt(alpha[t]) * (x_T - np.sqrt(1 - alpha[t]) * noise_dist(beta[t])) + sigma[t] * z, sigma=1)
+                 x_T = x_t_minus_1
+
+
+              # Integrate the simulations
+             #for simulation in [self.simulate_performance_fluctuations, self.simulate_effect_spread, self.simulate_continuous_performance_change, self.simulate_backdoor_spread]:
+              #  result = simulation(initial_state, time_steps, alpha, beta, sigma, jump_size_dist, non_linear_drift)
+                # Process the result of each simulation as needed, e.g., update the model, analyze the output, etc.
+                # Note: You might need to adjust the arguments passed to each simulation function based on their expected inputs
+
+
+             trace = pm.sample(2000, tune=1000, cores=2, chains=2, step=pm.NUTS())
+             trace.sample_stats
+            
+         return trace
+
+     except Exception as e:
+         print(f"An error occurred: {e}")
+         raise
+
+    def ito_formula_jump_diffusion(self, x: float, t: int, alpha: np.ndarray, beta: np.ndarray, sigma: np.ndarray, jump_size_dist: Callable[[Any], np.ndarray], non_linear_drift: Callable[[float, int], float]) -> float:
+        """
+        Implement the Ito formula for jump-diffusion with a more realistic modeling of jumps.
+        """
+        assert isinstance(x, float), "Expected x to be a float"
+        assert isinstance(t, int), "Expected t to be an integer"
+        assert isinstance(alpha, np.ndarray) and alpha.ndim == 1, "Expected alpha to be a 1D numpy array"
+        assert isinstance(beta, np.ndarray) and beta.ndim == 1, "Expected beta to be a 1D numpy array"
+        assert isinstance(sigma, np.ndarray) and sigma.ndim == 1, "Expected sigma to be a 1D numpy array"
+        assert callable(jump_size_dist), "Expected jump_size_dist to be a callable function"
+        assert callable(non_linear_drift), "Expected non_linear_drift to be a callable function"
+
+        t = min(t, len(alpha) - 1)
+        drift = non_linear_drift(x, t)
+        diffusion = sigma[t] * np.random.normal(0, 1)
+        num_jumps = np.random.poisson(1000)
+        jump_sizes = jump_size_dist(np.random.normal(0, 1, num_jumps))
+        jump_effect = np.sum(jump_sizes)
+
+        return drift + diffusion + jump_effect
+
+
+    def ornstein_uhlenbeck_process(self, x: float, t: int, theta: float, sigma: float, noise_dist: Callable[[Any], np.ndarray]) -> float:
+        """
+        Implement the Ornstein-Uhlenbeck process.
+        """
+        assert isinstance(x, float), "Expected x to be a float"
+        assert isinstance(t, int), "Expected t to be an integer"
+        assert isinstance(theta, float), "Expected theta to be a float"
+        assert isinstance(sigma, float), "Expected sigma to be a float"
+        assert callable(noise_dist), "Expected noise_dist to be a callable function"
+        return theta * (x - np.exp(-t) * x) + sigma * noise_dist(0)
+
+
+    def black_scholes_to_diffusion(self, initial_value: float, time_steps: int, volatility: np.ndarray, dt: float, drift: np.ndarray, jump_volatility: float = 0.0) -> np.ndarray:
+        """
+        Simulate the diffusion process based on the Black-Scholes equation.
+        """
+        assert isinstance(initial_value, float), "Expected initial_value to be a float"
+        assert isinstance(time_steps, int), "Expected time_steps to be an integer"
+        assert isinstance(volatility, np.ndarray), "Expected volatility to be a numpy array"
+        assert isinstance(drift, np.ndarray), "Expected drift to be a numpy array"
+        assert isinstance(dt, float), "Expected dt to be a float"
+        assert isinstance(jump_volatility, float), "Expected jump_volatility to be a float"
+
+        simulated_values = np.zeros(time_steps + 1)
+        simulated_values[0] = initial_value
+
+        for t in range(1, time_steps + 1):
+            dW = np.random.normal(0, np.sqrt(dt))
+            simulated_values[t] = simulated_values[t - 1] + drift[t] * dt + volatility[t] * simulated_values[t - 1] * dW
+            if np.random.rand() < jump_volatility:
+                simulated_values[t] += np.random.normal(0, 1) * simulated_values[t - 1]
+
+        return simulated_values
+
+    def kolmogorov_feller_equation(self, x: float, t: int, alpha: float, beta: float, sigma: float, noise_dist: Callable[[Any], np.ndarray]) -> float:
+        assert isinstance(x, float), "Expected x to be a float"
+        assert isinstance(t, int), "Expected t to be an integer"
+        assert isinstance(alpha, float), "Expected alpha to be a float"
+        assert isinstance(beta, float), "Expected beta to be a float"
+        assert isinstance(sigma, float), "Expected sigma to be a float"
+        assert callable(noise_dist), "Expected noise_dist to be a callable function"
+        return alpha * x + beta * sigma * noise_dist(0)
+
+    def simulate_performance_fluctuations(self, x_initial, t_steps, alpha, beta, sigma, jump_size_dist, non_linear_drift):
+        """
+       Simulate performance fluctuations due to the backdoor trigger using a sophisticated stochastic process.
+        """
+        state = x_audio.copy()  # Start with the original audio data
+        for t in range(time_steps):
+            # Generate parameters for the current time step
+            alpha = np.random.uniform(alpha)
+            beta = np.random.uniform(beta)
+            sigma = np.random.uniform(sigma)
+
+            # Apply the Ornstein-Uhlenbeck process for each audio sample
+            state = self.ornstein_uhlenbeck_process(state, t, alpha, sigma, jump_size_dist)
+
+            # Optionally, apply a non-linear drift for added complexity
+            state = non_linear_drift(state, t)
+
+        return state
+
+    def simulate_effect_spread(self, initial_value, time_steps, volatility, dt, drift, jump_volatility=0.0):
+         """
+         Simulate the spread of the backdoor effect using a detailed diffusion model.
+         """
+         state = np.array([x_audio.mean()])  # Start with the mean of the audio data
+         for t in range(time_steps):
+             # Generate parameters for the current time step
+             volatility = np.random.uniform(volatility)
+             drift = np.random.uniform(drift)
+
+             # Apply the Black-Scholes to Diffusion model
+             state = self.black_scholes_to_diffusion(state[-1], dt, drift, volatility, jump_volatility)
+
+         return state
+
+    def simulate_continuous_performance_change(self, x_initial, t_steps, theta, sigma, noise_dist):
+        """
+        Simulate continuous change in performance due to the backdoor trigger using a refined Ornstein-Uhlenbeck process.
+        """
+        state = np.array([x_audio.mean()])  # Start with the mean of the audio data
+        for t in range(t_steps):
+            # Generate parameters for the current time step
+            sigma = np.random.uniform(sigma)
+
+            # Apply the Ornstein-Uhlenbeck process
+            state = self.ornstein_uhlenbeck_process(state[-1], t, theta, sigma, noise_dist)
+
+        return state
+
+    def simulate_backdoor_spread(self, initial_state: np.ndarray, time_steps: int, alpha: float, beta: float, sigma: float, jump_size_dist: Callable[[Any], np.ndarray]) -> np.ndarray:
+        """
+        Simulate the spread of the backdoor effect over time using the Kolmogorov-Feller equation.
+        """
+        state = initial_state.copy()
+        jump_diff = jd.jd_process(dim=len(initial_state), dt=1/time_steps, seed=42)
+
+        for t in range(time_steps):
+            # Generate parameters for the current time step
+            sigma = np.random.uniform(sigma)
+
+            # Define the drift and diffusion coefficients
+            drift_kf = lambda x: alpha * x + beta * sigma * jump_size_dist(0)
+            diffusion_kf = lambda x: sigma
+
+            # Solve the SDE using jump_diff
+            state = jump_diff.solve(drift_kf, diffusion_kf, initial_state=state, n_steps=time_steps)[0]
+
+        return state
+
+
+    def execute_bayesian_sampling_diffusion_model(self, x_audio, y, trace_name="bayesian_sampling_diffusion_model_trace"):
+        """
+        Execute the _bayesian_sampling_diffusion_model method and store the results in a trace.
+        """
+
+        # Define the parameters for the Bayesian sampling diffusion model
+        T = 10  # Time steps
+        alpha = np.linspace(0.1, 1.0, 10)
+        beta = np.linspace(0.2, 2.0, 10)
+        sigma = np.linspace(0.3, 3.0, 10)
+        noise_dist = np.random.normal
+
+        # Define the initial state, theta, jump_size_dist, and non_linear_drift
+        initial_state = np.array([x_audio.mean()], dtype=float) # Using the mean of x_audio as the initial state
+        
+        # Inside the _bayesian_sampling_diffusion_model method
+        theta = np.random.uniform(low=0.1, high=1.0)  # Generates a random value between 0.1 and 1.0
+        
+        jump_size_dist = lambda _: stats.lognorm(s=0.5).rvs(size=1)
+        non_linear_drift = lambda x, t: x * t + 0.5 * x**2 * np.sin(t)
+
+        # Call the _bayesian_sampling_diffusion_model method with the defined parameters
+        # When calling _bayesian_sampling_diffusion_model
+        theta = np.random.uniform(low=0.1, high=1.0)  # Generates a random value between 0.1 and 1.0
+
+        # Call the _bayesian_sampling_diffusion_model method with the defined parameters
+        trace = self._bayesian_sampling_diffusion_model(T=T, alpha=alpha, beta=beta, sigma=sigma, noise_dist=noise_dist, initial_state=initial_state, time_steps=T, theta=theta, jump_size_dist=jump_size_dist, non_linear_drift=non_linear_drift)
+
+        # Convert the InferenceData object to a pandas DataFrame
+        df = trace.to_dataframe()
+
+        # Save the DataFrame to a CSV file
+        df.to_csv(f"{trace_name}.csv", index=False)
+
+        # Optionally, plot the trace
+        az.plot_trace(trace, figsize=(15, 8))
+        plt.savefig(f"{trace_name}.png", dpi=300)
+        plt.show()
+
+        # Plot the energy plot
+        az.plot_energy(trace, figsize=(12, 8))
+        print(az.summary(trace))
+        plt.savefig(f"{trace_name}_energy_plot.png", dpi=300)
+        plt.show()
+
+        summary = az.summary(trace)
+        az.plot_posterior(trace)
+        plt.show()
+
+       # Read the CSV file
+        df = pd.read_csv(f"{trace_name}.csv")
