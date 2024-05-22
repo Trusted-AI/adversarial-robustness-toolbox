@@ -23,7 +23,6 @@ Mandarin in PyTorch.
 """
 import logging
 from typing import TYPE_CHECKING, List, Optional, Tuple, Union
-from pkg_resources import packaging  # type: ignore[attr-defined]
 
 import numpy as np
 
@@ -791,7 +790,7 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
             else:
                 transformed_input = transformer(x[i])
 
-            if self._version == 3 and packaging.version.parse(torch.__version__) >= packaging.version.parse("1.10.0"):
+            if self._version == 3:
                 spectrogram = torch.abs(transformed_input)
             else:
                 spectrogram, _ = torchaudio.functional.magphase(transformed_input)
