@@ -1,3 +1,25 @@
+# MIT License
+#
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2020
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+# documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
+# rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit
+# persons to whom the Software is furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all copies or substantial portions of the
+# Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
+# WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+# TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+"""
+This module implements a poisoning attack with a clean label backdoor
+
+"""
+
 import numpy as np
 import pymc as pm
 from typing import Callable, Optional, Union,Tuple,Any
@@ -111,6 +133,8 @@ class PoisoningAttackCleanLabelBackdoor:
 
         return x_audio, poisoned_labels
 
+
+
     def _bayesian_sampling_diffusion_model(
         self,
         T: int,
@@ -122,11 +146,19 @@ class PoisoningAttackCleanLabelBackdoor:
         time_steps: int,
         theta: float,
         jump_size_dist: Callable[[Any], np.ndarray],
-        non_linear_drift: Callable[[float, int], float]
+        non_linear_drift: Callable[[float, int], float],
+        volatility: np.ndarray,  # Add this line to include the volatility parameter
+        jump_volatility: float,
+        dt: float = 0.01,
+        # Additional parameters to reflect the dynamics of the simulation methods
+        performance_fluctuations_prior=None,
+        effect_spread_prior=None,
+        continuous_performance_change_prior=None,
+        backdoor_spread_prior=None
 ) -> pm.backends.base.MultiTrace:
      """
      Perform Bayesian sampling diffusion for a given time period, alpha, beta, sigma, and noise distribution.
-     Incorporates the dynamics of simulate_performance_fluctuations, simulate_effect_spread, 
+     Incorporates the dynamics of simulate_performance_fluctuations, simulate_effect_spread,
      simulate_continuous_performance_change, and simulate_backdoor_spread.
      """
      assert isinstance(T, int), "Expected T to be an integer"
@@ -139,33 +171,38 @@ class PoisoningAttackCleanLabelBackdoor:
      assert isinstance(theta, float), "Expected theta to be a float"
      assert callable(jump_size_dist), "Expected jump_size_dist to be a callable function"
      assert callable(non_linear_drift), "Expected non_linear_drift to be a callable function"
+     assert isinstance(volatility, np.ndarray) and volatility.ndim == 1, "Expected volatility to be a 1D numpy array"
+     assert isinstance(jump_volatility, float), "Expected jump_volatility to be a float"
 
      try:
-         with pm.Model() as model:
-             # Use the initial_state as the starting point for the Bayesian model
-             x_T = pm.Normal('x_T', mu=noise_dist(initial_state), sigma=1)
+        with Model() as model:
+            # Define priors based on the simulation outputs
+            if performance_fluctuations_prior is not None:
+                x_T = Normal('x_T', mu=performance_fluctuations_prior[0], sigma=1)
+            elif effect_spread_prior is not None:
+                x_T = Normal('x_T', mu=effect_spread_prior[0], sigma=1)
+            elif continuous_performance_change_prior is not None:
+                x_T = Normal('x_T', mu=continuous_performance_change_prior[0], sigma=1)
+            elif backdoor_spread_prior is not None:
+                x_T = Normal('x_T', mu=backdoor_spread_prior[0], sigma=1)
+            else:
+                x_T = Normal('x_T', mu=noise_dist(initial_state), sigma=1)
 
-             for t in range(T - 1, -1, -1):
-                 z = noise_dist(0) if t > 1 else 0
-                 x_t_minus_1 = pm.Normal(f'x_{t}', mu=np.sqrt(alpha[t]) * (x_T - np.sqrt(1 - alpha[t]) * noise_dist(beta[t])) + sigma[t] * z, sigma=1)
-                 x_T = x_t_minus_1
+            # Use the jump-diffusion process to update the state
+            for t in range(T - 1, -1, -1):
+                z = noise_dist(0) if t > 1 else 0
+                x_t_minus_1 = Normal(f'x_{t}', mu=np.sqrt(alpha[t]) * (x_T - np.sqrt(1 - alpha[t]) * noise_dist(beta[t])) + sigma[t] * z, sigma=1)
+                x_T = x_t_minus_1
 
+            # Sample from the posterior
+            trace = sample(2000, tune=1000, cores=2, chains=2, step=pm.NUTS())
 
-              # Integrate the simulations
-             #for simulation in [self.simulate_performance_fluctuations, self.simulate_effect_spread, self.simulate_continuous_performance_change, self.simulate_backdoor_spread]:
-              #  result = simulation(initial_state, time_steps, alpha, beta, sigma, jump_size_dist, non_linear_drift)
-                # Process the result of each simulation as needed, e.g., update the model, analyze the output, etc.
-                # Note: You might need to adjust the arguments passed to each simulation function based on their expected inputs
-
-
-             trace = pm.sample(2000, tune=1000, cores=2, chains=2, step=pm.NUTS())
-             trace.sample_stats
-            
-         return trace
+        return trace
 
      except Exception as e:
-         print(f"An error occurred: {e}")
-         raise
+            print(f"An error occurred: {e}")
+            raise
+
 
     def ito_formula_jump_diffusion(self, x: float, t: int, alpha: np.ndarray, beta: np.ndarray, sigma: np.ndarray, jump_size_dist: Callable[[Any], np.ndarray], non_linear_drift: Callable[[float, int], float]) -> float:
         """
@@ -236,7 +273,7 @@ class PoisoningAttackCleanLabelBackdoor:
         """
        Simulate performance fluctuations due to the backdoor trigger using a sophisticated stochastic process.
         """
-        state = x_audio.copy()  # Start with the original audio data
+        state = np.array([x_audio.mean()], dtype=float)  # Start with the original audio data
         for t in range(time_steps):
             # Generate parameters for the current time step
             alpha = np.random.uniform(alpha)
@@ -255,7 +292,7 @@ class PoisoningAttackCleanLabelBackdoor:
          """
          Simulate the spread of the backdoor effect using a detailed diffusion model.
          """
-         state = np.array([x_audio.mean()])  # Start with the mean of the audio data
+         state = np.array([x_audio.mean()], dtype=float)  # Start with the mean of the audio data
          for t in range(time_steps):
              # Generate parameters for the current time step
              volatility = np.random.uniform(volatility)
@@ -270,7 +307,7 @@ class PoisoningAttackCleanLabelBackdoor:
         """
         Simulate continuous change in performance due to the backdoor trigger using a refined Ornstein-Uhlenbeck process.
         """
-        state = np.array([x_audio.mean()])  # Start with the mean of the audio data
+        state = np.array([x_audio.mean()], dtype=float)  # Start with the mean of the audio data
         for t in range(t_steps):
             # Generate parameters for the current time step
             sigma = np.random.uniform(sigma)
@@ -284,7 +321,7 @@ class PoisoningAttackCleanLabelBackdoor:
         """
         Simulate the spread of the backdoor effect over time using the Kolmogorov-Feller equation.
         """
-        state = initial_state.copy()
+        state = np.array([x_audio.mean()], dtype=float)
         jump_diff = jd.jd_process(dim=len(initial_state), dt=1/time_steps, seed=42)
 
         for t in range(time_steps):
@@ -312,13 +349,15 @@ class PoisoningAttackCleanLabelBackdoor:
         beta = np.linspace(0.2, 2.0, 10)
         sigma = np.linspace(0.3, 3.0, 10)
         noise_dist = np.random.normal
-
+        volatility= np.linspace(0.1, 1.0, 10)
+        jump_volatility= 0.5
+        dt=0.01
         # Define the initial state, theta, jump_size_dist, and non_linear_drift
         initial_state = np.array([x_audio.mean()], dtype=float) # Using the mean of x_audio as the initial state
-        
+
         # Inside the _bayesian_sampling_diffusion_model method
         theta = np.random.uniform(low=0.1, high=1.0)  # Generates a random value between 0.1 and 1.0
-        
+
         jump_size_dist = lambda _: stats.lognorm(s=0.5).rvs(size=1)
         non_linear_drift = lambda x, t: x * t + 0.5 * x**2 * np.sin(t)
 
@@ -327,7 +366,7 @@ class PoisoningAttackCleanLabelBackdoor:
         theta = np.random.uniform(low=0.1, high=1.0)  # Generates a random value between 0.1 and 1.0
 
         # Call the _bayesian_sampling_diffusion_model method with the defined parameters
-        trace = self._bayesian_sampling_diffusion_model(T=T, alpha=alpha, beta=beta, sigma=sigma, noise_dist=noise_dist, initial_state=initial_state, time_steps=T, theta=theta, jump_size_dist=jump_size_dist, non_linear_drift=non_linear_drift)
+        trace = self._bayesian_sampling_diffusion_model(T=T, alpha=alpha, beta=beta, sigma=sigma, noise_dist=noise_dist, initial_state=initial_state, time_steps=T, theta=theta, jump_size_dist=jump_size_dist, non_linear_drift=non_linear_drift,volatility=volatility,jump_volatility=jump_volatility,dt=dt)
 
         # Convert the InferenceData object to a pandas DataFrame
         df = trace.to_dataframe()
@@ -352,3 +391,6 @@ class PoisoningAttackCleanLabelBackdoor:
 
        # Read the CSV file
         df = pd.read_csv(f"{trace_name}.csv")
+
+
+
