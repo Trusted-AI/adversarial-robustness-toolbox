@@ -62,7 +62,7 @@ from art.attacks.evasion.shadow_attack import ShadowAttack
 from art.attacks.evasion.shapeshifter import ShapeShifter
 from art.attacks.evasion.simba import SimBA
 from art.attacks.evasion.spatial_transformation import SpatialTransformation
-from art.attacks.evasion.steal_now_attack_latter import collect_patches_from_images, SNAL
+from art.attacks.evasion.steal_now_attack_later.steal_now_attack_later import collect_patches_from_images, SNAL
 from art.attacks.evasion.square_attack import SquareAttack
 from art.attacks.evasion.pixel_threshold import ThresholdAttack
 from art.attacks.evasion.universal_perturbation import UniversalPerturbation

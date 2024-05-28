@@ -30,75 +30,14 @@ from typing import Optional, Tuple, TYPE_CHECKING
 import numpy as np
 
 from art.attacks.attack import EvasionAttack
+from art.attacks.evasion.steal_now_attack_later.bbox_ioa import bbox_ioa
+from art.attacks.evasion.steal_now_attack_later.drop_block2d import drop_block2d
 
 if TYPE_CHECKING:
     # pylint: disable=C0412
     import torch
 
 logger = logging.getLogger(__name__)
-
-def _bbox_ioa(box1: "torch.tenosr",
-              box2: "torch.tenosr",
-              eps: float = 1e-7) -> "torch.tensor":
-    """ 
-    === NOTE ===
-    This function is copied from YOLOv5 repository (yolov5/utils/metrics.py)
-    AGPL-3.0 license
-    === ==== ===
-    Calculate the intersection over two boxes represented by the format x1y1x2y2.
-
-    :param box1: The first box.
-    :param box2: The second box.
-
-    :return: Intersection over box2 area
-    """
-
-    # Get the coordinates of bounding boxes
-    b1_x1, b1_y1, b1_x2, b1_y2 = box1
-    b2_x1, b2_y1, b2_x2, b2_y2 = box2.T
-
-    # Intersection area
-    inter_area = (np.minimum(b1_x2, b2_x2) - np.maximum(b1_x1, b2_x1)).clip(0) * \
-                 (np.minimum(b1_y2, b2_y2) - np.maximum(b1_y1, b2_y1)).clip(0)
-
-    # box2 area
-    box2_area = (b2_x2 - b2_x1) * (b2_y2 - b2_y1) + eps
-
-    # Intersection over box2 area
-    return inter_area / box2_area
-
-def _drop_block2d(input: "torch.tensor",
-                  p: float,
-                  block_size: int):
-    """
-    === NOTE ===
-    This function is modified from torchvision (torchvision/ops/drop_block.py)
-    BSD 3-Clause License
-    === ==== ===
-    :param input (Tensor[N, C, H, W]): The input tensor or 4-dimensions with the first one
-                   being its batch i.e. a batch with ``N`` rows.
-    :param p (float): Probability of an element to be dropped.
-    :param block_size (int): Size of the block to drop.
-
-    :return: Tensor[N, C, H, W]: The mask of activate pixels.
-    """
-    import torch
-    if p < 0.0 or p > 1.0:
-        raise ValueError(f"drop probability has to be between 0 and 1, but got {p}.")
-    if input.ndim != 4:
-        raise ValueError(f"input should be 4 dimensional. Got {input.ndim} dimensions.")
-
-    N, C, H, W = input.size()
-    block_size = min(block_size, W, H)
-    # compute the gamma of Bernoulli distribution
-    gamma = (p * H * W) / ((block_size**2) * ((H - block_size + 1) * (W - block_size + 1)))
-    noise = torch.empty((N, 1, H - block_size + 1, W - block_size + 1), dtype=input.dtype, device=input.device)
-    noise.bernoulli_(gamma)
-
-    noise = torch.nn.functional.pad(noise, [block_size // 2] * 4, value=0)
-    noise = torch.nn.functional.max_pool2d(noise, stride=(1, 1), kernel_size=(block_size, block_size), padding=block_size // 2)
-    mask = 1 - noise
-    return mask
 
 # collection
 def collect_patches_from_images(model: "torch.nn.Module",
@@ -109,7 +48,7 @@ def collect_patches_from_images(model: "torch.nn.Module",
     :param model: Object detection model.
     :param imgs: Target images.
 
-    :return: Detected objects and corrsponding spatial information
+    :return: Detected objects and corrsponding spatial information.
     """
     import torch
 
@@ -264,6 +203,7 @@ def generate_tile(patches: list,
     :return: Pertuerbed tiles and corresponding maskes.
     """
     import torch
+
     if len(patches) == 0:
         raise ValueError("candidates should not be empty.")
     device = patches[0].device
@@ -300,6 +240,7 @@ class TileObj:
                  tile_size: int,
                  device: "torch.cuda.device") -> None:
         import torch
+
         self.patch = torch.zeros((3, tile_size, tile_size), device = device)
         self.diff = torch.ones([], device = device) * self.patch.shape.numel()
         self.bcount = 0
@@ -349,6 +290,7 @@ class TileArray:
                  k: int, 
                  device: "torch.cuda.device") -> None:
         import torch
+
         self.threshold = threshold
         self.strides = tile_size
         self.device = device
@@ -445,8 +387,8 @@ class SNAL(EvasionAttack):
         :param y_batch: Not Used.
         :return: A batch of adversarial examples.
         """
-
         import torch
+
         x_org = torch.from_numpy(x_batch).to(self.estimator.model.device)
         x_adv = x_org.clone()
 
@@ -457,8 +399,6 @@ class SNAL(EvasionAttack):
         x_adv = self._attack(x_adv, x_org)
 
         return x_adv.cpu().detach().numpy()
-
-    
 
     def set_candidates(self, candidates: list) -> None:
         """
@@ -538,7 +478,7 @@ class SNAL(EvasionAttack):
                 b1 = obj.xyxy
                 obj_threshold = obj.threshold
                 [x1, y1, x2, y2] = b1.type(torch.IntTensor)
-                overlay = _bbox_ioa(b1.type(torch.FloatTensor), adv_position.type(torch.FloatTensor))
+                overlay = bbox_ioa(b1.type(torch.FloatTensor), adv_position.type(torch.FloatTensor))
                 bcount = torch.sum(overlay > 0.0).item()
 
                 pert = x_adv[b, :, y1:y2, x1:x2] - x[b, :, y1:y2, x1:x2]
@@ -581,7 +521,7 @@ class SNAL(EvasionAttack):
 
                     updated = ((1.0 - c_mask) * x_ref) + c_mask * (0.0 * x_ref + 1.0 * c_tile)
 
-                    n_mask = _drop_block2d(c_mask, 0.05, 1)
+                    n_mask = drop_block2d(c_mask, 0.05, 1)
                     updated = (1.0 - n_mask) * x_ref + n_mask * updated
                     pert = updated - x_ref
 
@@ -613,6 +553,7 @@ class SNAL(EvasionAttack):
         :return: loss.
         """
         import torch
+
         count = torch.where(pert == 0, torch.zeros_like(pert), torch.ones_like(pert))
         pert = torch.where(torch.abs(pert) <= epsilon, torch.zeros_like(pert), pert)
         pert = torch.abs(pert)
@@ -672,10 +613,11 @@ class SNAL(EvasionAttack):
         Combine the best patches from each grid into a single image.
 
         :param tile_mat: Internal structure used to store patches for each mesh.
-        :param x_org: The original image.
+        :param x_org: The original images.
         :return: Perturbed images.
         """
         import torch
+
         ans = x_org.clone()
         for obj in tile_mat.values():
             [x1, y1, x2, y2] = obj.xyxy.type(torch.IntTensor)
@@ -695,11 +637,12 @@ class SNAL(EvasionAttack):
 
         :param tile_mat: Internal structure used to store patches for each mesh.
         :param x_init: Perturbed images from previous runs.
-        :param x_org: The original image.
+        :param x_org: The original images.
         :param tile_size: The size of each tile.
-        :return: Guessed images and internal structure
+        :return: Guessed images and internal structure.
         """
         import torch
+
         TRIAL = 10
         patches = self.candidates
         masks = [None] * len(self.candidates)
@@ -742,7 +685,7 @@ class SNAL(EvasionAttack):
                 x_cand[:, :, y1:y2, x1:x2] = x_new
 
             # spatial drop
-            n_mask = _drop_block2d(x_cand, 0.05, 3)
+            n_mask = drop_block2d(x_cand, 0.05, 3)
             x_cand = (1.0 - n_mask) * x_org + n_mask * x_cand
             #x_cand = smooth_image(x_cand, x_org, epsilon, 10)
             x_cand = torch.round(x_cand * 255.0) / 255.0
@@ -760,7 +703,7 @@ class SNAL(EvasionAttack):
                     b1 = obj.xyxy
                     obj_threshold = obj.threshold
                     [x1, y1, x2, y2] = b1.type(torch.IntTensor)
-                    overlay = _bbox_ioa(b1.type(torch.FloatTensor), cur_position.type(torch.FloatTensor))
+                    overlay = bbox_ioa(b1.type(torch.FloatTensor), cur_position.type(torch.FloatTensor))
                     bcount = torch.sum(overlay > 0.0).item()
 
                     x_ref = x_org[:, :, y1:y2, x1:x2]
@@ -786,7 +729,7 @@ class SNAL(EvasionAttack):
             ii, jj = key
             b1 = obj.xyxy
             [x1, y1, x2, y2] = b1.type(torch.IntTensor)
-            overlay = _bbox_ioa(b1.type(torch.FloatTensor), cur_position.type(torch.FloatTensor))
+            overlay = bbox_ioa(b1.type(torch.FloatTensor), cur_position.type(torch.FloatTensor))
             bcount = torch.sum(overlay > 0.0).item()
 
             x_ref = x_init[:, :, y1:y2, x1:x2]
@@ -805,7 +748,7 @@ class SNAL(EvasionAttack):
                 prev.pop()
                 tile_mat[(ii, jj)] = prev
 
-            a_mask = _drop_block2d(x_ref, 0.05, 1)
+            a_mask = drop_block2d(x_ref, 0.05, 1)
             cur_mask = cur_mask * a_mask
             updated = ((1.0 - cur_mask)  * x_ref) + cur_mask * ( 0.0 * x_ref + 1.0 * x_tag)
             updated = ((1.0 - cur_mask)  * x_ref) + cur_mask * ( 0.0 * x_ref + 1.0 * updated)
