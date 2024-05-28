@@ -1,5 +1,5 @@
 #
-# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2024
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -17,16 +17,17 @@
 
 """
 This module implements the paper: "Steal Now and Attack Later: Evaluating Robustness of Object Detection against Black-box Adversarial Attacks"
+
 | Paper link: https://arxiv.org/abs/2304.05370
 """
 
 # pylint: disable=C0302
 
 import logging
+import random
 from typing import Optional, Tuple, TYPE_CHECKING
 
 import numpy as np
-import random
 
 from art.attacks.attack import EvasionAttack
 
@@ -42,8 +43,14 @@ def _bbox_ioa(box1: "torch.tenosr",
     """ 
     === NOTE ===
     This function is copied from YOLOv5 repository (yolov5/utils/metrics.py)
+    AGPL-3.0 license
     === ==== ===
-    Returns the intersection over box2 area given box1, box2. Boxes are x1y1x2y2
+    Calculate the intersection over two boxes represented by the format x1y1x2y2.
+
+    :param box1: The first box.
+    :param box2: The second box.
+
+    :return: Intersection over box2 area
     """
 
     # Get the coordinates of bounding boxes
@@ -66,6 +73,7 @@ def _drop_block2d(input: "torch.tensor",
     """
     === NOTE ===
     This function is modified from torchvision (torchvision/ops/drop_block.py)
+    BSD 3-Clause License
     === ==== ===
     :param input (Tensor[N, C, H, W]): The input tensor or 4-dimensions with the first one
                    being its batch i.e. a batch with ``N`` rows.
@@ -95,6 +103,14 @@ def _drop_block2d(input: "torch.tensor",
 # collection
 def collect_patches_from_images(model: "torch.nn.Module",
                                 imgs: "torch.Tensor") -> Tuple[list, list]:
+    """
+    Collect patches and corrsponding spatial information by the model from images.
+
+    :param model: Object detection model.
+    :param imgs: Target images.
+
+    :return: Detected objects and corrsponding spatial information
+    """
     import torch
 
     bs = imgs.shape[0]
@@ -127,7 +143,14 @@ def collect_patches_from_images(model: "torch.nn.Module",
 def _generate_tile_kernel(patch: list,
                           mask: list,
                           tile_size: int) -> Tuple["torch.Tensor", "torch.Tensor"]:
+    """
+    Generate specific size of pertuerbed tiles from randomly selected patches.
 
+    :param patch: Candiate patches.
+    :param mask: Masks for each patch.
+    :param tile_size: The size of each tile.
+    :return: Pertuerbed tiles and corresponding maskes.
+    """
     import torch
     import torchvision
 
@@ -231,6 +254,15 @@ def generate_tile(patches: list,
                   masks: list,
                   tile_size: int,
                   scale: list) -> Tuple["torch.Tensor", "torch.Tensor"]:
+    """
+    Generate different size of pertuerbed tiles from randomly selected patches.
+
+    :param patch: Candiate patches.
+    :param mask: Masks for each patch.
+    :param tile_size: The size of each tile.
+    :param scale: Scale factor for various tileing size.
+    :return: Pertuerbed tiles and corresponding maskes.
+    """
     import torch
     if len(patches) == 0:
         raise ValueError("candidates should not be empty.")
@@ -349,6 +381,7 @@ class TileArray:
 class SNAL(EvasionAttack):
     """
     Steal Now and Attack Later
+
     | Paper link: https://arxiv.org/abs/2404.15881
     """
 
@@ -370,6 +403,7 @@ class SNAL(EvasionAttack):
     ) -> None:
         """
         Create a SNAL attack instance.
+
         :param estimator: A trained YOLOv8 model or other models with the same output format
         :param eps: Maximum perturbation that the attacker can introduce.
         :param max_iter: The maximum number of iterations.
@@ -387,6 +421,7 @@ class SNAL(EvasionAttack):
     def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
         Generate adversarial samples and return them in an array.
+
         :param x: An array with the original inputs to be attacked.
         :param y: Not used.
         :return: An array holding the adversarial examples.
@@ -405,6 +440,7 @@ class SNAL(EvasionAttack):
     def _generate_batch(self, x_batch: np.ndarray, y_batch: Optional[np.ndarray] = None) -> np.ndarray:
         """
         Run the attack on a batch of images.
+
         :param x_batch: A batch of original examples.
         :param y_batch: Not Used.
         :return: A batch of adversarial examples.
@@ -425,6 +461,9 @@ class SNAL(EvasionAttack):
     
 
     def set_candidates(self, candidates: list) -> None:
+        """
+        Assign candidates that will be used to generate perturbations during the attack.
+        """
         self.candidates = candidates
 
     def _attack(self,
@@ -432,6 +471,7 @@ class SNAL(EvasionAttack):
                 x: "torch.Tensor") -> "torch.Tensor":
         """
         Run attack.
+
         :param x_batch: A batch of original examples.
         :param y_batch: Not Used.
         :return: A batch of adversarial examples.
@@ -565,6 +605,13 @@ class SNAL(EvasionAttack):
     def _get_loss(self,
                   pert: "torch.tensor",
                   epsilon: float) -> "torch.tensor":
+        """
+        Calculate accumulated distance of the perturbations outside the epslion ball.
+
+        :param pert: Perturbations in the pixel space.
+        :param epsilon: The radius of the eplion bass.
+        :return: loss.
+        """
         import torch
         count = torch.where(pert == 0, torch.zeros_like(pert), torch.ones_like(pert))
         pert = torch.where(torch.abs(pert) <= epsilon, torch.zeros_like(pert), pert)
@@ -577,6 +624,14 @@ class SNAL(EvasionAttack):
                           tile: "torch.tensor",
                           x_ref: "torch.tensor",
                           epsilon: float) -> "torch.tensor":
+        """
+        Convert statistics information from target to source.
+
+        :param tile: The target to convert.
+        :param x_ref: The source data.
+        :param epsilon: The radius of the eplion bass.
+        :return: The converted tile.
+        """
         import torch
 
         if len(tile.shape) == 3:
@@ -613,6 +668,13 @@ class SNAL(EvasionAttack):
     def _assemble(self,
                   tile_mat: dict,
                   x_org: "torch.tensor") -> "torch.tensor":
+        """
+        Combine the best patches from each grid into a single image.
+
+        :param tile_mat: Internal structure used to store patches for each mesh.
+        :param x_org: The original image.
+        :return: Perturbed images.
+        """
         import torch
         ans = x_org.clone()
         for obj in tile_mat.values():
@@ -628,6 +690,15 @@ class SNAL(EvasionAttack):
                     x_org: "torch.tensor",
                     tile_size: int,
                     n_samples: int) -> Tuple["torch.tensor", dict]:
+        """
+        Generate an initial perturbation for each grid.
+
+        :param tile_mat: Internal structure used to store patches for each mesh.
+        :param x_init: Perturbed images from previous runs.
+        :param x_org: The original image.
+        :param tile_size: The size of each tile.
+        :return: Guessed images and internal structure
+        """
         import torch
         TRIAL = 10
         patches = self.candidates
