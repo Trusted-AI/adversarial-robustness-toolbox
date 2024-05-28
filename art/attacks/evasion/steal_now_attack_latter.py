@@ -533,7 +533,6 @@ class SNAL(EvasionAttack):
 
                     # select n_sample candidates
                     c_tile = r_tile
-                    c_mask = r_mask
                     idx_perm = torch.randperm(c_tile.shape[0])
                     idx_perm = idx_perm[:n_samples]
                     c_tile = r_tile[idx_perm, :]
@@ -554,7 +553,6 @@ class SNAL(EvasionAttack):
                 else:
                     target = bcount_list[0].patch[None, :]
                     x_ref = x[b, :, y1:y2, x1:x2]
-                    pert = target - x_ref
                     updated = self._color_projection(target, x_ref, self.eps)
 
                 x_adv[b, :, y1:y2, x1:x2] = updated
@@ -683,7 +681,6 @@ class SNAL(EvasionAttack):
             # update results
             adv_patch, adv_position = collect_patches_from_images(self.estimator, x_cand)
             for idx in range(n_samples):
-                cur_patch = adv_patch[idx]
                 cur_position = adv_position[idx]
 
                 for key, obj in tile_mat.items():
