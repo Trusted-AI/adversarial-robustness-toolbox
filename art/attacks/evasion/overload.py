@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2024
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -63,7 +63,7 @@ class OverloadPyTorch(EvasionAttack):
         """
         Create a overload attack instance.
 
-        :param estimator: A trained YOLO5 model.
+        :param estimator: A PyTorch object detection estimator for a YOLO5 model.
         :param eps: Maximum perturbation that the attacker can introduce.
         :param max_iter: The maximum number of iterations.
         :param num_grid: The number of grids for width and high dimension.
@@ -146,6 +146,7 @@ class OverloadPyTorch(EvasionAttack):
     def _loss(self, x: "torch.tensor") -> Tuple["torch.tensor", "torch.tensor"]:
         """
         Compute the weight of each pixel and the overload loss for a given image.
+
         :param x: A given image
         :return: Overload loss and the weight of each pixel
         """
@@ -200,6 +201,7 @@ class OverloadPyTorch(EvasionAttack):
     def xywh2xyxy(self, xywh: "torch.tensor") -> "torch.tensor":
         """
         Convert the representation from xywh format yo xyxy format.
+
         : param xyhw: A n by 4 boxes store the information in xyhw format
                       where [x ,y, w h] is [center_x, center_y, width, height]
         : return: The n by 4 boxex in xyxy format
