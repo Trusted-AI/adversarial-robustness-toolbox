@@ -20,7 +20,8 @@ import logging
 import numpy as np
 import pytest
 
-from art.attacks.evasion.overload import OverloadPyTorch
+from art.attacks.evasion import OverloadPyTorch
+from art.estimators.object_detection import PyTorchYolo
 from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)
@@ -30,10 +31,13 @@ def test_generate(art_warning):
     try:
         import torch
         model = torch.hub.load('ultralytics/yolov5:v7.0',  model='yolov5s')
-        x = np.random(0.0, 1.0, size=(100, 3, 640, 640))
+        py_model = PyTorchYolo(model=model,
+                               input_shape=(3, 640, 640),
+                               channels_first=True)
+        x = np.random.uniform(0.0, 1.0, size=(10, 3, 640, 640)).astype(np.float32)
 
-        attack = OverloadPyTorch(model,
-                                 eps = 16.0 /255.0,
+        attack = OverloadPyTorch(py_model,
+                                 eps = 16.0 / 255.0,
                                  max_iter = 5,
                                  num_grid = 10,
                                  batch_size = 1)
@@ -53,23 +57,26 @@ def test_check_params(art_warning):
     try:
         import torch
         model = torch.hub.load('ultralytics/yolov5:v7.0',  model='yolov5s')
+        py_model = PyTorchYolo(model=model,
+                               input_shape=(3, 640, 640),
+                               channels_first=True)
 
         with pytest.raises(ValueError):
-           _ = OverloadPyTorch(model, -1.0, 5, 10, 1)
+           _ = OverloadPyTorch(py_model, -1.0, 5, 10, 1)
         with pytest.raises(ValueError):
-           _ = OverloadPyTorch(model, 2.0, 5, 10, 1)
+           _ = OverloadPyTorch(py_model, 2.0, 5, 10, 1)
+        with pytest.raises(TypeError):
+           _ = OverloadPyTorch(py_model, 8 / 255.0, 1.0, 10, 1)
         with pytest.raises(ValueError):
-           _ = OverloadPyTorch(model, 8 / 255.0, 1.0, 10, 1)
+           _ = OverloadPyTorch(py_model, 8 / 255.0, 0, 10, 1)
+        with pytest.raises(TypeError):
+           _ = OverloadPyTorch(py_model, 8 / 255.0, 5, 1.0, 1)
         with pytest.raises(ValueError):
-           _ = OverloadPyTorch(model, 8 / 255.0, 0, 10, 1)
+           _ = OverloadPyTorch(py_model, 8 / 255.0, 5, 0, 1)
+        with pytest.raises(TypeError):
+           _ = OverloadPyTorch(py_model, 8 / 255.0, 5, 10, 1.0)
         with pytest.raises(ValueError):
-           _ = OverloadPyTorch(model, 8 / 255.0, 5, 1.0, 1)
-        with pytest.raises(ValueError):
-           _ = OverloadPyTorch(model, 8 / 255.0, 5, 0, 1)
-        with pytest.raises(ValueError):
-           _ = OverloadPyTorch(model, 8 / 255.0, 5, 10, 1.0)
-        with pytest.raises(ValueError):
-           _ = OverloadPyTorch(model, 8 / 255.0, 5, 0, 0)
+           _ = OverloadPyTorch(py_model, 8 / 255.0, 5, 0, 0)
 
     except ARTTestException as e:
         art_warning(e)
