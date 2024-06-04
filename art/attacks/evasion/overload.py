@@ -28,6 +28,7 @@ from typing import Optional, Tuple, TYPE_CHECKING
 import numpy as np
 
 from art.attacks.attack import EvasionAttack
+from art.estimators.object_detection.pytorch_object_detector import PyTorchObjectDetector
 
 if TYPE_CHECKING:
     # pylint: disable=C0412
@@ -54,7 +55,7 @@ class OverloadPyTorch(EvasionAttack):
 
     def __init__(
         self,
-        estimator: "torch.nn.Module",
+        estimator: PyTorchObjectDetector,
         eps: float,
         max_iter: int,
         num_grid: int,
@@ -105,7 +106,7 @@ class OverloadPyTorch(EvasionAttack):
         """
 
         import torch
-        x_org = torch.from_numpy(x_batch).to(self.estimator.model.device)
+        x_org = torch.from_numpy(x_batch).to(self.estimator.device)
         x_adv = x_org.clone()
 
         cond = torch.logical_or(x_org < 0.0, x_org > 1.0)
@@ -152,11 +153,11 @@ class OverloadPyTorch(EvasionAttack):
         """
 
         import torch
-        adv_logits = self.estimator.model(x)
+        adv_logits = self.estimator.model.model(x)
         if type(adv_logits) is tuple:
             adv_logits = adv_logits[0]
 
-        THRESHOLD = self.estimator.conf
+        THRESHOLD = self.estimator.model.conf
         conf = adv_logits[..., 4]
         prob = adv_logits[..., 5:]
         prob = torch.where(conf[:, :, None] * prob > THRESHOLD, torch.ones_like(prob), prob)
