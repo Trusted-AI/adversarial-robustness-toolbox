@@ -28,6 +28,7 @@ from typing import Optional, Tuple, TYPE_CHECKING
 import numpy as np
 
 from art.attacks.attack import EvasionAttack
+from art.attacks.evasion.overload.box_iou import box_iou
 from art.estimators.object_detection.pytorch_object_detector import PyTorchObjectDetector
 
 if TYPE_CHECKING:
@@ -188,7 +189,7 @@ class OverloadPyTorch(EvasionAttack):
                 box_idx = adv_logits[xi, :, 4] * prob > THRESHOLD
                 xyhw = xyhw[box_idx]
                 c_xyxy = self.xywh2xyxy(xyhw)
-                scores = self.box_iou(grid_box, c_xyxy)
+                scores = box_iou(grid_box, c_xyxy)
                 scores = torch.where(scores > 0.0, torch.ones_like(scores), torch.zeros_like(scores))
                 scores = torch.sum(scores, dim=1)
 
@@ -214,27 +215,6 @@ class OverloadPyTorch(EvasionAttack):
         xyxy[:, 2] = xywh[:, 0] + xywh[:, 2] / 2
         xyxy[:, 3] = xywh[:, 1] + xywh[:, 3] / 2
         return xyxy
-
-    def box_iou(self, box1: "torch.tensor", box2: "torch.tensor", eps: float = 1e-7) -> "torch.tensor":
-        """
-        Return intersection-over-union (Jaccard index) of boxes.
-        Both sets of boxes are expected to be in (x1, y1, x2, y2) format.
-        Arguments:
-            box1 (Tensor[N, 4])
-            box2 (Tensor[M, 4])
-        Returns:
-            iou (Tensor[N, M]): the NxM matrix containing the pairwise
-                IoU values for every element in boxes1 and boxes2
-        # https://github.com/pytorch/vision/blob/master/torchvision/ops/boxes.py
-        """
-        import torch
-
-        # inter(N,M) = (rb(N,M,2) - lt(N,M,2)).clamp(0).prod(2)
-        (a1, a2), (b1, b2) = box1.unsqueeze(1).chunk(2, 2), box2.unsqueeze(0).chunk(2, 2)
-        inter = (torch.min(a2, b2) - torch.max(a1, b1)).clamp(0).prod(2)
-
-        # IoU = inter / (area1 + area2 - inter)
-        return inter / ((a2 - a1).prod(2) + (b2 - b1).prod(2) - inter + eps)
 
     def _check_params(self) -> None:
 
