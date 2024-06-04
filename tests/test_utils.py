@@ -121,7 +121,7 @@ class TestUtils(unittest.TestCase):
         self.assertTrue((xv != yv).any())
         np.testing.assert_array_almost_equal(zv, xv, decimal=4)
 
-    def test_projection(self):
+    def test_projection_norm(self):
         # Get MNIST
         (x, _), (_, _), _, _ = load_mnist()
 
@@ -131,6 +131,10 @@ class TestUtils(unittest.TestCase):
         rand_sign = 1 - 2 * np.random.randint(0, 2, size=x.shape)
 
         x_proj = projection(rand_sign * x, 3.14159, 1)
+        self.assertEqual(x.shape, x_proj.shape)
+        self.assertTrue(np.allclose(np.sum(np.abs(x_proj), axis=t), 3.14159, atol=10e-8))
+
+        x_proj = projection(rand_sign * x, 3.14159, 1, suboptimal=False)
         self.assertEqual(x.shape, x_proj.shape)
         self.assertTrue(np.allclose(np.sum(np.abs(x_proj), axis=t), 3.14159, atol=10e-8))
 

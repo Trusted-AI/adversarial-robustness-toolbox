@@ -78,7 +78,9 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         Create a :class:`.ProjectedGradientDescentTensorFlowV2` instance.
 
         :param estimator: An trained estimator.
-        :param norm: The norm of the adversarial perturbation. Possible values: np.inf, 1 or 2.
+        :param norm: The norm of the adversarial perturbation, supporting  "inf", `np.inf` or a real `p >= 1`.
+                     Currently, when `p` is not infinity, the projection step only rescales the noise, which may be
+                     suboptimal for `p != 2`.
         :param eps: Maximum perturbation that the attacker can introduce.
         :param eps_step: Attack step size (input variation) at each iteration.
         :param random_eps: When True, epsilon is drawn randomly from truncated normal distribution. The literature
@@ -186,7 +188,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         data_loader = iter(dataset)
 
         # Compute perturbation with batching
-        for (batch_id, batch_all) in enumerate(
+        for batch_id, batch_all in enumerate(
             tqdm(data_loader, desc="PGD - Batches", leave=False, disable=not self.verbose)
         ):
 
@@ -312,12 +314,9 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         """
         import tensorflow as tf
 
-        # Pick a small scalar to avoid division by 0
-        tol = 10e-8
-
         # Get gradient wrt loss; invert it if attack is targeted
         grad: tf.Tensor = self.estimator.loss_gradient(x, y) * tf.constant(
-            1 - 2 * int(self.targeted), dtype=ART_NUMPY_DTYPE
+            -1 if self.targeted else 1, dtype=ART_NUMPY_DTYPE
         )
 
         # Write summary
@@ -342,27 +341,36 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         if mask is not None:
             grad = tf.where(mask == 0.0, 0.0, grad)
 
-        # Add momentum
+        # Compute gradient momentum
         if decay is not None and momentum is not None:
-            ind = tuple(range(1, len(x.shape)))
-            grad = tf.divide(grad, (tf.math.reduce_sum(tf.abs(grad), axis=ind, keepdims=True) + tol))
-            grad = self.decay * momentum + grad
-            # Accumulate the gradient for the next iter
-            momentum += grad
+            raise NotImplementedError(  # Upon fixing #2439, remove pylint disable flag below.
+                "Momentum Iterative Attack currently disabled for Tensorflow framework. See issue #2439"
+            )
+            # Update momentum in-place (important).
+            # The L1 normalization for accumulation is an arbitrary choice of the paper.
+            grad_2d = tf.reshape(grad, (len(grad), -1))  # pylint: disable=unreachable
+            norm1 = tf.norm(grad_2d, ord=1, axis=1, keepdims=True)
+            normalized_grad = tf.reshape((grad_2d * tf.where(norm1 == 0, 0.0, 1 / norm1)), grad.shape)
+            momentum *= self.decay
+            momentum += normalized_grad
+            # Use the momentum to compute the perturbation, instead of the gradient
+            grad = momentum
 
         # Apply norm bound
-        if self.norm == np.inf:
-            grad = tf.sign(grad)
+        norm: float = np.inf if self.norm == "inf" else float(self.norm)
+        grad_2d = tf.reshape(grad, (len(grad), -1))
+        if norm == np.inf:
+            grad_2d = tf.ones_like(grad_2d, dtype=grad_2d.dtype)
+        elif norm == 1:
+            grad_2d = tf.abs(grad_2d)
+            grad_2d = tf.where(grad_2d == tf.reduce_max(grad_2d, axis=1, keepdims=True), 1.0, 0.0)
+            grad_2d /= tf.reduce_sum(grad_2d, axis=1, keepdims=True)
+        elif norm > 1:
+            conjugate = norm / (norm - 1)
+            q_norm = tf.norm(grad_2d, ord=conjugate, axis=1, keepdims=True)
+            grad_2d = (tf.abs(grad_2d) * tf.where(q_norm == 0, 0.0, 1 / q_norm)) ** (conjugate - 1)
 
-        elif self.norm == 1:
-            ind = tuple(range(1, len(x.shape)))
-            grad = tf.divide(grad, (tf.math.reduce_sum(tf.abs(grad), axis=ind, keepdims=True) + tol))
-
-        elif self.norm == 2:
-            ind = tuple(range(1, len(x.shape)))
-            grad = tf.divide(
-                grad, (tf.math.sqrt(tf.math.reduce_sum(tf.math.square(grad), axis=ind, keepdims=True)) + tol)
-            )
+        grad = tf.reshape(grad_2d, grad.shape) * tf.sign(grad)
 
         assert x.shape == grad.shape
 
@@ -456,54 +464,56 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
 
     @staticmethod
     def _projection(
-        values: "tf.Tensor", eps: Union[int, float, np.ndarray], norm_p: Union[int, float, str]
+        values: "tf.Tensor",
+        eps: Union[int, float, np.ndarray],
+        norm_p: Union[int, float, str],
+        *,
+        suboptimal: bool = True,
     ) -> "tf.Tensor":
         """
         Project `values` on the L_p norm ball of size `eps`.
 
         :param values: Values to clip.
-        :param eps: Maximum norm allowed.
-        :param norm_p: L_p norm to use for clipping supporting 1, 2 and `np.Inf`.
+        :param eps: If a scalar, the norm of the L_p ball onto which samples are projected. Equivalently in general,
+                    can be any array of non-negatives broadcastable with `values`, and the projection occurs onto the
+                    unit ball for the weighted L_{p, w} norm with `w = 1 / eps`. Currently, for any given sample,
+                    non-uniform weights are only supported with infinity norm. Example: To specify sample-wise scalar,
+                    you can provide `eps.shape = (n_samples,) + (1,) * values[0].ndim`.
+        :param norm_p: Lp norm to use for clipping, with `norm_p > 0`. Only 2, `np.inf` and "inf" are supported
+                       with `suboptimal=False` for now.
+        :param suboptimal: If `True` simply projects by rescaling to Lp ball. Fast but may be suboptimal for
+                           `norm_p != 2`.
+                       Ignored when `norm_p in [np.inf, "inf"]` because optimal solution is fast. Defaults to `True`.
         :return: Values of `values` after projection.
         """
         import tensorflow as tf
 
-        # Pick a small scalar to avoid division by 0
-        tol = 10e-8
-        values_tmp = tf.reshape(values, (values.shape[0], -1))
+        norm = np.inf if norm_p == "inf" else float(norm_p)
+        assert norm > 0
 
-        if norm_p == 2:
-            if isinstance(eps, np.ndarray):
-                raise NotImplementedError(
-                    "The parameter `eps` of type `np.ndarray` is not supported to use with norm 2."
-                )
+        values_tmp = tf.reshape(values, (len(values), -1))  # (n_samples, d)
 
-            values_tmp = values_tmp * tf.expand_dims(
-                tf.minimum(1.0, eps / (tf.norm(values_tmp, ord=2, axis=1) + tol)), axis=1
-            )
-
-        elif norm_p == 1:
-            if isinstance(eps, np.ndarray):
-                raise NotImplementedError(
-                    "The parameter `eps` of type `np.ndarray` is not supported to use with norm 1."
-                )
-
-            values_tmp = values_tmp * tf.expand_dims(
-                tf.minimum(1.0, eps / (tf.norm(values_tmp, ord=1, axis=1) + tol)), axis=1
-            )
-
-        elif norm_p in ["inf", np.inf]:
-            if isinstance(eps, np.ndarray):
-                eps = eps * np.ones(shape=values.shape)
-                eps = eps.reshape([eps.shape[0], -1])  # type: ignore
-
-            values_tmp = tf.sign(values_tmp) * tf.minimum(tf.math.abs(values_tmp), eps)
-
-        else:
+        eps = np.broadcast_to(eps, values.shape)
+        eps = eps.reshape(len(eps), -1)  # (n_samples, d)
+        assert np.all(eps >= 0)
+        if norm != np.inf and not np.all(eps == eps[:, [0]]):
             raise NotImplementedError(
-                'Values of `norm_p` different from 1, 2 "inf" and `np.inf` are currently not supported.'
+                "Projection onto the weighted L_p ball is currently not supported with finite `norm_p`."
             )
 
-        values = tf.reshape(values_tmp, values.shape)
+        if (suboptimal or norm == 2) and norm != np.inf:  # Simple rescaling
+            values_norm = tf.norm(values_tmp, ord=norm, axis=1, keepdims=True)  # (n_samples, 1)
+            values_tmp = values_tmp * tf.where(values_norm == 0, 0, tf.minimum(1, eps / values_norm))
+        else:  # Optimal
+            if norm == np.inf:  # Easy exact case
+                values_tmp = tf.sign(values_tmp) * tf.minimum(tf.abs(values_tmp), eps)
+            elif norm >= 1:  # Convex optim
+                raise NotImplementedError(
+                    "Finite values of `norm_p >= 1` are currently not supported with `suboptimal=False`."
+                )
+            else:  # Non-convex optim
+                raise NotImplementedError("Values of `norm_p < 1` are currently not supported with `suboptimal=False`")
+
+        values = tf.cast(tf.reshape(values_tmp, values.shape), values.dtype)
 
         return values

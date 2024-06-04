@@ -84,7 +84,7 @@ class FastGradientMethod(EvasionAttack):
         Create a :class:`.FastGradientMethod` instance.
 
         :param estimator: A trained classifier.
-        :param norm: The norm of the adversarial perturbation. Possible values: "inf", np.inf, 1 or 2.
+        :param norm: The norm of the adversarial perturbation. Possible values: "inf", `np.inf` or a real `p >= 1`.
         :param eps: Attack step size (input variation).
         :param eps_step: Step size of input variation for minimal perturbation computation.
         :param targeted: Indicates whether the attack is targeted (True) or untargeted (False)
@@ -288,16 +288,18 @@ class FastGradientMethod(EvasionAttack):
 
             logger.info(
                 "Success rate of FGM attack: %.2f%%",
-                rate_best
-                if rate_best is not None
-                else 100
-                * compute_success(
-                    self.estimator,  # type: ignore
-                    x,
-                    y_array,
-                    adv_x_best,
-                    self.targeted,
-                    batch_size=self.batch_size,
+                (
+                    rate_best
+                    if rate_best is not None
+                    else 100
+                    * compute_success(
+                        self.estimator,  # type: ignore
+                        x,
+                        y_array,
+                        adv_x_best,
+                        self.targeted,
+                        batch_size=self.batch_size,
+                    )
                 ),
             )
 
@@ -334,8 +336,9 @@ class FastGradientMethod(EvasionAttack):
 
     def _check_params(self) -> None:
 
-        if self.norm not in [1, 2, np.inf, "inf"]:
-            raise ValueError('Norm order must be either 1, 2, `np.inf` or "inf".')
+        norm: float = np.inf if self.norm == "inf" else float(self.norm)
+        if norm < 1:
+            raise ValueError('Norm order must be either "inf", `np.inf` or a real `p >= 1`.')
 
         if not (
             isinstance(self.eps, (int, float))
@@ -391,9 +394,6 @@ class FastGradientMethod(EvasionAttack):
         decay: Optional[float] = None,
         momentum: Optional[np.ndarray] = None,
     ) -> np.ndarray:
-        # Pick a small scalar to avoid division by 0
-        tol = 10e-8
-
         # Get gradient wrt loss; invert it if attack is targeted
         grad = self.estimator.loss_gradient(x, y) * (1 - 2 * int(self.targeted))
 
@@ -426,32 +426,39 @@ class FastGradientMethod(EvasionAttack):
 
         # Apply norm bound
         def _apply_norm(norm, grad, object_type=False):
+            """Returns an x maximizing <grad, x> subject to ||x||_norm<=1."""
             if (grad.dtype != object and np.isinf(grad).any()) or np.isnan(  # pragma: no cover
                 grad.astype(np.float32)
             ).any():
                 logger.info("The loss gradient array contains at least one positive or negative infinity.")
 
+            grad_2d = grad.reshape(1 if object_type else len(grad), -1)
             if norm in [np.inf, "inf"]:
-                grad = np.sign(grad)
+                grad_2d = np.ones_like(grad_2d)
             elif norm == 1:
-                if not object_type:
-                    ind = tuple(range(1, len(x.shape)))
-                else:
-                    ind = None
-                grad = grad / (np.sum(np.abs(grad), axis=ind, keepdims=True) + tol)
-            elif norm == 2:
-                if not object_type:
-                    ind = tuple(range(1, len(x.shape)))
-                else:
-                    ind = None
-                grad = grad / (np.sqrt(np.sum(np.square(grad), axis=ind, keepdims=True)) + tol)
+                i_max = np.argmax(np.abs(grad_2d), axis=1)
+                grad_2d = np.zeros_like(grad_2d)
+                grad_2d[range(len(grad_2d)), i_max] = 1
+            elif norm > 1:
+                conjugate = norm / (norm - 1)
+                q_norm = np.linalg.norm(grad_2d, ord=conjugate, axis=1, keepdims=True)
+                grad_2d = (np.abs(grad_2d) / np.where(q_norm, q_norm, np.inf)) ** (conjugate - 1)
+            grad = grad_2d.reshape(grad.shape) * np.sign(grad)
             return grad
 
-        # Add momentum
+        # Compute gradient momentum
         if decay is not None and momentum is not None:
-            grad = _apply_norm(norm=1, grad=grad)
-            grad = decay * momentum + grad
-            momentum += grad
+            if x.dtype == object:
+                raise NotImplementedError("Momentum Iterative Method not yet implemented for object type input.")
+            # Update momentum in-place (important).
+            # The L1 normalization for accumulation is an arbitrary choice of the paper.
+            grad_2d = grad.reshape(len(grad), -1)
+            norm1 = np.linalg.norm(grad_2d, ord=1, axis=1, keepdims=True)
+            normalized_grad = (grad_2d / np.where(norm1, norm1, np.inf)).reshape(grad.shape)
+            momentum *= decay
+            momentum += normalized_grad
+            # Use the momentum to compute the perturbation, instead of the gradient
+            grad = momentum
 
         if x.dtype == object:
             for i_sample in range(x.shape[0]):
