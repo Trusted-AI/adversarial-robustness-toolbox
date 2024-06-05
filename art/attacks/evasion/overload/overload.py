@@ -193,9 +193,12 @@ class OverloadPyTorch(EvasionAttack):
                 scores = torch.where(scores > 0.0, torch.ones_like(scores), torch.zeros_like(scores))
                 scores = torch.sum(scores, dim=1)
 
+                # a native implementation:
+                # Increase the weight of the grid with fewer objects
                 idx_min = torch.argmin(scores)
                 grid_min = grid_box[idx_min]
                 x1, y1, x2, y2 = grid_min.int()
+                pixel_weight[xi,:, y1:y2, x1:x2] = pixel_weight[xi,:, y1:y2, x1:x2] * 2
                 pixel_weight = pixel_weight / torch.max(pixel_weight[xi,:]) / 255.0
 
         return ind_loss, pixel_weight
