@@ -34,19 +34,30 @@ def test_generate(art_warning):
         py_model = PyTorchYolo(model=model,
                                input_shape=(3, 640, 640),
                                channels_first=True)
-        x = np.random.uniform(0.0, 1.0, size=(10, 3, 640, 640)).astype(np.float32)
+        # Download a sample image
+        import requests
+        from io import BytesIO
+        from PIL import Image
+
+        TARGET = 'https://ultralytics.com/images/zidane.jpg'
+        response = requests.get(TARGET)
+        org_img = np.asarray(Image.open(BytesIO(response.content)).resize((640, 640)))
+        x = np.stack([org_img.transpose((2, 0, 1))], axis=0).astype(np.float32)
 
         attack = OverloadPyTorch(py_model,
                                  eps = 16.0 / 255.0,
-                                 max_iter = 5,
+                                 max_iter = 10,
                                  num_grid = 10,
                                  batch_size = 1)
 
-        x_adv = attack.generate(x)
-
+        x_adv = attack.generate(x / 255.0)
         assert x.shape == x_adv.shape
         assert np.min(x_adv) >= 0.0
         assert np.max(x_adv) <= 1.0
+
+        adv_np = np.transpose(x_adv[0, :] * 255, (1, 2, 0)).astype(np.uint8)
+        result = model(adv_np)
+        assert result.pred[0].shape[0] > 150
 
     except ARTTestException as e:
         art_warning(e)
