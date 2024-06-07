@@ -52,6 +52,7 @@ Supported Machine Learning Libraries
    guide/setup
    guide/examples
    guide/notebooks
+   guide/ecosystem
 
 .. toctree::
    :maxdepth: 2
