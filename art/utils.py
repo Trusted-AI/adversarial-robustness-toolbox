@@ -225,6 +225,10 @@ if TYPE_CHECKING:
         PyTorchRegressor,
     ]
 
+    PYTORCH_OBJECT_DETECTOR_TYPE = Union[  # pylint: disable=C0103
+        PyTorchObjectDetector
+    ]
+
     KERAS_ESTIMATOR_TYPE = Union[  # pylint: disable=C0103
         KerasClassifier,
         KerasEstimator,

@@ -29,7 +29,7 @@ import numpy as np
 
 from art.attacks.attack import EvasionAttack
 from art.attacks.evasion.overload.box_iou import box_iou
-from art.estimators.object_detection.pytorch_object_detector import PyTorchObjectDetector
+from art.utils import PYTORCH_OBJECT_DETECTOR_TYPE
 
 if TYPE_CHECKING:
     # pylint: disable=C0412
@@ -56,7 +56,7 @@ class OverloadPyTorch(EvasionAttack):
 
     def __init__(
         self,
-        estimator: PyTorchObjectDetector,
+        estimator: "PYTORCH_OBJECT_DETECTOR_TYPE",
         eps: float,
         max_iter: int,
         num_grid: int,
