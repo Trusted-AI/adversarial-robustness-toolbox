@@ -20,7 +20,7 @@ import logging
 import numpy as np
 import pytest
 
-from art.attacks.evasion import OverloadPyTorch
+from art.attacks.evasion.overload.overload import OverloadPyTorch
 from art.estimators.object_detection import PyTorchYolo
 from tests.utils import ARTTestException
 
