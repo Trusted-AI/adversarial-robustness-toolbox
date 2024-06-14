@@ -29,11 +29,11 @@ import numpy as np
 
 from art.attacks.attack import EvasionAttack
 from art.attacks.evasion.overload.box_iou import box_iou
-from art.utils import PYTORCH_OBJECT_DETECTOR_TYPE
 
 if TYPE_CHECKING:
     # pylint: disable=C0412
     import torch
+    from art.utils import PYTORCH_OBJECT_DETECTOR_TYPE
 
 logger = logging.getLogger(__name__)
 
