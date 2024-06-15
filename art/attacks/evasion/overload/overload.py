@@ -90,7 +90,7 @@ class OverloadPyTorch(EvasionAttack):
         # Compute adversarial examples with implicit batching
         x_adv = x.copy()
         for batch_id in range(int(np.ceil(x_adv.shape[0] / float(self.batch_size)))):
-            batch_index_1 =  batch_id * self.batch_size
+            batch_index_1 = batch_id * self.batch_size
             batch_index_2 = min((batch_id + 1) * self.batch_size, x_adv.shape[0])
             x_batch = x_adv[batch_index_1:batch_index_2]
             x_adv[batch_index_1:batch_index_2] = self._generate_batch(x_batch)
@@ -107,6 +107,7 @@ class OverloadPyTorch(EvasionAttack):
         """
 
         import torch
+
         x_org = torch.from_numpy(x_batch).to(self.estimator.device)
         x_adv = x_org.clone()
 
@@ -119,9 +120,7 @@ class OverloadPyTorch(EvasionAttack):
 
         return x_adv.cpu().detach().numpy()
 
-    def _attack(self,
-                x_adv: "torch.Tensor",
-                x: "torch.Tensor") -> "torch.Tensor":
+    def _attack(self, x_adv: "torch.Tensor", x: "torch.Tensor") -> "torch.Tensor":
         """
         Run attack.
 
@@ -138,9 +137,9 @@ class OverloadPyTorch(EvasionAttack):
         grad = torch.autograd.grad(torch.mean(loss), [x_adv])[0]
 
         with torch.inference_mode():
-             x_adv.add_(pixel_weight * torch.sign(grad))
-             x_adv.clamp_(x - self.eps, x + self.eps)
-             x_adv.clamp_(0.0, 1.0)
+            x_adv.add_(pixel_weight * torch.sign(grad))
+            x_adv.clamp_(x - self.eps, x + self.eps)
+            x_adv.clamp_(0.0, 1.0)
 
         x_adv.requires_grad_(False)
         return x_adv
@@ -154,6 +153,7 @@ class OverloadPyTorch(EvasionAttack):
         """
 
         import torch
+
         adv_logits = self.estimator.model.model(x)
         if type(adv_logits) is tuple:
             adv_logits = adv_logits[0]
@@ -198,8 +198,8 @@ class OverloadPyTorch(EvasionAttack):
                 idx_min = torch.argmin(scores)
                 grid_min = grid_box[idx_min]
                 x1, y1, x2, y2 = grid_min.int()
-                pixel_weight[xi,:, y1:y2, x1:x2] = pixel_weight[xi,:, y1:y2, x1:x2] * 2
-                pixel_weight = pixel_weight / torch.max(pixel_weight[xi,:]) / 255.0
+                pixel_weight[xi, :, y1:y2, x1:x2] = pixel_weight[xi, :, y1:y2, x1:x2] * 2
+                pixel_weight = pixel_weight / torch.max(pixel_weight[xi, :]) / 255.0
 
         return ind_loss, pixel_weight
 
