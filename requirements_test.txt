@@ -62,6 +62,8 @@ pytest-mock~=3.14.0
 pytest-cov~=4.1.0
 requests~=2.31.0
 ultralytics==8.0.217
+ipython==8.25.0
+
 # ART
 -e .
 

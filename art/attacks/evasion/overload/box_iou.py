@@ -1,3 +1,4 @@
+# pylint: disable=C0103,C0114
 #                    GNU AFFERO GENERAL PUBLIC LICENSE
 #                       Version 3, 19 November 2007
 #
@@ -660,8 +661,14 @@
 # For more information on this, and how to apply and follow the GNU AGPL, see
 # <https://www.gnu.org/licenses/>.
 
+from typing import TYPE_CHECKING
 
-def box_iou(box1: "torch.tensor", box2: "torch.tensor", eps: float = 1e-7) -> "torch.tensor":
+if TYPE_CHECKING:
+    # pylint: disable=C0412
+    import torch
+
+
+def box_iou(box1: "torch.Tensor", box2: "torch.Tensor", eps: float = 1e-7) -> "torch.Tensor":
     """
     === NOTE ===
     This function is copied from YOLOv5 repository (yolov5/utils/metrics.py)
@@ -684,4 +691,3 @@ def box_iou(box1: "torch.tensor", box2: "torch.tensor", eps: float = 1e-7) -> "t
 
     # IoU = inter / (area1 + area2 - inter)
     return inter / ((a2 - a1).prod(2) + (b2 - b1).prod(2) - inter + eps)
-

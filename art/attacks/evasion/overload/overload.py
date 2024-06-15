@@ -97,12 +97,11 @@ class OverloadPyTorch(EvasionAttack):
 
         return x_adv
 
-    def _generate_batch(self, x_batch: np.ndarray, y_batch: Optional[np.ndarray] = None) -> np.ndarray:
+    def _generate_batch(self, x_batch: np.ndarray) -> np.ndarray:
         """
         Run the attack on a batch of images.
 
         :param x_batch: A batch of original examples.
-        :param y_batch: Not Used.
         :return: A batch of adversarial examples.
         """
 
@@ -144,7 +143,7 @@ class OverloadPyTorch(EvasionAttack):
         x_adv.requires_grad_(False)
         return x_adv
 
-    def _loss(self, x: "torch.tensor") -> Tuple["torch.tensor", "torch.tensor"]:
+    def _loss(self, x: "torch.Tensor") -> Tuple["torch.Tensor", "torch.Tensor"]:
         """
         Compute the weight of each pixel and the overload loss for a given image.
 
@@ -155,13 +154,13 @@ class OverloadPyTorch(EvasionAttack):
         import torch
 
         adv_logits = self.estimator.model.model(x)
-        if type(adv_logits) is tuple:
+        if isinstance(adv_logits, tuple):
             adv_logits = adv_logits[0]
 
-        THRESHOLD = self.estimator.model.conf
+        threshold = self.estimator.model.conf
         conf = adv_logits[..., 4]
         prob = adv_logits[..., 5:]
-        prob = torch.where(conf[:, :, None] * prob > THRESHOLD, torch.ones_like(prob), prob)
+        prob = torch.where(conf[:, :, None] * prob > threshold, torch.ones_like(prob), prob)
         prob = torch.sum(prob, dim=2)
         conf = conf * prob
 
@@ -174,19 +173,19 @@ class OverloadPyTorch(EvasionAttack):
             stride_x = x.shape[-2] // self.num_grid
             stride_y = x.shape[-1] // self.num_grid
             grid_box = torch.zeros((0, 4), device=x.device)
-            for ii in range(self.num_grid):
-                for jj in range(self.num_grid):
-                    x1 = ii * stride_x
-                    y1 = jj * stride_y
-                    x2 = min(x1 + stride_x, x.shape[-2])
-                    y2 = min(y1 + stride_y, x.shape[-1])
-                    bb = torch.as_tensor([x1, y1, x2, y2], device=x.device)[None, :]
-                    grid_box = torch.cat([grid_box, bb], dim=0)
+            for i_i in range(self.num_grid):
+                for j_j in range(self.num_grid):
+                    x_1 = i_i * stride_x
+                    y_1 = j_j * stride_y
+                    x_2 = min(x_1 + stride_x, x.shape[-2])
+                    y_2 = min(y_1 + stride_y, x.shape[-1])
+                    b_b = torch.as_tensor([x_1, y_1, x_2, y_2], device=x.device)[None, :]
+                    grid_box = torch.cat([grid_box, b_b], dim=0)
 
-            for xi in range(x.shape[0]):
-                xyhw = adv_logits[xi, :, :4]
-                prob = torch.max(adv_logits[xi, :, 5:], dim=1).values
-                box_idx = adv_logits[xi, :, 4] * prob > THRESHOLD
+            for x_i in range(x.shape[0]):
+                xyhw = adv_logits[x_i, :, :4]
+                prob = torch.max(adv_logits[x_i, :, 5:], dim=1).values
+                box_idx = adv_logits[x_i, :, 4] * prob > threshold
                 xyhw = xyhw[box_idx]
                 c_xyxy = self.xywh2xyxy(xyhw)
                 scores = box_iou(grid_box, c_xyxy)
@@ -197,20 +196,21 @@ class OverloadPyTorch(EvasionAttack):
                 # Increase the weight of the grid with fewer objects
                 idx_min = torch.argmin(scores)
                 grid_min = grid_box[idx_min]
-                x1, y1, x2, y2 = grid_min.int()
-                pixel_weight[xi, :, y1:y2, x1:x2] = pixel_weight[xi, :, y1:y2, x1:x2] * 2
-                pixel_weight = pixel_weight / torch.max(pixel_weight[xi, :]) / 255.0
+                x_1, y_1, x_2, y_2 = grid_min.int()
+                pixel_weight[x_i, :, y_1:y_2, x_1:x_2] = pixel_weight[x_i, :, y_1:y_2, x_1:x_2] * 2
+                pixel_weight = pixel_weight / torch.max(pixel_weight[x_i, :]) / 255.0
 
         return ind_loss, pixel_weight
 
-    def xywh2xyxy(self, xywh: "torch.tensor") -> "torch.tensor":
+    @staticmethod
+    def xywh2xyxy(xywh: "torch.Tensor") -> "torch.Tensor":
         """
         Convert the representation from xywh format yo xyxy format.
 
-        : param xyhw: A n by 4 boxes store the information in xyhw format
-                      where [x ,y, w h] is [center_x, center_y, width, height]
-        : return: The n by 4 boxex in xyxy format
-                  where [x1, y1, x2, y2] is [top_left_x, top_left_y, bottom_right_x,  bottom_right_y]
+        :param xyhw: A n by 4 boxes store the information in xyhw format
+                     where [x ,y, w h] is [center_x, center_y, width, height]
+        :return: The n by 4 boxes in xyxy format
+                 where [x1, y1, x2, y2] is [top_left_x, top_left_y, bottom_right_x,  bottom_right_y]
         """
         xyxy = xywh.clone()
         xyxy[:, 0] = xywh[:, 0] - xywh[:, 2] / 2
