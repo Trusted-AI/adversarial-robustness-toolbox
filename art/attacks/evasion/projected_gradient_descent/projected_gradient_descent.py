@@ -95,7 +95,9 @@ class ProjectedGradientDescent(EvasionAttack):
         Create a :class:`.ProjectedGradientDescent` instance.
 
         :param estimator: An trained estimator.
-        :param norm: The norm of the adversarial perturbation supporting "inf", np.inf, 1 or 2.
+        :param norm: The norm of the adversarial perturbation, supporting  "inf", `np.inf` or a real `p >= 1`.
+                     Currently, when `p` is not infinity, the projection step only rescales the noise, which may be
+                     suboptimal for `p != 2`.
         :param eps: Maximum perturbation that the attacker can introduce.
         :param eps_step: Attack step size (input variation) at each iteration.
         :param random_eps: When True, epsilon is drawn randomly from truncated normal distribution. The literature
@@ -210,8 +212,9 @@ class ProjectedGradientDescent(EvasionAttack):
 
     def _check_params(self) -> None:
 
-        if self.norm not in [1, 2, np.inf, "inf"]:
-            raise ValueError('Norm order must be either 1, 2, `np.inf` or "inf".')
+        norm: float = np.inf if self.norm == "inf" else float(self.norm)
+        if norm < 1:
+            raise ValueError('Norm order must be either "inf", `np.inf` or a real `p >= 1`.')
 
         if not (
             isinstance(self.eps, (int, float))

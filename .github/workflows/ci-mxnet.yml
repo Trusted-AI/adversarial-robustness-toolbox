@@ -45,7 +45,7 @@ jobs:
           sudo apt-get update
           sudo apt-get -y -q install ffmpeg libavcodec-extra
           python -m pip install --upgrade pip setuptools wheel
-          pip3 install -q -r requirements_test.txt
+          pip install -q -r <(sed '/^ultralytics/d;/^ipython/d' requirements_test.txt)
           pip list
       - name: Run ${{ matrix.name }} ${{ matrix.module }} Tests
         run: ./run_tests.sh ${{ matrix.framework }} ${{ matrix.module }}
