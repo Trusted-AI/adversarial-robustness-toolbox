@@ -18,6 +18,7 @@ from art.estimators import certification
 from art.estimators import classification
 from art.estimators import encoding
 from art.estimators import generation
+from art.estimators import language_modeling
 from art.estimators import object_detection
 from art.estimators import poison_mitigation
 from art.estimators import regression
