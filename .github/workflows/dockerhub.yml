@@ -39,7 +39,7 @@ jobs:
             type=semver,pattern={{version}}
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@2cdde995de11925a030ce8070c3d77a52ffcf1c0
+        uses: docker/build-push-action@f6010ea70151369b06f0194be1051fbbdff851b2
         with:
           context: .
           push: true
