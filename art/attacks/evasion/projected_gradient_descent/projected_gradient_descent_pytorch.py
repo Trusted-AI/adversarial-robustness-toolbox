@@ -497,7 +497,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         if (suboptimal or norm == 2) and norm != np.inf:  # Simple rescaling
             values_norm = torch.linalg.norm(values_tmp, ord=norm, dim=1, keepdim=True)  # (n_samples, 1)
             values_tmp = values_tmp * values_norm.where(
-                values_norm == 0, torch.minimum(torch.ones(1), torch.Tensor(eps) / values_norm)
+                values_norm == 0, torch.minimum(torch.ones(1), torch.tensor(eps).to(values_tmp.device) / values_norm)
             )
         else:  # Optimal
             if norm == np.inf:  # Easy exact case
