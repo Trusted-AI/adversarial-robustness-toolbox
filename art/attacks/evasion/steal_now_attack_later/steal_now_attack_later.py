@@ -25,7 +25,7 @@ This module implements the paper: "Steal Now and Attack Later: Evaluating Robust
 
 import logging
 import random
-from typing import Optional, Tuple, TYPE_CHECKING
+from typing import Callable, Optional, Tuple, TYPE_CHECKING
 
 import numpy as np
 
@@ -38,45 +38,6 @@ if TYPE_CHECKING:
     import torch
 
 logger = logging.getLogger(__name__)
-
-# collection
-def collect_patches_from_images(model: "torch.nn.Module",
-                                imgs: "torch.Tensor") -> Tuple[list, list]:
-    """
-    Collect patches and corrsponding spatial information by the model from images.
-
-    :param model: Object detection model.
-    :param imgs: Target images.
-
-    :return: Detected objects and corrsponding spatial information.
-    """
-    import torch
-
-    bs = imgs.shape[0]
-    y = model.inference(imgs)
-
-    candidates_patch = []
-    candidates_position = []
-    for i in range(bs):
-        patch = []
-        if y[i].shape[0] == 0:
-            candidates_patch.append(patch)
-            candidates_position.append(torch.zeros((0, 4), device=model.device))
-            continue
-
-        pos_matrix = y[i][:, :4].clone().int()
-        pos_matrix[:, 0] = torch.clamp_min(pos_matrix[:, 0], 0)
-        pos_matrix[:, 1] = torch.clamp_min(pos_matrix[:, 1], 0)
-        pos_matrix[:, 2] = torch.clamp_max(pos_matrix[:, 2], imgs.shape[3])
-        pos_matrix[:, 3] = torch.clamp_max(pos_matrix[:, 3], imgs.shape[2])
-        for e in pos_matrix:
-            p = imgs[i, :, e[1]:e[3], e[0]:e[2]]
-            patch.append(p.to(model.device))
-
-        candidates_patch.append(patch)
-        candidates_position.append(pos_matrix)
-
-    return candidates_patch, candidates_position
 
 # tiling
 def _generate_tile_kernel(patch: list,
@@ -340,6 +301,7 @@ class SNAL(EvasionAttack):
         self,
         estimator: "torch.nn.Module",
         candidates: list,
+        collector: Callable,
         eps: float,
         max_iter: int,
         num_grid: int,
@@ -349,6 +311,7 @@ class SNAL(EvasionAttack):
 
         :param estimator: A trained YOLOv8 model or other models with the same output format
         :param candidates: The collected pateches to generate perturbations.
+        :param collector: A callbel uses to generate patches.
         :param eps: Maximum perturbation that the attacker can introduce.
         :param max_iter: The maximum number of iterations.
         :param num_grid: The number of grids for width and high dimension.
@@ -360,6 +323,7 @@ class SNAL(EvasionAttack):
         self.batch_size = 1
         self.candidates = candidates
         self.threshold_objs = 1 # the expect number of objects
+        self.collector = collector
         self._check_params()
 
     def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
@@ -464,7 +428,7 @@ class SNAL(EvasionAttack):
 
 
         for _ in range(self.max_iter):
-            adv_patch, adv_position = collect_patches_from_images(self.estimator, x_adv)
+            adv_patch, adv_position = self.collector(self.estimator, x_adv)
             adv_position = adv_position[0]
             candidates_patch = candidates_patch + adv_patch[0]
             candidates_mask = candidates_mask + [None] * len(adv_patch[0])
@@ -538,7 +502,7 @@ class SNAL(EvasionAttack):
 
         x_out = self._assemble(tile_mat, x)
         mask = torch.zeros_like(x_out)
-        _, adv_position = collect_patches_from_images(self.estimator, x_out)
+        _, adv_position = self.collector(self.estimator, x_out)
         for e in adv_position[0]:
             mask[:, :, e[1]:e[3], e[0]:e[2]] = mask[:, :, e[1]:e[3], e[0]:e[2]] + 1
         mask = torch.where(mask > 0, torch.ones_like(mask), torch.zeros_like(mask))
@@ -699,7 +663,7 @@ class SNAL(EvasionAttack):
             x_cand = torch.clamp(x_cand, 0.0, 1.0)
 
             # update results
-            adv_patch, adv_position = collect_patches_from_images(self.estimator, x_cand)
+            adv_patch, adv_position = self.collector(self.estimator, x_cand)
             for idx in range(n_samples):
                 cur_position = adv_position[idx]
 
@@ -728,7 +692,7 @@ class SNAL(EvasionAttack):
         # clean non-active regions
         x_out = x_init.clone()
         x_eval = self._assemble(tile_mat, x_org)
-        adv_patch, adv_position = collect_patches_from_images(self.estimator, x_eval)
+        adv_patch, adv_position = self.collector(self.estimator, x_eval)
         cur_patch = adv_patch[0]
         cur_position = adv_position[0]
         for key, obj in tile_mat.items():
