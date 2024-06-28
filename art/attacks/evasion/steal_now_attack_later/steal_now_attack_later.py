@@ -339,6 +339,7 @@ class SNAL(EvasionAttack):
     def __init__(
         self,
         estimator: "torch.nn.Module",
+        candidates: list,
         eps: float,
         max_iter: int,
         num_grid: int,
@@ -347,6 +348,7 @@ class SNAL(EvasionAttack):
         Create a SNAL attack instance.
 
         :param estimator: A trained YOLOv8 model or other models with the same output format
+        :param candidates: The collected pateches to generate perturbations.
         :param eps: Maximum perturbation that the attacker can introduce.
         :param max_iter: The maximum number of iterations.
         :param num_grid: The number of grids for width and high dimension.
@@ -356,7 +358,7 @@ class SNAL(EvasionAttack):
         self.max_iter = max_iter
         self.num_grid = num_grid
         self.batch_size = 1
-        self.candidates = None
+        self.candidates = candidates
         self.threshold_objs = 1 # the expect number of objects
         self._check_params()
 
@@ -399,12 +401,6 @@ class SNAL(EvasionAttack):
         x_adv = self._attack(x_adv, x_org)
 
         return x_adv.cpu().detach().numpy()
-
-    def set_candidates(self, candidates: list) -> None:
-        """
-        Assign candidates that will be used to generate perturbations during the attack.
-        """
-        self.candidates = candidates
 
     def _attack(self,
                 x_adv: "torch.Tensor",
