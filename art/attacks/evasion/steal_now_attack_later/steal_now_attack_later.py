@@ -292,7 +292,7 @@ class TileArray:
         import torch
 
         self.threshold = threshold
-        self.strides = tile_size
+        self.tile_size = tile_size
         self.device = device
         self.xyxy = torch.Tensor(xyxy).to(device)
         self.k = k
@@ -316,7 +316,7 @@ class TileArray:
         self.patch_list = out[:self.k]
 
     def pop(self) -> None:
-        out = self.patch_list[1:] + [TileObj(tile_size=self.strides, device=self.device)]
+        out = self.patch_list[1:] + [TileObj(tile_size=self.tile_size, device=self.device)]
         self.patch_list = out
 
 
@@ -539,6 +539,16 @@ class SNAL(EvasionAttack):
                 x_adv = torch.round(x_adv * 255.0) / 255.0
                 x_adv = torch.clamp(x_adv, x - 2.5 * self.eps, x + 2.5 * self.eps)
                 x_adv = torch.clamp(x_adv, 0.0, 1.0)
+
+        x_out = self._assemble(tile_mat, x)
+        mask = torch.zeros_like(x_out)
+        _, adv_position = collect_patches_from_images(self.estimator, x_out)
+        for e in adv_position[0]:
+            mask[:, :, e[1]:e[3], e[0]:e[2]] = mask[:, :, e[1]:e[3], e[0]:e[2]] + 1
+        mask = torch.where(mask > 0, torch.ones_like(mask), torch.zeros_like(mask))
+        x_adv = mask * x_out + (1.0 - mask) * x
+        x_adv = torch.clamp(x_adv, x - self.eps, x + self.eps)
+        x_adv = torch.clamp(x_adv, 0.0, 1.0)
 
         return x_adv
 
