@@ -36,6 +36,7 @@ from art.attacks.evasion.steal_now_attack_later.drop_block2d import drop_block2d
 if TYPE_CHECKING:
     # pylint: disable=C0412
     import torch
+    from art.utils import PYTORCH_OBJECT_DETECTOR_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -299,7 +300,7 @@ class SNAL(EvasionAttack):
 
     def __init__(
         self,
-        estimator: "torch.nn.Module",
+        estimator: "PYTORCH_OBJECT_DETECTOR_TYPE",
         candidates: list,
         collector: Callable,
         eps: float,
@@ -377,9 +378,7 @@ class SNAL(EvasionAttack):
         :return: A batch of adversarial examples.
         """
         import torch
-        import torchvision
 
-        self.estimator.count_reset()
         if self.candidates is None:
             raise ValueError("A set of patches should be collected before executing the attack.")
 
