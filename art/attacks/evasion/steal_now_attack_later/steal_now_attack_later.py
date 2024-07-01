@@ -725,3 +725,29 @@ class SNAL(EvasionAttack):
             x_out[:, :, y1:y2, x1:x2] = updated
 
         return x_out, tile_mat
+
+    def _check_params(self) -> None:
+
+        if not isinstance(self.eps, float):
+            raise TypeError("The eps has to be of type float.")
+
+        if self.eps < 0 or self.eps > 1:
+            raise ValueError("The eps must be in the range [0, 1].")
+
+        if not isinstance(self.max_iter, int):
+            raise TypeError("The max_iter has to be of type int.")
+
+        if self.max_iter < 1:
+            raise ValueError("The number of iterations must be a positive integer.")
+
+        if not isinstance(self.num_grid, int):
+            raise TypeError("The num_grid has to be of type int.")
+
+        if self.num_grid < 1:
+            raise ValueError("The number of grid must be a positive integer.")
+
+        if not isinstance(self.candidates, list):
+            raise TypeError("Candidates must be stored in list.")
+
+        if len(self.candidates) < 1:
+            raise ValueError("The list of candidates is empty.")
