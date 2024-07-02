@@ -493,9 +493,7 @@ class RescalingAutoConjugateGradient(EvasionAttack):
                             grad / np.linalg.norm(grad), gradk_1 / np.linalg.norm(gradk_1), cgradk_1
                         )
                         grad_ratio_value = np.abs(grad / cgradk_1).reshape((_batch_size, -1))
-                        grad_ratio = (
-                            grad_ratio_value.mean(1)
-                        )
+                        grad_ratio = grad_ratio_value.mean(1)
                         normalize_inds = np.abs(beta).reshape((_batch_size,)) > grad_ratio
                         smaller_beta_inds = (np.abs(beta) > np.abs(_beta_normalized)).reshape((_batch_size,))
                         normalize_inds = np.logical_and(normalize_inds, smaller_beta_inds)
