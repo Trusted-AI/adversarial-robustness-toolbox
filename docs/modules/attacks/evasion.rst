@@ -50,6 +50,12 @@ Auto Conjugate Gradient (Auto-CG)
    :members:
    :special-members:
 
+Rescaling-Auto Conjugate Gradient (ReACG)
+---------------------------------
+.. autoclass:: RescalingAutoConjugateGradient
+   :members:
+   :special-members:
+
 Boundary Attack / Decision-Based Attack
 ---------------------------------------
 .. autoclass:: BoundaryAttack
