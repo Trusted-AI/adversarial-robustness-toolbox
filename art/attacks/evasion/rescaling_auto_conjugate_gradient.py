@@ -38,9 +38,9 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements the 'Auto Conjugate Gradient' attack.
+This module implements the 'Rescaling-ACG' attack.
 
-| Paper link: https://arxiv.org/abs/2206.09628
+| Paper link:
 """
 import abc
 import logging
@@ -133,7 +133,7 @@ class RescalingAutoConjugateGradient(EvasionAttack):
                     "estimator seems to predict probabilities."
                 )
 
-            estimator_acg = estimator
+            estimator_reacg = estimator
         else:
             if isinstance(estimator, TensorFlowV2Classifier):
                 import tensorflow as tf
@@ -219,7 +219,7 @@ class RescalingAutoConjugateGradient(EvasionAttack):
 
                     _loss_object_tf = DifferenceLogitsRatioTensorFlowV2()
 
-                estimator_acg = TensorFlowV2Classifier(
+                estimator_reacg = TensorFlowV2Classifier(
                     model=estimator.model,
                     nb_classes=estimator.nb_classes,
                     input_shape=estimator.input_shape,
@@ -346,7 +346,7 @@ class RescalingAutoConjugateGradient(EvasionAttack):
                 else:
                     raise NotImplementedError()
 
-                estimator_acg = PyTorchClassifier(
+                estimator_reacg = PyTorchClassifier(
                     model=estimator.model,
                     loss=_loss_object_pt,
                     input_shape=estimator.input_shape,
@@ -363,7 +363,7 @@ class RescalingAutoConjugateGradient(EvasionAttack):
             else:  # pragma: no cover
                 raise ValueError(f"The loss type {loss_type} is not supported for the provided estimator.")
 
-        super().__init__(estimator=estimator_acg)
+        super().__init__(estimator=estimator_reacg)
         self.norm = norm
         self.eps = eps
         self.eps_step = eps_step
@@ -407,7 +407,7 @@ class RescalingAutoConjugateGradient(EvasionAttack):
 
         x_adv = x.astype(ART_NUMPY_DTYPE)
 
-        for _ in trange(max(1, self.nb_random_init), desc="ACG - restart", disable=not self.verbose):
+        for _ in trange(max(1, self.nb_random_init), desc="ReACG - restart", disable=not self.verbose):
             # Determine correctly predicted samples
             y_pred = self.estimator.predict(x_adv)
             if self.targeted:
@@ -440,7 +440,7 @@ class RescalingAutoConjugateGradient(EvasionAttack):
             # Compute perturbation with implicit batching
             for batch_id in trange(
                 int(np.ceil(x_robust.shape[0] / float(self.batch_size))),
-                desc="ACG - batch",
+                desc="ReACG - batch",
                 leave=False,
                 disable=not self.verbose,
             ):
@@ -475,7 +475,7 @@ class RescalingAutoConjugateGradient(EvasionAttack):
                 gradk_1_tmp = np.zeros_like(x_k)
                 cgradk_1_tmp = np.zeros_like(x_k)
 
-                for k_iter in trange(self.max_iter, desc="ACG - iteration", leave=False, disable=not self.verbose):
+                for k_iter in trange(self.max_iter, desc="ReACG - iteration", leave=False, disable=not self.verbose):
 
                     # Get perturbation, use small scalar to avoid division by 0
                     tol = 10e-8
@@ -488,6 +488,7 @@ class RescalingAutoConjugateGradient(EvasionAttack):
                         cgradk = grad.copy()
                     else:
                         beta = get_beta(grad, gradk_1, cgradk_1)
+                        # Modify the coefficient beta when |beta| >> avg.(|grad / cgradk_1|)
                         _beta_normalized = get_beta(
                             grad / np.linalg.norm(grad), gradk_1 / np.linalg.norm(gradk_1), cgradk_1
                         )
