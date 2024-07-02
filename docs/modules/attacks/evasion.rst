@@ -254,6 +254,12 @@ Over The Air Flickering Attack - PyTorch
    :members:
    :special-members:
 
+Overload Attack - PyTorch
+-------------------------
+.. autoclass:: OverloadPyTorch
+   :members:
+   :special-members:
+
 PixelAttack
 -----------
 .. autoclass:: PixelAttack
