@@ -67,7 +67,7 @@ class RescalingAutoConjugateGradient(EvasionAttack):
     Implementation of the 'Rescaling-ACG' attack.
     The original implementation is https://github.com/yamamura-k/ReACG.
 
-    | Paper link: 
+    | Paper link:
     """
 
     attack_params = EvasionAttack.attack_params + [
@@ -488,7 +488,9 @@ class RescalingAutoConjugateGradient(EvasionAttack):
                         cgradk = grad.copy()
                     else:
                         beta = get_beta(grad, gradk_1, cgradk_1)
-                        _beta_normalized = get_beta(grad / np.linalg.norm(grad), gradk_1 / np.linalg.norm(gradk_1), cgradk_1)
+                        _beta_normalized = get_beta(
+                            grad / np.linalg.norm(grad), gradk_1 / np.linalg.norm(gradk_1), cgradk_1
+                        )
                         grad_ratio_value = np.abs(grad / cgradk_1).reshape((_batch_size, -1))
                         grad_ratio = (
                             grad_ratio_value.mean(1)
