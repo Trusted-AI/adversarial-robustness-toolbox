@@ -218,6 +218,8 @@ class RescalingAutoConjugateGradient(EvasionAttack):
                             raise NotImplementedError()
 
                     _loss_object_tf = DifferenceLogitsRatioTensorFlowV2()
+                else:
+                    raise NotImplementedError()
 
                 estimator_reacg = TensorFlowV2Classifier(
                     model=estimator.model,
