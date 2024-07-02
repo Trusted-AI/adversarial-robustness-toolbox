@@ -136,7 +136,10 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
 
         self._model: torch.nn.Module
         self._model.to(self._device)
-        self._model.eval()
+        try:
+            self._model.model.eval()
+        except:
+            self._model.eval()
 
     @property
     def native_label_is_pytorch_format(self) -> bool:
@@ -399,7 +402,10 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
         from torch.utils.data import TensorDataset, DataLoader
 
         # Set model to evaluation mode
-        self._model.eval()
+        try:
+            self._model.model.eval()
+        except:
+            self._model.eval()
 
         # Apply preprocessing and convert to tensors
         x_preprocessed, _ = self._preprocess_and_convert_inputs(x=x, y=None, fit=False, no_grad=True)
