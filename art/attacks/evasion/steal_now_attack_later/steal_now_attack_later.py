@@ -356,7 +356,7 @@ class SNAL(EvasionAttack):
         """
         import torch
 
-        x_org = torch.from_numpy(x_batch).to(self.estimator.model.device)
+        x_org = torch.from_numpy(x_batch).to(self.estimator.device)
         x_adv = x_org.clone()
 
         cond = torch.logical_or(x_org < 0.0, x_org > 1.0)
@@ -400,7 +400,7 @@ class SNAL(EvasionAttack):
                                               self.threshold_objs,
                                               tile_size,
                                               buffer_depth,
-                                              self.estimator.model.device)
+                                              self.estimator.device)
 
         # init guess
         n_samples = 10
@@ -415,8 +415,8 @@ class SNAL(EvasionAttack):
         candidates_patch = self.candidates
         candidates_mask = [None] * len(candidates_patch)
 
-        r_tile = torch.zeros((0, 3, tile_size, tile_size), device=self.estimator.model.device)
-        r_mask = torch.zeros((0, 3, tile_size, tile_size), device=self.estimator.model.device)
+        r_tile = torch.zeros((0, 3, tile_size, tile_size), device=self.estimator.device)
+        r_mask = torch.zeros((0, 3, tile_size, tile_size), device=self.estimator.device)
         while r_tile.shape[0] < n_samples:
             t_tile, t_mask = generate_tile(candidates_patch,
                                            candidates_mask,
@@ -443,7 +443,7 @@ class SNAL(EvasionAttack):
                 pert = x_adv[b, :, y1:y2, x1:x2] - x[b, :, y1:y2, x1:x2]
                 loss = self._get_loss(pert, self.eps)
                 eligible = torch.max(torch.abs(pert)) < self.eps and bcount >= obj_threshold
-                TPatch_cur = TileObj(tile_size=tile_size, device=self.estimator.model.device)
+                TPatch_cur = TileObj(tile_size=tile_size, device=self.estimator.device)
                 TPatch_cur.update(eligible, bcount, torch.sum(loss), x_adv[b, :, y1:y2, x1:x2].clone())
 
                 # insert op
@@ -618,13 +618,13 @@ class SNAL(EvasionAttack):
         for _ in range(TRIAL):
             x_cand = torch.zeros((n_samples, 3, x_init.shape[-2], x_init.shape[-1]),
                                   dtype=x_init.dtype,
-                                  device=self.estimator.model.device)
+                                  device=self.estimator.device)
 
             # generate tiles
             # To save the computing time, we generate some tiles in advance.
             # partial tiles are updated on-the-fly
-            r_tile = torch.zeros((0, 3, tile_size, tile_size), device=self.estimator.model.device)
-            r_mask = torch.zeros((0, 3, tile_size, tile_size), device=self.estimator.model.device)
+            r_tile = torch.zeros((0, 3, tile_size, tile_size), device=self.estimator.device)
+            r_mask = torch.zeros((0, 3, tile_size, tile_size), device=self.estimator.device)
             while r_tile.shape[0] < n_samples:
                 t_tile, t_mask = generate_tile(patches, masks, tile_size, [1, 2])
                 r_tile = torch.cat([r_tile, t_tile], dim=0)
@@ -649,7 +649,7 @@ class SNAL(EvasionAttack):
                 x_new = ((1.0 - mask_perm) * x_ref) + mask_perm * ( 0.0 * x_ref + 1.0 * tile_perm)
 
                 # randomly roll-back
-                rand_rb = torch.rand([n_samples, 1, 1, 1], device=self.estimator.model.device)
+                rand_rb = torch.rand([n_samples, 1, 1, 1], device=self.estimator.device)
                 x_new = torch.where(rand_rb < 0.8, x_new, x_ref)
                 x_cand[:, :, y1:y2, x1:x2] = x_new
 
@@ -681,7 +681,7 @@ class SNAL(EvasionAttack):
                     pert = x_cur - x_ref
                     loss = self._get_loss(pert, self.eps)
                     eligible = torch.max(torch.abs(pert)) < self.eps and bcount >= obj_threshold
-                    TPatch_cur = TileObj(tile_size=tile_size, device=self.estimator.model.device)
+                    TPatch_cur = TileObj(tile_size=tile_size, device=self.estimator.device)
                     TPatch_cur.update(eligible, bcount, torch.sum(loss), x_cur)
                     # insert op
                     prev = tile_mat[(ii, jj)]
@@ -709,8 +709,8 @@ class SNAL(EvasionAttack):
                 for b in bbox:
                     bx1 = torch.clamp_min(b[0] - x1, 0)
                     by1 = torch.clamp_min(b[1] - y1, 0)
-                    bx2 = torch.clamp_max(b[2] - x1, (x2 - x1 - 1).to(self.estimator.model.device))
-                    by2 = torch.clamp_max(b[3] - y1, (y2 - y1 - 1).to(self.estimator.model.device))
+                    bx2 = torch.clamp_max(b[2] - x1, (x2 - x1 - 1).to(self.estimator.device))
+                    by2 = torch.clamp_max(b[3] - y1, (y2 - y1 - 1).to(self.estimator.device))
                     cur_mask[:, :, by1:by2, bx1:bx2] = 1.0
             else:
                 prev = tile_mat[(ii, jj)]
