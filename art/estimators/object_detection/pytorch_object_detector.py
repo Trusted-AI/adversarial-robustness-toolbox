@@ -93,11 +93,15 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
         :param device_type: Type of device to be used for model and tensors, if `cpu` run on CPU, if `gpu` run on GPU
                             if available otherwise run on CPU.
         """
+        import re
         import torch
         import torchvision
 
-        torch_version = list(map(int, torch.__version__.lower().split("+", maxsplit=1)[0].split(".")))
-        torchvision_version = list(map(int, torchvision.__version__.lower().split("+", maxsplit=1)[0].split(".")))
+        reg_pattern = "(\d+).(\d+).(\d+)(\w*)(\+{0,1})(\w*)"
+        version_match = re.match(reg_pattern, torch.__version__)
+        torch_version = [version_match[1], version_match[2], version_match[3]]
+        version_match = re.match(reg_pattern, torchvision.__version__)
+        torchvision_version = [version_match[1], version_match[2], version_match[3]]
         assert not (torch_version[0] == 1 and (torch_version[1] == 8 or torch_version[1] == 9)), (
             "PyTorchObjectDetector does not support torch==1.8 and torch==1.9 because of "
             "https://github.com/pytorch/vision/issues/4153. Support will return for torch==1.10."
