@@ -95,7 +95,7 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
         import torch
         import torchvision
 
-        reg_pattern = "(\d+).(\d+).(\d+)(\w*)(\+{0,1})(\w*)"
+        reg_pattern = r"(\d+).(\d+).(\d+)(\w*)(\+{0,1})(\w*)"
         version_match = re.match(reg_pattern, torch.__version__)
         torch_version = [version_match[1], version_match[2], version_match[3]]
         version_match = re.match(reg_pattern, torchvision.__version__)
@@ -140,7 +140,7 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
         self._model.to(self._device)
         try:
             self._model.model.eval()
-        except:
+        except Exception as e:
             self._model.eval()
 
     @property
@@ -406,7 +406,7 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
         # Set model to evaluation mode
         try:
             self._model.model.eval()
-        except:
+        except Exception as e:
             self._model.eval()
 
         # Apply preprocessing and convert to tensors

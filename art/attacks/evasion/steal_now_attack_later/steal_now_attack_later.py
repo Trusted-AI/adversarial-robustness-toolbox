@@ -16,7 +16,8 @@
 # SOFTWARE.
 
 """
-This module implements the paper: "Steal Now and Attack Later: Evaluating Robustness of Object Detection against Black-box Adversarial Attacks"
+This module implements the paper: Steal Now and Attack Later: Evaluating Robustness of Object Detection against
+Black-box Adversarial Attacks
 
 | Paper link: https://arxiv.org/abs/2304.05370
 """
@@ -39,6 +40,7 @@ if TYPE_CHECKING:
     from art.utils import PYTORCH_OBJECT_DETECTOR_TYPE
 
 logger = logging.getLogger(__name__)
+
 
 # tiling
 def _generate_tile_kernel(patch: list, mask: list, tile_size: int) -> Tuple["torch.Tensor", "torch.Tensor"]:
@@ -218,9 +220,9 @@ class TileObj:
             self.patch = patch
 
     def compare(self, target: "TileObj") -> bool:
-        if self.eligible == True and target.eligible == False:
+        if self.eligible is True and target.eligible is False:
             return True
-        elif self.eligible == False and target.eligible == True:
+        elif self.eligible is False and target.eligible is True:
             return False
         else:
             if self.bcount > target.bcount:
@@ -650,7 +652,6 @@ class SNAL(EvasionAttack):
         x_out = x_init.clone()
         x_eval = self._assemble(tile_mat, x_org)
         adv_patch, adv_position = self.collector(self.estimator, x_eval)
-        cur_patch = adv_patch[0]
         cur_position = adv_position[0]
         for key, obj in tile_mat.items():
             ii, jj = key
