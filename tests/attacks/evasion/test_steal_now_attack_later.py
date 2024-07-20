@@ -27,15 +27,15 @@ from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)
 
+
 @pytest.mark.only_with_platform("pytorch")
 def test_generate(art_warning):
     try:
         import torch
         import requests
-        model = YOLO('yolov8m')
-        py_model = PyTorchYolo(model=model,
-                               input_shape=(3, 640, 640),
-                               channels_first=True)
+
+        model = YOLO("yolov8m")
+        py_model = PyTorchYolo(model=model, input_shape=(3, 640, 640), channels_first=True)
 
         # Define a custom function to collect patches from images
         def collect_patches_from_images(model, imgs):
@@ -61,7 +61,7 @@ def test_generate(art_warning):
                 pos_matrix[:, 2] = torch.clamp_max(pos_matrix[:, 2], imgs.shape[3])
                 pos_matrix[:, 3] = torch.clamp_max(pos_matrix[:, 3], imgs.shape[2])
                 for e in pos_matrix:
-                    p = imgs[i, :, e[1]:e[3], e[0]:e[2]]
+                    p = imgs[i, :, e[1] : e[3], e[0] : e[2]]
                     patch.append(p.to(model.device))
 
                 candidates_patch.append(patch)
@@ -73,7 +73,7 @@ def test_generate(art_warning):
         from io import BytesIO
         from PIL import Image
 
-        TARGET = 'https://farm2.staticflickr.com/1065/705706084_39a7f28fc9_z.jpg' # val2017/000000552842.jpg
+        TARGET = "https://farm2.staticflickr.com/1065/705706084_39a7f28fc9_z.jpg"  # val2017/000000552842.jpg
         response = requests.get(TARGET)
         org_img = np.asarray(Image.open(BytesIO(response.content)).resize((640, 640)))
         x_org = np.stack([org_img.transpose((2, 0, 1))], axis=0).astype(np.float32)
@@ -83,35 +83,36 @@ def test_generate(art_warning):
         import time
 
         # Select images randomly from COCO dataset
-        list_url = ['http://farm4.staticflickr.com/3572/5744200926_082c11c43c_z.jpg', #000000460229
-                    'http://farm4.staticflickr.com/3010/2749181045_ed450e5d36_z.jpg', #000000057760
-                    'http://farm4.staticflickr.com/3826/9451771633_f14cef3a8b_z.jpg', #000000468332
-                    'http://farm7.staticflickr.com/6194/6106161903_e505cbc192_z.jpg', #000000190841
-                    'http://farm1.staticflickr.com/48/140268688_947e2bcc96_z.jpg',    #000000078420
-                    'http://farm6.staticflickr.com/5011/5389083366_fdf13f2ee6_z.jpg', #000000309655
-                    'http://farm4.staticflickr.com/3552/5812461870_eb24c8eac5_z.jpg', #000000293324
-                    'http://farm4.staticflickr.com/3610/3361019695_1005dd49fd_z.jpg', #000000473821
-                    'http://farm8.staticflickr.com/7323/9725958435_3359641442_z.jpg', #000000025386
-                    'http://farm4.staticflickr.com/3317/3427794620_9db24fe462_z.jpg', #000000347693
-                    'http://farm6.staticflickr.com/5143/5589997131_22f51b308c_z.jpg', #000000058029
-                    'http://farm5.staticflickr.com/4061/4376326145_7ef66603e3_z.jpg', #000000389933
-                    'http://farm3.staticflickr.com/2028/2188480725_5fbf27a5b3_z.jpg', #000000311789
-                    'http://farm1.staticflickr.com/172/421715600_666b0f6a2b_z.jpg',   #000000506004
-                    'http://farm1.staticflickr.com/168/473782444_8ec11ec7b3_z.jpg',   #000000203317
-                    'http://farm4.staticflickr.com/3236/2487649513_1ef6a6d5c9_z.jpg', #000000201646
-                    'http://farm4.staticflickr.com/3094/2684280938_a5b59c0fac_z.jpg', #000000447187
-                    'http://farm1.staticflickr.com/42/100911501_005e4d3aa8_z.jpg',    #000000126107
-                    'http://farm1.staticflickr.com/56/147795701_40d7bc8331_z.jpg',    #000000505942
-                    'http://farm5.staticflickr.com/4103/5074895283_71a73d77e5_z.jpg', #000000360951
-                    'http://farm1.staticflickr.com/160/404335548_3bdc1f2ed9_z.jpg',   #000000489764
-                    'http://farm9.staticflickr.com/8446/7857456044_401a257790_z.jpg', #000000407574
+        list_url = [
+            "http://farm4.staticflickr.com/3572/5744200926_082c11c43c_z.jpg",  # 000000460229
+            "http://farm4.staticflickr.com/3010/2749181045_ed450e5d36_z.jpg",  # 000000057760
+            "http://farm4.staticflickr.com/3826/9451771633_f14cef3a8b_z.jpg",  # 000000468332
+            "http://farm7.staticflickr.com/6194/6106161903_e505cbc192_z.jpg",  # 000000190841
+            "http://farm1.staticflickr.com/48/140268688_947e2bcc96_z.jpg",  # 000000078420
+            "http://farm6.staticflickr.com/5011/5389083366_fdf13f2ee6_z.jpg",  # 000000309655
+            "http://farm4.staticflickr.com/3552/5812461870_eb24c8eac5_z.jpg",  # 000000293324
+            "http://farm4.staticflickr.com/3610/3361019695_1005dd49fd_z.jpg",  # 000000473821
+            "http://farm8.staticflickr.com/7323/9725958435_3359641442_z.jpg",  # 000000025386
+            "http://farm4.staticflickr.com/3317/3427794620_9db24fe462_z.jpg",  # 000000347693
+            "http://farm6.staticflickr.com/5143/5589997131_22f51b308c_z.jpg",  # 000000058029
+            "http://farm5.staticflickr.com/4061/4376326145_7ef66603e3_z.jpg",  # 000000389933
+            "http://farm3.staticflickr.com/2028/2188480725_5fbf27a5b3_z.jpg",  # 000000311789
+            "http://farm1.staticflickr.com/172/421715600_666b0f6a2b_z.jpg",  # 000000506004
+            "http://farm1.staticflickr.com/168/473782444_8ec11ec7b3_z.jpg",  # 000000203317
+            "http://farm4.staticflickr.com/3236/2487649513_1ef6a6d5c9_z.jpg",  # 000000201646
+            "http://farm4.staticflickr.com/3094/2684280938_a5b59c0fac_z.jpg",  # 000000447187
+            "http://farm1.staticflickr.com/42/100911501_005e4d3aa8_z.jpg",  # 000000126107
+            "http://farm1.staticflickr.com/56/147795701_40d7bc8331_z.jpg",  # 000000505942
+            "http://farm5.staticflickr.com/4103/5074895283_71a73d77e5_z.jpg",  # 000000360951
+            "http://farm1.staticflickr.com/160/404335548_3bdc1f2ed9_z.jpg",  # 000000489764
+            "http://farm9.staticflickr.com/8446/7857456044_401a257790_z.jpg",  # 000000407574
         ]
 
-        ROOT_MSCOCO = 'datasets'
-        os.makedirs(ROOT_MSCOCO, exist_ok = True)
+        ROOT_MSCOCO = "datasets"
+        os.makedirs(ROOT_MSCOCO, exist_ok=True)
         for idx, img_url in enumerate(list_url):
             response = requests.get(img_url)
-            with open(f'{ROOT_MSCOCO}/{idx:03d}.jpg', 'wb') as f:
+            with open(f"{ROOT_MSCOCO}/{idx:03d}.jpg", "wb") as f:
                 f.write(response.content)
             time.sleep(0.5)
 
@@ -141,13 +142,16 @@ def test_generate(art_warning):
                 return Image.open(path).convert("RGB")
 
         img_dataset = CustomDatasetFolder(
-                    ROOT_MSCOCO,
-                    transforms.Compose([
-                    transforms.RandomResizedCrop((640,640)),
+            ROOT_MSCOCO,
+            transforms.Compose(
+                [
+                    transforms.RandomResizedCrop((640, 640)),
                     transforms.AutoAugment(),
                     transforms.RandomHorizontalFlip(),
                     transforms.ToTensor(),
-                ]))
+                ]
+            ),
+        )
         img_loader = torch.utils.data.DataLoader(img_dataset, batch_size=1, shuffle=True)
 
         candidates_list = []
@@ -159,15 +163,17 @@ def test_generate(art_warning):
                 break
 
             candidates, _ = collect_patches_from_images(py_model, x.to(py_model.device))
-            print(f'Number of objects are detected: {len(candidates[0])}')
+            print(f"Number of objects are detected: {len(candidates[0])}")
             candidates_list = candidates_list + candidates[0]
 
-        attack = SNAL(py_model,
-                      eps = 16.0 / 255.0,
-                      max_iter = 100,
-                      num_grid = 10,
-                      candidates = candidates_list,
-                      collector = collect_patches_from_images)
+        attack = SNAL(
+            py_model,
+            eps=16.0 / 255.0,
+            max_iter=100,
+            num_grid=10,
+            candidates=candidates_list,
+            collector=collect_patches_from_images,
+        )
 
         x_adv = attack.generate(x_org / 255.0)
         assert x_org.shape == x_adv.shape
@@ -185,10 +191,8 @@ def test_generate(art_warning):
 @pytest.mark.only_with_platform("pytorch")
 def test_check_params(art_warning):
     try:
-        model = YOLO('yolov8m')
-        py_model = PyTorchYolo(model=model,
-                               input_shape=(3, 640, 640),
-                               channels_first=True)
+        model = YOLO("yolov8m")
+        py_model = PyTorchYolo(model=model, input_shape=(3, 640, 640), channels_first=True)
 
         def dummy_func(model, imags):
             candidates_patch = []
@@ -198,61 +202,34 @@ def test_check_params(art_warning):
         dummy_list = [[], []]
 
         with pytest.raises(ValueError):
-           _ = SNAL(estimator = py_model,
-                    eps = -1.0,
-                    max_iter = 5,
-                    num_grid = 10,
-                    candidates = dummy_list,
-                    collector = dummy_func)
+            _ = SNAL(estimator=py_model, eps=-1.0, max_iter=5, num_grid=10, candidates=dummy_list, collector=dummy_func)
         with pytest.raises(ValueError):
-           _ = SNAL(estimator = py_model,
-                    eps = 2.0,
-                    max_iter = 5,
-                    num_grid = 10,
-                    candidates = dummy_list,
-                    collector = dummy_func)
+            _ = SNAL(estimator=py_model, eps=2.0, max_iter=5, num_grid=10, candidates=dummy_list, collector=dummy_func)
         with pytest.raises(TypeError):
-           _ = SNAL(estimator = py_model,
-                    eps = 8 / 255.0,
-                    max_iter = 1.0,
-                    num_grid = 10,
-                    candidates = dummy_list,
-                    collector = dummy_func)
+            _ = SNAL(
+                estimator=py_model,
+                eps=8 / 255.0,
+                max_iter=1.0,
+                num_grid=10,
+                candidates=dummy_list,
+                collector=dummy_func,
+            )
         with pytest.raises(ValueError):
-           _ = SNAL(estimator = py_model,
-                    eps = 8 / 255.0,
-                    max_iter = 0,
-                    num_grid = 10,
-                    candidates = dummy_list,
-                    collector = dummy_func)
+            _ = SNAL(
+                estimator=py_model, eps=8 / 255.0, max_iter=0, num_grid=10, candidates=dummy_list, collector=dummy_func
+            )
         with pytest.raises(TypeError):
-          _ = SNAL(estimator = py_model,
-                    eps = 8 / 255.0,
-                    max_iter = 5,
-                    num_grid = 1.0,
-                    candidates = dummy_list,
-                    collector = dummy_func)
+            _ = SNAL(
+                estimator=py_model, eps=8 / 255.0, max_iter=5, num_grid=1.0, candidates=dummy_list, collector=dummy_func
+            )
         with pytest.raises(ValueError):
-           _ = SNAL(estimator = py_model,
-                    eps = 8 / 255.0,
-                    max_iter = 5,
-                    num_grid = 0,
-                    candidates = dummy_list,
-                    collector = dummy_func)
+            _ = SNAL(
+                estimator=py_model, eps=8 / 255.0, max_iter=5, num_grid=0, candidates=dummy_list, collector=dummy_func
+            )
         with pytest.raises(TypeError):
-           _ = SNAL(estimator = py_model,
-                    eps = 8 / 255.0,
-                    max_iter = 5,
-                    num_grid = 10,
-                    candidates = 1.0,
-                    collector = dummy_func)
+            _ = SNAL(estimator=py_model, eps=8 / 255.0, max_iter=5, num_grid=10, candidates=1.0, collector=dummy_func)
         with pytest.raises(ValueError):
-          _ = SNAL(estimator = py_model,
-                    eps = 8 / 255.0,
-                    max_iter = 5,
-                    num_grid = 10,
-                    candidates = [],
-                    collector = dummy_func)
+            _ = SNAL(estimator=py_model, eps=8 / 255.0, max_iter=5, num_grid=10, candidates=[], collector=dummy_func)
 
     except ARTTestException as e:
         art_warning(e)
