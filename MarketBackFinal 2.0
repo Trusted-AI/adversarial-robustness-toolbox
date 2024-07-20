@@ -1,1 +1,596 @@
+class PoisoningAttackCleanLabelBackdoor:
+    """
+    This class implements a poisoning attack with a clean label backdoor.
+    """
 
+    def __init__(
+        self,
+        trigger_func: Callable,
+        target_label: Union[int, str, np.ndarray],
+        dirty_label: Union[int, str, np.ndarray],
+        flip_prob: float = 0.5,
+        trigger_alpha: float = 0.5,
+        poison_rate: float = 0.1,
+        backdoor_trigger: Optional[Union[int, str, np.ndarray]] = None,
+        backdoor_target: Optional[Union[int, str, np.ndarray]] = None,
+        training_dataset: Optional[np.ndarray] = None,
+        training_params: Optional[dict] = None,
+        prior_mean: float = 0,
+        prior_std: float = 1
+    ) -> None:
+        """
+        Initialize the PoisoningAttackCleanLabelBackdoor instance.
+        """
+        self.trigger_func = trigger_func
+        self.target_label = target_label
+        self.dirty_label = dirty_label
+        self.flip_prob = flip_prob
+        self.trigger_alpha = trigger_alpha
+        self.poison_rate = poison_rate
+        self.backdoor_trigger = backdoor_trigger if backdoor_trigger is not None else 0
+        self.backdoor_target = backdoor_target
+        self.training_dataset = training_dataset
+        self.training_params = training_params
+        self.prior_mean = prior_mean
+        self.prior_std = prior_std
+        self.prior = np.random.normal(prior_mean, prior_std)
+
+    def poison(
+        self,
+        x_audio: np.ndarray,
+        y: Optional[np.ndarray] = None,
+        broadcast: bool = False,
+        random_seed: Optional[int] = None
+    ) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Apply the poisoning attack to the given audio data.
+        """
+        if y is None or not np.any(np.isin(self.target_label, y)):
+            return x_audio, y
+
+        num_poison = int(len(x_audio) * self.poison_rate)
+
+        poisoned_labels = np.full((num_poison,), self.dirty_label)
+
+        if broadcast:
+            y_attack = np.broadcast_to(y, (x_audio.shape[0], y.shape[0]))
+        else:
+            y_attack = np.copy(y)
+
+        np.random.seed(random_seed)
+
+        for i in range(num_poison):
+            trigger_pattern = self.trigger_func(x_audio[i])
+
+            if np.random.rand() < self.flip_prob:
+                poisoned_labels[i] = self.target_label[0]
+
+            x_audio[i] = (1 - self.trigger_alpha) * x_audio[i] + self.trigger_alpha * trigger_pattern
+
+            # Ensure S0 is a 1D array before passing it to simulate_rough_volatility_paths
+            S0 = np.array([self.prior])  # Assuming self.prior is the intended S0 value
+
+
+            # Call simulate_rough_volatility_paths with the corrected S0
+            # Note: You might need to adjust the parameters according to your actual use case
+            #paths = self.simulate_rough_volatility_paths(T=10, S0=S0, sigma=0.8, gamma=0.7, dt=0.01)
+            paths=self.simulate_rough_volatility_paths(Ts=Ts, S0=self.prior, sigma=0.8, gamma=0.7, dt=0.01)
+
+        try:
+            # Calculate the sample mean and variance using NumPy functions
+            sample_mean = np.mean(x_audio)
+            sample_variance = np.var(x_audio)
+
+            # Update the prior with the sample statistics
+            self.prior = np.random.normal(sample_mean, np.sqrt(sample_variance))
+
+            # Perform Bayesian sampling
+
+            # Adjusted code to unpack three values returned by _bayesian_sampling_diffusion_model
+            trace_libor_market, model_type_libor_market = self._bayesian_sampling_diffusion_model(
+            T=1,
+            theta=np.linspace(0.3, 3.0, 10),
+            sigma=np.linspace(0.2, 2.0, 10),
+            alpha=np.linspace(0.4, 4.0, 10),
+            beta=np.linspace(0.5, 5.0, 10),
+            noise_dist=lambda x: np.sin(x),  # Noise distribution
+
+            non_linear_drift=self.libor_market_drift,  # Specify the non_linear_drift function
+            model_type='libor_market',
+
+              )
+
+            trace_vasicek, model_type_vasicek = self._bayesian_sampling_diffusion_model(
+            T=1,
+            theta=np.linspace(0.4, 4.0, 10),
+            alpha=np.linspace(0.3, 3.0, 10),
+            beta=np.linspace(0.2, 2.0, 10),
+            sigma=np.linspace(0.3, 3.0, 10),
+            noise_dist=lambda x: np.sin(x),  # Noise distribution
+            non_linear_drift=self.vasicek_drift,  # Specify the non_linear_drift function
+            model_type='vasicek'
+             )
+
+            trace_hull_white, model_type_hull_white = self._bayesian_sampling_diffusion_model(
+            T=1,
+            theta=np.linspace(0.5, 5.0, 10),
+            sigma=np.linspace(0.2, 2.0, 10),
+            alpha=np.linspace(0.3, 3.0, 10),
+            beta=np.linspace(0.4, 4.0, 10),
+            noise_dist=lambda x: np.sin(x),  # Noise distribution
+            non_linear_drift=self.hull_white_drift,  # Specify the non_linear_drift function
+            model_type='hull_white'
+              )
+
+            trace_longstaff_schwartz, model_longstaff_schwartz = self._bayesian_sampling_diffusion_model(
+            T=1,
+            theta=np.linspace(0.2, 2.0, 10),
+            alpha=np.linspace(0.3, 3.0, 10),
+            beta=np.linspace(0.4, 4.0, 10),
+            sigma=np.linspace(0.2, 2.0, 10),
+            noise_dist=lambda x: np.sin(x),  # Noise distribution
+            non_linear_drift=self.longstaff_schwartz_drift,  # Specify the non_linear_drift function
+            model_type='longstaff_schwartz'
+             )
+
+
+        except Exception as e:
+            print(f"An error occurred during poisoning: {e}")
+            raise
+
+        return x_audio, poisoned_labels
+
+
+     #  libor market drift function
+    def libor_market_drift(self, x, t, theta, mu, sigma):
+        """
+        Calculates the drift component of the LIBOR Market Model.
+
+        Parameters:
+        - x (float): Current level of the forward rate.
+        - t (float): Time, typically measured in years.
+        - theta (float): Long-term mean of the forward rate.
+        - mu (float): Reversion speed towards the mean.
+        - sigma (float): Volatility parameter.
+
+        Returns:
+        - float: Drift term calculated according to the LIBOR Market Model.
+
+         Drift function for the LIBOR Market Model.
+        """
+        return theta * (mu - x) +  sigma * np.sqrt(t) * np.random.normal()
+
+
+
+
+    #  Vasicek drift function
+    def vasicek_drift(self, x, t, theta, mu, sigma):
+        v = 1 / theta * (1 - np.exp(-theta * t))
+        return theta * (mu - x) + sigma * np.sqrt(v) * np.random.normal()
+
+
+    #  Hull-White drift function
+    def hull_white_drift(self, x, t, theta, mu, sigma):
+        v = 1 / theta * (1 - np.exp(-theta * t))
+        phi_t = mu - theta * (x - mu) + sigma * np.sqrt(v) * np.random.normal()
+        return theta * (mu - x) + phi_t
+
+
+
+    def simulate_rough_volatility_paths(self, Ts, S0, sigma, gamma, dt=1):
+        """
+        Simulate paths of a rough volatility model for multiple time horizons.
+
+        Parameters:
+       - Ts: List of time horizons for simulation.
+       - S0: Initial state vector.
+       - sigma: Volatility parameter. Can be a scalar or a 1D array.
+       - gamma: Parameter controlling the roughness of the volatility.
+       - dt: Time step size.
+
+       Returns:
+       - paths: Simulated paths for each time horizon.
+       """
+
+       # Ensure S0 is a 1D array or a scalar
+        if isinstance(S0, (float, np.float64, np.float32)):
+          S0 = np.array([S0])  # Convert scalar to 1D array
+
+        # Ensure S0 is a 1D array
+        if not isinstance(S0, np.ndarray) or S0.ndim != 1:
+            raise ValueError("Expected S0 to be a 1D numpy array")
+
+        N = len(S0)
+        all_paths = []
+
+        for T in Ts:
+           paths = np.zeros((int(T/dt), N))
+           paths[0] = S0
+
+           for t in range(1, int(T/dt)):
+              dW = np.random.normal(size=N)
+              dX = np.sqrt(dt) * (gamma * paths[t-1] + sigma * dW)
+              paths[t] = paths[t-1] + dX
+
+           all_paths.append(paths)
+
+        return all_paths
+
+
+    #  Longstaff-Schwartz drift function
+
+    def longstaff_schwartz_drift(self, x, t, theta, mu, sigma):
+        v = 1 / theta * (1 - np.exp(-theta * t))
+        adjusted_drift = theta * (mu - x) + sigma * np.sqrt(v) * np.random.normal()
+        adjusted_drift += mu - theta * (x - mu) + sigma * np.sqrt(v) * np.random.normal()  # Adjust the drift term based on the continuation value
+        return adjusted_drift
+
+
+    def optimal_transport(self, x_T, t, theta, mu, sigma):
+        """
+        Calculate the deterministic movement (transport component) based on the state and time.
+
+        Parameters:
+        - x_T: Current state at time T.
+        - t: Time.
+        - theta: Parameter for the drift function.
+        - mu: Mean of the drift function.
+        - sigma: Standard deviation of the drift function.
+
+        Returns:
+        - Deterministic movement based on the state and time.
+        """
+
+        return theta * (mu - x_T) + sigma * np.sqrt(1 / theta * (1 - np.exp(-theta * t))) * np.random.normal()
+
+
+
+    def optimize_with_bayesian_optimization(self, objective_function, bounds, n_iter=50):
+        """
+        Performs Bayesian optimization over the given objective function.
+
+        :param objective_function: Objective function to optimize.
+        :param bounds: Dictionary specifying the lower and upper bounds for each parameter.
+        :param n_iter: Number of iterations for the optimization.
+        :return: Optimized parameters and the best observed value.
+        """
+        optimizer = BayesianOptimization(
+            f=objective_function,
+            pbounds=bounds,
+            random_state=42,
+            verbose=2,
+        )
+
+        optimizer.maximize(init_points=2, n_iter=n_iter)
+
+
+        return optimizer.max['params'], optimizer.max['target']
+        #print(f"Optimized Parameters: {optimized_params}, Best Value: {best_value}")
+
+
+
+    def objective_function(self, *args, **kwargs):
+       # Extract parameters from kwargs since BayesianOptimization passes them as keyword arguments
+       x, y = kwargs.get('x'), kwargs.get('y')
+
+       # This could involve calling _bayesian_sampling_diffusion_model or another relevant function
+       return -(x**2 + y**2)  # Minimize this function
+
+       bounds = {'x': (-5, 5), 'y': (-5, 5)}
+       # Optimize the objective function using Bayesian optimization
+
+       optimized_params, best_value = self.optimize_with_bayesian_optimization(objective_function, bounds)
+
+
+       # Plot the optimization process
+       optimizer = BayesianOptimization(
+          f=objective_function,
+          pbounds=bounds,
+          random_state=42,
+          verbose=2,
+      )
+
+       bounds_str = ', '.join([f'{k}={v[0]}:{v[1]}' for k, v in bounds.items()])
+       print(f"Performing Bayesian optimization with bounds: {bounds_str}")
+       optimized_params, best_value = self.optimize_with_bayesian_optimization(objective_function, bounds)
+
+        # Prepare data for plotting
+       data = pd.DataFrame({
+            'Iteration': range(1, len(optimized_params) + 1),
+            'Best Value': [best_value] * len(optimized_params),
+            **{param: val for param, val in optimized_params.items()}
+        })
+
+        # Interactive plot using Plotly
+       fig = make_subplots(rows=1, cols=1)
+       fig.add_trace(go.Scatter(x=data['Iteration'], y=data['Best Value'], mode='lines+markers', name='Best Value'), row=1, col=1)
+       for param in optimized_params:
+            fig.add_trace(go.Scatter(x=data['Iteration'], y=data[param], mode='lines+markers', name=param), row=1, col=1)
+
+       fig.update_layout(title_text=f'Optimization Process for Bounds: {bounds_str}', autosize=False,
+                          width=500, height=400,
+                          margin=dict(l=50, r=50, b=100, t=100, pad=4))
+
+       # Show the interactive plot
+       fig.show()
+
+
+    def plot_optimization_process(self,bounds, filename='optimization_results.png'):
+        optimizer = BayesianOptimization(
+            f=self.objective_function,
+            pbounds={'x': (-5, 5), 'y': (-5, 5)},
+            random_state=42,
+            verbose=2
+        )
+
+        # Perform the optimization
+        optimizer.maximize(init_points=2, n_iter=50)
+        acquisition_function = UtilityFunction(kind="ucb", kappa=0.1)
+        optimizer.maximize(n_iter=10, acquisition_function=acquisition_function)
+        optimized_params = optimizer.max['params']
+        best_value = optimizer.max['target']
+        print(f"Optimized Parameters: {optimized_params}, Best Value: {best_value}")
+
+        bounds_str = ', '.join([f'{k}={v[0]}:{v[1]}' for k, v in bounds.items()])
+        print(f"Performing Bayesian optimization with bounds: {bounds_str}")
+        #optimized_params, best_value = self.optimize_with_bayesian_optimization(objective_function, bounds)
+
+        # Prepare data for plotting
+        data = pd.DataFrame({
+            'Iteration': range(1, len(optimized_params) + 1),
+            'Best Value': [best_value] * len(optimized_params),
+            **{param: val for param, val in optimized_params.items()}
+         })
+
+        # Interactive plot using Plotly
+        fig = make_subplots(rows=1, cols=1)
+        fig.add_trace(go.Scatter(x=data['Iteration'], y=data['Best Value'], mode='lines+markers', name='Best Value'), row=1, col=1)
+        for param in optimized_params:
+            fig.add_trace(go.Scatter(x=data['Iteration'], y=data[param], mode='lines+markers', name=param), row=1, col=1)
+
+        fig.update_layout(title_text=f'Optimization Process for Bounds: {bounds_str}', autosize=False,
+                          width=500, height=400,
+                          margin=dict(l=50, r=50, b=100, t=100, pad=4))
+
+        # Show the interactive plot
+        fig.show()
+
+
+    def black_scholes_merton_call(self, S, K, T, r, sigma):
+        """
+        Calculate the price of a European call option using the BSM model.
+        """
+        d1 = (np.log(S / K) + (r + 0.5 * sigma**2) * T) / (sigma * np.sqrt(T))
+        d2 = d1 - sigma * np.sqrt(T)
+        call_price = (S * norm.cdf(d1) - K * np.exp(-r * T) * norm.cdf(d2))
+
+        # Check for NaN values and replace them
+        call_price = np.nan_to_num(call_price, nan=0.0)
+        return call_price
+
+    def calculate_greeks(self, S, K, T, r, sigma):
+        """
+        Calculate the Greeks (delta, gamma, theta, vega, rho) of a European call option.
+        """
+            # Calculate Greeks
+        call_price = self.black_scholes_merton_call(S, K, T, r, sigma)
+        d1 = (np.log(S / K) + (r + 0.5 * sigma**2) * T) / (sigma * np.sqrt(T))
+        d2 = d1 - sigma * np.sqrt(T)
+
+        delta = norm.cdf(d1)
+        gamma = (norm.pdf(d1) / (S * sigma * np.sqrt(T)))
+        theta = -0.5 * sigma**2 * S * norm.pdf(d1) * np.sqrt(T) - r * K * np.exp(-r * T) * norm.cdf(d2)
+
+        # Vega calculation
+        vega = S * np.sqrt(T) * norm.pdf(d1)
+
+        # Rho calculation
+        rho = K * np.exp(-r * T) * norm.cdf(d2)
+
+        # Check for NaN values and replace them
+        delta = np.nan_to_num(delta, nan=0.0)
+        gamma = np.nan_to_num(gamma, nan=0.0)
+        theta = np.nan_to_num(theta, nan=0.0)
+        vega = np.nan_to_num(vega, nan=0.0)
+        rho = np.nan_to_num(rho, nan=0.0)
+
+        return delta, gamma, theta, vega, rho
+
+    def dynamic_hedging(self, initial_portfolio_value, S, K, T, r, sigma, dt):
+        """
+        Implement dynamic hedging logic based on calculated Greeks.
+        """
+
+        # Initialize Greeks
+        delta, gamma, theta, vega, rho = self.calculate_greeks(S, K, T, r, sigma)
+
+        # Simulate price movements and apply hedging adjustments
+
+        for t in range(int(T/dt)):
+            # Simulate new price movement
+
+            S_new = S + np.random.normal(0, sigma*np.sqrt(dt)) * S
+
+            # Calculate new Greeks
+            delta_new, gamma_new, theta_new, vega_new, rho_new = self.calculate_greeks(S_new, K, T, r, sigma)
+
+
+            # Check for NaN values and replace them
+            delta_new = np.nan_to_num(delta_new, nan=0.0)
+            gamma_new = np.nan_to_num(gamma_new, nan=0.0)
+            theta_new = np.nan_to_num(theta_new, nan=0.0)
+            vega_new = np.nan_to_num(vega_new, nan=0.0)
+            rho_new = np.nan_to_num(rho_new, nan=0.0)
+
+            # Apply hedging adjustments
+            portfolio_adjustment = delta_new * (S_new - S) + gamma_new * (S_new - S)**2
+            initial_portfolio_value += portfolio_adjustment
+
+            # Update portfolio value
+            S = S_new
+
+        return initial_portfolio_value
+
+
+    def plot_results(self):
+        # Assuming S, K, T, r, sigma, and dt are defined elsewhere in your class
+        # Generate time steps for plotting
+        timesteps = np.linspace(0, T, num=100)
+
+        model_type = 'vasicek'
+
+        # Define a base filename for the plots
+        base_filename = f"{model_type}_results"
+
+        # Plot Call Price
+        plt.figure(figsize=(10, 6))
+        plt.plot(timesteps, self.black_scholes_merton_call(S, K, timesteps, r, sigma), label='Call Price')
+        plt.xlabel('Time')
+        plt.ylabel('Price')
+        plt.title(f'Evolution of Call Option Price Over Time ({model_type})')
+        plt.savefig(f'{base_filename}_call_price_plot.png', dpi=300, bbox_inches='tight')
+        plt.legend()
+        plt.show()
+
+        # Plot Greeks
+        plt.figure(figsize=(10, 6))
+        plt.plot(timesteps, self.calculate_greeks(S, K, timesteps, r, sigma)[0], label='Delta')
+        plt.plot(timesteps, self.calculate_greeks(S, K, timesteps, r, sigma)[1], label='Gamma')
+        plt.plot(timesteps, self.calculate_greeks(S, K, timesteps, r, sigma)[2], label='Theta')
+        plt.plot(timesteps, self.calculate_greeks(S, K, timesteps, r, sigma)[3], label='Vega')
+        plt.plot(timesteps, self.calculate_greeks(S, K, timesteps, r, sigma)[4], label='Rho')
+        plt.xlabel('Time')
+        plt.ylabel('Greeks')
+        plt.title(f'Evolution of Greeks Over Time ({model_type})')
+        plt.savefig(f'{base_filename}_greeks_plot.png', dpi=300, bbox_inches='tight')
+        plt.legend()
+        plt.show()
+
+
+
+    def _bayesian_sampling_diffusion_model(
+        self,
+        T: int,
+        theta: float,
+        alpha: np.ndarray,
+        beta: np.ndarray,
+        sigma: np.ndarray,
+        noise_dist: Callable[[Any], np.ndarray],
+        non_linear_drift: Callable[[float, int], float],
+        model_type: str = 'vasicek',
+        trace_vasicek = None,
+        trace_hull_white = None,
+        bounds=None,
+        objective_function=None,
+        trace_longstaff_schwartz=None  # Add this line
+    ) -> pm.backends.base.MultiTrace: # Modified return type to include model_type
+
+        assert isinstance(T, int), "Expected T to be an integer"
+        assert isinstance(alpha, np.ndarray) and alpha.ndim == 1, "Expected alpha to be a 1D numpy array"
+        assert isinstance(beta, np.ndarray) and beta.ndim == 1, "Expected beta to be a 1D numpy array"
+        assert isinstance(sigma, np.ndarray) and sigma.ndim == 1, "Expected sigma to be a 1D numpy array"
+        assert callable(noise_dist), "Expected noise_dist to be a callable function"
+        assert callable(non_linear_drift), "Expected non_linear_drift to be a callable function"
+
+        assert model_type in ['vasicek', 'hull_white', 'longstaff_schwartz', 'libor_market'], "Invalid model type"
+
+        # Define the drift function based on the model type
+        drift_function_map = {
+            'vasicek': self.vasicek_drift,
+            'hull_white': self.hull_white_drift,
+            'longstaff_schwartz': self.longstaff_schwartz_drift,
+            'libor_market': self.libor_market_drift
+         }
+        drift_function = drift_function_map.get(model_type)
+
+        # Simulate rough volatility paths
+        Ts = [40, 50,60,80]  # Example time horizons
+        rough_volatility_paths = self.simulate_rough_volatility_paths(Ts=Ts, S0=self.prior, sigma=0.8, gamma=0.7, dt=0.01)
+
+        #rough_volatility_paths = self.simulate_rough_volatility_paths(T=3, S0=self.prior, sigma=sigma, gamma=theta)
+
+        # Calculate the initial portfolio value
+        S = rough_volatility_paths[-1]
+        K = 125
+        T = 1
+        r = 0.09
+        dt = 1
+        S0 = self.prior
+        initial_portfolio_value = self.black_scholes_merton_call(S, K, T, r, sigma)
+        print(f"Initial Portfolio Value: {initial_portfolio_value}")
+        print(f"S: {S}")
+
+
+
+        # Dynamic Hedging
+        call_price = self.black_scholes_merton_call(S, K, T, r, sigma)
+        print(f"Call Price: {call_price}")
+        initial_portfolio_value = call_price
+        print(f"Initial Portfolio Value: {initial_portfolio_value}")
+
+        greeks = self.calculate_greeks(S, K, T, r, sigma)
+        print(f"Greeks: Delta={greeks[0]}, Gamma={greeks[1]}, Theta={greeks[2]}, vega={greeks[3]}, rho={greeks[4]}")
+
+
+        final_portfolio_value = self.dynamic_hedging(initial_portfolio_value, S, K, T, r, sigma, dt)
+        print(f"Final Portfolio Value after Hedging: {final_portfolio_value}")
+
+
+
+
+        # Perform Bayesian optimization
+        bounds = {'x': (-5, 5), 'y': (-5, 5)}
+        # Create an instance of UtilityFunction for the acquisition function
+        optimizer = BayesianOptimization(
+            f=self.objective_function,
+            pbounds=bounds,
+            random_state=42,
+            verbose=2,
+
+        )
+        # Set Gaussian Process parameters
+        # Perform the optimization
+        optimizer.maximize(
+        init_points=2,
+        n_iter=50
+                  )
+
+        # Prepare data for CSV
+        result = optimizer.max['params']
+        # Preparing data for CSV
+        data = [[key, result[key]] for key in result.keys()]
+
+        # Saving to CSV
+        with open('bayesian_optimization_results.csv', 'w', newline='') as csvfile:
+              writer = csv.writer(csvfile)
+              writer.writerow(['Parameter', 'Value'])  # Writing header
+              writer.writerows(data)  # Writing data rows
+
+        # Very Advanced Bayesian Optimization
+        with pm.Model() as model:
+            # Hierarchical Priors for Shared Information Across Similar Parameters
+            theta_prior = pm.Normal('theta', mu=0, sigma=1, shape=len(theta))
+            alpha_prior = pm.Normal('alpha', mu=0, sigma=1, shape=len(alpha))
+            beta_prior = pm.Normal('beta', mu=0, sigma=1, shape=len(beta))
+            sigma_prior = pm.Normal('sigma', mu=0, sigma=1, shape=len(sigma))
+
+
+            # Likelihood Function with Hierarchical Structure
+            x_T = pm.Normal('x_T', mu=noise_dist(self.backdoor_trigger), sigma=1)
+
+            # Bayesian Optimization Loop
+            for t in range(T - 1, -1, -1):
+
+                # Incorporate the transport component into the drift function
+                transport_component = self.optimal_transport(x_T, t, theta_prior, beta_prior, sigma_prior)
+                #print(f"Transport Component: {transport_component}")
+
+                z = noise_dist(0) if t > 1 else 0
+                x_t_minus_1 = pm.Normal(f'x_{t}', mu=drift_function(x_T, t, theta_prior, beta_prior, sigma_prior) + transport_component + sigma[t] * z, sigma=1)
+
+                x_T = x_t_minus_1
+
+            # Efficient Sampling with Adaptive Stepsize HMC
+
+            step = pm.NUTS(target_accept=0.9)
+            trace = pm.sample(2000, tune=1000, cores=4, chains=4, random_seed=0, model=model, step=step)
