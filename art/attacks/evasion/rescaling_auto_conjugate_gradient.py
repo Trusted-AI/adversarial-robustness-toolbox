@@ -22,7 +22,7 @@
 
 # MIT License
 #
-# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2020
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2024
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -646,9 +646,6 @@ class RescalingAutoConjugateGradient(EvasionAttack):
 
         if not isinstance(self.batch_size, int) or self.batch_size <= 0:
             raise ValueError("The argument batch_size has to be of type int and larger than zero.")
-
-        # if self.loss_type not in self._predefined_losses:
-        #     raise ValueError("The argument loss_type has to be either {}.".format(self._predefined_losses))
 
         if not isinstance(self.verbose, bool):
             raise ValueError("The argument `verbose` has to be of type bool.")
