@@ -13,6 +13,7 @@ from art.attacks.evasion.adversarial_asr import CarliniWagnerASR
 from art.attacks.evasion.auto_attack import AutoAttack
 from art.attacks.evasion.auto_projected_gradient_descent import AutoProjectedGradientDescent
 from art.attacks.evasion.auto_conjugate_gradient import AutoConjugateGradient
+from art.attacks.evasion.rescaling_auto_conjugate_gradient import RescalingAutoConjugateGradient
 
 if importlib.util.find_spec("numba") is not None:
     from art.attacks.evasion.brendel_bethge import BrendelBethgeAttack
