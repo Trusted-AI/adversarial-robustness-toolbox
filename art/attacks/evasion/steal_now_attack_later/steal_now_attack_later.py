@@ -61,95 +61,93 @@ def _generate_tile_kernel(patch: list, mask: list, tile_size: int) -> Tuple["tor
     t_mask = mask[target]
     if t_mask is None:
         t_mask = torch.ones_like(t_patch)
-    w, h = t_patch.shape[-2], t_patch.shape[-1]
+    width, height = t_patch.shape[-2], t_patch.shape[-1]
     boundary = 1
     tile_size = max(tile_size - 2 * boundary, 1)
 
-    if h > w:
+    if height > width:
         flip = True
-        FlipOp = torchvision.transforms.RandomVerticalFlip(0.2)
-        max_len = h
-        min_len = w
+        FlipOp = torchvision.transforms.RandomVerticalFlip(0.2)  # pylint: disable=C0103
+        max_len = height
+        min_len = width
         t_patch = torch.permute(t_patch, (0, 2, 1))
         t_mask = torch.permute(t_mask, (0, 2, 1))
     else:
         flip = False
-        FlipOp = torchvision.transforms.RandomHorizontalFlip(0.2)
-        max_len = w
-        min_len = h
+        FlipOp = torchvision.transforms.RandomHorizontalFlip(0.2)  # pylint: disable=C0103
+        max_len = width
+        min_len = height
 
     if max_len > tile_size:
-        s = tile_size / max_len
-        new_len = round(min_len * s)
-        p1 = torchvision.transforms.Resize((tile_size, new_len))(t_patch)
+        new_len = round(min_len * tile_size / max_len)
+        p_1 = torchvision.transforms.Resize((tile_size, new_len))(t_patch)
         # fix for the case that (strides - new_len) > new_len
         p_list = []
 
         for _ in range(tile_size // new_len):
-            p_list.append(FlipOp(p1))
+            p_list.append(FlipOp(p_1))
 
-        p2 = torchvision.transforms.RandomCrop((tile_size, tile_size % new_len))(p1)
-        p_list.append(FlipOp(p2))
+        p_2 = torchvision.transforms.RandomCrop((tile_size, tile_size % new_len))(p_1)
+        p_list.append(FlipOp(p_2))
 
-        pp = torch.cat(p_list, dim=-1)
-        pp = torchvision.transforms.CenterCrop((tile_size + 2 * boundary, tile_size + 2 * boundary))(pp)
-        mm = torch.where(pp == 0, torch.zeros_like(pp), torch.ones_like(pp))
+        n_patch = torch.cat(p_list, dim=-1)
+        n_patch = torchvision.transforms.CenterCrop((tile_size + 2 * boundary, tile_size + 2 * boundary))(n_patch)
+        n_mask = torch.where(n_patch == 0, torch.zeros_like(n_patch), torch.ones_like(n_patch))
 
     elif max_len >= tile_size / 2.0:
-        s = (tile_size / 2.0) / max_len
-        new_len = round(min_len * s)
+        new_len = round(min_len * (tile_size / 2.0) / max_len)
 
         p_list = []
         for _ in range(tile_size // new_len):
             repeat = 2
             p1_list = []
             for _ in range(repeat):
-                p1 = torchvision.transforms.Resize((tile_size // 2, new_len))(t_patch)
+                p_1 = torchvision.transforms.Resize((tile_size // 2, new_len))(t_patch)
                 if torch.rand([]) < 0.6:
-                    p1_list.append(FlipOp(p1))
+                    p1_list.append(FlipOp(p_1))
                 else:
-                    p1_list.append(torch.zeros_like(p1))
-            p1 = torch.cat(p1_list, dim=-2)
-            p_list.append(p1)
+                    p1_list.append(torch.zeros_like(p_1))
+            p_1 = torch.cat(p1_list, dim=-2)
+            p_list.append(p_1)
 
-        p2 = torchvision.transforms.RandomCrop((tile_size, tile_size % new_len))(p1)
-        p_list.append(FlipOp(p2))
+        p_2 = torchvision.transforms.RandomCrop((tile_size, tile_size % new_len))(p_1)
+        p_list.append(FlipOp(p_2))
 
-        pp = torch.cat(p_list, dim=-1)
-        pp = torchvision.transforms.CenterCrop((tile_size + 2 * boundary, tile_size + 2 * boundary))(pp)
-        mm = torch.where(pp == 0, torch.zeros_like(pp), torch.ones_like(pp))
+        n_patch = torch.cat(p_list, dim=-1)
+        n_patch = torchvision.transforms.CenterCrop((tile_size + 2 * boundary, tile_size + 2 * boundary))(n_patch)
+        n_mask = torch.where(n_patch == 0, torch.zeros_like(n_patch), torch.ones_like(n_patch))
 
     else:
-        t = torch.cat([t_patch[None, :], t_mask[None, :]], dim=0)
-        pp = []
-        mm = []
+        t_1 = torch.cat([t_patch[None, :], t_mask[None, :]], dim=0)
+        n_patch = []
+        n_mask = []
         for _ in range(tile_size // min_len):
             p1_list = []
             m1_list = []
             for _ in range(tile_size // max_len):
                 if torch.rand([]) < 0.4:
-                    t = FlipOp(t)
-                    p1_list.append(t[0, :])
-                    m1_list.append(t[1, :])
+                    t_1 = FlipOp(t_1)
+                    p1_list.append(t_1[0, :])
+                    m1_list.append(t_1[1, :])
                 else:
                     p1_list.append(torch.zeros_like(t_patch))
                     m1_list.append(torch.zeros_like(t_mask))
-            p1 = torch.cat(p1_list, dim=-2)
-            m1 = torch.cat(m1_list, dim=-2)
-            pp.append(p1)
-            mm.append(m1)
-        pp = torch.cat(pp, dim=-1)
-        mm = torch.cat(mm, dim=-1)
-        pp = torchvision.transforms.CenterCrop((tile_size + 2 * boundary, tile_size + 2 * boundary))(pp)
-        mm = torchvision.transforms.CenterCrop((tile_size + 2 * boundary, tile_size + 2 * boundary))(mm)
+            p_1 = torch.cat(p1_list, dim=-2)
+            m_1 = torch.cat(m1_list, dim=-2)
+            n_patch.append(p_1)
+            n_mask.append(m_1)
+        n_patch = torch.cat(n_patch, dim=-1)
+        n_mask = torch.cat(n_mask, dim=-1)
+        n_patch = torchvision.transforms.CenterCrop((tile_size + 2 * boundary, tile_size + 2 * boundary))(n_patch)
+        n_mask = torchvision.transforms.CenterCrop((tile_size + 2 * boundary, tile_size + 2 * boundary))(n_mask)
 
     if flip:
-        pp = torch.permute(pp, (0, 2, 1))
-        mask = torch.permute(mm, (0, 2, 1))
+        n_patch = torch.permute(n_patch, (0, 2, 1))
+        mask = torch.permute(n_mask, (0, 2, 1))
     else:
-        mask = mm.clone()
+        mask = n_mask.clone()
 
-    return pp, mask
+    return n_patch, mask
 
 
 def generate_tile(patches: list, masks: list, tile_size: int, scale: list) -> Tuple["torch.Tensor", "torch.Tensor"]:
@@ -170,22 +168,22 @@ def generate_tile(patches: list, masks: list, tile_size: int, scale: list) -> Tu
 
     tile = torch.zeros((0, 3, tile_size, tile_size), device=device)
     mask = torch.zeros((0, 3, tile_size, tile_size), device=device)
-    for s in scale:
-        cur_strides = tile_size // s
+    for cur_s in scale:
+        cur_strides = tile_size // cur_s
         cur_tile = []
         cur_mask = []
 
-        for x_i in range(s):
+        for _ in range(cur_s):
             t1_list = []
             m1_list = []
-            for y_i in range(s):
+            for _ in range(cur_s):
                 g_tile, f_mask = _generate_tile_kernel(patches, masks, tile_size=cur_strides)
                 t1_list.append(g_tile[None, :])
                 m1_list.append(f_mask[None, :])
-            t1 = torch.cat(t1_list, dim=-2)
-            m1 = torch.cat(m1_list, dim=-2)
-            cur_tile.append(t1)
-            cur_mask.append(m1)
+            cur_t = torch.cat(t1_list, dim=-2)
+            cur_m = torch.cat(m1_list, dim=-2)
+            cur_tile.append(cur_t)
+            cur_mask.append(cur_m)
         cur_tile = torch.cat(cur_tile, dim=-1)
         cur_mask = torch.cat(cur_mask, dim=-1)
 
@@ -195,9 +193,14 @@ def generate_tile(patches: list, masks: list, tile_size: int, scale: list) -> Tu
     return tile, mask
 
 
-# internal used
 class TileObj:
+    """
+    Internally used object that stores information about each tile.
+    """
     def __init__(self, tile_size: int, device: "torch.cuda.device") -> None:
+        """
+        Create a tile instance.
+        """
         import torch
 
         self.patch = torch.zeros((3, tile_size, tile_size), device=device)
@@ -206,20 +209,25 @@ class TileObj:
         self.eligible = False
 
     def update(self, eligible=None, bcount=None, diff=None, patch=None) -> None:
-
-        if not (eligible is None):
+        """
+        Update the properties of the object
+        """
+        if eligible is not None:
             self.eligible = eligible
 
-        if not (bcount is None):
+        if bcount is not None:
             self.bcount = bcount
 
-        if not (diff is None):
+        if diff is not None:
             self.diff = diff
 
-        if not (patch is None):
+        if patch is not None:
             self.patch = patch
 
     def compare(self, target: "TileObj") -> bool:
+        """
+        Comparison operation.
+        """
         if self.eligible is True and target.eligible is False:
             return True
         elif self.eligible is False and target.eligible is True:
@@ -237,7 +245,13 @@ class TileObj:
 
 
 class TileArray:
+    """
+    Internally used object that stores the list of tiles.
+    """
     def __init__(self, xyxy: list, threshold: int, tile_size: int, k: int, device: "torch.cuda.device") -> None:
+        """
+        Initialization operation.
+        """
         import torch
 
         self.threshold = threshold
@@ -248,7 +262,9 @@ class TileArray:
         self.patch_list = [TileObj(tile_size=tile_size, device=device)] * self.k
 
     def insert(self, target: TileObj) -> None:
-
+        """
+        Insertion operation.
+        """
         if target.bcount < self.threshold:
             return
 
@@ -265,6 +281,9 @@ class TileArray:
         self.patch_list = out[: self.k]
 
     def pop(self) -> None:
+        """
+        Pop operation.
+        """
         out = self.patch_list[1:] + [TileObj(tile_size=self.tile_size, device=self.device)]
         self.patch_list = out
 
@@ -374,21 +393,21 @@ class SNAL(EvasionAttack):
         # Prapare a 2D array to store the results of each grid
         buffer_depth = 5
         tile_mat = {}
-        for ii in range(self.num_grid):
-            for jj in range(self.num_grid):
-                x1 = ii * tile_size
-                y1 = jj * tile_size
-                x2 = x1 + tile_size
-                y2 = y1 + tile_size
-                tile_mat[(ii, jj)] = TileArray(
-                    list([x1, y1, x2, y2]), self.threshold_objs, tile_size, buffer_depth, self.estimator.device
+        for idx_i in range(self.num_grid):
+            for idx_j in range(self.num_grid):
+                x_1 = idx_i * tile_size
+                y_1 = idx_j * tile_size
+                x_2 = x_1 + tile_size
+                y_2 = y_1 + tile_size
+                tile_mat[(idx_i, idx_j)] = TileArray(
+                    list([x_1, y_1, x_2, y_2]), self.threshold_objs, tile_size, buffer_depth, self.estimator.device
                 )
 
         # init guess
         n_samples = 10
         x_adv, tile_mat = self._init_guess(tile_mat, x_adv, x, tile_size, n_samples=n_samples)
 
-        b = 0
+        batch_idx = 0
         candidates_patch = self.candidates
         candidates_mask = [None] * len(candidates_patch)
 
@@ -406,32 +425,32 @@ class SNAL(EvasionAttack):
             candidates_mask = candidates_mask + [None] * len(adv_patch[0])
 
             for key, obj in tile_mat.items():
-                ii, jj = key
-                b1 = obj.xyxy
+                idx_i, idx_j = key
+                box_1 = obj.xyxy
                 obj_threshold = obj.threshold
-                [x1, y1, x2, y2] = b1.type(torch.IntTensor)
-                overlay = bbox_ioa(b1.type(torch.FloatTensor), adv_position.type(torch.FloatTensor))
+                [x_1, y_1, x_2, y_2] = box_1.type(torch.IntTensor)
+                overlay = bbox_ioa(box_1.type(torch.FloatTensor), adv_position.type(torch.FloatTensor))
                 bcount = torch.sum(overlay > 0.0).item()
 
-                pert = x_adv[b, :, y1:y2, x1:x2] - x[b, :, y1:y2, x1:x2]
+                pert = x_adv[batch_idx, :, y_1:y_2, x_1:x_2] - x[batch_idx, :, y_1:y_2, x_1:x_2]
                 loss = self._get_loss(pert, self.eps)
                 eligible = torch.max(torch.abs(pert)) < self.eps and bcount >= obj_threshold
-                TPatch_cur = TileObj(tile_size=tile_size, device=self.estimator.device)
-                TPatch_cur.update(eligible, bcount, torch.sum(loss), x_adv[b, :, y1:y2, x1:x2].clone())
+                tpatch_cur = TileObj(tile_size=tile_size, device=self.estimator.device)
+                tpatch_cur.update(eligible, bcount, torch.sum(loss), x_adv[batch_idx, :, y_1:y_2, x_1:x_2].clone())
 
                 # insert op
-                prev = tile_mat[(ii, jj)]
-                prev.insert(TPatch_cur)
-                tile_mat[(ii, jj)] = prev
+                prev = tile_mat[(idx_i, idx_j)]
+                prev.insert(tpatch_cur)
+                tile_mat[(idx_i, idx_j)] = prev
 
-                sorted_patch = tile_mat[(ii, jj)].patch_list
+                sorted_patch = tile_mat[(idx_i, idx_j)].patch_list
                 bcount_list = []
-                for sp in sorted_patch:
-                    if sp.bcount >= obj_threshold:
-                        bcount_list.append(sp)
+                for cur_sp in sorted_patch:
+                    if cur_sp.bcount >= obj_threshold:
+                        bcount_list.append(cur_sp)
 
                 if len(bcount_list) == buffer_depth and bcount_list[-1].bcount > obj_threshold:
-                    tile_mat[(ii, jj)].threshold = obj_threshold + 1
+                    tile_mat[(idx_i, idx_j)].threshold = obj_threshold + 1
 
                 if len(bcount_list) < buffer_depth:
 
@@ -446,7 +465,7 @@ class SNAL(EvasionAttack):
                     idx_perm = idx_perm[:n_samples]
                     c_tile = r_tile[idx_perm, :]
                     c_mask = r_mask[idx_perm, :]
-                    x_ref = x[:, :, y1:y2, x1:x2]
+                    x_ref = x[:, :, y_1:y_2, x_1:x_2]
 
                     updated = ((1.0 - c_mask) * x_ref) + c_mask * (0.0 * x_ref + 1.0 * c_tile)
 
@@ -461,10 +480,10 @@ class SNAL(EvasionAttack):
 
                 else:
                     target = bcount_list[0].patch[None, :]
-                    x_ref = x[b, :, y1:y2, x1:x2]
+                    x_ref = x[batch_idx, :, y_1:y_2, x_1:x_2]
                     updated = self._color_projection(target, x_ref, self.eps)
 
-                x_adv[b, :, y1:y2, x1:x2] = updated
+                x_adv[batch_idx, :, y_1:y_2, x_1:x_2] = updated
                 x_adv = torch.round(x_adv * 255.0) / 255.0
                 x_adv = torch.clamp(x_adv, x - 2.5 * self.eps, x + 2.5 * self.eps)
                 x_adv = torch.clamp(x_adv, 0.0, 1.0)
@@ -472,8 +491,8 @@ class SNAL(EvasionAttack):
         x_out = self._assemble(tile_mat, x)
         mask = torch.zeros_like(x_out)
         _, adv_position = self.collector(self.estimator, x_out)
-        for e in adv_position[0]:
-            mask[:, :, e[1] : e[3], e[0] : e[2]] = mask[:, :, e[1] : e[3], e[0] : e[2]] + 1
+        for pos in adv_position[0]:
+            mask[:, :, pos[1] : pos[3], pos[0] : pos[2]] = mask[:, :, pos[1] : pos[3], pos[0] : pos[2]] + 1
         mask = torch.where(mask > 0, torch.ones_like(mask), torch.zeros_like(mask))
         x_adv = mask * x_out + (1.0 - mask) * x
         x_adv = torch.clamp(x_adv, x - self.eps, x + self.eps)
@@ -552,10 +571,10 @@ class SNAL(EvasionAttack):
 
         ans = x_org.clone()
         for obj in tile_mat.values():
-            [x1, y1, x2, y2] = obj.xyxy.type(torch.IntTensor)
+            [x_1, y_1, x_2, y_2] = obj.xyxy.type(torch.IntTensor)
             tile = obj.patch_list[0].patch[None, :]
             mask = torch.where(tile != 0, torch.ones_like(tile), torch.zeros_like(tile))
-            ans[0, :, y1:y2, x1:x2] = mask * tile + (1.0 - mask) * ans[0, :, y1:y2, x1:x2]
+            ans[0, :, y_1:y_2, x_1:x_2] = mask * tile + (1.0 - mask) * ans[0, :, y_1:y_2, x_1:x_2]
         return ans
 
     def _init_guess(
@@ -572,7 +591,7 @@ class SNAL(EvasionAttack):
         """
         import torch
 
-        TRIAL = 10
+        TRIAL = 10  # pylint: disable=C0103
         patches = self.candidates
         masks = [None] * len(self.candidates)
         for _ in range(TRIAL):
@@ -603,15 +622,15 @@ class SNAL(EvasionAttack):
                 mask_perm = r_mask[idx_perm, :]
 
                 # merge tiles
-                b1 = obj.xyxy
-                [x1, y1, x2, y2] = b1.type(torch.IntTensor)
-                x_ref = x_init[:, :, y1:y2, x1:x2]
+                box_1 = obj.xyxy
+                [x_1, y_1, x_2, y_2] = box_1.type(torch.IntTensor)
+                x_ref = x_init[:, :, y_1:y_2, x_1:x_2]
                 x_new = ((1.0 - mask_perm) * x_ref) + mask_perm * (0.0 * x_ref + 1.0 * tile_perm)
 
                 # randomly roll-back
                 rand_rb = torch.rand([n_samples, 1, 1, 1], device=self.estimator.device)
                 x_new = torch.where(rand_rb < 0.8, x_new, x_ref)
-                x_cand[:, :, y1:y2, x1:x2] = x_new
+                x_cand[:, :, y_1:y_2, x_1:x_2] = x_new
 
             # spatial drop
             n_mask = drop_block2d(x_cand, 0.05, 3)
@@ -622,66 +641,66 @@ class SNAL(EvasionAttack):
             x_cand = torch.clamp(x_cand, 0.0, 1.0)
 
             # update results
-            adv_patch, adv_position = self.collector(self.estimator, x_cand)
+            _, adv_position = self.collector(self.estimator, x_cand)
             for idx in range(n_samples):
                 cur_position = adv_position[idx]
 
                 for key, obj in tile_mat.items():
 
-                    ii, jj = key
-                    b1 = obj.xyxy
+                    idx_i, idx_j = key
+                    box_1 = obj.xyxy
                     obj_threshold = obj.threshold
-                    [x1, y1, x2, y2] = b1.type(torch.IntTensor)
-                    overlay = bbox_ioa(b1.type(torch.FloatTensor), cur_position.type(torch.FloatTensor))
+                    [x_1, y_1, x_2, y_2] = box_1.type(torch.IntTensor)
+                    overlay = bbox_ioa(box_1.type(torch.FloatTensor), cur_position.type(torch.FloatTensor))
                     bcount = torch.sum(overlay > 0.0).item()
 
-                    x_ref = x_org[:, :, y1:y2, x1:x2]
-                    x_cur = x_cand[idx, :, y1:y2, x1:x2].clone()
+                    x_ref = x_org[:, :, y_1:y_2, x_1:x_2]
+                    x_cur = x_cand[idx, :, y_1:y_2, x_1:x_2].clone()
 
                     pert = x_cur - x_ref
                     loss = self._get_loss(pert, self.eps)
                     eligible = torch.max(torch.abs(pert)) < self.eps and bcount >= obj_threshold
-                    TPatch_cur = TileObj(tile_size=tile_size, device=self.estimator.device)
-                    TPatch_cur.update(eligible, bcount, torch.sum(loss), x_cur)
+                    tpatch_cur = TileObj(tile_size=tile_size, device=self.estimator.device)
+                    tpatch_cur.update(eligible, bcount, torch.sum(loss), x_cur)
                     # insert op
-                    prev = tile_mat[(ii, jj)]
-                    prev.insert(TPatch_cur)
-                    tile_mat[(ii, jj)] = prev
+                    prev = tile_mat[(idx_i, idx_j)]
+                    prev.insert(tpatch_cur)
+                    tile_mat[(idx_i, idx_j)] = prev
 
         # clean non-active regions
         x_out = x_init.clone()
         x_eval = self._assemble(tile_mat, x_org)
-        adv_patch, adv_position = self.collector(self.estimator, x_eval)
+        _, adv_position = self.collector(self.estimator, x_eval)
         cur_position = adv_position[0]
         for key, obj in tile_mat.items():
-            ii, jj = key
-            b1 = obj.xyxy
-            [x1, y1, x2, y2] = b1.type(torch.IntTensor)
-            overlay = bbox_ioa(b1.type(torch.FloatTensor), cur_position.type(torch.FloatTensor))
+            idx_i, idx_j = key
+            box_1 = obj.xyxy
+            [x_1, y_1, x_2, y_2] = box_1.type(torch.IntTensor)
+            overlay = bbox_ioa(box_1.type(torch.FloatTensor), cur_position.type(torch.FloatTensor))
             bcount = torch.sum(overlay > 0.0).item()
 
-            x_ref = x_init[:, :, y1:y2, x1:x2]
-            x_tag = x_eval[:, :, y1:y2, x1:x2]
+            x_ref = x_init[:, :, y_1:y_2, x_1:x_2]
+            x_tag = x_eval[:, :, y_1:y_2, x_1:x_2]
             cur_mask = torch.zeros_like(x_ref)
             if bcount > 1:
                 bbox = cur_position[overlay > 0.0]
-                for b in bbox:
-                    bx1 = torch.clamp_min(b[0] - x1, 0)
-                    by1 = torch.clamp_min(b[1] - y1, 0)
-                    bx2 = torch.clamp_max(b[2] - x1, (x2 - x1 - 1).to(self.estimator.device))
-                    by2 = torch.clamp_max(b[3] - y1, (y2 - y1 - 1).to(self.estimator.device))
+                for box in bbox:
+                    bx1 = torch.clamp_min(box[0] - x_1, 0)
+                    by1 = torch.clamp_min(box[1] - y_1, 0)
+                    bx2 = torch.clamp_max(box[2] - x_1, (x_2 - x_1 - 1).to(self.estimator.device))
+                    by2 = torch.clamp_max(box[3] - y_1, (y_2 - y_1 - 1).to(self.estimator.device))
                     cur_mask[:, :, by1:by2, bx1:bx2] = 1.0
             else:
-                prev = tile_mat[(ii, jj)]
+                prev = tile_mat[(idx_i, idx_j)]
                 prev.pop()
-                tile_mat[(ii, jj)] = prev
+                tile_mat[(idx_i, idx_j)] = prev
 
             a_mask = drop_block2d(x_ref, 0.05, 1)
             cur_mask = cur_mask * a_mask
             updated = ((1.0 - cur_mask) * x_ref) + cur_mask * (0.0 * x_ref + 1.0 * x_tag)
             updated = ((1.0 - cur_mask) * x_ref) + cur_mask * (0.0 * x_ref + 1.0 * updated)
 
-            x_out[:, :, y1:y2, x1:x2] = updated
+            x_out[:, :, y_1:y_2, x_1:x_2] = updated
 
         return x_out, tile_mat
 
