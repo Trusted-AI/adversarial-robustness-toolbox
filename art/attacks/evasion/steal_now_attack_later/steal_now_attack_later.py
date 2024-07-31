@@ -197,6 +197,7 @@ class TileObj:
     """
     Internally used object that stores information about each tile.
     """
+
     def __init__(self, tile_size: int, device: "torch.cuda.device") -> None:
         """
         Create a tile instance.
@@ -250,6 +251,7 @@ class TileArray:
     """
     Internally used object that stores the list of tiles.
     """
+
     def __init__(self, xyxy: list, threshold: int, tile_size: int, k: int, device: "torch.cuda.device") -> None:
         """
         Initialization operation.
@@ -354,7 +356,9 @@ class SNAL(EvasionAttack):
 
         return x_adv
 
-    def _generate_batch(self, x_batch: np.ndarray, y_batch: Optional[np.ndarray] = None) -> np.ndarray:  # pylint: disable=W0613
+    def _generate_batch(
+        self, x_batch: np.ndarray, y_batch: Optional[np.ndarray] = None
+    ) -> np.ndarray:  # pylint: disable=W0613
         """
         Run the attack on a batch of images.
 
@@ -519,7 +523,9 @@ class SNAL(EvasionAttack):
 
         return loss
 
-    def _color_projection(self, tile: "torch.tensor", x_ref: "torch.tensor", epsilon: float) -> "torch.tensor":  # pylint: disable=R0201
+    def _color_projection(
+        self, tile: "torch.tensor", x_ref: "torch.tensor", epsilon: float
+    ) -> "torch.tensor":  # pylint: disable=R0201
         """
         Convert statistics information from target to source.
 
