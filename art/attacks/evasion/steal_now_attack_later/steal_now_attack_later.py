@@ -241,10 +241,7 @@ class TileObj:
         if self.bcount < target.bcount:
             return False
 
-        if self.diff < target.diff:
-            return True
-        else:
-            return False
+        return bool(self.diff < target.diff)
 
 
 class TileArray:
@@ -357,8 +354,8 @@ class SNAL(EvasionAttack):
         return x_adv
 
     def _generate_batch(
-        self, x_batch: np.ndarray, y_batch: Optional[np.ndarray] = None
-    ) -> np.ndarray:  # pylint: disable=W0613
+        self, x_batch: np.ndarray, y_batch: Optional[np.ndarray] = None  # pylint: disable=W0613
+    ) -> np.ndarray:
         """
         Run the attack on a batch of images.
 
@@ -523,9 +520,9 @@ class SNAL(EvasionAttack):
 
         return loss
 
-    def _color_projection(
+    def _color_projection(  # pylint: disable=R0201
         self, tile: "torch.tensor", x_ref: "torch.tensor", epsilon: float
-    ) -> "torch.tensor":  # pylint: disable=R0201
+    ) -> "torch.tensor":
         """
         Convert statistics information from target to source.
 
