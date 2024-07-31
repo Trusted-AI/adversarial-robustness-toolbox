@@ -228,20 +228,22 @@ class TileObj:
         """
         Comparison operation.
         """
+
         if self.eligible is True and target.eligible is False:
             return True
-        elif self.eligible is False and target.eligible is True:
+
+        if self.eligible is False and target.eligible is True:
             return False
+
+        if self.bcount > target.bcount:
+            return True
+        if self.bcount < target.bcount:
+            return False
+
+        if self.diff < target.diff:
+            return True
         else:
-            if self.bcount > target.bcount:
-                return True
-            elif self.bcount < target.bcount:
-                return False
-            else:
-                if self.diff < target.diff:
-                    return True
-                else:
-                    return False
+            return False
 
 
 class TileArray:
@@ -275,8 +277,8 @@ class TileArray:
                 out.append(target)
                 out = out + prev[k_it:]
                 break
-            else:
-                out.append(prev[k_it])
+
+            out.append(prev[k_it])
 
         self.patch_list = out[: self.k]
 
@@ -352,7 +354,7 @@ class SNAL(EvasionAttack):
 
         return x_adv
 
-    def _generate_batch(self, x_batch: np.ndarray, y_batch: Optional[np.ndarray] = None) -> np.ndarray:
+    def _generate_batch(self, x_batch: np.ndarray, y_batch: Optional[np.ndarray] = None) -> np.ndarray:  # pylint: disable=W0613
         """
         Run the attack on a batch of images.
 
@@ -500,7 +502,7 @@ class SNAL(EvasionAttack):
 
         return x_adv
 
-    def _get_loss(self, pert: "torch.tensor", epsilon: float) -> "torch.tensor":
+    def _get_loss(self, pert: "torch.tensor", epsilon: float) -> "torch.tensor":  # pylint: disable=R0201
         """
         Calculate accumulated distance of the perturbations outside the epslion ball.
 
@@ -517,7 +519,7 @@ class SNAL(EvasionAttack):
 
         return loss
 
-    def _color_projection(self, tile: "torch.tensor", x_ref: "torch.tensor", epsilon: float) -> "torch.tensor":
+    def _color_projection(self, tile: "torch.tensor", x_ref: "torch.tensor", epsilon: float) -> "torch.tensor":  # pylint: disable=R0201
         """
         Convert statistics information from target to source.
 
@@ -559,7 +561,7 @@ class SNAL(EvasionAttack):
 
         return updated
 
-    def _assemble(self, tile_mat: dict, x_org: "torch.tensor") -> "torch.tensor":
+    def _assemble(self, tile_mat: dict, x_org: "torch.tensor") -> "torch.tensor":  # pylint: disable=R0201
         """
         Combine the best patches from each grid into a single image.
 
