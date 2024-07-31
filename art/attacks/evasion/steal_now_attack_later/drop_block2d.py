@@ -30,7 +30,7 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
-def drop_block2d(x: "torch.tensor", p: float, block_size: int):
+def drop_block2d(x: "torch.tensor", prob: float, block_size: int):
     """
     === NOTE ===
     This function is modified from torchvision (torchvision/ops/drop_block.py)
@@ -38,22 +38,22 @@ def drop_block2d(x: "torch.tensor", p: float, block_size: int):
     === ==== ===
     :param x (Tensor[N, C, H, W]): The input tensor or 4-dimensions with the first one
                    being its batch i.e. a batch with ``N`` rows.
-    :param p (float): Probability of an element to be dropped.
+    :param prob (float): Probability of an element to be dropped.
     :param block_size (int): Size of the block to drop.
 
     :return: Tensor[N, C, H, W]: The mask of activate pixels.
     """
     import torch
 
-    if p < 0.0 or p > 1.0:
-        raise ValueError(f"drop probability has to be between 0 and 1, but got {p}.")
+    if prob < 0.0 or prob > 1.0:
+        raise ValueError(f"drop probability has to be between 0 and 1, but got {prob}.")
     if x.ndim != 4:
         raise ValueError(f"input should be 4 dimensional. Got {x.ndim} dimensions.")
 
     N, _, H, W = x.size()  # pylint: disable=C0103
     block_size = min(block_size, W, H)
     # compute the gamma of Bernoulli distribution
-    gamma = (p * H * W) / ((block_size ** 2) * ((H - block_size + 1) * (W - block_size + 1)))
+    gamma = (prob * H * W) / ((block_size ** 2) * ((H - block_size + 1) * (W - block_size + 1)))
     noise = torch.empty((N, 1, H - block_size + 1, W - block_size + 1), dtype=x.dtype, device=x.device)
     noise.bernoulli_(gamma)
 
