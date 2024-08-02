@@ -56,8 +56,6 @@ jax[cpu]==0.4.26
 
 # other
 pytest~=8.3.2
-pytest-flake8~=1.2.2
-flake8~=7.1.0
 pytest-mock~=3.14.0
 pytest-cov~=5.0.0
 requests~=2.31.0
