@@ -2,4 +2,4 @@
 line-length=120
 [tool.ruff]
 exclude = [".venv", "contrib"]
-ignore = ["F401"]
+lint.ignore = ["F401"]
