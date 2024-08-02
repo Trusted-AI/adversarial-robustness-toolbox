@@ -153,7 +153,7 @@ class OverTheAirFlickeringPyTorch(EvasionAttack):
         x_adv = x.copy().astype(ART_NUMPY_DTYPE)
 
         # Compute perturbation with batching
-        for (batch_id, batch_all) in enumerate(
+        for batch_id, batch_all in enumerate(
             tqdm(data_loader, desc="OverTheAirFlickeringPyTorch - Batches", leave=False, disable=not self.verbose)
         ):
             (batch, batch_labels) = batch_all[0], batch_all[1]
@@ -265,7 +265,7 @@ class OverTheAirFlickeringPyTorch(EvasionAttack):
 
             l_1 = torch.zeros(1).to(self.estimator.device)
             l_m = (label_prob - max_non_label_prob) * (1 - 2 * int(self.targeted)) + self.loss_margin
-            l_2 = (l_m ** 2) / self.loss_margin
+            l_2 = (l_m**2) / self.loss_margin
             l_3 = l_m
 
             adversarial_loss = torch.max(l_1, torch.min(l_2, l_3)[0])[0]
@@ -273,7 +273,7 @@ class OverTheAirFlickeringPyTorch(EvasionAttack):
             # calculate regularization terms
             # thickness - loss term
             perturbation_i = perturbation[[i]] + eps
-            norm_reg = torch.mean(perturbation_i ** 2) + 1e-12
+            norm_reg = torch.mean(perturbation_i**2) + 1e-12
             perturbation_roll_right = torch.roll(perturbation_i, 1, dims=1)
             perturbation_roll_left = torch.roll(perturbation_i, -1, dims=1)
 

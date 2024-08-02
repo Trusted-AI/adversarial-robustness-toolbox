@@ -809,7 +809,7 @@ class AdversarialTrainerOAATPyTorch(AdversarialTrainerOAAT):
             temp_activation = activations_dict[name]
             size_temp_activation = list(temp_activation.size())
             norm_factor_layer = size_temp_activation[2] * size_temp_activation[3]
-            norm_temp_activation = torch.sqrt(torch.sum(temp_activation ** 2, dim=1, keepdim=True)) + EPS
+            norm_temp_activation = torch.sqrt(torch.sum(temp_activation**2, dim=1, keepdim=True)) + EPS
             temp_activation_n_channel = temp_activation / norm_temp_activation
             temp_activation_n_layer_channel = temp_activation_n_channel / np.sqrt(norm_factor_layer)
             temp_activation_n_layer_channel_flat = temp_activation_n_layer_channel.view(size_temp_activation[0], -1)
@@ -1177,13 +1177,10 @@ class AdversarialTrainerOAATPyTorch(AdversarialTrainerOAAT):
                     "The parameter `eps` of type `np.ndarray` is not supported to use with norm 2."
                 )
 
-            values_tmp = (
-                values_tmp
-                * torch.min(
-                    torch.tensor([1.0], dtype=torch.float32).to(self._classifier.device),
-                    eps / (torch.norm(values_tmp, p=2, dim=1) + EPS),
-                ).unsqueeze_(-1)
-            )
+            values_tmp = values_tmp * torch.min(
+                torch.tensor([1.0], dtype=torch.float32).to(self._classifier.device),
+                eps / (torch.norm(values_tmp, p=2, dim=1) + EPS),
+            ).unsqueeze_(-1)
 
         elif norm_p == 1:
             if isinstance(eps, np.ndarray):
@@ -1191,13 +1188,10 @@ class AdversarialTrainerOAATPyTorch(AdversarialTrainerOAAT):
                     "The parameter `eps` of type `np.ndarray` is not supported to use with norm 1."
                 )
 
-            values_tmp = (
-                values_tmp
-                * torch.min(
-                    torch.tensor([1.0], dtype=torch.float32).to(self._classifier.device),
-                    eps / (torch.norm(values_tmp, p=1, dim=1) + EPS),
-                ).unsqueeze_(-1)
-            )
+            values_tmp = values_tmp * torch.min(
+                torch.tensor([1.0], dtype=torch.float32).to(self._classifier.device),
+                eps / (torch.norm(values_tmp, p=1, dim=1) + EPS),
+            ).unsqueeze_(-1)
 
         elif norm_p in [np.inf, "inf"]:
             if isinstance(eps, np.ndarray):

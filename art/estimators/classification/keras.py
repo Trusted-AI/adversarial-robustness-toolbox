@@ -271,7 +271,9 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
             raise ValueError("Loss function not recognised.")
 
         # Define the loss using the loss function
-        if "__name__" in dir(loss_function,) and loss_function.__name__ in [
+        if "__name__" in dir(
+            loss_function,
+        ) and loss_function.__name__ in [
             "categorical_crossentropy",
             "sparse_categorical_crossentropy",
             "binary_crossentropy",

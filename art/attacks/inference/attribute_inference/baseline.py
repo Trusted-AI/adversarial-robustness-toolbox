@@ -295,7 +295,7 @@ class AttributeInferenceBaseline(AttributeInferenceAttack):
             self.attack_model.train()  # type: ignore
 
             for _ in range(self.epochs):
-                for (input1, targets) in train_loader:
+                for input1, targets in train_loader:
                     input1, targets = to_cuda(input1), to_cuda(targets)
                     _, targets = torch.autograd.Variable(input1), torch.autograd.Variable(targets)
 

@@ -4,6 +4,7 @@ dataset and creates adversarial examples using the Fast Gradient Sign Method. He
 the model, it would also be possible to provide a pretrained model to the ART classifier.
 The parameters are chosen for reduced computational requirements of the script and not optimised for accuracy.
 """
+
 import numpy as np
 
 from art.attacks.evasion import FastGradientMethod

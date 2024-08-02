@@ -217,7 +217,7 @@ class LowProFool(EvasionAttack):
             # Apply a simple Pearson correlation calculation.
             pearson_correlations = [pearsonr(x[:, col], y)[0] for col in range(x.shape[1])]
             absolutes = np.abs(np.array(pearson_correlations))
-            self.importance_vec = absolutes / np.power(np.sum(absolutes ** 2), 0.5)
+            self.importance_vec = absolutes / np.power(np.sum(absolutes**2), 0.5)
 
         elif callable(self.importance):  # pragma: no cover
             # Apply a custom function to call on the provided data.

@@ -324,9 +324,9 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         # Reset delta with new result
         local_batch_shape = successful_adv_input_1st_stage.shape
         self.global_optimal_delta.data = torch.zeros(self.batch_size, self.global_max_length).type(torch.float64)
-        self.global_optimal_delta.data[
-            : local_batch_shape[0], : local_batch_shape[1]
-        ] = successful_perturbation_1st_stage
+        self.global_optimal_delta.data[: local_batch_shape[0], : local_batch_shape[1]] = (
+            successful_perturbation_1st_stage
+        )
 
         # Second stage of attack
         successful_adv_input_2nd_stage = self._attack_2nd_stage(
@@ -767,7 +767,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
 
         # Compute the psd matrix
         psd = (8.0 / 3.0) * transformed_delta / self.win_length
-        psd = psd ** 2
+        psd = psd**2
         psd = (
             torch.pow(torch.tensor(10.0).type(torch.float64), torch.tensor(9.6).type(torch.float64)).to(
                 self.estimator.device

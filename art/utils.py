@@ -613,7 +613,7 @@ def random_sphere(
             )
 
         a_tmp = np.random.randn(nb_points, nb_dims)
-        s_2 = np.sum(a_tmp ** 2, axis=1)
+        s_2 = np.sum(a_tmp**2, axis=1)
         base = gammainc(nb_dims / 2.0, s_2 / 2.0) ** (1 / nb_dims) * radius / np.sqrt(s_2)
         res = a_tmp * (np.tile(base, (nb_dims, 1))).T
 

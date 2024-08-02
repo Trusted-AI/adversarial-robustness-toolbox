@@ -92,7 +92,7 @@ class Mp3Compression(Preprocessor):
             elif x_dtype != np.int16 and normalized:
                 # x is not of type np.int16 and seems to be normalized. Therefore undoing normalization and
                 # casting to np.int16.
-                x = (x * 2 ** 15).astype(np.int16)
+                x = (x * 2**15).astype(np.int16)
 
             tmp_wav, tmp_mp3 = BytesIO(), BytesIO()
             write(tmp_wav, sample_rate, x)
@@ -112,7 +112,7 @@ class Mp3Compression(Preprocessor):
 
             if normalized:
                 # x was normalized. Therefore normalizing x_mp3.
-                x_mp3 = x_mp3 * 2 ** -15
+                x_mp3 = x_mp3 * 2**-15
             return x_mp3.astype(x_dtype)
 
         x_orig_type = x.dtype

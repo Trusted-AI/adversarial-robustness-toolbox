@@ -597,7 +597,7 @@ class HopSkipJump(EvasionAttack):
         # Normalize random noise to fit into the range of input data
         rnd_noise = rnd_noise / np.sqrt(
             np.sum(
-                rnd_noise ** 2,
+                rnd_noise**2,
                 axis=tuple(range(len(rnd_noise_shape)))[1:],
                 keepdims=True,
             )

@@ -415,9 +415,9 @@ class SimBA(EvasionAttack):
                 submat = x[:, :, (i * block_size) : ((i + 1) * block_size), (j * block_size) : ((j + 1) * block_size)]
                 if masked:
                     submat = submat * mask
-                var_z[
-                    :, :, (i * block_size) : ((i + 1) * block_size), (j * block_size) : ((j + 1) * block_size)
-                ] = idct(idct(submat, axis=3, norm="ortho"), axis=2, norm="ortho")
+                var_z[:, :, (i * block_size) : ((i + 1) * block_size), (j * block_size) : ((j + 1) * block_size)] = (
+                    idct(idct(submat, axis=3, norm="ortho"), axis=2, norm="ortho")
+                )
 
         if self.estimator.channels_first:
             return var_z

@@ -333,12 +333,20 @@ class ActivationDefence(PoisonFilteringDefence):
                 report,
             ) = analyzer.analyze_by_relative_size(self.clusters_by_class)
         elif self.cluster_analysis == "distance":
-            (self.assigned_clean_by_class, self.poisonous_clusters, report,) = analyzer.analyze_by_distance(
+            (
+                self.assigned_clean_by_class,
+                self.poisonous_clusters,
+                report,
+            ) = analyzer.analyze_by_distance(
                 self.clusters_by_class,
                 separated_activations=self.red_activations_by_class,
             )
         elif self.cluster_analysis == "silhouette-scores":
-            (self.assigned_clean_by_class, self.poisonous_clusters, report,) = analyzer.analyze_by_silhouette_score(
+            (
+                self.assigned_clean_by_class,
+                self.poisonous_clusters,
+                report,
+            ) = analyzer.analyze_by_silhouette_score(
                 self.clusters_by_class,
                 reduced_activations_by_class=self.red_activations_by_class,
             )

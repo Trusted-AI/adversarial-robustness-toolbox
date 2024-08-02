@@ -84,7 +84,7 @@ class NeuralCleanseMixin(AbstainPredictorMixin):
         self.early_stop_threshold = early_stop_threshold
         self.early_stop_patience = early_stop_patience
         self.cost_multiplier_up = cost_multiplier
-        self.cost_multiplier_down = cost_multiplier ** 1.5
+        self.cost_multiplier_down = cost_multiplier**1.5
         self.batch_size = batch_size
         self.top_indices: List[int] = []
         self.activation_threshold = 0

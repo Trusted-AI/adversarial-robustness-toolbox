@@ -330,7 +330,7 @@ def test_fit_importances(iris_dataset):
     def pearson_correlations(x, y):
         correlations = [pearsonr(x[:, col], y)[0] for col in range(x.shape[1])]
         absolutes = np.abs(np.array(correlations))
-        result = absolutes / np.power(np.sum(absolutes ** 2), 0.5)
+        result = absolutes / np.power(np.sum(absolutes**2), 0.5)
         return result
 
     # Setup classifier

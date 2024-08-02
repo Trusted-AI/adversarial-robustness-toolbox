@@ -230,7 +230,7 @@ class HiddenTriggerBackdoorPyTorch(PoisoningAttackWhiteBox):
                         decay_exp = 0
                     else:
                         decay_exp = max(max_index) + 1
-                learning_rate = self.learning_rate * (self.decay_coeff ** decay_exp)
+                learning_rate = self.learning_rate * (self.decay_coeff**decay_exp)
 
                 # Compute the feature representation of the current poisons and
                 # identify the closest trigger sample for each poison

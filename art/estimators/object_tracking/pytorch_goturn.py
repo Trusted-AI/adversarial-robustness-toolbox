@@ -500,9 +500,7 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
 
             return torch.maximum(torch.tensor(0.0).to(self.device), (output_height / 2) - bbox_center_y)
 
-        def crop_pad_image(
-            bbox_tight: "torch.Tensor", image: "torch.Tensor"
-        ) -> Tuple[
+        def crop_pad_image(bbox_tight: "torch.Tensor", image: "torch.Tensor") -> Tuple[
             "torch.Tensor",
             Tuple["torch.Tensor", "torch.Tensor", "torch.Tensor", "torch.Tensor"],
             "torch.Tensor",

@@ -163,7 +163,7 @@ class NewtonFool(EvasionAttack):
         tol = 10e-8
 
         nom = -theta.reshape((-1,) + (1,) * (len(grads.shape) - 1)) * grads
-        denom = norm_grad ** 2
+        denom = norm_grad**2
         denom[denom < tol] = tol
         result = nom / denom.reshape((-1,) + (1,) * (len(grads.shape) - 1))
 

@@ -96,7 +96,7 @@ class BackdoorAttackDGMTrailTensorFlowV2(PoisoningAttackGenerator):
         max_iter=100,
         lambda_p=0.1,
         verbose=-1,
-        **kwargs
+        **kwargs,
         # ):
     ) -> "GENERATOR_TYPE":
         """

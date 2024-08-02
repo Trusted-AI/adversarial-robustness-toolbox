@@ -325,7 +325,7 @@ class AdversarialPatchNumpy(EvasionAttack):
         x = np.linspace(-1, 1, diameter)
         y = np.linspace(-1, 1, diameter)
         x_grid, y_grid = np.meshgrid(x, y, sparse=True)
-        z_grid = (x_grid ** 2 + y_grid ** 2) ** sharpness
+        z_grid = (x_grid**2 + y_grid**2) ** sharpness
 
         mask = 1 - np.clip(z_grid, -1, 1)
 

@@ -40,7 +40,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-EPS_LOG = 10 ** -10
+EPS_LOG = 10**-10
 
 
 class Wasserstein(EvasionAttack):
@@ -599,7 +599,7 @@ class Wasserstein(EvasionAttack):
 
         # Do unfolding
         res_dim_0 = x.shape[0]
-        res_dim_1 = x.shape[1] * kernel_size ** 2
+        res_dim_1 = x.shape[1] * kernel_size**2
         res_dim_2 = (shape[0] - kernel_size + 1) * (shape[1] - kernel_size + 1)
         result = np.zeros((res_dim_0, res_dim_1, res_dim_2))
 
@@ -634,7 +634,7 @@ class Wasserstein(EvasionAttack):
         # Compute local transport
         unfold_x = self._unfold(x=x, kernel_size=kernel_size, padding=kernel_size // 2)
         unfold_x = unfold_x.swapaxes(-1, -2)
-        unfold_x = unfold_x.reshape(*unfold_x.shape[:-1], num_channels, kernel_size ** 2)
+        unfold_x = unfold_x.reshape(*unfold_x.shape[:-1], num_channels, kernel_size**2)
         unfold_x = unfold_x.swapaxes(-2, -3)
 
         tmp_k = var_k.reshape(var_k.shape[0], num_channels, -1)

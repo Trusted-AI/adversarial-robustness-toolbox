@@ -138,7 +138,7 @@ class ObjectSeekerMixin(abc.ABC):
         keep_indices = []
         for idx, (masked_box, masked_label) in enumerate(zip(masked_boxes, masked_labels)):
             keep = True
-            for (base_box, base_label) in zip(base_boxes, base_labels):
+            for base_box, base_label in zip(base_boxes, base_labels):
                 if masked_label == base_label:
                     ioa = intersection_over_area(masked_box, base_box)
                     if ioa >= self.prune_threshold:

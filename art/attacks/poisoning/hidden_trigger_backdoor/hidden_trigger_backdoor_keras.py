@@ -221,7 +221,7 @@ class HiddenTriggerBackdoorKeras(PoisoningAttackWhiteBox):
                         decay_exp = 0
                     else:
                         decay_exp = max(max_index) + 1
-                learning_rate = self.learning_rate * (self.decay_coeff ** decay_exp)
+                learning_rate = self.learning_rate * (self.decay_coeff**decay_exp)
 
                 # Compute distance between features and match samples
                 feat2 = self.estimator.get_activations(poison_samples, self.feature_layer)

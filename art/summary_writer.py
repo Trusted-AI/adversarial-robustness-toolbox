@@ -272,7 +272,7 @@ class SummaryWriterDefault(SummaryWriter):
                         np.square((self.losses[str(batch_id)][i_step] - self.losses[str(batch_id)][-1]) / delta_loss)
                         + ((delta_step - i_step) / delta_step) ** 2
                     )
-                    cos_beta = -(side_b ** 2 - (side_a ** 2 + side_c ** 2)) / (2 * side_a * side_c)
+                    cos_beta = -(side_b**2 - (side_a**2 + side_c**2)) / (2 * side_a * side_c)
 
                     i_2_step = 1 - np.abs(cos_beta)
                     self.i_2 = np.minimum(self.i_2, i_2_step)

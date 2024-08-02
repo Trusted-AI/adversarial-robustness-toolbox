@@ -1862,7 +1862,7 @@ class ConditionalBatchNorm(object):
 
 
 def _l2normalize(v, eps=1e-12):
-    return v / (tf.reduce_sum(v ** 2) ** 0.5 + eps)
+    return v / (tf.reduce_sum(v**2) ** 0.5 + eps)
 
 
 def spectral_norm(w, num_iters=1, update_collection=None):

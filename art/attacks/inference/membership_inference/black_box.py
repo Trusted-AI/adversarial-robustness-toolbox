@@ -346,7 +346,7 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
                 self.attack_model.train()  # type: ignore
 
                 for _ in range(self.epochs):
-                    for (input1, input2, targets) in train_loader:
+                    for input1, input2, targets in train_loader:
                         input1, input2, targets = to_cuda(input1), to_cuda(input2), to_cuda(targets)
                         _, input2 = torch.autograd.Variable(input1), torch.autograd.Variable(input2)
                         targets = torch.autograd.Variable(targets)
@@ -403,7 +403,7 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
                 self.attack_model.train()  # type: ignore
 
                 for _ in range(self.epochs):
-                    for (input1, targets) in train_loader:
+                    for input1, targets in train_loader:
                         input1, targets = to_cuda(input1), to_cuda(targets)
                         input1 = torch.autograd.Variable(input1)
                         targets = torch.autograd.Variable(targets)

@@ -360,7 +360,7 @@ class BoundaryAttack(EvasionAttack):
         perturb_flat -= np.dot(perturb_flat, direction_flat.T) * direction_flat
         perturb = perturb_flat.reshape(self.estimator.input_shape)
 
-        hypotenuse = np.sqrt(1 + delta ** 2)
+        hypotenuse = np.sqrt(1 + delta**2)
         perturb = ((1 - hypotenuse) * (current_sample - original_sample) + perturb) / hypotenuse
         return perturb
 

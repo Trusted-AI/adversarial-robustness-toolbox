@@ -240,7 +240,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         x = np.linspace(-1, 1, diameter)
         y = np.linspace(-1, 1, diameter)
         x_grid, y_grid = np.meshgrid(x, y, sparse=True)
-        z_grid = (x_grid ** 2 + y_grid ** 2) ** sharpness
+        z_grid = (x_grid**2 + y_grid**2) ** sharpness
 
         image_mask = 1 - np.clip(z_grid, -1, 1)
         image_mask = np.expand_dims(image_mask, axis=2)

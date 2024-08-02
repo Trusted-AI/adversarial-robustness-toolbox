@@ -607,8 +607,8 @@ class BFGSB:  # pragma: no cover
         if (db == 0) or (dc == 0) or (b == c):
             return None
         denom = (db * dc) ** 2 * (db - dc)
-        A = dc ** 2 * (fb - fa - C * db) - db ** 2 * (fc - fa - C * dc)
-        B = -(dc ** 3) * (fb - fa - C * db) + db ** 3 * (fc - fa - C * dc)
+        A = dc**2 * (fb - fa - C * db) - db**2 * (fc - fa - C * dc)
+        B = -(dc**3) * (fb - fa - C * db) + db**3 * (fc - fa - C * dc)
 
         A /= denom
         B /= denom
@@ -742,7 +742,7 @@ class Optimizer:  # pragma: no cover
         """
         N = x.shape[0]
 
-        lambda_lower = 2 * c / (bnorm ** 2 + EPS)
+        lambda_lower = 2 * c / (bnorm**2 + EPS)
         lambda_upper = np.sign(c) * np.inf  # optimal initial point (if box-constraints are neglected)
         _lambda = lambda_lower
         k = 0
@@ -761,12 +761,12 @@ class Optimizer:  # pragma: no cover
                         max_step = _u - x[n]
                         delta_step = min(max_step, lam_step)
                         _c += b[n] * delta_step
-                        norm += delta_step ** 2
+                        norm += delta_step**2
                     else:
                         max_step = _ell - x[n]
                         delta_step = max(max_step, lam_step)
                         _c += b[n] * delta_step
-                        norm += delta_step ** 2
+                        norm += delta_step**2
             else:
                 for n in range(N):
                     lam_step = _lambda * b[n] / 2
@@ -774,12 +774,12 @@ class Optimizer:  # pragma: no cover
                         max_step = _ell - x[n]
                         delta_step = max(max_step, lam_step)
                         _c += b[n] * delta_step
-                        norm += delta_step ** 2
+                        norm += delta_step**2
                     else:
                         max_step = _u - x[n]
                         delta_step = min(max_step, lam_step)
                         _c += b[n] * delta_step
-                        norm += delta_step ** 2
+                        norm += delta_step**2
 
             # adjust lambda
             if np.abs(_c) < np.abs(c):
@@ -819,8 +819,8 @@ class Optimizer:  # pragma: no cover
         _mu = params[0]
         t = 1 / (2 * _mu + EPS)
 
-        g = -_mu * r ** 2
-        grad_mu = -(r ** 2)
+        g = -_mu * r**2
+        grad_mu = -(r**2)
 
         for n in range(N):
             d = -s * b[n] * t
@@ -830,9 +830,9 @@ class Optimizer:  # pragma: no cover
             elif d > max_ - x[n]:
                 d = max_ - x[n]
             else:
-                grad_mu += (b[n] + 2 * _mu * d) * (b[n] / (2 * _mu ** 2 + EPS))
+                grad_mu += (b[n] + 2 * _mu * d) * (b[n] / (2 * _mu**2 + EPS))
 
-            grad_mu += d ** 2
+            grad_mu += d**2
             g += (b[n] + _mu * d) * d
 
         return -g, -np.array([grad_mu])
@@ -1033,15 +1033,15 @@ class L2Optimizer(Optimizer):  # pragma: no cover
 
             distance += (d - dx) ** 2
             b_dot_d += bn * d
-            d_norm += d ** 2
+            d_norm += d**2
 
-            g += (dx - d) ** 2 + mu * d ** 2 + lam * bn * d
+            g += (dx - d) ** 2 + mu * d**2 + lam * bn * d
             d_g_d_lam += bn * d
-            d_g_d_mu += d ** 2
+            d_g_d_mu += d**2
 
-        g += -mu * r ** 2 - lam * c
+        g += -mu * r**2 - lam * c
         d_g_d_lam -= c
-        d_g_d_mu -= r ** 2
+        d_g_d_mu -= r**2
 
         return -g, -np.array([d_g_d_lam, d_g_d_mu])
 
@@ -1100,9 +1100,9 @@ class L1Optimizer(Optimizer):  # pragma: no cover
                         d_g_d_lam -= prefac * bn * t
                         d_g_d_mu -= prefac * 2 * d * t
 
-                g += np.abs(dx - d) + mu * d ** 2 + lam * bn * d
+                g += np.abs(dx - d) + mu * d**2 + lam * bn * d
                 d_g_d_lam += bn * d
-                d_g_d_mu += d ** 2
+                d_g_d_mu += d**2
         else:  # mu == 0
             for n in range(N):
                 dx = x0[n] - x[n]
@@ -1114,13 +1114,13 @@ class L1Optimizer(Optimizer):  # pragma: no cover
                 else:
                     d = min_ - x[n]
 
-                g += np.abs(dx - d) + mu * d ** 2 + lam * bn * d
+                g += np.abs(dx - d) + mu * d**2 + lam * bn * d
                 d_g_d_lam += bn * d
-                d_g_d_mu += d ** 2
+                d_g_d_mu += d**2
 
-        g += -mu * r ** 2 - lam * c
+        g += -mu * r**2 - lam * c
         d_g_d_lam -= c
-        d_g_d_mu -= r ** 2
+        d_g_d_mu -= r**2
 
         return -g, -np.array([d_g_d_lam, d_g_d_mu])
 
@@ -1154,7 +1154,7 @@ class L1Optimizer(Optimizer):  # pragma: no cover
 
                 delta[n] = d
                 b_dot_d += b[n] * d
-                norm_d += d ** 2
+                norm_d += d**2
                 distance += np.abs(d - dx)
         else:  # mu == 0
             for n in range(N):
@@ -1169,7 +1169,7 @@ class L1Optimizer(Optimizer):  # pragma: no cover
 
                 delta[n] = d
                 b_dot_d += b[n] * d
-                norm_d += d ** 2
+                norm_d += d**2
                 distance += np.abs(d - dx)
 
         if touchup:
@@ -1185,7 +1185,7 @@ class L1Optimizer(Optimizer):  # pragma: no cover
                     old_d = delta[n]
                     new_d = old_d + dc / b[n]
 
-                    if x[n] + new_d <= max_ and x[n] + new_d >= min_ and norm_d - old_d ** 2 + new_d ** 2 <= r ** 2:
+                    if x[n] + new_d <= max_ and x[n] + new_d >= min_ and norm_d - old_d**2 + new_d**2 <= r**2:
                         # conditions (a) and (b) are fulfilled
                         if k == 0:
                             min_distance = distance - np.abs(old_d - dx) + np.abs(new_d - dx)
@@ -1232,7 +1232,7 @@ class LinfOptimizer(Optimizer):  # pragma: no cover
         func_calls = 0
 
         bnorm = np.linalg.norm(b)
-        lambda0 = 2 * c / bnorm ** 2
+        lambda0 = 2 * c / bnorm**2
 
         k = 0
 
@@ -1349,10 +1349,10 @@ class LinfOptimizer(Optimizer):  # pragma: no cover
                     _active_bnorm += b[n] ** 2
 
                 _c += b[n] * delta_step
-                norm += delta_step ** 2
+                norm += delta_step**2
 
             if 0.9999 * np.abs(c) - EPS < np.abs(_c) < 1.0001 * np.abs(c) + EPS:
-                if norm > r ** 2:
+                if norm > r**2:
                     return -np.inf, k, _lambda
                 else:
                     return -epsilon, k, _lambda
@@ -1534,7 +1534,7 @@ class L0Optimizer(Optimizer):  # pragma: no cover
 
         ργ = ρ * γ
         ρχ = ρ * χ
-        σ_n = σ ** n
+        σ_n = σ**n
 
         f_val = np.empty(n + 1, dtype=np.float64)
         for i in range(n + 1):
@@ -1766,7 +1766,7 @@ class L0Optimizer(Optimizer):  # pragma: no cover
         lam, mu = params
         N = x0.shape[0]
 
-        g = -mu * r ** 2 - lam * c
+        g = -mu * r**2 - lam * c
 
         if mu > 0:
             t = 1 / (2 * mu)
@@ -1775,7 +1775,7 @@ class L0Optimizer(Optimizer):  # pragma: no cover
                 dx = x0[n] - x[n]
                 bn = b[n]
 
-                case1 = lam * bn * dx + mu * dx ** 2
+                case1 = lam * bn * dx + mu * dx**2
 
                 optd = -lam * bn * t
                 if optd < min_ - x[n]:
@@ -1783,12 +1783,12 @@ class L0Optimizer(Optimizer):  # pragma: no cover
                 elif optd > max_ - x[n]:
                     optd = max_ - x[n]
 
-                case2 = 1 + lam * bn * optd + mu * optd ** 2
+                case2 = 1 + lam * bn * optd + mu * optd**2
 
                 if case1 <= case2:
-                    g += mu * dx ** 2 + lam * bn * dx
+                    g += mu * dx**2 + lam * bn * dx
                 else:
-                    g += 1 + mu * optd ** 2 + lam * bn * optd
+                    g += 1 + mu * optd**2 + lam * bn * optd
         else:
             # arg min_delta ||delta - dx||_0 + lam * b^T delta
             # case delta[n] = dx[n]: lam * b[n] * dx[n]
@@ -1800,7 +1800,7 @@ class L0Optimizer(Optimizer):  # pragma: no cover
                 case2 = 1 + lam * bn * (min_ - x[n])
                 case3 = 1 + lam * bn * (max_ - x[n])
                 if case1 <= case2 and case1 <= case3:
-                    g += mu * dx ** 2 + lam * bn * dx
+                    g += mu * dx**2 + lam * bn * dx
                 elif case2 < case3:
                     g += 1 + mu * (min_ - x[n]) ** 2 + lam * bn * (min_ - x[n])
                 else:
@@ -1849,7 +1849,7 @@ class L0Optimizer(Optimizer):  # pragma: no cover
                 bn = b[n]
                 t = 1 / (2 * mu)
 
-                case1 = lam * bn * dx + mu * dx ** 2
+                case1 = lam * bn * dx + mu * dx**2
 
                 optd = -lam * bn * t
                 if optd < min_ - x[n]:
@@ -1857,7 +1857,7 @@ class L0Optimizer(Optimizer):  # pragma: no cover
                 elif optd > max_ - x[n]:
                     optd = max_ - x[n]
 
-                case2 = 1 + lam * bn * optd + mu * optd ** 2
+                case2 = 1 + lam * bn * optd + mu * optd**2
 
                 if case1 <= case2:
                     d = dx
@@ -1867,7 +1867,7 @@ class L0Optimizer(Optimizer):  # pragma: no cover
 
                 delta[n] = d
                 b_dot_d += bn * d
-                norm_d += d ** 2
+                norm_d += d**2
         else:  # mu == 0
             for n in range(N):
                 dx = x0[n] - x[n]
@@ -1885,7 +1885,7 @@ class L0Optimizer(Optimizer):  # pragma: no cover
                     distance += 1
 
                 delta[n] = d
-                norm_d += d ** 2
+                norm_d += d**2
                 b_dot_d += bn * d
 
         if touchup:
@@ -1904,22 +1904,22 @@ class L0Optimizer(Optimizer):  # pragma: no cover
                     old_d = delta[n]
                     new_d = old_d + dc / b[n]
 
-                    if x[n] + new_d <= max_ and x[n] + new_d >= min_ and norm_d - old_d ** 2 + new_d ** 2 <= r ** 2:
+                    if x[n] + new_d <= max_ and x[n] + new_d >= min_ and norm_d - old_d**2 + new_d**2 <= r**2:
                         # conditions (a) and (b) are fulfilled
                         if k == 0:
                             min_distance = distance - (np.abs(old_d - dx) > 1e-10) + (np.abs(new_d - dx) > 1e-10)
                             min_distance_idx = n
-                            min_norm = norm_d - old_d ** 2 + new_d ** 2
+                            min_norm = norm_d - old_d**2 + new_d**2
                             k += 1
                         else:
                             new_distance = distance - (np.abs(old_d - dx) > 1e-10) + (np.abs(new_d - dx) > 1e-10)
                             if (
                                 min_distance > new_distance
                                 or min_distance == new_distance
-                                and min_norm > norm_d - old_d ** 2 + new_d ** 2
+                                and min_norm > norm_d - old_d**2 + new_d**2
                             ):
                                 min_distance = new_distance
-                                min_norm = norm_d - old_d ** 2 + new_d ** 2
+                                min_norm = norm_d - old_d**2 + new_d**2
                                 min_distance_idx = n
 
             if k > 0:

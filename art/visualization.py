@@ -56,7 +56,7 @@ def create_sprite(images: np.ndarray) -> np.ndarray:
         images = convert_to_rgb(images)
 
     n = int(np.ceil(np.sqrt(images.shape[0])))
-    padding = ((0, n ** 2 - images.shape[0]), (0, 0), (0, 0)) + ((0, 0),) * (images.ndim - 3)
+    padding = ((0, n**2 - images.shape[0]), (0, 0), (0, 0)) + ((0, 0),) * (images.ndim - 3)
     images = np.pad(images, padding, mode="constant", constant_values=0)
 
     # Tile the individual thumbnails into an image

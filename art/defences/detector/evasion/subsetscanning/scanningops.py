@@ -165,12 +165,20 @@ class ScanningOps:
 
             if image_to_node:  # passed pvalues are only those belonging to fixed images, update nodes in return
                 # only sending sub of images
-                (score_from_optimization, sub_of_nodes, optimal_alpha,) = ScanningOps.optimize_in_single_dimension(
+                (
+                    score_from_optimization,
+                    sub_of_nodes,
+                    optimal_alpha,
+                ) = ScanningOps.optimize_in_single_dimension(
                     pvalues[sub_of_images, :, :], a_max, image_to_node, score_function
                 )
             else:  # passed pvalues are only those belonging to fixed nodes, update images in return
                 # only sending sub of nodes
-                (score_from_optimization, sub_of_images, optimal_alpha,) = ScanningOps.optimize_in_single_dimension(
+                (
+                    score_from_optimization,
+                    sub_of_images,
+                    optimal_alpha,
+                ) = ScanningOps.optimize_in_single_dimension(
                     pvalues[:, sub_of_nodes, :], a_max, image_to_node, score_function
                 )
 

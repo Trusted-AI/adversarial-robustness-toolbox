@@ -374,13 +374,13 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
         # Create feed_dict
         feed_dict = {self.images: x_preprocessed}
 
-        for (placeholder, value) in zip(self._groundtruth_boxes_list, y):
+        for placeholder, value in zip(self._groundtruth_boxes_list, y):
             feed_dict[placeholder] = value["boxes"]
 
-        for (placeholder, value) in zip(self._groundtruth_classes_list, y):
+        for placeholder, value in zip(self._groundtruth_classes_list, y):
             feed_dict[placeholder] = value["labels"]
 
-        for (placeholder, value) in zip(self._groundtruth_weights_list, y):
+        for placeholder, value in zip(self._groundtruth_weights_list, y):
             feed_dict[placeholder] = [1.0] * len(value["labels"])
 
         # Compute gradients
@@ -532,13 +532,13 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
         # Create feed_dict
         feed_dict = {self.images: x_preprocessed}
 
-        for (placeholder, value) in zip(self._groundtruth_boxes_list, y):
+        for placeholder, value in zip(self._groundtruth_boxes_list, y):
             feed_dict[placeholder] = value["boxes"]
 
-        for (placeholder, value) in zip(self._groundtruth_classes_list, y):
+        for placeholder, value in zip(self._groundtruth_classes_list, y):
             feed_dict[placeholder] = value["labels"]
 
-        for (placeholder, value) in zip(self._groundtruth_weights_list, y):
+        for placeholder, value in zip(self._groundtruth_weights_list, y):
             feed_dict[placeholder] = value["scores"]
 
         loss_values = self._sess.run(self._loss_total, feed_dict=feed_dict)
@@ -561,13 +561,13 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
         # Create feed_dict
         feed_dict = {self.images: x_preprocessed}
 
-        for (placeholder, value) in zip(self._groundtruth_boxes_list, y):
+        for placeholder, value in zip(self._groundtruth_boxes_list, y):
             feed_dict[placeholder] = value["boxes"]
 
-        for (placeholder, value) in zip(self._groundtruth_classes_list, y):
+        for placeholder, value in zip(self._groundtruth_classes_list, y):
             feed_dict[placeholder] = value["labels"]
 
-        for (placeholder, value) in zip(self._groundtruth_weights_list, y):
+        for placeholder, value in zip(self._groundtruth_weights_list, y):
             feed_dict[placeholder] = value["scores"]
 
         # Get the losses graph
