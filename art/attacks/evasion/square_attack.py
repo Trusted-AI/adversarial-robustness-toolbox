@@ -20,11 +20,14 @@ This module implements the `SquareAttack` attack.
 
 | Paper link: https://arxiv.org/abs/1912.00049
 """
+from __future__ import annotations
+
 import bisect
+from collections.abc import Callable
 import logging
 import math
 import random
-from typing import Optional, Union, Callable, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 from tqdm.auto import trange
@@ -65,9 +68,9 @@ class SquareAttack(EvasionAttack):
     def __init__(
         self,
         estimator: "CLASSIFIER_TYPE",
-        norm: Union[int, float, str] = np.inf,
-        adv_criterion: Union[Callable[[np.ndarray, np.ndarray], bool], None] = None,
-        loss: Union[Callable[[np.ndarray, np.ndarray], np.ndarray], None] = None,
+        norm: int | float | str = np.inf,
+        adv_criterion: Callable[[np.ndarray, np.ndarray], bool] | None = None,
+        loss: Callable[[np.ndarray, np.ndarray], np.ndarray] | None = None,
         max_iter: int = 100,
         eps: float = 0.3,
         p_init: float = 0.8,
@@ -133,7 +136,7 @@ class SquareAttack(EvasionAttack):
 
         return self.p_init * p_ratio[i_ratio]
 
-    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
+    def generate(self, x: np.ndarray, y: np.ndarray | None = None, **kwargs) -> np.ndarray:
         """
         Generate adversarial samples and return them in an array.
 

@@ -45,12 +45,6 @@ class KerasEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
 
     estimator_params = BaseEstimator.estimator_params + NeuralNetworkMixin.estimator_params
 
-    def __init__(self, **kwargs) -> None:
-        """
-        Estimator class for Keras models.
-        """
-        super().__init__(**kwargs)
-
     def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs):
         """
         Perform prediction of the neural network for samples `x`.
@@ -116,9 +110,9 @@ class KerasEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
         loss_weights = None
         weighted_metrics = None
         if self.model.compiled_loss:
-            loss_weights = self.model.compiled_loss._loss_weights  # pylint: disable=W0212
+            loss_weights = self.model.compiled_loss._loss_weights
         if self.model.compiled_metrics:
-            weighted_metrics = self.model.compiled_metrics._weighted_metrics  # pylint: disable=W0212
+            weighted_metrics = self.model.compiled_metrics._weighted_metrics
 
         model.compile(
             optimizer=optimizer,

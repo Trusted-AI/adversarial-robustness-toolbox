@@ -18,11 +18,11 @@
 """
 This module implements clean-label attacks on Neural Networks.
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 from functools import reduce
 import logging
-from typing import Optional, Tuple, Union, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 from tqdm.auto import trange
@@ -71,15 +71,15 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
         self,
         classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
         target: np.ndarray,
-        feature_layer: Union[str, int],
+        feature_layer: str | int,
         learning_rate: float = 500 * 255.0,
         decay_coeff: float = 0.5,
         stopping_tol: float = 1e-10,
-        obj_threshold: Optional[float] = None,
+        obj_threshold: float | None = None,
         num_old_obj: int = 40,
         max_iter: int = 120,
         similarity_coeff: float = 256.0,
-        watermark: Optional[float] = None,
+        watermark: float | None = None,
         verbose: bool = True,
     ):
         """
@@ -126,7 +126,7 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
             raise ValueError("Type of estimator currently not supported.")
         self.attack_loss = tensor_norm(self.poison_feature_rep - self.target_feature_rep)
 
-    def poison(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> Tuple[np.ndarray, np.ndarray]:
+    def poison(self, x: np.ndarray, y: np.ndarray | None = None, **kwargs) -> tuple[np.ndarray, np.ndarray]:
         """
         Iteratively finds optimal attack points starting at values at x
 
@@ -287,7 +287,7 @@ def get_class_name(obj: object) -> str:
     return module + "." + obj.__class__.__name__
 
 
-def tensor_norm(tensor, norm_type: Union[int, float, str] = 2):  # pylint: disable=R1710
+def tensor_norm(tensor, norm_type: int | float | str = 2):  # pylint: disable=inconsistent-return-statements
     """
     Compute the norm of a tensor.
 

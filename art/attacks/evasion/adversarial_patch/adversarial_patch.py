@@ -21,10 +21,10 @@ can be printed into the physical world with a common printer. The patch can be u
 
 | Paper link: https://arxiv.org/abs/1712.09665
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
-from typing import Optional, Tuple, Union, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 
@@ -71,7 +71,7 @@ class AdversarialPatch(EvasionAttack):
         learning_rate: float = 5.0,
         max_iter: int = 500,
         batch_size: int = 16,
-        patch_shape: Optional[Tuple[int, int, int]] = None,
+        patch_shape: tuple[int | int | int] | None = None,
         targeted: bool = True,
         verbose: bool = True,
     ):
@@ -98,7 +98,7 @@ class AdversarialPatch(EvasionAttack):
         if self.estimator.clip_values is None:  # pragma: no cover
             raise ValueError("Adversarial Patch attack requires a classifier with clip_values.")
 
-        self._attack: Union[AdversarialPatchTensorFlowV2, AdversarialPatchPyTorch, AdversarialPatchNumpy]
+        self._attack: AdversarialPatchTensorFlowV2 | AdversarialPatchPyTorch | AdversarialPatchNumpy
         if isinstance(self.estimator, TensorFlowV2Classifier):
             self._attack = AdversarialPatchTensorFlowV2(
                 classifier=classifier,
@@ -145,8 +145,8 @@ class AdversarialPatch(EvasionAttack):
         self._check_params()
 
     def generate(  # type: ignore
-        self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs
-    ) -> Tuple[np.ndarray, np.ndarray]:
+        self, x: np.ndarray, y: np.ndarray | None = None, **kwargs
+    ) -> tuple[np.ndarray, np.ndarray]:
         """
         Generate an adversarial patch and return the patch and its mask in arrays.
 
@@ -173,7 +173,7 @@ class AdversarialPatch(EvasionAttack):
         return self._attack.generate(x=x, y=y, **kwargs)
 
     def apply_patch(
-        self, x: np.ndarray, scale: float, patch_external: Optional[np.ndarray] = None, **kwargs
+        self, x: np.ndarray, scale: float, patch_external: np.ndarray | None = None, **kwargs
     ) -> np.ndarray:
         """
         A function to apply the learned adversarial patch to images or videos.
@@ -185,7 +185,7 @@ class AdversarialPatch(EvasionAttack):
         """
         return self._attack.apply_patch(x, scale, patch_external=patch_external, **kwargs)
 
-    def reset_patch(self, initial_patch_value: Optional[Union[float, np.ndarray]]) -> None:
+    def reset_patch(self, initial_patch_value: float | np.ndarray | None) -> None:
         """
         Reset the adversarial patch.
 

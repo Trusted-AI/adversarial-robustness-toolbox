@@ -23,10 +23,10 @@ al. for adversarial training.
 
 | Paper link: https://arxiv.org/abs/1706.06083
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
-from typing import Optional, Union, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 
@@ -78,17 +78,17 @@ class ProjectedGradientDescent(EvasionAttack):
 
     def __init__(
         self,
-        estimator: Union["CLASSIFIER_LOSS_GRADIENTS_TYPE", "OBJECT_DETECTOR_TYPE"],
-        norm: Union[int, float, str] = np.inf,
-        eps: Union[int, float, np.ndarray] = 0.3,
-        eps_step: Union[int, float, np.ndarray] = 0.1,
-        decay: Optional[float] = None,
+        estimator: "CLASSIFIER_LOSS_GRADIENTS_TYPE" | "OBJECT_DETECTOR_TYPE",
+        norm: int | float | str = np.inf,
+        eps: int | float | np.ndarray = 0.3,
+        eps_step: int | float | np.ndarray = 0.1,
+        decay: float | None = None,
         max_iter: int = 100,
         targeted: bool = False,
         num_random_init: int = 0,
         batch_size: int = 32,
         random_eps: bool = False,
-        summary_writer: Union[str, bool, SummaryWriter] = False,
+        summary_writer: str | bool | SummaryWriter = False,
         verbose: bool = True,
     ):
         """
@@ -132,9 +132,9 @@ class ProjectedGradientDescent(EvasionAttack):
         self.verbose = verbose
         ProjectedGradientDescent._check_params(self)
 
-        self._attack: Union[
-            ProjectedGradientDescentPyTorch, ProjectedGradientDescentTensorFlowV2, ProjectedGradientDescentNumpy
-        ]
+        self._attack: (
+            ProjectedGradientDescentPyTorch | ProjectedGradientDescentTensorFlowV2 | ProjectedGradientDescentNumpy
+        )
         if isinstance(self.estimator, PyTorchClassifier) and self.estimator.all_framework_preprocessing:
             self._attack = ProjectedGradientDescentPyTorch(
                 estimator=estimator,  # type: ignore
@@ -183,7 +183,7 @@ class ProjectedGradientDescent(EvasionAttack):
                 verbose=verbose,
             )
 
-    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
+    def generate(self, x: np.ndarray, y: np.ndarray | None = None, **kwargs) -> np.ndarray:
         """
         Generate adversarial samples and return them in an array.
 

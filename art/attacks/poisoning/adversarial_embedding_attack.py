@@ -18,10 +18,10 @@
 """
 This module implements clean-label attacks on Neural Networks.
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
-from typing import Tuple, Union, List, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 
@@ -63,9 +63,9 @@ class PoisoningAttackAdversarialEmbedding(PoisoningAttackTransformer):
         self,
         classifier: "CLASSIFIER_TYPE",
         backdoor: PoisoningAttackBackdoor,
-        feature_layer: Union[int, str],
-        target: Union[np.ndarray, List[Tuple[np.ndarray, np.ndarray]]],
-        pp_poison: Union[float, List[float]] = 0.05,
+        feature_layer: int | str,
+        target: np.ndarray | list[tuple[np.ndarray, np.ndarray]],
+        pp_poison: float | list[float] = 0.05,
         discriminator_layer_1: int = 256,
         discriminator_layer_2: int = 128,
         regularization: float = 10,
@@ -97,23 +97,23 @@ class PoisoningAttackAdversarialEmbedding(PoisoningAttackTransformer):
         self.discriminator_layer_1 = discriminator_layer_1
         self.discriminator_layer_2 = discriminator_layer_2
         self.regularization = regularization
-        self.train_data: Optional[np.ndarray] = None
-        self.train_labels: Optional[np.ndarray] = None
-        self.is_backdoor: Optional[np.ndarray] = None
+        self.train_data: np.ndarray | None = None
+        self.train_labels: np.ndarray | None = None
+        self.is_backdoor: np.ndarray | None = None
         self.learning_rate = learning_rate
         self._check_params()
 
         if isinstance(self.estimator, KerasClassifier):
             using_tf_keras = "tensorflow.python.keras" in str(type(self.estimator.model))
             if using_tf_keras:  # pragma: no cover
-                from tensorflow.keras.models import Model, clone_model  # pylint: disable=E0611
-                from tensorflow.keras.layers import (  # pylint: disable=E0611
+                from tensorflow.keras.models import Model, clone_model
+                from tensorflow.keras.layers import (
                     GaussianNoise,
                     Dense,
                     BatchNormalization,
                     LeakyReLU,
                 )
-                from tensorflow.keras.optimizers.legacy import Adam  # pylint: disable=E0611
+                from tensorflow.keras.optimizers.legacy import Adam
 
                 opt = Adam(lr=self.learning_rate)
 
@@ -179,9 +179,9 @@ class PoisoningAttackAdversarialEmbedding(PoisoningAttackTransformer):
         else:
             raise NotImplementedError("This attack currently only supports Keras.")
 
-    def poison(  # pylint: disable=W0221
-        self, x: np.ndarray, y: Optional[np.ndarray] = None, broadcast=False, **kwargs
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    def poison(
+        self, x: np.ndarray, y: np.ndarray | None = None, broadcast=False, **kwargs
+    ) -> tuple[np.ndarray, np.ndarray]:
         """
         Calls perturbation function on input x and target labels y
 
@@ -192,7 +192,7 @@ class PoisoningAttackAdversarialEmbedding(PoisoningAttackTransformer):
         """
         return self.backdoor.poison(x, y, broadcast=broadcast)
 
-    def poison_estimator(  # pylint: disable=W0221
+    def poison_estimator(
         self, x: np.ndarray, y: np.ndarray, batch_size: int = 64, nb_epochs: int = 10, **kwargs
     ) -> "CLASSIFIER_TYPE":
         """
@@ -262,7 +262,7 @@ class PoisoningAttackAdversarialEmbedding(PoisoningAttackTransformer):
 
         raise NotImplementedError("Currently only Keras is supported")
 
-    def get_training_data(self) -> Optional[Tuple[np.ndarray, Optional[np.ndarray], Optional[np.ndarray]]]:
+    def get_training_data(self) -> tuple[np.ndarray, np.ndarray | None, np.ndarray | None] | None:
         """
         Returns the training data generated from the last call to fit
 

@@ -25,7 +25,7 @@ This module implements methods performing backdoor poisoning detection based on 
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-from typing import List, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 
@@ -99,7 +99,7 @@ class SpectralSignatureDefense(PoisonFilteringDefence):
 
         return conf_matrix_json
 
-    def detect_poison(self, **kwargs) -> Tuple[dict, List[int]]:
+    def detect_poison(self, **kwargs) -> tuple[dict, list[int]]:
         """
         Returns poison detected and a report.
 
@@ -131,7 +131,7 @@ class SpectralSignatureDefense(PoisonFilteringDefence):
 
         for idx, feature in enumerate(features_split):
             # Check for empty list
-            if len(feature):  # pylint: disable=C1801
+            if len(feature):
                 score = SpectralSignatureDefense.spectral_signature_scores(np.vstack(feature))  # type: ignore
                 score_cutoff = np.quantile(score, max(1 - self.eps_multiplier * self.expected_pp_poison, 0.0))
                 score_by_class.append(score)

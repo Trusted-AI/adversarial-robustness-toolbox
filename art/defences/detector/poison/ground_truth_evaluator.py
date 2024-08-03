@@ -22,7 +22,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import json
 import logging
-from typing import Tuple, Union, List
+
 
 import numpy as np
 
@@ -40,8 +40,8 @@ class GroundTruthEvaluator:
         """
 
     def analyze_correctness(
-        self, assigned_clean_by_class: Union[np.ndarray, List[int], List[np.ndarray]], is_clean_by_class: list
-    ) -> Tuple[np.ndarray, str]:
+        self, assigned_clean_by_class: np.ndarray | list[int] | list[np.ndarray], is_clean_by_class: list
+    ) -> tuple[np.ndarray, str]:
         """
         For each training sample, determine whether the activation clustering method was correct.
 

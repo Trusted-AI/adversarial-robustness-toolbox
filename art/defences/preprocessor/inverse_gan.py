@@ -20,10 +20,10 @@ This module implements the InverseGAN defence.
 
 | Paper link: https://arxiv.org/abs/1911.10291
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
-from typing import Optional, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 from scipy.optimize import minimize
@@ -31,7 +31,7 @@ from scipy.optimize import minimize
 from art.defences.preprocessor.preprocessor import Preprocessor
 
 if TYPE_CHECKING:
-    # pylint: disable=C0412,R0401
+    # pylint: disable=cyclic-import
     import tensorflow as tf
 
     from art.estimators.encoding.tensorflow import TensorFlowEncoder
@@ -53,7 +53,7 @@ class InverseGAN(Preprocessor):
         self,
         sess: "tf.compat.v1.Session",
         gan: "TensorFlowGenerator",
-        inverse_gan: Optional["TensorFlowEncoder"],
+        inverse_gan: "TensorFlowEncoder" | None,
         apply_fit: bool = False,
         apply_predict: bool = False,
     ):
@@ -80,9 +80,7 @@ class InverseGAN(Preprocessor):
         self._grad = tf.gradients(self._loss, self.gan.input_ph)
         self._check_params()
 
-    def __call__(
-        self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs
-    ) -> Tuple[np.ndarray, Optional[np.ndarray]]:
+    def __call__(self, x: np.ndarray, y: np.ndarray | None = None, **kwargs) -> tuple[np.ndarray, np.ndarray | None]:
         """
         Applies the :class:`.InverseGAN` defence upon the sample input.
 

@@ -24,7 +24,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import copy
 import logging
-from typing import Optional
+
 
 import numpy as np
 from scipy.optimize import minimize
@@ -71,7 +71,7 @@ class HighConfidenceLowUncertainty(EvasionAttack):
         self.verbose = verbose
         self._check_params()
 
-    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
+    def generate(self, x: np.ndarray, y: np.ndarray | None = None, **kwargs) -> np.ndarray:
         """
         Generate adversarial examples and return them as an array.
 

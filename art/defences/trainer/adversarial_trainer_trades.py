@@ -24,10 +24,10 @@ This module implements adversarial training with TRADES protocol.
 loss on clean data and KL divergence loss between clean data and adversarial data. Consequently, framework specific
 implementations are being provided in ART.
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import abc
-from typing import Optional, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 
@@ -65,14 +65,14 @@ class AdversarialTrainerTRADES(Trainer, abc.ABC):
         super().__init__(classifier)
 
     @abc.abstractmethod
-    def fit(  # pylint: disable=W0221
+    def fit(
         self,
         x: np.ndarray,
         y: np.ndarray,
-        validation_data: Optional[Tuple[np.ndarray, np.ndarray]] = None,
+        validation_data: tuple[np.ndarray, np.ndarray] | None = None,
         batch_size: int = 128,
         nb_epochs: int = 20,
-        **kwargs
+        **kwargs,
     ):
         """
         Train a model adversarially with TRADES. See class documentation for more information on the exact procedure.

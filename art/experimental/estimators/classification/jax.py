@@ -18,11 +18,12 @@
 """
 This module implements the classifier `JaxClassifier` for Jax models.
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
+from collections.abc import Callable
 import logging
 import random
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union, TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
 
 import numpy as np
 
@@ -58,16 +59,16 @@ class JaxClassifier(ClassGradientsMixin, ClassifierMixin, JaxEstimator):
 
     def __init__(
         self,
-        model: List,
+        model: list,
         predict_func: Callable,
         loss_func: Callable,
         update_func: Callable,
-        input_shape: Tuple[int, ...],
+        input_shape: tuple[int, ...],
         nb_classes: int,
         channels_first: bool = False,
-        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
-        preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
-        postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
+        clip_values: "CLIP_VALUES_TYPE" | None = None,
+        preprocessing_defences: "Preprocessor" | list["Preprocessor"] | None = None,
+        postprocessing_defences: "Postprocessor" | list["Postprocessor"] | None = None,
         preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
     ) -> None:
         """
@@ -106,11 +107,11 @@ class JaxClassifier(ClassGradientsMixin, ClassifierMixin, JaxEstimator):
         self._input_shape = input_shape
 
     @property
-    def model(self) -> List:
+    def model(self) -> list:
         return self._model
 
     @property
-    def input_shape(self) -> Tuple[int, ...]:
+    def input_shape(self) -> tuple[int, ...]:
         """
         Return the shape of one input sample.
 
@@ -235,9 +236,7 @@ class JaxClassifier(ClassGradientsMixin, ClassifierMixin, JaxEstimator):
         """
         raise NotImplementedError
 
-    def class_gradient(  # pylint: disable=W0221
-        self, x: np.ndarray, label: Optional[Union[int, List[int], np.ndarray]] = None, **kwargs
-    ) -> np.ndarray:
+    def class_gradient(self, x: np.ndarray, label: int | list[int] | np.ndarray | None = None, **kwargs) -> np.ndarray:
         """
         Compute per-class derivatives w.r.t. `x`.
 
@@ -255,7 +254,7 @@ class JaxClassifier(ClassGradientsMixin, ClassifierMixin, JaxEstimator):
     def get_activations(
         self,
         x: np.ndarray,
-        layer: Optional[Union[int, str]] = None,
+        layer: int | str | None = None,
         batch_size: int = 128,
         framework: bool = False,
     ) -> np.ndarray:
@@ -272,7 +271,7 @@ class JaxClassifier(ClassGradientsMixin, ClassifierMixin, JaxEstimator):
         """
         raise NotImplementedError
 
-    def save(self, filename: str, path: Optional[str] = None) -> None:
+    def save(self, filename: str, path: str | None = None) -> None:
         """
         Save a model to file in the format specific to the backend framework.
 
@@ -282,7 +281,7 @@ class JaxClassifier(ClassGradientsMixin, ClassifierMixin, JaxEstimator):
         """
         raise NotImplementedError
 
-    def __getstate__(self) -> Dict[str, Any]:
+    def __getstate__(self) -> dict[str, Any]:
         """
         Use to ensure `JaxClassifier` can be pickled.
 
@@ -290,7 +289,7 @@ class JaxClassifier(ClassGradientsMixin, ClassifierMixin, JaxEstimator):
         """
         raise NotImplementedError
 
-    def __setstate__(self, state: Dict[str, Any]) -> None:
+    def __setstate__(self, state: dict[str, Any]) -> None:
         """
         Use to ensure `JaxClassifier` can be unpickled.
 

@@ -23,7 +23,7 @@ This module implements the black-box attack `SimBA`.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 from scipy.fftpack import idct
@@ -102,7 +102,7 @@ class SimBA(EvasionAttack):
         self.verbose = verbose
         self._check_params()
 
-    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
+    def generate(self, x: np.ndarray, y: np.ndarray | None = None, **kwargs) -> np.ndarray:
         """
         Generate adversarial samples and return them in an array.
 
@@ -443,7 +443,9 @@ class SimBA(EvasionAttack):
         for i in range(image_size):
             order[i, : (image_size - i)] = i + x[i:]
         for i in range(1, image_size):
-            reverse = order[image_size - i - 1].take([i for i in range(i - 1, -1, -1)])  # pylint: disable=R1721
+            reverse = order[image_size - i - 1].take(
+                [i for i in range(i - 1, -1, -1)]
+            )  # pylint: disable=unnecessary-comprehension
             order[i, (image_size - i) :] = image_size * image_size - 1 - reverse
         if channels > 1:
             order_2d = order

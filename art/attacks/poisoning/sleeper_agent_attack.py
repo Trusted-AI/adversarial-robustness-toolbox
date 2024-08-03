@@ -20,10 +20,10 @@ This module implements Sleeper Agent attack on Neural Networks.
 
 | Paper link: https://arxiv.org/abs/2106.08970
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
-from typing import Tuple, TYPE_CHECKING, List, Union
+from typing import TYPE_CHECKING
 import random
 
 import numpy as np
@@ -37,7 +37,7 @@ from art.preprocessing.standardisation_mean_std.tensorflow import Standardisatio
 
 
 if TYPE_CHECKING:
-    # pylint: disable=C0412
+
     from art.utils import CLASSIFIER_NEURALNETWORK_TYPE
 
 logger = logging.getLogger(__name__)
@@ -55,13 +55,13 @@ class SleeperAgentAttack(GradientMatchingAttack):
         classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
         percent_poison: float,
         patch: np.ndarray,
-        indices_target: List[int],
+        indices_target: list[int],
         epsilon: float = 0.1,
         max_trials: int = 8,
         max_epochs: int = 250,
-        learning_rate_schedule: Tuple[List[float], List[int]] = ([1e-1, 1e-2, 1e-3, 1e-4], [100, 150, 200, 220]),
+        learning_rate_schedule: tuple[list[float], list[int]] = ([1e-1, 1e-2, 1e-3, 1e-4], [100, 150, 200, 220]),
         batch_size: int = 128,
-        clip_values: Tuple[float, float] = (0, 1.0),
+        clip_values: tuple[float, float] = (0, 1.0),
         verbose: int = 1,
         patching_strategy: str = "random",
         selection_strategy: str = "random",
@@ -84,7 +84,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
         :param max_trials: The maximum number of restarts to optimize the poison.
         :param max_epochs: The maximum number of epochs to optimize the train per trial.
         :param learning_rate_schedule: The learning rate schedule to optimize the poison.
-            A List of (learning rate, epoch) pairs. The learning rate is used
+            A list of (learning rate, epoch) pairs. The learning rate is used
             if the current epoch is less than the specified epoch.
         :param batch_size: Batch size.
         :param clip_values: The range of the input features to the classifier.
@@ -134,7 +134,6 @@ class SleeperAgentAttack(GradientMatchingAttack):
         self.initial_epoch = 0
         self.retrain_batch_size = retrain_batch_size
 
-    # pylint: disable=W0221
     def poison(  # type: ignore
         self,
         x_trigger: np.ndarray,
@@ -143,7 +142,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
         y_train: np.ndarray,
         x_test: np.ndarray,
         y_test: np.ndarray,
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    ) -> tuple[np.ndarray, np.ndarray]:
         """
         Optimizes a portion of poisoned samples from x_train to make a model classify x_target
         as y_target by matching the gradients.
@@ -189,7 +188,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
         num_poison_samples = int(self.percent_poison * len(x_train_target_samples))
 
         # Try poisoning num_trials times and choose the best one.
-        best_B = np.finfo(np.float32).max  # pylint: disable=C0103
+        best_B = np.finfo(np.float32).max  # pylint: disable=invalid-name
         best_x_poisoned: np.ndarray
         best_indices_poison: np.ndarray
 
@@ -214,24 +213,24 @@ class SleeperAgentAttack(GradientMatchingAttack):
                 self.max_epochs = retrain_epochs
                 for i in range(self.retraining_factor):
                     if i == self.retraining_factor - 1:
-                        x_poisoned, B_ = poisoner(x_poison, y_poison)  # pylint: disable=C0103
+                        x_poisoned, B_ = poisoner(x_poison, y_poison)  # pylint: disable=invalid-name
                     else:
-                        x_poisoned, B_ = poisoner(x_poison, y_poison)  # pylint: disable=C0103
+                        x_poisoned, B_ = poisoner(x_poison, y_poison)  # pylint: disable=invalid-name
                         self._model_retraining(x_poisoned, x_train, y_train, x_test, y_test)
                     self.initial_epoch = self.max_epochs
                     self.max_epochs = self.max_epochs + retrain_epochs
 
             else:
-                x_poisoned, B_ = poisoner(x_poison, y_poison)  # pylint: disable=C0103
+                x_poisoned, B_ = poisoner(x_poison, y_poison)  # pylint: disable=invalid-name
             finish_poisoning()
-            B_ = np.mean(B_)  # Averaging B losses from multiple batches.  # pylint: disable=C0103
+            B_ = np.mean(B_)  # Averaging B losses from multiple batches.  # pylint: disable=invalid-name
             if B_ < best_B:
-                best_B = B_  # pylint: disable=C0103
+                best_B = B_  # pylint: disable=invalid-name
                 best_x_poisoned = x_poisoned
                 best_indices_poison = self.indices_poison
         if best_B == np.finfo(np.float32).max:
             logger.warning("Attack unsuccessful: all loss values were non-finite. Defaulting to final trial.")
-            best_B = B_  # pylint: disable=C0103
+            best_B = B_  # pylint: disable=invalid-name
             best_x_poisoned = x_poisoned
             best_indices_poison = self.indices_poison
         # set indices_poison to be the best indices after all trials
@@ -258,7 +257,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
             raise NotImplementedError("SleeperAgentAttack is currently implemented only for PyTorch and TensorFlowV2.")
         return x_train, y_train
 
-    def _select_target_train_samples(self, x_train: np.ndarray, y_train: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    def _select_target_train_samples(self, x_train: np.ndarray, y_train: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
         """
         Used for selecting train samples from target class
         :param x_train: clean training data
@@ -341,7 +340,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
         y_test: np.ndarray,
         batch_size: int = 128,
         epochs: int = 80,
-    ) -> Union["TensorFlowV2Classifier", "PyTorchClassifier"]:
+    ) -> "TensorFlowV2Classifier" | "PyTorchClassifier":
         """
         Creates a new model.
 
@@ -418,7 +417,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
             for i in range(len(x_samples) - 1):
                 image = tf.constant(x_samples[i : i + 1])
                 label = tf.constant(y_samples[i : i + 1])
-                with tf.GradientTape() as t:  # pylint: disable=C0103
+                with tf.GradientTape() as t:  # pylint: disable=invalid-name
                     t.watch(classifier.model.weights)
                     output = classifier.model(image, training=False)
                     loss_tf = classifier.loss_object(label, output)  # type: ignore

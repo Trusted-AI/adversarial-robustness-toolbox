@@ -23,7 +23,7 @@ This module implements the transforming defence mechanism of defensive distillat
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 
@@ -90,7 +90,7 @@ class DefensiveDistillation(Transformer):
 
         return transformed_classifier
 
-    def fit(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> None:
+    def fit(self, x: np.ndarray, y: np.ndarray | None = None, **kwargs) -> None:
         """
         No parameters to learn for this method; do nothing.
         """

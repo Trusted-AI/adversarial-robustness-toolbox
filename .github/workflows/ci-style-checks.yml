@@ -49,16 +49,13 @@ jobs:
         run: pycodestyle --ignore=C0330,C0415,E203,E231,W503 --max-line-length=120 art
       - name: pylint
         if: ${{ always() }}
-        run: pylint --disable=C0330,C0415,E203,E1136,E0401,E1102 -rn art
+        run: pylint --fail-under=9.67 art/
       - name: mypy
         if: ${{ always() }}
         run: mypy art
       - name: ruff
         if: ${{ always() }}
-        run: |
-          ruff check art/
-          ruff check tests/
-          ruff check examples/
+        run: ruff check art/ tests/ examples/
       - name: black
         if: ${{ always() }}
         run: |

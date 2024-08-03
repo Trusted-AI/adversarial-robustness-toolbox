@@ -21,11 +21,11 @@ can be printed into the physical world with a common printer. The patch can be u
 
 | Paper link: https://arxiv.org/abs/1712.09665
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
 import math
-from typing import Any, Optional, Tuple, Union, TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
 
 import numpy as np
 from tqdm.auto import trange
@@ -37,7 +37,7 @@ from art.utils import check_and_transform_label_format, is_probability, to_categ
 from art.summary_writer import SummaryWriter
 
 if TYPE_CHECKING:
-    # pylint: disable=C0412
+
     import torch
 
     from art.utils import CLASSIFIER_NEURALNETWORK_TYPE
@@ -79,12 +79,12 @@ class AdversarialPatchPyTorch(EvasionAttack):
         learning_rate: float = 5.0,
         max_iter: int = 500,
         batch_size: int = 16,
-        patch_shape: Tuple[int, int, int] = (3, 224, 224),
-        patch_location: Optional[Tuple[int, int]] = None,
+        patch_shape: tuple[int, int, int] = (3, 224, 224),
+        patch_location: tuple[int, int] | None = None,
         patch_type: str = "circle",
         optimizer: str = "Adam",
         targeted: bool = True,
-        summary_writer: Union[str, bool, SummaryWriter] = False,
+        summary_writer: str | bool | SummaryWriter = False,
         verbose: bool = True,
     ):
         """
@@ -182,7 +182,7 @@ class AdversarialPatchPyTorch(EvasionAttack):
             self._optimizer = torch.optim.Adam([self._patch], lr=self.learning_rate)
 
     def _train_step(
-        self, images: "torch.Tensor", target: "torch.Tensor", mask: Optional["torch.Tensor"] = None
+        self, images: "torch.Tensor", target: "torch.Tensor", mask: "torch.Tensor" | None = None
     ) -> "torch.Tensor":
         import torch
 
@@ -211,8 +211,8 @@ class AdversarialPatchPyTorch(EvasionAttack):
         return loss
 
     def _predictions(
-        self, images: "torch.Tensor", mask: Optional["torch.Tensor"], target: "torch.Tensor"
-    ) -> Tuple["torch.Tensor", "torch.Tensor"]:
+        self, images: "torch.Tensor", mask: "torch.Tensor" | None, target: "torch.Tensor"
+    ) -> tuple["torch.Tensor", "torch.Tensor"]:
         import torch
 
         patched_input = self._random_overlay(images, self._patch, mask=mask)
@@ -222,11 +222,11 @@ class AdversarialPatchPyTorch(EvasionAttack):
             max=self.estimator.clip_values[1],
         )
 
-        predictions, target = self.estimator._predict_framework(patched_input, target)  # pylint: disable=W0212
+        predictions, target = self.estimator._predict_framework(patched_input, target)
 
         return predictions, target
 
-    def _loss(self, images: "torch.Tensor", target: "torch.Tensor", mask: Optional["torch.Tensor"]) -> "torch.Tensor":
+    def _loss(self, images: "torch.Tensor", target: "torch.Tensor", mask: "torch.Tensor" | None) -> "torch.Tensor":
         import torch
 
         if isinstance(target, torch.Tensor):
@@ -270,7 +270,7 @@ class AdversarialPatchPyTorch(EvasionAttack):
             y = np.linspace(-1, 1, diameter)
             x_grid, y_grid = np.meshgrid(x, y, sparse=True)
             z_grid = (x_grid**2 + y_grid**2) ** sharpness
-            image_mask: Union[int, np.ndarray[Any, np.dtype[Any]]] = 1 - np.clip(z_grid, -1, 1)
+            image_mask: int | np.ndarray[Any, np.dtype[Any]] = 1 - np.clip(z_grid, -1, 1)
         elif self.patch_type == "square":
             image_mask = np.ones((diameter, diameter))
 
@@ -284,8 +284,8 @@ class AdversarialPatchPyTorch(EvasionAttack):
         self,
         images: "torch.Tensor",
         patch: "torch.Tensor",
-        scale: Optional[float] = None,
-        mask: Optional["torch.Tensor"] = None,
+        scale: float | None = None,
+        mask: "torch.Tensor" | None = None,
     ) -> "torch.Tensor":
         import torch
         import torchvision
@@ -474,8 +474,8 @@ class AdversarialPatchPyTorch(EvasionAttack):
         return patched_images
 
     def generate(  # type: ignore
-        self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs
-    ) -> Tuple[np.ndarray, np.ndarray]:
+        self, x: np.ndarray, y: np.ndarray | None = None, **kwargs
+    ) -> tuple[np.ndarray, np.ndarray]:
         """
         Generate an adversarial patch and return the patch and its mask in arrays.
 
@@ -582,7 +582,7 @@ class AdversarialPatchPyTorch(EvasionAttack):
 
                     return img, target, mask_i
 
-            dataset_object_detection: Union[ObjectDetectionDataset, ObjectDetectionDatasetMask]
+            dataset_object_detection: ObjectDetectionDataset | ObjectDetectionDatasetMask
             if mask is None:
                 dataset_object_detection = ObjectDetectionDataset(x, y)
             else:
@@ -662,7 +662,7 @@ class AdversarialPatchPyTorch(EvasionAttack):
             self._get_circular_patch_mask(nb_samples=1).cpu().numpy()[0],
         )
 
-    def _check_mask(self, mask: Optional[np.ndarray], x: np.ndarray) -> Optional[np.ndarray]:
+    def _check_mask(self, mask: np.ndarray | None, x: np.ndarray) -> np.ndarray | None:
         if mask is not None and (  # pragma: no cover
             (mask.dtype != bool)
             or not (mask.shape[0] == 1 or mask.shape[0] == x.shape[0])
@@ -682,8 +682,8 @@ class AdversarialPatchPyTorch(EvasionAttack):
         self,
         x: np.ndarray,
         scale: float,
-        patch_external: Optional[np.ndarray] = None,
-        mask: Optional[np.ndarray] = None,
+        patch_external: np.ndarray | None = None,
+        mask: np.ndarray | None = None,
     ) -> np.ndarray:
         """
         A function to apply the learned adversarial patch to images or videos.
@@ -717,7 +717,7 @@ class AdversarialPatchPyTorch(EvasionAttack):
             .numpy()
         )
 
-    def reset_patch(self, initial_patch_value: Optional[Union[float, np.ndarray]] = None) -> None:
+    def reset_patch(self, initial_patch_value: float | np.ndarray | None = None) -> None:
         """
         Reset the adversarial patch.
 

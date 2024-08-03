@@ -19,7 +19,6 @@
 This module implements the abstract base class for defences that post-process classifier output.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
-from typing import List
 
 import abc
 
@@ -32,7 +31,7 @@ class Postprocessor(abc.ABC):
     evaluation for loss gradients or the calculation of class gradients.
     """
 
-    params: List[str] = []
+    params: list[str] = []
 
     def __init__(self, is_fitted: bool = False, apply_fit: bool = True, apply_predict: bool = True) -> None:
         """

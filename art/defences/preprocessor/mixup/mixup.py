@@ -27,7 +27,7 @@ This module implements the Mixup data augmentation defence.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional, Tuple
+
 
 import numpy as np
 
@@ -73,7 +73,7 @@ class Mixup(Preprocessor):
         self.num_mix = num_mix
         self._check_params()
 
-    def __call__(self, x: np.ndarray, y: Optional[np.ndarray] = None) -> Tuple[np.ndarray, Optional[np.ndarray]]:
+    def __call__(self, x: np.ndarray, y: np.ndarray | None = None) -> tuple[np.ndarray, np.ndarray | None]:
         """
         Apply Mixup data augmentation to feature data `x` and labels `y`.
 

@@ -27,9 +27,11 @@ Extracted model - Test Fidelity: 0.9977
 
 | Paper link: https://arxiv.org/abs/1909.01838
 """
+from __future__ import annotations
+
 import logging
 import os
-from typing import List, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 from scipy.optimize import least_squares
@@ -43,7 +45,7 @@ from art.estimators.classification.blackbox import BlackBoxClassifier
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_TYPE
 
-NUMPY_DTYPE = np.float64  # pylint: disable=C0103
+NUMPY_DTYPE = np.float64  # pylint: disable=invalid-name
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +60,7 @@ class FunctionallyEquivalentExtraction(ExtractionAttack):
 
     _estimator_requirements = (BaseEstimator, NeuralNetworkMixin, ClassifierMixin)
 
-    def __init__(self, classifier: "CLASSIFIER_TYPE", num_neurons: Optional[int] = None) -> None:
+    def __init__(self, classifier: "CLASSIFIER_TYPE", num_neurons: int | None = None) -> None:
         """
         Create a `FunctionallyEquivalentExtraction` instance.
 
@@ -73,17 +75,17 @@ class FunctionallyEquivalentExtraction(ExtractionAttack):
         self.vector_u = np.random.normal(0, 1, (1, self.num_features)).astype(dtype=NUMPY_DTYPE)
         self.vector_v = np.random.normal(0, 1, (1, self.num_features)).astype(dtype=NUMPY_DTYPE)
 
-        self.critical_points: List[np.ndarray] = []
+        self.critical_points: list[np.ndarray] = []
 
-        self.w_0: Optional[np.ndarray] = None  # Weight matrix of first dense layer
-        self.b_0: Optional[np.ndarray] = None  # Bias vector of first dense layer
-        self.w_1: Optional[np.ndarray] = None  # Weight matrix of second dense layer
-        self.b_1: Optional[np.ndarray] = None  # Bias vector of second dense layer
+        self.w_0: np.ndarray | None = None  # Weight matrix of first dense layer
+        self.b_0: np.ndarray | None = None  # Bias vector of first dense layer
+        self.w_1: np.ndarray | None = None  # Weight matrix of second dense layer
+        self.b_1: np.ndarray | None = None  # Bias vector of second dense layer
 
-    def extract(  # pylint: disable=W0221
+    def extract(
         self,
         x: np.ndarray,
-        y: Optional[np.ndarray] = None,
+        y: np.ndarray | None = None,
         delta_0: float = 0.05,
         fraction_true: float = 0.3,
         rel_diff_slope: float = 0.00001,
@@ -154,7 +156,7 @@ class FunctionallyEquivalentExtraction(ExtractionAttack):
 
         return extracted_classifier
 
-    def _o_l(self, x: np.ndarray, e_j: Optional[np.ndarray] = None) -> np.ndarray:
+    def _o_l(self, x: np.ndarray, e_j: np.ndarray | None = None) -> np.ndarray:
         """
         Predict the target model.
 
@@ -369,7 +371,7 @@ class FunctionallyEquivalentExtraction(ExtractionAttack):
             e_i[i, 0] = unit_vector_scale
 
             def f_v(v_i):
-                # pylint: disable=W0640
+                # pylint: disable=cell-var-from-loop
                 return np.squeeze(np.matmul(-a0_pairwise_ratios_inverse.T, np.expand_dims(v_i, axis=0).T) - e_i)
 
             v_0 = np.random.normal(0, 1, self.num_features)
@@ -424,16 +426,16 @@ class FunctionallyEquivalentExtraction(ExtractionAttack):
         self.b_1 = result_a1_b1.x[self.num_neurons * self.num_classes :].reshape(self.num_classes, 1)
 
 
-# pylint: disable=C0103, E0401
+# pylint: disable=invalid-name
 if __name__ == "__main__":
     import tensorflow as tf
 
     tf.compat.v1.disable_eager_execution()
     tf.keras.backend.set_floatx("float64")
 
-    from tensorflow.keras.datasets import mnist  # pylint: disable=E0611
-    from tensorflow.keras.models import Sequential  # pylint: disable=E0611
-    from tensorflow.keras.layers import Dense  # pylint: disable=E0611
+    from tensorflow.keras.datasets import mnist
+    from tensorflow.keras.models import Sequential
+    from tensorflow.keras.layers import Dense
 
     np.random.seed(1)
     number_neurons = 16

@@ -42,10 +42,10 @@ This module implements SmoothMix applied to classifier predictions.
 
 | Paper link: https://arxiv.org/abs/2111.09277
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
-from typing import List, Optional, Tuple, Union, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from tqdm.auto import trange
 import numpy as np
@@ -54,7 +54,7 @@ from art.estimators.certification.randomized_smoothing.pytorch import PyTorchRan
 from art.utils import check_and_transform_label_format
 
 if TYPE_CHECKING:
-    # pylint: disable=C0412
+
     import torch
     from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
     from art.defences.preprocessor import Preprocessor
@@ -84,13 +84,13 @@ class PyTorchSmoothMix(PyTorchRandomizedSmoothing):
         self,
         model: "torch.nn.Module",
         loss: "torch.nn.modules.loss._Loss",
-        input_shape: Tuple[int, ...],
+        input_shape: tuple[int, ...],
         nb_classes: int,
-        optimizer: Optional["torch.optim.Optimizer"] = None,
+        optimizer: "torch.optim.Optimizer" | None = None,
         channels_first: bool = True,
-        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
-        preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
-        postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
+        clip_values: "CLIP_VALUES_TYPE" | None = None,
+        preprocessing_defences: "Preprocessor" | list["Preprocessor"] | None = None,
+        postprocessing_defences: "Postprocessor" | list["Postprocessor"] | None = None,
         preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
         device_type: str = "gpu",
         sample_size: int = 32,
@@ -101,8 +101,8 @@ class PyTorchSmoothMix(PyTorchRandomizedSmoothing):
         num_steps: int = 10,
         warmup: int = 1,
         mix_step: int = 0,
-        maxnorm_s: Optional[float] = None,
-        maxnorm: Optional[float] = None,
+        maxnorm_s: float | None = None,
+        maxnorm: float | None = None,
     ) -> None:
         """
         Create a SmoothMix classifier.
@@ -160,7 +160,7 @@ class PyTorchSmoothMix(PyTorchRandomizedSmoothing):
         self.maxnorm_s = maxnorm_s
         self.maxnorm = maxnorm
 
-    def fit(  # pylint: disable=W0221
+    def fit(
         self,
         x: np.ndarray,
         y: np.ndarray,
@@ -168,7 +168,7 @@ class PyTorchSmoothMix(PyTorchRandomizedSmoothing):
         nb_epochs: int = 10,
         training_mode: bool = True,
         drop_last: bool = False,
-        scheduler: Optional["torch.optim.lr_scheduler._LRScheduler"] = None,
+        scheduler: "torch.optim.lr_scheduler._LRScheduler" | None = None,
         verbose: bool = False,
         **kwargs,
     ) -> None:
@@ -270,9 +270,9 @@ class PyTorchSmoothMix(PyTorchRandomizedSmoothing):
         self,
         inputs: "torch.Tensor",
         labels: "torch.Tensor",
-        noises: List["torch.Tensor"],
+        noises: list["torch.Tensor"],
         warmup_v: float,
-    ) -> Tuple["torch.Tensor", "torch.Tensor"]:
+    ) -> tuple["torch.Tensor", "torch.Tensor"]:
         """
         The authors' implementation of the SmoothMixPGD attack.
         Code modified from https://github.com/jh-jeong/smoothmix/blob/main/code/train.py
@@ -293,7 +293,7 @@ class PyTorchSmoothMix(PyTorchRandomizedSmoothing):
             x_flat = x.reshape(x.size(0), -1)
             return torch.norm(x_flat, dim=1)
 
-        def _project(x: torch.Tensor, x_0: torch.Tensor, maxnorm: Optional[float] = None):
+        def _project(x: torch.Tensor, x_0: torch.Tensor, maxnorm: float | None = None):
             """
             Apply a projection of the current inputs with the maxnorm
 
@@ -338,7 +338,7 @@ class PyTorchSmoothMix(PyTorchRandomizedSmoothing):
 
     def _mix_data(
         self, inputs: "torch.Tensor", inputs_adv: "torch.Tensor", labels: "torch.Tensor"
-    ) -> Tuple["torch.Tensor", "torch.Tensor"]:
+    ) -> tuple["torch.Tensor", "torch.Tensor"]:
         """
         Returns mixed inputs and labels.
 

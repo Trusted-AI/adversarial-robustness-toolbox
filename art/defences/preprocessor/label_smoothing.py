@@ -27,7 +27,7 @@ vector of hard labels.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional, Tuple
+
 
 import numpy as np
 
@@ -68,7 +68,7 @@ class LabelSmoothing(Preprocessor):
         self.max_value = max_value
         self._check_params()
 
-    def __call__(self, x: np.ndarray, y: Optional[np.ndarray] = None) -> Tuple[np.ndarray, Optional[np.ndarray]]:
+    def __call__(self, x: np.ndarray, y: np.ndarray | None = None) -> tuple[np.ndarray, np.ndarray | None]:
         """
         Apply label smoothing.
 

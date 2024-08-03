@@ -20,7 +20,7 @@ This module implements mixin abstract base class and mixin abstract framework-sp
 recognizers in ART.
 """
 from abc import ABC, abstractmethod
-from typing import Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 
@@ -43,7 +43,7 @@ class PytorchSpeechRecognizerMixin(ABC):
     @abstractmethod
     def compute_loss_and_decoded_output(
         self, masked_adv_input: "torch.Tensor", original_output: np.ndarray, **kwargs
-    ) -> Tuple["torch.Tensor", np.ndarray]:
+    ) -> tuple["torch.Tensor", np.ndarray]:
         """
         Compute loss function and decoded output.
 

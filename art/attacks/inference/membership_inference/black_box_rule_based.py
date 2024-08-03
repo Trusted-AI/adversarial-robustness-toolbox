@@ -22,7 +22,7 @@ This module implements membership inference attacks.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 
@@ -56,7 +56,7 @@ class MembershipInferenceBlackBoxRuleBased(MembershipInferenceAttack):
         """
         super().__init__(estimator=classifier)
 
-    def infer(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
+    def infer(self, x: np.ndarray, y: np.ndarray | None = None, **kwargs) -> np.ndarray:
         """
         Infer membership in the training set of the target estimator.
 

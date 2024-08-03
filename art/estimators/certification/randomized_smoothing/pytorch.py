@@ -20,10 +20,10 @@ This module implements Randomized Smoothing applied to classifier predictions.
 
 | Paper link: https://arxiv.org/abs/1902.02918
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
-from typing import List, Optional, Tuple, Union, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import warnings
 from tqdm.auto import trange
@@ -35,7 +35,7 @@ from art.estimators.certification.randomized_smoothing.randomized_smoothing impo
 from art.utils import check_and_transform_label_format
 
 if TYPE_CHECKING:
-    # pylint: disable=C0412
+
     import torch
 
     from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
@@ -59,13 +59,13 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
         self,
         model: "torch.nn.Module",
         loss: "torch.nn.modules.loss._Loss",
-        input_shape: Tuple[int, ...],
+        input_shape: tuple[int, ...],
         nb_classes: int,
-        optimizer: Optional["torch.optim.Optimizer"] = None,
+        optimizer: "torch.optim.Optimizer" | None = None,
         channels_first: bool = True,
-        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
-        preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
-        postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
+        clip_values: "CLIP_VALUES_TYPE" | None = None,
+        preprocessing_defences: "Preprocessor" | list["Preprocessor"] | None = None,
+        postprocessing_defences: "Postprocessor" | list["Postprocessor"] | None = None,
         preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
         device_type: str = "gpu",
         sample_size: int = 32,
@@ -128,7 +128,7 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
         x = x.astype(ART_NUMPY_DTYPE)
         return PyTorchClassifier.fit(self, x, y, batch_size=batch_size, nb_epochs=nb_epochs, **kwargs)
 
-    def fit(  # pylint: disable=W0221
+    def fit(
         self,
         x: np.ndarray,
         y: np.ndarray,
@@ -136,7 +136,7 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
         nb_epochs: int = 10,
         training_mode: bool = True,
         drop_last: bool = False,
-        scheduler: Optional["torch.optim.lr_scheduler._LRScheduler"] = None,
+        scheduler: "torch.optim.lr_scheduler._LRScheduler" | None = None,
         verbose: bool = False,
         **kwargs,
     ) -> None:
@@ -209,7 +209,7 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
 
                 # Do training
                 if self._use_amp:  # pragma: no cover
-                    from apex import amp  # pylint: disable=E0611
+                    from apex import amp
 
                     with amp.scale_loss(loss, self._optimizer) as scaled_loss:
                         scaled_loss.backward()
@@ -308,7 +308,7 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
     def class_gradient(
         self,
         x: np.ndarray,
-        label: Optional[Union[int, List[int], np.ndarray]] = None,
+        label: int | list[int] | np.ndarray | None = None,
         training_mode: bool = False,
         **kwargs,
     ) -> np.ndarray:

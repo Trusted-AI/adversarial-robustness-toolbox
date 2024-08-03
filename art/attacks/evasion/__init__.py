@@ -2,7 +2,7 @@
 Module providing evasion attacks under a common interface.
 """
 
-# pylint: disable=C0413
+# pylint: disable=wrong-import-position
 import importlib
 
 from art.attacks.evasion.adversarial_patch.adversarial_patch import AdversarialPatch

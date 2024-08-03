@@ -18,18 +18,20 @@
 """
 This module contains utility functions for object detection.
 """
-from typing import Dict, List, Union, Tuple, Optional, TYPE_CHECKING
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 import numpy as np
 
 if TYPE_CHECKING:
-    # pylint: disable=C0412
+
     import torch
 
 
-def convert_tf_to_pt(y: List[Dict[str, np.ndarray]], height: int, width: int) -> List[Dict[str, np.ndarray]]:
+def convert_tf_to_pt(y: list[dict[str, np.ndarray]], height: int, width: int) -> list[dict[str, np.ndarray]]:
     """
-    :param y: Target values of format `List[Dict[Tensor]]`, one for each input image. The fields of the Dict are as
+    :param y: Target values of format `list[dict[Tensor]]`, one for each input image. The fields of the dict are as
               follows:
 
               - boxes (FloatTensor[N, 4]): the boxes in [y1, x1, y2, x2] format, with 0 <= x1 < x2 <= W and
@@ -39,7 +41,7 @@ def convert_tf_to_pt(y: List[Dict[str, np.ndarray]], height: int, width: int) ->
     :param height: Height of images in pixels.
     :param width: Width if images in pixels.
 
-    :return: Target values of format `List[Dict[Tensor]]`, one for each input image. The fields of the Dict are as
+    :return: Target values of format `list[dict[Tensor]]`, one for each input image. The fields of the dict are as
              follows:
 
              - boxes (FloatTensor[N, 4]): the boxes in [x1, y1, x2, y2] format, with 0 <= x1 < x2 <= W and
@@ -60,9 +62,9 @@ def convert_tf_to_pt(y: List[Dict[str, np.ndarray]], height: int, width: int) ->
     return y
 
 
-def convert_pt_to_tf(y: List[Dict[str, np.ndarray]], height: int, width: int) -> List[Dict[str, np.ndarray]]:
+def convert_pt_to_tf(y: list[dict[str, np.ndarray]], height: int, width: int) -> list[dict[str, np.ndarray]]:
     """
-    :param y: Target values of format `List[Dict[Tensor]]`, one for each input image. The fields of the Dict are as
+    :param y: Target values of format `list[dict[Tensor]]`, one for each input image. The fields of the dict are as
               follows:
 
               - boxes (FloatTensor[N, 4]): the boxes in [x1, y1, x2, y2] format, with 0 <= x1 < x2 <= W and
@@ -72,7 +74,7 @@ def convert_pt_to_tf(y: List[Dict[str, np.ndarray]], height: int, width: int) ->
     :param height: Height of images in pixels.
     :param width: Width if images in pixels.
 
-    :return: Target values of format `List[Dict[Tensor]]`, one for each input image. The fields of the Dict are as
+    :return: Target values of format `list[dict[Tensor]]`, one for each input image. The fields of the dict are as
              follows:
 
              - boxes (FloatTensor[N, 4]): the boxes in [y1, x1, y2, x2] format, with 0 <= x1 < x2 <= W and
@@ -95,15 +97,15 @@ def convert_pt_to_tf(y: List[Dict[str, np.ndarray]], height: int, width: int) ->
 
 
 def cast_inputs_to_pt(
-    x: Union[np.ndarray, "torch.Tensor"],
-    y: Optional[List[Dict[str, Union[np.ndarray, "torch.Tensor"]]]] = None,
-) -> Tuple["torch.Tensor", Optional[List[Dict[str, "torch.Tensor"]]]]:
+    x: np.ndarray | "torch.Tensor",
+    y: list[dict[str, np.ndarray | "torch.Tensor"]] | None = None,
+) -> tuple["torch.Tensor", list[dict[str, "torch.Tensor"]] | None]:
     """
     Cast object detection inputs `(x, y)` to PyTorch tensors.
 
     :param x: Samples of shape NCHW or NHWC.
-    :param y: Target values of format `List[Dict[str, Union[np.ndarray, torch.Tensor]]]`, one for each input image.
-                The fields of the Dict are as follows:
+    :param y: Target values of format `list[dict[str, Union[np.ndarray, torch.Tensor]]]`, one for each input image.
+                The fields of the dict are as follows:
 
                 - boxes [N, 4]: the boxes in [x1, y1, x2, y2] format, with 0 <= x1 < x2 <= W and 0 <= y1 < y2 <= H.
                 - labels [N]: the labels for each image.
@@ -117,7 +119,7 @@ def cast_inputs_to_pt(
     else:
         x_tensor = x
 
-    y_tensor: Optional[List[Dict[str, torch.Tensor]]] = None
+    y_tensor: list[dict[str, torch.Tensor]] | None = None
 
     # Convert labels into tensor
     if isinstance(y, list):

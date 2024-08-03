@@ -20,10 +20,11 @@ This module implements Randomized Smoothing applied to classifier predictions.
 
 | Paper link: https://arxiv.org/abs/1902.02918
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
+from collections.abc import Callable
 import logging
-from typing import Callable, List, Optional, Tuple, Union, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import warnings
 from tqdm.auto import trange
@@ -34,7 +35,7 @@ from art.estimators.certification.randomized_smoothing.randomized_smoothing impo
 from art.utils import check_and_transform_label_format
 
 if TYPE_CHECKING:
-    # pylint: disable=C0412
+
     import tensorflow as tf
 
     from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
@@ -58,14 +59,14 @@ class TensorFlowV2RandomizedSmoothing(RandomizedSmoothingMixin, TensorFlowV2Clas
         self,
         model,
         nb_classes: int,
-        input_shape: Tuple[int, ...],
-        loss_object: Optional["tf.Tensor"] = None,
-        optimizer: Optional["tf.keras.optimizers.Optimizer"] = None,
-        train_step: Optional[Callable] = None,
+        input_shape: tuple[int, ...],
+        loss_object: "tf.Tensor" | None = None,
+        optimizer: "tf.keras.optimizers.Optimizer" | None = None,
+        train_step: Callable | None = None,
         channels_first: bool = False,
-        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
-        preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
-        postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
+        clip_values: "CLIP_VALUES_TYPE" | None = None,
+        preprocessing_defences: "Preprocessor" | list["Preprocessor"] | None = None,
+        postprocessing_defences: "Postprocessor" | list["Postprocessor"] | None = None,
         preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
         sample_size: int = 32,
         scale: float = 0.1,
@@ -128,7 +129,7 @@ class TensorFlowV2RandomizedSmoothing(RandomizedSmoothingMixin, TensorFlowV2Clas
     def _fit_classifier(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: int, **kwargs) -> None:
         return TensorFlowV2Classifier.fit(self, x, y, batch_size=batch_size, nb_epochs=nb_epochs, **kwargs)
 
-    def fit(  # pylint: disable=W0221
+    def fit(
         self, x: np.ndarray, y: np.ndarray, batch_size: int = 128, nb_epochs: int = 10, verbose: bool = False, **kwargs
     ) -> None:
         """
@@ -279,9 +280,9 @@ class TensorFlowV2RandomizedSmoothing(RandomizedSmoothingMixin, TensorFlowV2Clas
     def class_gradient(
         self,
         x: np.ndarray,
-        label: Optional[Union[int, List[int], np.ndarray]] = None,
+        label: int | list[int] | np.ndarray | None = None,
         training_mode: bool = False,
-        **kwargs
+        **kwargs,
     ) -> np.ndarray:
         """
         Compute per-class derivatives of the given classifier w.r.t. `x` of original classifier.

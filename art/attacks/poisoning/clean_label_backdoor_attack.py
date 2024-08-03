@@ -18,10 +18,10 @@
 """
 This module implements Clean Label Backdoor Attacks to poison data used in ML models.
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
-from typing import Optional, Tuple, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 import numpy as np
 
@@ -64,7 +64,7 @@ class PoisoningAttackCleanLabelBackdoor(PoisoningAttackBlackBox):
         proxy_classifier: "CLASSIFIER_LOSS_GRADIENTS_TYPE",
         target: np.ndarray,
         pp_poison: float = 0.33,
-        norm: Union[int, float, str] = np.inf,
+        norm: int | float | str = np.inf,
         eps: float = 0.3,
         eps_step: float = 0.1,
         max_iter: int = 100,
@@ -101,9 +101,9 @@ class PoisoningAttackCleanLabelBackdoor(PoisoningAttackBlackBox):
         )
         self._check_params()
 
-    def poison(  # pylint: disable=W0221
-        self, x: np.ndarray, y: Optional[np.ndarray] = None, broadcast: bool = True, **kwargs
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    def poison(
+        self, x: np.ndarray, y: np.ndarray | None = None, broadcast: bool = True, **kwargs
+    ) -> tuple[np.ndarray, np.ndarray]:
         """
         Calls perturbation function on input x and returns the perturbed input and poison labels for the data.
 

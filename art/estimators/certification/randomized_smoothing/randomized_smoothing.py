@@ -20,11 +20,11 @@ This module implements Randomized Smoothing applied to classifier predictions.
 
 | Paper link: https://arxiv.org/abs/1902.02918
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 from abc import ABC
 import logging
-from typing import Optional, Tuple
+
 
 import numpy as np
 from scipy.stats import norm
@@ -143,7 +143,7 @@ class RandomizedSmoothingMixin(ABC):
         """
         self._fit_classifier(x, y, batch_size=batch_size, nb_epochs=nb_epochs, **kwargs)
 
-    def certify(self, x: np.ndarray, n: int, batch_size: int = 32) -> Tuple[np.ndarray, np.ndarray]:
+    def certify(self, x: np.ndarray, n: int, batch_size: int = 32) -> tuple[np.ndarray, np.ndarray]:
         """
         Computes certifiable radius around input `x` and returns radius `r` and prediction.
 
@@ -176,7 +176,7 @@ class RandomizedSmoothingMixin(ABC):
 
         return np.array(prediction), np.array(radius)
 
-    def _noisy_samples(self, x: np.ndarray, n: Optional[int] = None) -> np.ndarray:
+    def _noisy_samples(self, x: np.ndarray, n: int | None = None) -> np.ndarray:
         """
         Adds Gaussian noise to `x` to generate samples. Optionally augments `y` similarly.
 
@@ -195,7 +195,7 @@ class RandomizedSmoothingMixin(ABC):
 
         return x
 
-    def _prediction_counts(self, x: np.ndarray, n: Optional[int] = None, batch_size: int = 128) -> np.ndarray:
+    def _prediction_counts(self, x: np.ndarray, n: int | None = None, batch_size: int = 128) -> np.ndarray:
         """
         Makes predictions and then converts probability distribution to counts.
 

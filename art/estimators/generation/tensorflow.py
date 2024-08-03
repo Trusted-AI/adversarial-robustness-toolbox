@@ -18,10 +18,10 @@
 """
 This module implements the classifier `TensorFlowGenerator` for TensorFlow models.
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
-from typing import Any, Dict, List, Optional, Union, Tuple, TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
 
 import numpy as np
 
@@ -29,7 +29,7 @@ from art.estimators.generation.generator import GeneratorMixin
 from art.estimators.tensorflow import TensorFlowEstimator, TensorFlowV2Estimator
 
 if TYPE_CHECKING:
-    # pylint: disable=C0412
+
     import tensorflow.compat.v1 as tf
 
     from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
@@ -55,14 +55,14 @@ class TensorFlowGenerator(GeneratorMixin, TensorFlowEstimator):
         self,
         input_ph: "tf.Placeholder",
         model: "tf.Tensor",
-        loss: Optional["tf.Tensor"] = None,
-        sess: Optional["tf.compat.v1.Session"] = None,
+        loss: "tf.Tensor" | None = None,
+        sess: "tf.compat.v1.Session" | None = None,
         channels_first=False,
-        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
-        preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
-        postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
+        clip_values: "CLIP_VALUES_TYPE" | None = None,
+        preprocessing_defences: "Preprocessor" | list["Preprocessor"] | None = None,
+        postprocessing_defences: "Postprocessor" | list["Postprocessor"] | None = None,
         preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
-        feed_dict: Optional[Dict[Any, Any]] = None,
+        feed_dict: dict[Any, Any] | None = None,
     ):
         """
         Initialization specific to TensorFlow generator implementations.
@@ -113,7 +113,7 @@ class TensorFlowGenerator(GeneratorMixin, TensorFlowEstimator):
         self._sess = sess
 
     @property
-    def input_shape(self) -> Tuple[int, ...]:
+    def input_shape(self) -> tuple[int, ...]:
         """
         Return the shape of one input sample.
         :return: Shape of one input sample.
@@ -137,7 +137,7 @@ class TensorFlowGenerator(GeneratorMixin, TensorFlowEstimator):
         return self._loss  # type: ignore
 
     @property
-    def feed_dict(self) -> Dict[Any, Any]:
+    def feed_dict(self) -> dict[Any, Any]:
         """
         Return the feed dictionary for the session run evaluating the classifier.
         :return: The feed dictionary for the session run evaluating the classifier.
@@ -159,7 +159,7 @@ class TensorFlowGenerator(GeneratorMixin, TensorFlowEstimator):
         y = self._sess.run(self._model, feed_dict=feed_dict)
         return y
 
-    def loss_gradient(self, x, y, training_mode: bool = False, **kwargs) -> np.ndarray:  # pylint: disable=W0221
+    def loss_gradient(self, x, y, training_mode: bool = False, **kwargs) -> np.ndarray:
         raise NotImplementedError
 
     def fit(self, x, y, batch_size=128, nb_epochs=10, **kwargs):
@@ -168,9 +168,7 @@ class TensorFlowGenerator(GeneratorMixin, TensorFlowEstimator):
         """
         raise NotImplementedError
 
-    def get_activations(
-        self, x: np.ndarray, layer: Union[int, str], batch_size: int, framework: bool = False
-    ) -> np.ndarray:
+    def get_activations(self, x: np.ndarray, layer: int | str, batch_size: int, framework: bool = False) -> np.ndarray:
         """
         Do nothing.
         """
@@ -210,9 +208,9 @@ class TensorFlowV2Generator(GeneratorMixin, TensorFlowV2Estimator):
         encoding_length: int,
         model: "tf.Tensor",
         channels_first: bool = False,
-        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
-        preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
-        postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
+        clip_values: "CLIP_VALUES_TYPE" | None = None,
+        preprocessing_defences: "Preprocessor" | list["Preprocessor"] | None = None,
+        postprocessing_defences: "Postprocessor" | list["Postprocessor"] | None = None,
         preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
     ):
         """
@@ -256,12 +254,10 @@ class TensorFlowV2Generator(GeneratorMixin, TensorFlowV2Estimator):
         return self._encoding_length
 
     @property
-    def input_shape(self) -> Tuple[int, ...]:
+    def input_shape(self) -> tuple[int, ...]:
         raise NotImplementedError
 
-    def predict(  # pylint: disable=W0221
-        self, x: np.ndarray, batch_size: int = 128, training_mode: bool = False, **kwargs
-    ) -> np.ndarray:
+    def predict(self, x: np.ndarray, batch_size: int = 128, training_mode: bool = False, **kwargs) -> np.ndarray:
         """
         Perform projections over a batch of encodings.
 
@@ -296,9 +292,7 @@ class TensorFlowV2Generator(GeneratorMixin, TensorFlowV2Estimator):
         """
         raise NotImplementedError
 
-    def get_activations(
-        self, x: np.ndarray, layer: Union[int, str], batch_size: int, framework: bool = False
-    ) -> np.ndarray:
+    def get_activations(self, x: np.ndarray, layer: int | str, batch_size: int, framework: bool = False) -> np.ndarray:
         """
         Do nothing.
         """

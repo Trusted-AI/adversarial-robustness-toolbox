@@ -23,10 +23,10 @@ al. for adversarial training.
 
 | Paper link: https://arxiv.org/abs/1706.06083
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
-from typing import Optional, Union, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 from tqdm.auto import tqdm
@@ -41,7 +41,7 @@ from art.utils import compute_success, random_sphere, compute_success_array
 from art.summary_writer import SummaryWriter
 
 if TYPE_CHECKING:
-    # pylint: disable=C0412
+
     import tensorflow as tf
     from art.estimators.classification.tensorflow import TensorFlowV2Classifier
 
@@ -62,16 +62,16 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
     def __init__(
         self,
         estimator: "TensorFlowV2Classifier",
-        norm: Union[int, float, str] = np.inf,
-        eps: Union[int, float, np.ndarray] = 0.3,
-        eps_step: Union[int, float, np.ndarray] = 0.1,
-        decay: Optional[float] = None,
+        norm: int | float | str = np.inf,
+        eps: int | float | np.ndarray = 0.3,
+        eps_step: int | float | np.ndarray = 0.1,
+        decay: float | None = None,
         max_iter: int = 100,
         targeted: bool = False,
         num_random_init: int = 0,
         batch_size: int = 32,
         random_eps: bool = False,
-        summary_writer: Union[str, bool, SummaryWriter] = False,
+        summary_writer: str | bool | SummaryWriter = False,
         verbose: bool = True,
     ):
         """
@@ -125,7 +125,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
             verbose=verbose,
         )
 
-    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
+    def generate(self, x: np.ndarray, y: np.ndarray | None = None, **kwargs) -> np.ndarray:
         """
         Generate adversarial samples and return them in an array.
 
@@ -201,8 +201,8 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
 
             batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
 
-            batch_eps: Union[int, float, np.ndarray]
-            batch_eps_step: Union[int, float, np.ndarray]
+            batch_eps: int | float | np.ndarray
+            batch_eps_step: int | float | np.ndarray
 
             # Compute batch_eps and batch_eps_step
             if isinstance(self.eps, np.ndarray) and isinstance(self.eps_step, np.ndarray):
@@ -254,8 +254,8 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         x: "tf.Tensor",
         targets: "tf.Tensor",
         mask: "tf.Tensor",
-        eps: Union[int, float, np.ndarray],
-        eps_step: Union[int, float, np.ndarray],
+        eps: int | float | np.ndarray,
+        eps_step: int | float | np.ndarray,
     ) -> "tf.Tensor":
         """
         Generate a batch of adversarial samples and return them in an array.
@@ -289,13 +289,13 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
 
         return adv_x
 
-    def _compute_perturbation(  # pylint: disable=W0221
+    def _compute_perturbation(
         self,
         x: "tf.Tensor",
         y: "tf.Tensor",
-        mask: Optional["tf.Tensor"],
-        decay: Optional[float] = None,
-        momentum: Optional["tf.Tensor"] = None,
+        mask: "tf.Tensor" | None,
+        decay: float | None = None,
+        momentum: "tf.Tensor" | None = None,
     ) -> "tf.Tensor":
         """
         Compute perturbations.
@@ -376,8 +376,8 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
 
         return grad
 
-    def _apply_perturbation(  # pylint: disable=W0221
-        self, x: "tf.Tensor", perturbation: "tf.Tensor", eps_step: Union[int, float, np.ndarray]
+    def _apply_perturbation(
+        self, x: "tf.Tensor", perturbation: "tf.Tensor", eps_step: int | float | np.ndarray
     ) -> "tf.Tensor":
         """
         Apply perturbation on examples.
@@ -404,9 +404,9 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         x_init: "tf.Tensor",
         y: "tf.Tensor",
         mask: "tf.Tensor",
-        eps: Union[int, float, np.ndarray],
-        eps_step: Union[int, float, np.ndarray],
-        momentum: Optional["tf.Tensor"],
+        eps: int | float | np.ndarray,
+        eps_step: int | float | np.ndarray,
+        momentum: "tf.Tensor" | None,
         random_init: bool,
     ) -> "tf.Tensor":
         """
@@ -465,8 +465,8 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
     @staticmethod
     def _projection(
         values: "tf.Tensor",
-        eps: Union[int, float, np.ndarray],
-        norm_p: Union[int, float, str],
+        eps: int | float | np.ndarray,
+        norm_p: int | float | str,
         *,
         suboptimal: bool = True,
     ) -> "tf.Tensor":

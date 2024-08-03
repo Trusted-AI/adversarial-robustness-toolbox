@@ -23,8 +23,8 @@ This module implements Certified Patch Robustness via Smoothed Vision Transforme
 
 | Paper link Arxiv version (more detail): https://arxiv.org/pdf/2110.07719.pdf
 """
+from __future__ import annotations
 
-from typing import Optional, Union, Tuple
 import random
 
 import numpy as np
@@ -71,8 +71,8 @@ class ColumnAblatorPyTorch(torch.nn.Module, BaseAblator):
         mode: str,
         to_reshape: bool,
         ablation_mode: str = "column",
-        original_shape: Optional[Tuple] = None,
-        output_shape: Optional[Tuple] = None,
+        original_shape: tuple | None = None,
+        output_shape: tuple | None = None,
         algorithm: str = "salman2021",
         device_type: str = "gpu",
     ):
@@ -114,9 +114,7 @@ class ColumnAblatorPyTorch(torch.nn.Module, BaseAblator):
         if original_shape is not None and output_shape is not None:
             self.upsample = UpSamplerPyTorch(input_size=original_shape[1], final_size=output_shape[1])
 
-    def ablate(
-        self, x: Union[torch.Tensor, np.ndarray], column_pos: int, row_pos: Optional[int] = None
-    ) -> torch.Tensor:
+    def ablate(self, x: torch.Tensor | np.ndarray, column_pos: int, row_pos: int | None = None) -> torch.Tensor:
         """
         Ablates the input column wise
 
@@ -138,9 +136,7 @@ class ColumnAblatorPyTorch(torch.nn.Module, BaseAblator):
             x[:, :, :, column_pos + k :] = 0.0
         return x
 
-    def forward(
-        self, x: Union[torch.Tensor, np.ndarray], column_pos: Optional[int] = None, row_pos=None
-    ) -> torch.Tensor:
+    def forward(self, x: torch.Tensor | np.ndarray, column_pos: int | None = None, row_pos=None) -> torch.Tensor:
         """
         Forward pass though the ablator. We insert a new channel to keep track of the ablation location.
 
@@ -187,10 +183,10 @@ class ColumnAblatorPyTorch(torch.nn.Module, BaseAblator):
 
     def certify(
         self,
-        pred_counts: Union[torch.Tensor, np.ndarray],
+        pred_counts: torch.Tensor | np.ndarray,
         size_to_certify: int,
-        label: Union[torch.Tensor, np.ndarray],
-    ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        label: torch.Tensor | np.ndarray,
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """
         Performs certification of the predictions
 
@@ -245,8 +241,8 @@ class BlockAblatorPyTorch(torch.nn.Module, BaseAblator):
         channels_first: bool,
         mode: str,
         to_reshape: bool,
-        original_shape: Optional[Tuple] = None,
-        output_shape: Optional[Tuple] = None,
+        original_shape: tuple | None = None,
+        output_shape: tuple | None = None,
         algorithm: str = "salman2021",
         device_type: str = "gpu",
     ):
@@ -286,7 +282,7 @@ class BlockAblatorPyTorch(torch.nn.Module, BaseAblator):
         if original_shape is not None and output_shape is not None:
             self.upsample = UpSamplerPyTorch(input_size=original_shape[1], final_size=output_shape[1])
 
-    def ablate(self, x: Union[torch.Tensor, np.ndarray], column_pos: int, row_pos: int) -> torch.Tensor:
+    def ablate(self, x: torch.Tensor | np.ndarray, column_pos: int, row_pos: int) -> torch.Tensor:
         """
         Ablates the input block wise
 
@@ -316,7 +312,7 @@ class BlockAblatorPyTorch(torch.nn.Module, BaseAblator):
         return x
 
     def forward(
-        self, x: Union[torch.Tensor, np.ndarray], column_pos: Optional[int] = None, row_pos: Optional[int] = None
+        self, x: torch.Tensor | np.ndarray, column_pos: int | None = None, row_pos: int | None = None
     ) -> torch.Tensor:
         """
         Forward pass though the ablator. We insert a new channel to keep track of the ablation location.
@@ -355,10 +351,10 @@ class BlockAblatorPyTorch(torch.nn.Module, BaseAblator):
 
     def certify(
         self,
-        pred_counts: Union[torch.Tensor, np.ndarray],
+        pred_counts: torch.Tensor | np.ndarray,
         size_to_certify: int,
-        label: Union[torch.Tensor, np.ndarray],
-    ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+        label: torch.Tensor | np.ndarray,
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """
         Performs certification of the predictions
 

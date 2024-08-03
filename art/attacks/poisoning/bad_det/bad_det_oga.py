@@ -23,7 +23,7 @@ This module implements the BadDet Object Generation Attack (OGA) on object detec
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Dict, List, Tuple, Union
+
 
 import numpy as np
 from tqdm.auto import tqdm
@@ -83,18 +83,18 @@ class BadDetObjectGenerationAttack(PoisoningAttackObjectDetector):
         self.verbose = verbose
         self._check_params()
 
-    def poison(  # pylint: disable=W0221
+    def poison(
         self,
-        x: Union[np.ndarray, List[np.ndarray]],
-        y: List[Dict[str, np.ndarray]],
+        x: np.ndarray | list[np.ndarray],
+        y: list[dict[str, np.ndarray]],
         **kwargs,
-    ) -> Tuple[Union[np.ndarray, List[np.ndarray]], List[Dict[str, np.ndarray]]]:
+    ) -> tuple[np.ndarray | list[np.ndarray], list[dict[str, np.ndarray]]]:
         """
         Generate poisoning examples by inserting the backdoor onto the input `x` and changing the classification
         for labels `y`.
 
         :param x: Sample images of shape `NCHW` or `NHWC` or a list of sample images of any size.
-        :param y: True labels of type `List[Dict[np.ndarray]]`, one dictionary per input image. The keys and values
+        :param y: True labels of type `list[dict[np.ndarray]]`, one dictionary per input image. The keys and values
                   of the dictionary are:
 
                   - boxes [N, 4]: the boxes in [x1, y1, x2, y2] format, with 0 <= x1 < x2 <= W and 0 <= y1 < y2 <= H.
@@ -110,14 +110,14 @@ class BadDetObjectGenerationAttack(PoisoningAttackObjectDetector):
             raise ValueError("Unrecognized input dimension. BadDet OGA can only be applied to image data.")
 
         # copy images
-        x_poison: Union[np.ndarray, List[np.ndarray]]
+        x_poison: np.ndarray | list[np.ndarray]
         if isinstance(x, np.ndarray):
             x_poison = x.copy()
         else:
             x_poison = [x_i.copy() for x_i in x]
 
         # copy labels
-        y_poison: List[Dict[str, np.ndarray]] = []
+        y_poison: list[dict[str, np.ndarray]] = []
         for y_i in y:
             target_dict = {k: v.copy() for k, v in y_i.items()}
             y_poison.append(target_dict)

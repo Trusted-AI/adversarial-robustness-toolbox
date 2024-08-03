@@ -20,15 +20,17 @@ This module implements the task specific estimator for PyTorch YOLO v3 and v5 ob
 
 | Paper link: https://arxiv.org/abs/1804.02767
 """
+from __future__ import annotations
+
 import logging
-from typing import List, Dict, Optional, Tuple, Union, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 
 from art.estimators.object_detection.pytorch_object_detector import PyTorchObjectDetector
 
 if TYPE_CHECKING:
-    # pylint: disable=C0412
+
     import torch
 
     from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
@@ -48,14 +50,14 @@ class PyTorchYolo(PyTorchObjectDetector):
     def __init__(
         self,
         model: "torch.nn.Module",
-        input_shape: Tuple[int, ...] = (3, 416, 416),
-        optimizer: Optional["torch.optim.Optimizer"] = None,
-        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
+        input_shape: tuple[int, ...] = (3, 416, 416),
+        optimizer: "torch.optim.Optimizer" | None = None,
+        clip_values: "CLIP_VALUES_TYPE" | None = None,
         channels_first: bool = True,
-        preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
-        postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
+        preprocessing_defences: "Preprocessor" | list["Preprocessor"] | None = None,
+        postprocessing_defences: "Postprocessor" | list["Postprocessor"] | None = None,
         preprocessing: "PREPROCESSING_TYPE" = None,
-        attack_losses: Tuple[str, ...] = (
+        attack_losses: tuple[str, ...] = (
             "loss_classifier",
             "loss_box_reg",
             "loss_objectness",
@@ -67,8 +69,8 @@ class PyTorchYolo(PyTorchObjectDetector):
         Initialization.
 
         :param model: YOLO v3 or v5 model wrapped as demonstrated in examples/get_started_yolo.py.
-                      The output of the model is `List[Dict[str, torch.Tensor]]`, one for each input image.
-                      The fields of the Dict are as follows:
+                      The output of the model is `list[dict[str, torch.Tensor]]`, one for each input image.
+                      The fields of the dict are as follows:
 
                       - boxes [N, 4]: the boxes in [x1, y1, x2, y2] format, with 0 <= x1 < x2 <= W and
                         0 <= y1 < y2 <= H.
@@ -104,7 +106,7 @@ class PyTorchYolo(PyTorchObjectDetector):
             device_type=device_type,
         )
 
-    def _translate_labels(self, labels: List[Dict[str, "torch.Tensor"]]) -> "torch.Tensor":
+    def _translate_labels(self, labels: list[dict[str, "torch.Tensor"]]) -> "torch.Tensor":
         """
         Translate object detection labels from ART format (torchvision) to the model format (YOLO) and
         move tensors to GPU, if applicable.
@@ -144,7 +146,7 @@ class PyTorchYolo(PyTorchObjectDetector):
         labels_xcycwh = torch.vstack(labels_xcycwh_list)
         return labels_xcycwh
 
-    def _translate_predictions(self, predictions: "torch.Tensor") -> List[Dict[str, np.ndarray]]:
+    def _translate_predictions(self, predictions: "torch.Tensor") -> list[dict[str, np.ndarray]]:
         """
         Translate object detection predictions from the model format (YOLO) to ART format (torchvision) and
         convert tensors to numpy arrays.
@@ -161,7 +163,7 @@ class PyTorchYolo(PyTorchObjectDetector):
             height = self.input_shape[0]
             width = self.input_shape[1]
 
-        predictions_x1y1x2y2: List[Dict[str, np.ndarray]] = []
+        predictions_x1y1x2y2: list[dict[str, np.ndarray]] = []
 
         for pred in predictions:
             boxes = torch.vstack(

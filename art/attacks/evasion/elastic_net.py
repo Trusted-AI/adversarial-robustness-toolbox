@@ -23,7 +23,7 @@ This module implements the elastic net attack `ElasticNet`. This is a white-box 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 import six
@@ -194,7 +194,7 @@ class ElasticNet(EvasionAttack):
 
         return decayed_learning_rate
 
-    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
+    def generate(self, x: np.ndarray, y: np.ndarray | None = None, **kwargs) -> np.ndarray:
         """
         Generate adversarial samples and return them in an array.
 
@@ -288,7 +288,7 @@ class ElasticNet(EvasionAttack):
         c_batch: np.ndarray,
         c_lower_bound: np.ndarray,
         c_upper_bound: np.ndarray,
-    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """
         Update constants.
 

@@ -21,10 +21,10 @@ Wang et al. (2019).
 
 | Paper link: https://people.cs.uchicago.edu/~ravenben/publications/pdf/backdoor-sp19.pdf
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
-from typing import List, Optional, Tuple, Union, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 from tqdm.auto import tqdm
@@ -69,15 +69,15 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier):
         model: KERAS_MODEL_TYPE,
         use_logits: bool = False,
         channels_first: bool = False,
-        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
-        preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
-        postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
+        clip_values: "CLIP_VALUES_TYPE" | None = None,
+        preprocessing_defences: "Preprocessor" | list["Preprocessor"] | None = None,
+        postprocessing_defences: "Postprocessor" | list["Postprocessor"] | None = None,
         preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
         input_layer: int = 0,
         output_layer: int = 0,
         steps: int = 1000,
         init_cost: float = 1e-3,
-        norm: Union[int, float] = 2,
+        norm: int | float = 2,
         learning_rate: float = 0.1,
         attack_success_threshold: float = 0.99,
         patience: int = 5,
@@ -199,7 +199,7 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier):
         )
 
     @property
-    def input_shape(self) -> Tuple[int, ...]:
+    def input_shape(self) -> tuple[int, ...]:
         """
         Return the shape of one input sample.
 
@@ -222,7 +222,7 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier):
 
     def generate_backdoor(
         self, x_val: np.ndarray, y_val: np.ndarray, y_target: np.ndarray
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    ) -> tuple[np.ndarray, np.ndarray]:
         """
         Generates a possible backdoor for the model. Returns the pattern and the mask
         :return: A tuple of the pattern and mask for the model.
@@ -233,8 +233,8 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier):
         self.reset()
         datagen = ImageDataGenerator()
         gen = datagen.flow(x_val, y_val, batch_size=self.batch_size)
-        mask_best: Optional[np.ndarray] = None
-        pattern_best: Optional[np.ndarray] = None
+        mask_best: np.ndarray | None = None
+        pattern_best: np.ndarray | None = None
         reg_best = float("inf")
         cost_set_counter = 0
         cost_up_counter = 0
@@ -367,7 +367,7 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier):
         """
         return NeuralCleanseMixin.predict(self, x, batch_size=batch_size, training_mode=training_mode, **kwargs)
 
-    def mitigate(self, x_val: np.ndarray, y_val: np.ndarray, mitigation_types: List[str]) -> None:
+    def mitigate(self, x_val: np.ndarray, y_val: np.ndarray, mitigation_types: list[str]) -> None:
         """
         Mitigates the effect of poison on a classifier
 
@@ -393,7 +393,7 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier):
     def class_gradient(
         self,
         x: np.ndarray,
-        label: Optional[Union[int, List[int], np.ndarray]] = None,
+        label: int | list[int] | np.ndarray | None = None,
         training_mode: bool = False,
         **kwargs,
     ) -> np.ndarray:

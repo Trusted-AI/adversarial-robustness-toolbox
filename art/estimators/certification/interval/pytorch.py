@@ -20,8 +20,10 @@ This module implements certification using interval (box) domain certification.
 
 | Paper link: https://ieeexplore.ieee.org/document/8418593
 """
+from __future__ import annotations
 
-from typing import List, Optional, Tuple, Union, Callable, Any, TYPE_CHECKING
+from collections.abc import Callable
+from typing import Any, TYPE_CHECKING
 
 import logging
 import warnings
@@ -50,16 +52,15 @@ class ConvertedModel(torch.nn.Module):
     which uses abstract operations
     """
 
-    def __init__(self, model: "torch.nn.Module", channels_first: bool, input_shape: Tuple[int, ...]):
+    def __init__(self, model: "torch.nn.Module", channels_first: bool, input_shape: tuple[int, ...]):
         super().__init__()
         modules = []
-        self.interim_shapes: List[Tuple] = []
+        self.interim_shapes: list[tuple] = []
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         self.forward_mode: str
         self.forward_mode = "abstract"
         self.reshape_op_num = -1
 
-        # pylint: disable=W0613
         def forward_hook(input_module, hook_input, hook_output):
             modules.append(input_module)
             self.interim_shapes.append(tuple(hook_input[0].shape))
@@ -160,7 +161,7 @@ class ConvertedModel(torch.nn.Module):
             x = op.forward(x)
         return x
 
-    def concrete_forward(self, in_x: Union[np.ndarray, "torch.Tensor"]) -> "torch.Tensor":
+    def concrete_forward(self, in_x: np.ndarray | "torch.Tensor") -> "torch.Tensor":
         """
         Do the forward pass using the concrete operations
 
@@ -221,16 +222,16 @@ class PyTorchIBPClassifier(PyTorchIntervalBounds, PyTorchClassifier):
         self,
         model: "torch.nn.Module",
         loss: "torch.nn.modules.loss._Loss",
-        input_shape: Tuple[int, ...],
+        input_shape: tuple[int, ...],
         nb_classes: int,
-        optimizer: Optional["torch.optim.Optimizer"] = None,
+        optimizer: "torch.optim.Optimizer" | None = None,
         channels_first: bool = True,
-        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
-        preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
-        postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
+        clip_values: "CLIP_VALUES_TYPE" | None = None,
+        preprocessing_defences: "Preprocessor" | list["Preprocessor"] | None = None,
+        postprocessing_defences: "Postprocessor" | list["Postprocessor"] | None = None,
         preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
         device_type: str = "gpu",
-        concrete_to_interval: Optional[Callable] = None,
+        concrete_to_interval: Callable | None = None,
     ):
         """
         Create a certifier based on the interval (also called box) domain.
@@ -272,7 +273,7 @@ class PyTorchIBPClassifier(PyTorchIntervalBounds, PyTorchClassifier):
         converted_model = ConvertedModel(model, channels_first, input_shape)
 
         if TYPE_CHECKING:
-            converted_optimizer: Union[torch.optim.Adam, torch.optim.SGD, None]
+            converted_optimizer: torch.optim.Adam | torch.optim.SGD | None
         if optimizer is not None:
             opt_state_dict = optimizer.state_dict()
             if isinstance(optimizer, torch.optim.Adam):
@@ -304,15 +305,15 @@ class PyTorchIBPClassifier(PyTorchIntervalBounds, PyTorchClassifier):
             device_type=device_type,
         )
 
-    def predict_intervals(  # pylint: disable=W0613
+    def predict_intervals(
         self,
         x: np.ndarray,
         is_interval: bool = False,
-        bounds: Optional[Union[float, List[float], np.ndarray]] = None,
-        limits: Optional[Union[List[float], np.ndarray]] = None,
+        bounds: float | list[float] | np.ndarray | None = None,
+        limits: list[float] | np.ndarray | None = None,
         batch_size: int = 128,
         training_mode: bool = False,
-        **kwargs
+        **kwargs,
     ) -> np.ndarray:
         """
         Produce interval predictions over the supplied data
@@ -365,7 +366,7 @@ class PyTorchIBPClassifier(PyTorchIntervalBounds, PyTorchClassifier):
 
         return torch.concat(interval_predictions, dim=0).cpu().detach().numpy()
 
-    def apply_preprocessing(self, x: np.ndarray, y: np.ndarray, fit: bool) -> Tuple[Any, Any]:
+    def apply_preprocessing(self, x: np.ndarray, y: np.ndarray, fit: bool) -> tuple[Any, Any]:
         """
         Access function to get preprocessing
 
@@ -379,7 +380,7 @@ class PyTorchIBPClassifier(PyTorchIntervalBounds, PyTorchClassifier):
         return x_preprocessed, y_preprocessed
 
     @staticmethod
-    def get_accuracy(preds: Union[np.ndarray, "torch.Tensor"], labels: Union[np.ndarray, "torch.Tensor"]) -> np.ndarray:
+    def get_accuracy(preds: np.ndarray | "torch.Tensor", labels: np.ndarray | "torch.Tensor") -> np.ndarray:
         """
         Helper function to print out the accuracy during training
 

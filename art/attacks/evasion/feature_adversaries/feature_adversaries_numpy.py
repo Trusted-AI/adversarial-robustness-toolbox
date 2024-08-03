@@ -20,8 +20,10 @@ This module implements the Feature Adversaries attack.
 
 | Paper link: https://arxiv.org/abs/1511.05122
 """
+from __future__ import annotations
+
 import logging
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import numpy as np
 
@@ -52,8 +54,8 @@ class FeatureAdversariesNumpy(EvasionAttack):
     def __init__(
         self,
         classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
-        delta: Optional[float] = None,
-        layer: Optional[int] = None,
+        delta: float | None = None,
+        layer: int | None = None,
         batch_size: int = 32,
     ):
         """
@@ -71,7 +73,7 @@ class FeatureAdversariesNumpy(EvasionAttack):
         self.batch_size = batch_size
         self._check_params()
 
-    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
+    def generate(self, x: np.ndarray, y: np.ndarray | None = None, **kwargs) -> np.ndarray:
         """
         Generate adversarial samples and return them in an array.
 

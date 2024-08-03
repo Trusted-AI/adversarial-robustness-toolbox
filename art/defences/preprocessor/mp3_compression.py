@@ -27,7 +27,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 from io import BytesIO
-from typing import Optional, Tuple
+
 
 import numpy as np
 from tqdm.auto import tqdm
@@ -67,7 +67,7 @@ class Mp3Compression(Preprocessor):
         self.verbose = verbose
         self._check_params()
 
-    def __call__(self, x: np.ndarray, y: Optional[np.ndarray] = None) -> Tuple[np.ndarray, Optional[np.ndarray]]:
+    def __call__(self, x: np.ndarray, y: np.ndarray | None = None) -> tuple[np.ndarray, np.ndarray | None]:
         """
         Apply MP3 compression to sample `x`.
 

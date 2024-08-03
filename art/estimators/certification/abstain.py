@@ -35,13 +35,6 @@ class AbstainPredictorMixin(ClassifierMixin):
     A mixin class that gives classifiers the ability to abstain
     """
 
-    def __init__(self, **kwargs):
-        """
-        Creates a predictor that can abstain from predictions
-
-        """
-        super().__init__(**kwargs)
-
     def abstain(self) -> np.ndarray:
         """
         Abstain from a prediction

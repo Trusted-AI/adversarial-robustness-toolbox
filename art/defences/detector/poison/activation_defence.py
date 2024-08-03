@@ -24,13 +24,13 @@ This module implements methods performing poisoning detection based on activatio
     defence, see https://arxiv.org/abs/1905.13409 . For details on how to evaluate classifier security
     in general, see https://arxiv.org/abs/1902.06705
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
 import os
 import pickle
 import time
-from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
 
 import numpy as np
 
@@ -81,8 +81,8 @@ class ActivationDefence(PoisonFilteringDefence):
         classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
         x_train: np.ndarray,
         y_train: np.ndarray,
-        generator: Optional[DataGenerator] = None,
-        ex_re_threshold: Optional[float] = None,
+        generator: DataGenerator | None = None,
+        ex_re_threshold: float | None = None,
     ) -> None:
         """
         Create an :class:`.ActivationDefence` object with the provided classifier.
@@ -101,15 +101,15 @@ class ActivationDefence(PoisonFilteringDefence):
         self.reduce = "PCA"
         self.cluster_analysis = "smaller"
         self.generator = generator
-        self.activations_by_class: List[np.ndarray] = []
-        self.clusters_by_class: List[np.ndarray] = []
+        self.activations_by_class: list[np.ndarray] = []
+        self.clusters_by_class: list[np.ndarray] = []
         self.assigned_clean_by_class: np.ndarray
-        self.is_clean_by_class: List[np.ndarray] = []
+        self.is_clean_by_class: list[np.ndarray] = []
         self.errors_by_class: np.ndarray
-        self.red_activations_by_class: List[np.ndarray] = []  # Activations reduced by class
+        self.red_activations_by_class: list[np.ndarray] = []  # Activations reduced by class
         self.evaluator = GroundTruthEvaluator()
-        self.is_clean_lst: List[int] = []
-        self.confidence_level: List[float] = []
+        self.is_clean_lst: list[int] = []
+        self.confidence_level: list[float] = []
         self.poisonous_clusters: np.ndarray
         self.clusterer = MiniBatchKMeans(n_clusters=self.nb_clusters)
         self.ex_re_threshold = ex_re_threshold
@@ -163,8 +163,7 @@ class ActivationDefence(PoisonFilteringDefence):
         )
         return conf_matrix_json
 
-    # pylint: disable=W0221
-    def detect_poison(self, **kwargs) -> Tuple[Dict[str, Any], List[int]]:
+    def detect_poison(self, **kwargs) -> tuple[dict[str, Any], list[int]]:
         """
         Returns poison detected and a report.
 
@@ -242,7 +241,7 @@ class ActivationDefence(PoisonFilteringDefence):
 
         return report, self.is_clean_lst
 
-    def cluster_activations(self, **kwargs) -> Tuple[List[np.ndarray], List[np.ndarray]]:
+    def cluster_activations(self, **kwargs) -> tuple[list[np.ndarray], list[np.ndarray]]:
         """
         Clusters activations and returns cluster_by_class and red_activations_by_class, where cluster_by_class[i][j] is
         the cluster to which the j-th data point in the ith class belongs and the correspondent activations reduced by
@@ -306,7 +305,7 @@ class ActivationDefence(PoisonFilteringDefence):
 
         return self.clusters_by_class, self.red_activations_by_class
 
-    def analyze_clusters(self, **kwargs) -> Tuple[Dict[str, Any], np.ndarray]:
+    def analyze_clusters(self, **kwargs) -> tuple[dict[str, Any], np.ndarray]:
         """
         This function analyzes the clusters according to the provided method.
 
@@ -358,7 +357,7 @@ class ActivationDefence(PoisonFilteringDefence):
 
         return report, self.assigned_clean_by_class
 
-    def exclusionary_reclassification(self, report: Dict[str, Any]):
+    def exclusionary_reclassification(self, report: dict[str, Any]):
         """
         This function perform exclusionary reclassification. Based on the ex_re_threshold,
         suspicious clusters will be rechecked. If they remain suspicious, the suspected source
@@ -392,7 +391,7 @@ class ActivationDefence(PoisonFilteringDefence):
         # Test on the suspicious clusters
         n_train = len(self.x_train)
         indices_by_class = self._segment_by_class(np.arange(n_train), self.y_train)
-        indicies_by_cluster: List[List[List]] = [
+        indicies_by_cluster: list[list[list]] = [
             [[] for _ in range(self.nb_clusters)] for _ in range(self.classifier.nb_classes)
         ]
 
@@ -447,7 +446,7 @@ class ActivationDefence(PoisonFilteringDefence):
         tolerable_backdoor: float = 0.01,
         max_epochs: int = 50,
         batch_epochs: int = 10,
-    ) -> Tuple[float, "CLASSIFIER_NEURALNETWORK_TYPE"]:
+    ) -> tuple[float, "CLASSIFIER_NEURALNETWORK_TYPE"]:
         """
         Revert poison attack by continue training the current classifier with `x`, `y_fix`. `test_set_split` determines
         the percentage in x that will be used as training set, while `1-test_set_split` determines how many data points
@@ -501,7 +500,7 @@ class ActivationDefence(PoisonFilteringDefence):
         tolerable_backdoor: float = 0.01,
         max_epochs: int = 50,
         batch_epochs: int = 10,
-    ) -> Tuple[float, "CLASSIFIER_NEURALNETWORK_TYPE"]:
+    ) -> tuple[float, "CLASSIFIER_NEURALNETWORK_TYPE"]:
         """
         Revert poison attack by continue training the current classifier with `x`, `y_fix`. `n_splits` determines the
         number of cross validation splits.
@@ -515,7 +514,7 @@ class ActivationDefence(PoisonFilteringDefence):
         :param batch_epochs: Number of epochs to be trained before checking current state of model.
         :return: (improve_factor, classifier)
         """
-        # pylint: disable=E0001
+
         from sklearn.model_selection import KFold
 
         # Train using cross validation
@@ -594,7 +593,7 @@ class ActivationDefence(PoisonFilteringDefence):
 
     def visualize_clusters(
         self, x_raw: np.ndarray, save: bool = True, folder: str = ".", **kwargs
-    ) -> List[List[np.ndarray]]:
+    ) -> list[list[np.ndarray]]:
         """
         This function creates the sprite/mosaic visualization for clusters. When save=True,
         it also stores a sprite (mosaic) per cluster in art.config.ART_DATA_PATH.
@@ -612,7 +611,7 @@ class ActivationDefence(PoisonFilteringDefence):
             self.cluster_activations()
 
         x_raw_by_class = self._segment_by_class(x_raw, self.y_train)
-        x_raw_by_cluster: List[List[np.ndarray]] = [  # type: ignore
+        x_raw_by_cluster: list[list[np.ndarray]] = [  # type: ignore
             [[] for _ in range(self.nb_clusters)] for _ in range(self.classifier.nb_classes)  # type: ignore
         ]
 
@@ -622,7 +621,7 @@ class ActivationDefence(PoisonFilteringDefence):
                 x_raw_by_cluster[n_class][assigned_cluster].append(x_raw_by_class[n_class][j])
 
         # Now create sprites:
-        sprites_by_class: List[List[np.ndarray]] = [  # type: ignore
+        sprites_by_class: list[list[np.ndarray]] = [  # type: ignore
             [[] for _ in range(self.nb_clusters)] for _ in range(self.classifier.nb_classes)  # type: ignore
         ]
         for i, class_i in enumerate(x_raw_by_cluster):
@@ -682,7 +681,7 @@ class ActivationDefence(PoisonFilteringDefence):
         if self.ex_re_threshold is not None and self.ex_re_threshold <= 0:
             raise ValueError("Exclusionary reclassification threshold must be positive")
 
-    def _get_activations(self, x_train: Optional[np.ndarray] = None) -> np.ndarray:
+    def _get_activations(self, x_train: np.ndarray | None = None) -> np.ndarray:
         """
         Find activations from :class:`.Classifier`.
         """
@@ -716,7 +715,7 @@ class ActivationDefence(PoisonFilteringDefence):
             )
         return activations
 
-    def _segment_by_class(self, data: np.ndarray, features: np.ndarray) -> List[np.ndarray]:
+    def _segment_by_class(self, data: np.ndarray, features: np.ndarray) -> list[np.ndarray]:
         """
         Returns segmented data according to specified features.
 
@@ -783,14 +782,14 @@ def train_remove_backdoor(
 
 
 def cluster_activations(
-    separated_activations: List[np.ndarray],
+    separated_activations: list[np.ndarray],
     nb_clusters: int = 2,
     nb_dims: int = 10,
     reduce: str = "FastICA",
     clustering_method: str = "KMeans",
-    generator: Optional[DataGenerator] = None,
-    clusterer_new: Optional[MiniBatchKMeans] = None,
-) -> Tuple[List[np.ndarray], List[np.ndarray]]:
+    generator: DataGenerator | None = None,
+    clusterer_new: MiniBatchKMeans | None = None,
+) -> tuple[list[np.ndarray], list[np.ndarray]]:
     """
     Clusters activations and returns two arrays.
     1) separated_clusters: where separated_clusters[i] is a 1D array indicating which cluster each data point
@@ -852,7 +851,7 @@ def reduce_dimensionality(activations: np.ndarray, nb_dims: int = 10, reduce: st
     :param reduce: Method to perform dimensionality reduction, default is FastICA.
     :return: Array with the reduced activations.
     """
-    # pylint: disable=E0001
+
     from sklearn.decomposition import FastICA, PCA
 
     if reduce == "FastICA":

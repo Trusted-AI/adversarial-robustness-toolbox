@@ -18,10 +18,10 @@
 """
 This module implements Backdoor Attacks to poison data used in ML models.
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
+from collections.abc import Callable
 import logging
-from typing import Callable, List, Optional, Tuple, Union
 
 import numpy as np
 
@@ -43,7 +43,7 @@ class PoisoningAttackBackdoor(PoisoningAttackBlackBox):
     attack_params = PoisoningAttackBlackBox.attack_params + ["perturbation"]
     _estimator_requirements = ()
 
-    def __init__(self, perturbation: Union[Callable, List[Callable]]) -> None:
+    def __init__(self, perturbation: Callable | list[Callable]) -> None:
         """
         Initialize a backdoor poisoning attack.
 
@@ -53,9 +53,9 @@ class PoisoningAttackBackdoor(PoisoningAttackBlackBox):
         self.perturbation = perturbation
         self._check_params()
 
-    def poison(  # pylint: disable=W0221
-        self, x: np.ndarray, y: Optional[np.ndarray] = None, broadcast=False, **kwargs
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    def poison(
+        self, x: np.ndarray, y: np.ndarray | None = None, broadcast=False, **kwargs
+    ) -> tuple[np.ndarray, np.ndarray]:
         """
         Calls perturbation function on input x and returns the perturbed input and poison labels for the data.
 

@@ -23,7 +23,7 @@ This module implements ``Wasserstein Adversarial Examples via Projected Sinkhorn
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 from scipy.special import lambertw
@@ -113,7 +113,7 @@ class Wasserstein(EvasionAttack):
 
         self._targeted = targeted
         self.regularization = regularization
-        self.p = p  # pylint: disable=C0103
+        self.p = p  # pylint: disable=invalid-name
         self.kernel_size = kernel_size
         self.eps_step = eps_step
         self.norm = norm
@@ -128,7 +128,7 @@ class Wasserstein(EvasionAttack):
         self.verbose = verbose
         self._check_params()
 
-    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
+    def generate(self, x: np.ndarray, y: np.ndarray | None = None, **kwargs) -> np.ndarray:
         """
         Generate adversarial samples and return them in an array.
 

@@ -18,10 +18,10 @@
 """
 This module defines and implements the summary writers for TensorBoard output.
 """
+from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from math import sqrt
-from typing import Dict, List, Optional, Union
 
 import numpy as np
 
@@ -31,7 +31,7 @@ class SummaryWriter(ABC):
     This abstract base class defines the API for summary writers.
     """
 
-    def __init__(self, summary_writer: Union[str, bool]):
+    def __init__(self, summary_writer: str | bool):
         """
         Create summary writer.
 
@@ -109,7 +109,7 @@ class SummaryWriterDefault(SummaryWriter):
 
     def __init__(
         self,
-        summary_writer: Union[str, bool],
+        summary_writer: str | bool,
         ind_1: bool = False,
         ind_2: bool = False,
         ind_3: bool = False,
@@ -123,21 +123,21 @@ class SummaryWriterDefault(SummaryWriter):
         self.ind_4 = ind_4
 
         self.loss = None
-        self.loss_prev: Dict[str, np.ndarray] = {}
-        self.losses: Dict[str, List[np.ndarray]] = {}
+        self.loss_prev: dict[str, np.ndarray] = {}
+        self.losses: dict[str, list[np.ndarray]] = {}
 
-        self.i_3: Dict[str, np.ndarray] = {}
-        self.i_4: Dict[str, np.ndarray] = {}
+        self.i_3: dict[str, np.ndarray] = {}
+        self.i_4: dict[str, np.ndarray] = {}
 
     def update(
         self,
         batch_id: int,
         global_step: int,
-        grad: Optional[np.ndarray] = None,
-        patch: Optional[np.ndarray] = None,
+        grad: np.ndarray | None = None,
+        patch: np.ndarray | None = None,
         estimator=None,
-        x: Optional[np.ndarray] = None,
-        y: Optional[np.ndarray] = None,
+        x: np.ndarray | None = None,
+        y: np.ndarray | None = None,
         targeted: bool = False,
         **kwargs,
     ):

@@ -18,14 +18,14 @@
 """
 This module implements the classifier `XGBoostClassifier` for XGBoost models.
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 from copy import deepcopy
 import json
 import logging
 import os
 import pickle
-from typing import List, Optional, Union, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 
@@ -34,7 +34,7 @@ from art.utils import to_categorical
 from art import config
 
 if TYPE_CHECKING:
-    # pylint: disable=C0412
+
     import xgboost
 
     from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
@@ -56,13 +56,13 @@ class XGBoostClassifier(ClassifierDecisionTree):
 
     def __init__(
         self,
-        model: Union["xgboost.Booster", "xgboost.XGBClassifier", None] = None,
-        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
-        preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
-        postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
+        model: "xgboost.Booster" | "xgboost.XGBClassifier" | None = None,
+        clip_values: "CLIP_VALUES_TYPE" | None = None,
+        preprocessing_defences: "Preprocessor" | list["Preprocessor"] | None = None,
+        postprocessing_defences: "Postprocessor" | list["Postprocessor"] | None = None,
         preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
-        nb_features: Optional[int] = None,
-        nb_classes: Optional[int] = None,
+        nb_features: int | None = None,
+        nb_classes: int | None = None,
     ) -> None:
         """
         Create a `Classifier` instance from a XGBoost model.
@@ -97,7 +97,7 @@ class XGBoostClassifier(ClassifierDecisionTree):
             self._nb_classes = _nb_classes
 
     @property
-    def input_shape(self) -> Tuple[int, ...]:
+    def input_shape(self) -> tuple[int, ...]:
         """
         Return the shape of one input sample.
 
@@ -184,7 +184,7 @@ class XGBoostClassifier(ClassifierDecisionTree):
 
         raise NotImplementedError
 
-    def _get_nb_classes(self, nb_classes: Optional[int]) -> Optional[int]:
+    def _get_nb_classes(self, nb_classes: int | None) -> int | None:
         """
         Return the number of output classes.
 
@@ -205,7 +205,7 @@ class XGBoostClassifier(ClassifierDecisionTree):
             return nb_classes
         return None
 
-    def save(self, filename: str, path: Optional[str] = None) -> None:
+    def save(self, filename: str, path: str | None = None) -> None:
         """
         Save a model to file in the format specific to the backend framework.
 
@@ -224,7 +224,7 @@ class XGBoostClassifier(ClassifierDecisionTree):
         with open(full_path + ".pickle", "wb") as file_pickle:
             pickle.dump(self._model, file=file_pickle)
 
-    def get_trees(self) -> List["Tree"]:
+    def get_trees(self) -> list["Tree"]:
         """
         Get the decision trees.
 
@@ -253,10 +253,10 @@ class XGBoostClassifier(ClassifierDecisionTree):
 
         return trees
 
-    def _get_leaf_nodes(self, node, i_tree, class_label, box) -> List["LeafNode"]:
+    def _get_leaf_nodes(self, node, i_tree, class_label, box) -> list["LeafNode"]:
         from art.metrics.verification_decisions_trees import LeafNode, Box, Interval
 
-        leaf_nodes: List[LeafNode] = []
+        leaf_nodes: list[LeafNode] = []
 
         if "children" in node:
             if node["children"][0]["nodeid"] == node["yes"] and node["children"][1]["nodeid"] == node["no"]:

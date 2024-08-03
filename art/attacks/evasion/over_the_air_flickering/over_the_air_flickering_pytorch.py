@@ -21,9 +21,10 @@ This module contains an implementation of the Over-the-Air Adversarial Flickerin
 
 | Paper link: https://arxiv.org/abs/2002.05123
 """
+from __future__ import annotations
 
 import logging
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 from tqdm.auto import tqdm
@@ -35,7 +36,7 @@ from art.attacks.attack import EvasionAttack
 from art.utils import check_and_transform_label_format, get_labels_np_array
 
 if TYPE_CHECKING:
-    # pylint: disable=C0412
+
     import torch
     from art.estimators.classification.pytorch import PyTorchClassifier
 
@@ -79,7 +80,7 @@ class OverTheAirFlickeringPyTorch(EvasionAttack):
         loss_margin: float = 0.05,
         batch_size: int = 1,
         start_frame_index: int = 0,
-        num_frames: Optional[int] = None,
+        num_frames: int | None = None,
         round_samples: float = 0.0,
         targeted: bool = False,
         verbose: bool = True,
@@ -120,7 +121,7 @@ class OverTheAirFlickeringPyTorch(EvasionAttack):
         self.verbose = verbose
         self._check_params()
 
-    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
+    def generate(self, x: np.ndarray, y: np.ndarray | None = None, **kwargs) -> np.ndarray:
         """
         Generate adversarial examples.
 
@@ -255,7 +256,7 @@ class OverTheAirFlickeringPyTorch(EvasionAttack):
             )
             x_in = x[[i]] + torch.repeat_interleave(torch.repeat_interleave(eps, x.shape[2], dim=2), x.shape[3], dim=3)
             x_in = self._clip_and_round_pytorch(x_in)
-            preds, _ = self.estimator._predict_framework(x=x_in)  # pylint: disable=W0212
+            preds, _ = self.estimator._predict_framework(x=x_in)
 
             # calculate adversarial loss
             y_preds = softmax(preds)[0]

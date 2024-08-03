@@ -773,7 +773,7 @@ class AbstractModel(object):
         if self.saver is not None and not force:
             return
         else:
-            if prefixes is None or not (type(prefixes) != list or type(prefixes) != tuple):
+            if prefixes is None or not (type(prefixes) != list or type(prefixes) != tuple):  # noqa: E721
                 raise ValueError("Prefix of variables that needs saving are not defined")
 
             prefixes_str = ""

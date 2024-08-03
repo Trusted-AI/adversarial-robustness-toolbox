@@ -21,10 +21,10 @@ This module implements the base class `DetectorClassifier` for classifier and de
 Paper link:
     https://arxiv.org/abs/1705.07263
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
-from typing import List, Optional, Union, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 
@@ -51,8 +51,8 @@ class DetectorClassifier(ClassifierNeuralNetwork):
         self,
         classifier: ClassifierNeuralNetwork,
         detector: ClassifierNeuralNetwork,
-        preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
-        postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
+        preprocessing_defences: "Preprocessor" | list["Preprocessor"] | None = None,
+        postprocessing_defences: "Postprocessor" | list["Postprocessor"] | None = None,
         preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
     ) -> None:
         """
@@ -85,7 +85,7 @@ class DetectorClassifier(ClassifierNeuralNetwork):
         self._input_shape = classifier.input_shape
 
     @property
-    def input_shape(self) -> Tuple[int, ...]:
+    def input_shape(self) -> tuple[int, ...]:
         """
         Return the shape of one input sample.
 
@@ -139,10 +139,10 @@ class DetectorClassifier(ClassifierNeuralNetwork):
         """
         raise NotImplementedError
 
-    def class_gradient(  # pylint: disable=W0221
+    def class_gradient(
         self,
         x: np.ndarray,
-        label: Optional[Union[int, List[int], np.ndarray]] = None,
+        label: int | list[int] | np.ndarray | None = None,
         training_mode: bool = False,
         **kwargs,
     ) -> np.ndarray:
@@ -265,9 +265,7 @@ class DetectorClassifier(ClassifierNeuralNetwork):
         """
         raise NotImplementedError
 
-    def loss_gradient(  # pylint: disable=W0221
-        self, x: np.ndarray, y: np.ndarray, training_mode: bool = False, **kwargs
-    ) -> np.ndarray:
+    def loss_gradient(self, x: np.ndarray, y: np.ndarray, training_mode: bool = False, **kwargs) -> np.ndarray:
         """
         Compute the gradient of the loss function w.r.t. `x`.
 
@@ -281,7 +279,7 @@ class DetectorClassifier(ClassifierNeuralNetwork):
         raise NotImplementedError
 
     @property
-    def layer_names(self) -> List[str]:
+    def layer_names(self) -> list[str]:
         """
         Return the hidden layers in the model, if applicable. This function is not supported for the
         Classifier and Detector classes.
@@ -292,7 +290,7 @@ class DetectorClassifier(ClassifierNeuralNetwork):
         raise NotImplementedError
 
     def get_activations(
-        self, x: np.ndarray, layer: Union[int, str], batch_size: int = 128, framework: bool = False
+        self, x: np.ndarray, layer: int | str, batch_size: int = 128, framework: bool = False
     ) -> np.ndarray:
         """
         Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
@@ -308,7 +306,7 @@ class DetectorClassifier(ClassifierNeuralNetwork):
         """
         raise NotImplementedError
 
-    def save(self, filename: str, path: Optional[str] = None) -> None:
+    def save(self, filename: str, path: str | None = None) -> None:
         """
         Save a model to file in the format specific to the backend framework.
 
@@ -333,7 +331,7 @@ class DetectorClassifier(ClassifierNeuralNetwork):
         )
         return repr_
 
-    def _compute_combined_grads(self, x: np.ndarray, label: Optional[Union[int, List[int]]] = None) -> np.ndarray:
+    def _compute_combined_grads(self, x: np.ndarray, label: int | list[int] | None = None) -> np.ndarray:
         # Compute the classifier gradients
         classifier_grads = self.classifier.class_gradient(x=x, label=label)
 

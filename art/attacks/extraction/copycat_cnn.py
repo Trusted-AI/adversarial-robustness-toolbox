@@ -23,7 +23,7 @@ This module implements the copycat cnn attack `CopycatCNN`.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 
@@ -82,7 +82,7 @@ class CopycatCNN(ExtractionAttack):
         self.use_probability = use_probability
         self._check_params()
 
-    def extract(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> "CLASSIFIER_TYPE":
+    def extract(self, x: np.ndarray, y: np.ndarray | None = None, **kwargs) -> "CLASSIFIER_TYPE":
         """
         Extract a thieved classifier.
 

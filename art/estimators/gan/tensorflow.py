@@ -18,7 +18,9 @@
 """
 This module creates GANs using the TensorFlow ML Framework
 """
-from typing import Tuple, TYPE_CHECKING, Union
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 import numpy as np
 from art.estimators.tensorflow import TensorFlowV2Estimator
@@ -71,7 +73,7 @@ class TensorFlowV2GAN(TensorFlowV2Estimator):
         return self.generator.predict(x, batch_size=batch_size, **kwargs)
 
     @property
-    def input_shape(self) -> Tuple[int, int]:
+    def input_shape(self) -> tuple[int, int]:
         """
         Return the shape of one input sample.
 
@@ -169,7 +171,5 @@ class TensorFlowV2GAN(TensorFlowV2Estimator):
     def loss_gradient(self, x, y, **kwargs):
         raise NotImplementedError
 
-    def get_activations(
-        self, x: np.ndarray, layer: Union[int, str], batch_size: int, framework: bool = False
-    ) -> np.ndarray:
+    def get_activations(self, x: np.ndarray, layer: int | str, batch_size: int, framework: bool = False) -> np.ndarray:
         raise NotImplementedError

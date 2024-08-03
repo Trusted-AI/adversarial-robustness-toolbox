@@ -20,10 +20,10 @@ This module implements Neural Cleanse (Wang et. al. 2019)
 
 | Paper link: http://people.cs.uchicago.edu/~ravenben/publications/abstracts/backdoor-sp19.html
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
-from typing import Optional, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 import numpy as np
 
@@ -74,7 +74,7 @@ class NeuralCleanse(Transformer):
         transformed_classifier: "CLASSIFIER_TYPE",
         steps: int = 1000,
         init_cost: float = 1e-3,
-        norm: Union[int, float] = 2,
+        norm: int | float = 2,
         learning_rate: float = 0.1,
         attack_success_threshold: float = 0.99,
         patience: int = 5,
@@ -122,7 +122,7 @@ class NeuralCleanse(Transformer):
         )
         return transformed_classifier
 
-    def fit(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> None:
+    def fit(self, x: np.ndarray, y: np.ndarray | None = None, **kwargs) -> None:
         """
         No parameters to learn for this method; do nothing.
         """

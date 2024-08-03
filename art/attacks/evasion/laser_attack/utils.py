@@ -20,11 +20,14 @@ This module implements helper functions for the `LaserAttack`.
 
 | Paper link: https://arxiv.org/abs/2103.06504
 """
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from logging import Logger
 from pathlib import Path
 import string
-from typing import Any, Callable, List, Tuple, Union
+from typing import Any
 
 import numpy as np
 
@@ -164,7 +167,7 @@ class ImageGenerator:
         return add_images(image1, image2)
 
     @staticmethod
-    def generate_image(adv_object: Callable, shape: Tuple) -> np.ndarray:
+    def generate_image(adv_object: Callable, shape: tuple) -> np.ndarray:
         """
         Generate image of the adversarial object.
 
@@ -188,7 +191,7 @@ class ImageGenerator:
         return laser_image
 
 
-def wavelength_to_rgb(wavelength: Union[float, int]) -> List[float]:
+def wavelength_to_rgb(wavelength: float | int) -> list[float]:
     """
     Converts wavelength in nanometers to the RGB color.
 

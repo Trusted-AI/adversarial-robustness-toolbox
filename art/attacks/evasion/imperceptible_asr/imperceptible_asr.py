@@ -21,10 +21,10 @@ This module implements the adversarial and imperceptible attack on automatic spe
 
 | Paper link: http://proceedings.mlr.press/v97/qin19a.html
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
-from typing import TYPE_CHECKING, Optional, Tuple, Union
+from typing import TYPE_CHECKING
 
 import numpy as np
 import scipy.signal as ss
@@ -37,7 +37,7 @@ from art.estimators.tensorflow import TensorFlowV2Estimator
 from art.utils import pad_sequence_input
 
 if TYPE_CHECKING:
-    # pylint: disable=C0412
+
     from tensorflow.compat.v1 import Tensor
     from torch import Tensor as PTensor
 
@@ -141,7 +141,7 @@ class ImperceptibleASR(EvasionAttack):
         self._hop_size = masker.hop_size
         self._sample_rate = masker.sample_rate
 
-        self._framework: Optional[str] = None
+        self._framework: str | None = None
 
         if isinstance(self.estimator, TensorFlowV2Estimator):
             import tensorflow.compat.v1 as tf1
@@ -167,7 +167,7 @@ class ImperceptibleASR(EvasionAttack):
             # set framework attribute
             self._framework = "pytorch"
 
-    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
+    def generate(self, x: np.ndarray, y: np.ndarray | None = None, **kwargs) -> np.ndarray:
         """
         Generate imperceptible, adversarial examples.
 
@@ -357,7 +357,7 @@ class ImperceptibleASR(EvasionAttack):
 
         return np.array(x_imperceptible, dtype=dtype)
 
-    def _stabilized_threshold_and_psd_maximum(self, x: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    def _stabilized_threshold_and_psd_maximum(self, x: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
         """
         Return batch of stabilized masking thresholds and PSD maxima.
 
@@ -384,7 +384,7 @@ class ImperceptibleASR(EvasionAttack):
         x: np.ndarray,
         masking_threshold_stabilized: np.ndarray,
         psd_maximum_stabilized: np.ndarray,
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    ) -> tuple[np.ndarray, np.ndarray]:
         """
         Compute loss gradient of the global masking threshold w.r.t. the PSD approximate of the perturbation.
 
@@ -409,7 +409,7 @@ class ImperceptibleASR(EvasionAttack):
                 self._power_spectral_density_maximum_tf: psd_maximum_stabilized,
                 self._masking_threshold_tf: masking_threshold_stabilized,
             }
-            # pylint: disable=W0212
+
             gradients_padded, loss = self.estimator._sess.run(self._loss_gradient_masking_threshold_op_tf, feed_dict)
         elif self._framework == "pytorch":
             # get loss gradients (TensorFlow)
@@ -432,12 +432,12 @@ class ImperceptibleASR(EvasionAttack):
 
     def _loss_gradient_masking_threshold_tf(
         self, perturbation: "Tensor", psd_maximum_stabilized: "Tensor", masking_threshold_stabilized: "Tensor"
-    ) -> Union["Tensor", "Tensor"]:
+    ) -> "Tensor" | "Tensor":
         """
         Compute loss gradient of the masking threshold loss in TensorFlow.
 
         Note that the PSD maximum and masking threshold are required to be stabilized, i.e. have the `10*log10`-term
-        canceled out. Following Qin et al (2019) this mitigates optimization instabilities.
+        canceled out. Following Qin et al. (2019) this mitigates optimization instabilities.
 
         :param perturbation: Adversarial perturbation.
         :param psd_maximum_stabilized: Stabilized maximum across frames, i.e. shape is `(batch_size, frame_length)`, of
@@ -461,7 +461,7 @@ class ImperceptibleASR(EvasionAttack):
 
     def _loss_gradient_masking_threshold_torch(
         self, perturbation: np.ndarray, psd_maximum_stabilized: np.ndarray, masking_threshold_stabilized: np.ndarray
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    ) -> tuple[np.ndarray, np.ndarray]:
         """
         Compute loss gradient of the masking threshold loss in PyTorch.
 
@@ -470,7 +470,7 @@ class ImperceptibleASR(EvasionAttack):
         import torch
 
         # define tensors
-        # pylint: disable=W0212
+
         perturbation_torch = torch.from_numpy(perturbation).to(self.estimator._device)
         masking_threshold_stabilized_torch = torch.from_numpy(masking_threshold_stabilized).to(self.estimator._device)
         psd_maximum_stabilized_torch = torch.from_numpy(psd_maximum_stabilized).to(self.estimator._device)
@@ -539,7 +539,7 @@ class ImperceptibleASR(EvasionAttack):
         import torch
 
         # compute short-time Fourier transform (STFT)
-        # pylint: disable=W0212
+
         stft_matrix = torch.view_as_real(
             torch.stft(
                 perturbation,
@@ -654,11 +654,11 @@ class PsychoacousticMasker:
         self._sample_rate = sample_rate
 
         # init some private properties for lazy loading
-        self._fft_frequencies: Optional[np.ndarray] = None
-        self._bark: Optional[np.ndarray] = None
-        self._absolute_threshold_hearing: Optional[np.ndarray] = None
+        self._fft_frequencies: np.ndarray | None = None
+        self._bark: np.ndarray | None = None
+        self._absolute_threshold_hearing: np.ndarray | None = None
 
-    def calculate_threshold_and_psd_maximum(self, audio: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    def calculate_threshold_and_psd_maximum(self, audio: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
         """
         Compute the global masking threshold for an audio input and also return its maximum power spectral density.
 
@@ -748,7 +748,7 @@ class PsychoacousticMasker:
             )
         return self._absolute_threshold_hearing
 
-    def power_spectral_density(self, audio: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    def power_spectral_density(self, audio: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
         """
         Compute the power spectral density matrix for an audio input.
 
@@ -782,7 +782,7 @@ class PsychoacousticMasker:
         return psd_matrix_normalized, psd_matrix_max
 
     @staticmethod
-    def find_maskers(psd_vector: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    def find_maskers(psd_vector: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
         """
         Identify maskers.
 
@@ -799,7 +799,7 @@ class PsychoacousticMasker:
         psd_maskers = 10 * np.log10(np.sum([10 ** (psd_vector[masker_idx + i] / 10) for i in range(-1, 2)], axis=0))
         return psd_maskers, masker_idx
 
-    def filter_maskers(self, maskers: np.ndarray, masker_idx: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    def filter_maskers(self, maskers: np.ndarray, masker_idx: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
         """
         Filter maskers.
 

@@ -18,7 +18,7 @@
 """
 Subset scanning based on FGSS
 """
-from typing import Callable, Tuple
+from collections.abc import Callable
 
 import numpy as np
 
@@ -38,7 +38,7 @@ class Scanner:
         pvalues: np.ndarray,
         a_max: float = 0.5,
         score_function: Callable[[np.ndarray, np.ndarray, np.ndarray], np.ndarray] = ScoringFunctions.get_score_bj_fast,
-    ) -> Tuple[float, np.ndarray, np.ndarray, float]:
+    ) -> tuple[float, np.ndarray, np.ndarray, float]:
         """
         Finds the highest scoring subset of records and attribute. Return the subsets, the score, and the alpha that
         maximizes the score.
@@ -91,7 +91,7 @@ class Scanner:
         restarts: int = 10,
         image_to_node_init: bool = False,
         score_function: Callable[[np.ndarray, np.ndarray, np.ndarray], np.ndarray] = ScoringFunctions.get_score_bj_fast,
-    ) -> Tuple[float, np.ndarray, np.ndarray, float]:
+    ) -> tuple[float, np.ndarray, np.ndarray, float]:
         """
         Finds the highest scoring subset of records and attribute. Return the subsets, the score, and the alpha that
         maximizes the score iterates between images and nodes, each time performing NPSS efficient maximization.

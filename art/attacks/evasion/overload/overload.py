@@ -20,10 +20,10 @@ This module implements the Overload attack. This is a white-box attack.
 
 | Paper link: https://arxiv.org/abs/2304.05370
 """
-# pylint: disable=C0302
+
 
 import logging
-from typing import Optional, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 
@@ -31,7 +31,7 @@ from art.attacks.attack import EvasionAttack
 from art.attacks.evasion.overload.box_iou import box_iou
 
 if TYPE_CHECKING:
-    # pylint: disable=C0412
+
     import torch
     from art.utils import PYTORCH_OBJECT_DETECTOR_TYPE
 
@@ -78,7 +78,7 @@ class OverloadPyTorch(EvasionAttack):
         self.batch_size = batch_size
         self._check_params()
 
-    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
+    def generate(self, x: np.ndarray, y: np.ndarray | None = None, **kwargs) -> np.ndarray:
         """
         Generate adversarial samples and return them in an array.
 
@@ -143,7 +143,7 @@ class OverloadPyTorch(EvasionAttack):
         x_adv.requires_grad_(False)
         return x_adv
 
-    def _loss(self, x: "torch.Tensor") -> Tuple["torch.Tensor", "torch.Tensor"]:
+    def _loss(self, x: "torch.Tensor") -> tuple["torch.Tensor", "torch.Tensor"]:
         """
         Compute the weight of each pixel and the overload loss for a given image.
 

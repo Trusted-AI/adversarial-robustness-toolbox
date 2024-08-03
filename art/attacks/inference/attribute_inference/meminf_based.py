@@ -21,7 +21,7 @@ This module implements attribute inference attacks using membership inference at
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional, Union, List, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 
@@ -49,9 +49,9 @@ class AttributeInferenceMembership(AttributeInferenceAttack):
 
     def __init__(
         self,
-        estimator: Union["CLASSIFIER_TYPE", "REGRESSOR_TYPE"],
+        estimator: "CLASSIFIER_TYPE" | "REGRESSOR_TYPE",
         membership_attack: MembershipInferenceAttack,
-        attack_feature: Union[int, slice] = 0,
+        attack_feature: int | slice = 0,
     ):
         """
         Create an AttributeInferenceMembership attack instance.
@@ -69,7 +69,7 @@ class AttributeInferenceMembership(AttributeInferenceAttack):
         self.membership_attack = membership_attack
         self._check_params()
 
-    def infer(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
+    def infer(self, x: np.ndarray, y: np.ndarray | None = None, **kwargs) -> np.ndarray:
         """
         Infer the attacked feature.
 
@@ -89,7 +89,7 @@ class AttributeInferenceMembership(AttributeInferenceAttack):
 
         if "values" not in kwargs:
             raise ValueError("Missing parameter `values`.")
-        values: Optional[List] = kwargs.get("values")
+        values: list | None = kwargs.get("values")
         if not values:
             raise ValueError("`values` cannot be None or empty")
 

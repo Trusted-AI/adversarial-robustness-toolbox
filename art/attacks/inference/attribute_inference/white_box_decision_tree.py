@@ -18,10 +18,10 @@
 """
 This module implements attribute inference attacks.
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
-from typing import Optional
+
 
 import numpy as np
 
@@ -57,7 +57,7 @@ class AttributeInferenceWhiteBoxDecisionTree(AttributeInferenceAttack):
         self.attack_feature: int
         self._check_params()
 
-    def infer(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
+    def infer(self, x: np.ndarray, y: np.ndarray | None = None, **kwargs) -> np.ndarray:
         """
         Infer the attacked feature.
 
@@ -76,8 +76,8 @@ class AttributeInferenceWhiteBoxDecisionTree(AttributeInferenceAttack):
             raise ValueError("Missing parameter `priors`.")
         if "values" not in kwargs:  # pragma: no cover
             raise ValueError("Missing parameter `values`.")
-        priors: Optional[list] = kwargs.get("priors")
-        values: Optional[list] = kwargs.get("values")
+        priors: list | None = kwargs.get("priors")
+        values: list | None = kwargs.get("values")
 
         if self.estimator.input_shape[0] != x.shape[1] + 1:  # pragma: no cover
             raise ValueError("Number of features in x + 1 does not match input_shape of classifier")
@@ -141,6 +141,3 @@ class AttributeInferenceWhiteBoxDecisionTree(AttributeInferenceAttack):
                 for index, value in enumerate(predicted_pred)
             ]
         )
-
-    def _check_params(self) -> None:
-        super()._check_params()

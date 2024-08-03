@@ -27,14 +27,14 @@ This module implements the Cutout data augmentation defence in PyTorch.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from tqdm.auto import trange
 
 from art.defences.preprocessor.preprocessor import PreprocessorPyTorch
 
 if TYPE_CHECKING:
-    # pylint: disable=C0412
+
     import torch
 
 logger = logging.getLogger(__name__)
@@ -84,8 +84,8 @@ class CutoutPyTorch(PreprocessorPyTorch):
         self._check_params()
 
     def forward(
-        self, x: "torch.Tensor", y: Optional["torch.Tensor"] = None
-    ) -> Tuple["torch.Tensor", Optional["torch.Tensor"]]:
+        self, x: "torch.Tensor", y: "torch.Tensor" | None = None
+    ) -> tuple["torch.Tensor", "torch.Tensor" | None]:
         """
         Apply Cutout data augmentation to sample `x`.
 

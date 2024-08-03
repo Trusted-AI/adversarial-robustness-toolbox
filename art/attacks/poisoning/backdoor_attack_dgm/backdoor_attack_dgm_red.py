@@ -53,7 +53,6 @@ class BackdoorAttackDGMReDTensorFlowV2(PoisoningAttackGenerator):
         """
         import tensorflow as tf
 
-        # pylint: disable=W0212
         super().__init__(generator=generator)
 
         self._model_clone = tf.keras.models.clone_model(self.estimator.model)

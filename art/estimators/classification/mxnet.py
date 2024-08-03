@@ -18,11 +18,11 @@
 """
 This module implements the classifier `MXClassifier` for MXNet Gluon models.
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
 import os
-from typing import List, Optional, Tuple, Union, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 import six
@@ -33,7 +33,7 @@ from art.estimators.classification.classifier import ClassGradientsMixin, Classi
 from art.utils import check_and_transform_label_format
 
 if TYPE_CHECKING:
-    # pylint: disable=C0412
+
     import mxnet as mx
 
     from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
@@ -65,15 +65,15 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):
     def __init__(
         self,
         model: "mx.gluon.Block",
-        loss: Union["mx.nd.loss", "mx.gluon.loss"],
-        input_shape: Tuple[int, ...],
+        loss: "mx.nd.loss" | "mx.gluon.loss",
+        input_shape: tuple[int, ...],
         nb_classes: int,
-        optimizer: Optional["mx.gluon.Trainer"] = None,
-        ctx: Optional["mx.context.Context"] = None,
+        optimizer: "mx.gluon.Trainer" | None = None,
+        ctx: "mx.context.Context" | None = None,
         channels_first: bool = True,
-        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
-        preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
-        postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
+        clip_values: "CLIP_VALUES_TYPE" | None = None,
+        preprocessing_defences: "Preprocessor" | list["Preprocessor"] | None = None,
+        postprocessing_defences: "Postprocessor" | list["Postprocessor"] | None = None,
         preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
     ) -> None:
         """
@@ -124,7 +124,7 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):
         self._layer_names = self._get_layers()
 
     @property
-    def input_shape(self) -> Tuple[int, ...]:
+    def input_shape(self) -> tuple[int, ...]:
         """
         Return the shape of one input sample.
 
@@ -133,7 +133,7 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):
         return self._input_shape  # type: ignore
 
     @property
-    def loss(self) -> Union["mx.nd.loss", "mx.gluon.loss"]:
+    def loss(self) -> "mx.nd.loss" | "mx.gluon.loss":
         """
         Return the loss function.
 
@@ -260,9 +260,7 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):
             # Fit a generic data generator through the API
             super().fit_generator(generator, nb_epochs=nb_epochs)
 
-    def predict(  # pylint: disable=W0221
-        self, x: np.ndarray, batch_size: int = 128, training_mode: bool = False, **kwargs
-    ) -> np.ndarray:
+    def predict(self, x: np.ndarray, batch_size: int = 128, training_mode: bool = False, **kwargs) -> np.ndarray:
         """
         Perform prediction for a batch of inputs.
 
@@ -299,10 +297,10 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):
 
         return predictions
 
-    def class_gradient(  # pylint: disable=W0221
+    def class_gradient(
         self,
         x: np.ndarray,
-        label: Optional[Union[int, List[int], np.ndarray]] = None,
+        label: int | list[int] | np.ndarray | None = None,
         training_mode: bool = False,
         **kwargs,
     ) -> np.ndarray:
@@ -379,9 +377,7 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):
 
         return grads
 
-    def loss_gradient(  # pylint: disable=W0221
-        self, x: np.ndarray, y: np.ndarray, training_mode: bool = False, **kwargs
-    ) -> np.ndarray:
+    def loss_gradient(self, x: np.ndarray, y: np.ndarray, training_mode: bool = False, **kwargs) -> np.ndarray:
         """
         Compute the gradient of the loss function w.r.t. `x`.
 
@@ -426,7 +422,7 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):
         raise NotImplementedError
 
     @property
-    def layer_names(self) -> List[str]:
+    def layer_names(self) -> list[str]:
         """
         Return the hidden layers in the model, if applicable.
 
@@ -440,7 +436,7 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):
         return self._layer_names
 
     def get_activations(
-        self, x: np.ndarray, layer: Union[int, str], batch_size: int = 128, framework: bool = False
+        self, x: np.ndarray, layer: int | str, batch_size: int = 128, framework: bool = False
     ) -> np.ndarray:  # pragma: no cover
         """
         Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
@@ -500,7 +496,7 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):
         activations_array = np.vstack(activations)
         return activations_array
 
-    def save(self, filename: str, path: Optional[str] = None) -> None:
+    def save(self, filename: str, path: str | None = None) -> None:
         """
         Save a model to file in the format specific to the backend framework. For Gluon, only parameters are saved in
         file with name `<filename>.params` at the specified path. To load the saved model, the original model code needs

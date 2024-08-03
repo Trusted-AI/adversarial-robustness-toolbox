@@ -23,10 +23,10 @@ al. for adversarial training.
 
 | Paper link: https://arxiv.org/abs/1706.06083
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
-from typing import Optional, Union, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 from tqdm.auto import tqdm
@@ -41,7 +41,7 @@ from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent_n
 from art.utils import compute_success, random_sphere, compute_success_array
 
 if TYPE_CHECKING:
-    # pylint: disable=C0412
+
     import torch
     from art.estimators.classification.pytorch import PyTorchClassifier
 
@@ -61,17 +61,17 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
 
     def __init__(
         self,
-        estimator: Union["PyTorchClassifier"],
-        norm: Union[int, float, str] = np.inf,
-        eps: Union[int, float, np.ndarray] = 0.3,
-        eps_step: Union[int, float, np.ndarray] = 0.1,
-        decay: Optional[float] = None,
+        estimator: "PyTorchClassifier",
+        norm: int | float | str = np.inf,
+        eps: int | float | np.ndarray = 0.3,
+        eps_step: int | float | np.ndarray = 0.1,
+        decay: float | None = None,
         max_iter: int = 100,
         targeted: bool = False,
         num_random_init: int = 0,
         batch_size: int = 32,
         random_eps: bool = False,
-        summary_writer: Union[str, bool, SummaryWriter] = False,
+        summary_writer: str | bool | SummaryWriter = False,
         verbose: bool = True,
     ):
         """
@@ -127,7 +127,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         self._batch_id = 0
         self._i_max_iter = 0
 
-    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
+    def generate(self, x: np.ndarray, y: np.ndarray | None = None, **kwargs) -> np.ndarray:
         """
         Generate adversarial samples and return them in an array.
 
@@ -200,8 +200,8 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
 
             batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
 
-            batch_eps: Union[int, float, np.ndarray]
-            batch_eps_step: Union[int, float, np.ndarray]
+            batch_eps: int | float | np.ndarray
+            batch_eps_step: int | float | np.ndarray
 
             # Compute batch_eps and batch_eps_step
             if isinstance(self.eps, np.ndarray) and isinstance(self.eps_step, np.ndarray):
@@ -254,8 +254,8 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         x: "torch.Tensor",
         targets: "torch.Tensor",
         mask: "torch.Tensor",
-        eps: Union[int, float, np.ndarray],
-        eps_step: Union[int, float, np.ndarray],
+        eps: int | float | np.ndarray,
+        eps_step: int | float | np.ndarray,
     ) -> np.ndarray:
         """
         Generate a batch of adversarial samples and return them in an array.
@@ -287,8 +287,8 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
 
         return adv_x.cpu().detach().numpy()
 
-    def _compute_perturbation_pytorch(  # pylint: disable=W0221
-        self, x: "torch.Tensor", y: "torch.Tensor", mask: Optional["torch.Tensor"], momentum: "torch.Tensor"
+    def _compute_perturbation_pytorch(
+        self, x: "torch.Tensor", y: "torch.Tensor", mask: "torch.Tensor" | None, momentum: "torch.Tensor"
     ) -> "torch.Tensor":
         """
         Compute perturbations.
@@ -362,8 +362,8 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
 
         return grad
 
-    def _apply_perturbation_pytorch(  # pylint: disable=W0221
-        self, x: "torch.Tensor", perturbation: "torch.Tensor", eps_step: Union[int, float, np.ndarray]
+    def _apply_perturbation_pytorch(
+        self, x: "torch.Tensor", perturbation: "torch.Tensor", eps_step: int | float | np.ndarray
     ) -> "torch.Tensor":
         """
         Apply perturbation on examples.
@@ -394,8 +394,8 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         x_init: "torch.Tensor",
         y: "torch.Tensor",
         mask: "torch.Tensor",
-        eps: Union[int, float, np.ndarray],
-        eps_step: Union[int, float, np.ndarray],
+        eps: int | float | np.ndarray,
+        eps_step: int | float | np.ndarray,
         random_init: bool,
         momentum: "torch.Tensor",
     ) -> "torch.Tensor":
@@ -458,8 +458,8 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
     @staticmethod
     def _projection(
         values: "torch.Tensor",
-        eps: Union[int, float, np.ndarray],
-        norm_p: Union[int, float, str],
+        eps: int | float | np.ndarray,
+        norm_p: int | float | str,
         *,
         suboptimal: bool = True,
     ) -> "torch.Tensor":

@@ -19,7 +19,7 @@
 This module implements utilities for standardisation with mean and standard deviation.
 """
 
-from typing import Tuple, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 import numpy as np
 
@@ -29,8 +29,8 @@ if TYPE_CHECKING:
 
 
 def broadcastable_mean_std(
-    x: Union[np.ndarray, "torch.Tensor", "tf.Tensor"], mean: np.ndarray, std: np.ndarray
-) -> Tuple[np.ndarray, np.ndarray]:
+    x: np.ndarray | "torch.Tensor" | "tf.Tensor", mean: np.ndarray, std: np.ndarray
+) -> tuple[np.ndarray, np.ndarray]:
     """
     Ensure that the mean and standard deviation are broadcastable with respect to input `x`.
 

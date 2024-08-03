@@ -20,10 +20,11 @@ This module implements (De)Randomized Smoothing for Certifiable Defense against 
 
 | Paper link: https://arxiv.org/abs/2002.10733
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
+from collections.abc import Callable
 import logging
-from typing import Callable, List, Optional, Tuple, Union, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 from tqdm import tqdm
@@ -33,7 +34,7 @@ from art.estimators.classification.tensorflow import TensorFlowV2Classifier
 from art.utils import check_and_transform_label_format
 
 if TYPE_CHECKING:
-    # pylint: disable=C0412
+
     import tensorflow as tf
     from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE, ABLATOR_TYPE
     from art.defences.preprocessor import Preprocessor
@@ -65,14 +66,14 @@ class TensorFlowV2DeRandomizedSmoothing(TensorFlowV2Classifier, DeRandomizedSmoo
         ablation_size: int,
         threshold: float,
         logits: bool,
-        input_shape: Tuple[int, ...],
-        loss_object: Optional["tf.Tensor"] = None,
-        optimizer: Optional["tf.keras.optimizers.legacy.Optimizer"] = None,
-        train_step: Optional[Callable] = None,
+        input_shape: tuple[int, ...],
+        loss_object: "tf.Tensor" | None = None,
+        optimizer: "tf.keras.optimizers.legacy.Optimizer" | None = None,
+        train_step: Callable | None = None,
         channels_first: bool = False,
-        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
-        preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
-        postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
+        clip_values: "CLIP_VALUES_TYPE" | None = None,
+        preprocessing_defences: "Preprocessor" | list["Preprocessor"] | None = None,
+        postprocessing_defences: "Postprocessor" | list["Postprocessor"] | None = None,
         preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
     ):
         """
@@ -132,7 +133,7 @@ class TensorFlowV2DeRandomizedSmoothing(TensorFlowV2Classifier, DeRandomizedSmoo
         )
 
         if TYPE_CHECKING:
-            self.ablator: ABLATOR_TYPE  # pylint: disable=used-before-assignment
+            self.ablator: ABLATOR_TYPE
 
         if self.ablation_type in {"column", "row"}:
             row_ablation_mode = self.ablation_type == "row"
@@ -154,7 +155,7 @@ class TensorFlowV2DeRandomizedSmoothing(TensorFlowV2Classifier, DeRandomizedSmoo
             outputs = tf.nn.softmax(outputs)
         return np.asarray(outputs >= self.threshold).astype(int)
 
-    def fit(  # pylint: disable=W0221
+    def fit(
         self,
         x: np.ndarray,
         y: np.ndarray,
@@ -303,7 +304,7 @@ class TensorFlowV2DeRandomizedSmoothing(TensorFlowV2Classifier, DeRandomizedSmoo
         size_to_certify: int,
         batch_size: int = 128,
         verbose: bool = True,
-    ) -> Tuple["tf.Tensor", "tf.Tensor"]:
+    ) -> tuple["tf.Tensor", "tf.Tensor"]:
         """
         Evaluates the normal and certified performance over the supplied data.
 

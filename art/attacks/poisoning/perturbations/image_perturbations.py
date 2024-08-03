@@ -18,7 +18,7 @@
 """
 Adversarial perturbations designed to work for images.
 """
-from typing import Optional, Tuple
+from __future__ import annotations
 
 import numpy as np
 
@@ -110,7 +110,7 @@ def insert_image(
     random: bool = True,
     x_shift: int = 0,
     y_shift: int = 0,
-    size: Optional[Tuple[int, int]] = None,
+    size: tuple[int, int] | None = None,
     mode: str = "L",
     blend=0.8,
 ) -> np.ndarray:
@@ -121,7 +121,7 @@ def insert_image(
     :param x: A single image or batch of images of shape NHWC, NCHW, or HWC. Input is in range [0,1].
     :param backdoor_path: The path to the image to insert as a trigger.
     :param channels_first: Whether the channels axis is in the first or last dimension
-    :param random: Whether or not the image should be randomly placed somewhere on the image.
+    :param random: Whether the image should be randomly placed somewhere on the image.
     :param x_shift: Number of pixels from the left to shift the trigger (when not using random placement).
     :param y_shift: Number of pixels from the right to shift the trigger (when not using random placement).
     :param size: The size the trigger image should be (height, width). Default `None` if no resizing necessary.

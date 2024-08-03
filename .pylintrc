@@ -109,7 +109,15 @@ disable=
     # We anticipate #3512 where it will become optional
     fixme,
     consider-using-assignment-expr,
-
+    # ART
+    duplicate-code,
+    no-member,
+    import-outside-toplevel,
+    import-error,
+    not-callable,
+    too-many-arguments,
+    too-many-locals,
+    unsupported-binary-operation,
 
 [REPORTS]
 

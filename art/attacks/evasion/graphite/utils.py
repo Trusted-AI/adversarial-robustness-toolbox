@@ -43,8 +43,9 @@ This module implements helper functions for GRAPHITE attacks.
 | Paper link: https://arxiv.org/abs/2002.07088
 | Original github link: https://github.com/ryan-feng/GRAPHITE
 """
+from __future__ import annotations
 
-from typing import Optional, Tuple, Union, TYPE_CHECKING, List
+from typing import TYPE_CHECKING
 import math
 import numpy as np
 from art.estimators.estimator import BaseEstimator
@@ -71,7 +72,7 @@ def dist2pixels(dist: float, width: float, obj_width: float = 30) -> float:
     return 1.0 * dist_inches * width / obj_width
 
 
-def convert_to_network(x: np.ndarray, net_size: Tuple[int, int], clip_min: float, clip_max: float) -> np.ndarray:
+def convert_to_network(x: np.ndarray, net_size: tuple[int, int], clip_min: float, clip_max: float) -> np.ndarray:
     """
     Convert image to network format.
 
@@ -102,12 +103,12 @@ def apply_transformation(
     crop_percent: float,
     crop_off_x: float,
     crop_off_y: float,
-    net_size: Tuple[int, int],
+    net_size: tuple[int, int],
     obj_width: float,
     focal: float,
     clip_min: float,
     clip_max: float,
-    pts: Optional[np.ndarray] = None,
+    pts: np.ndarray | None = None,
 ) -> np.ndarray:
     """
     Apply transformation to input image.
@@ -164,16 +165,16 @@ def apply_transformation(
 
 def get_transform_params(
     num_xforms: int,
-    rotation_range: Tuple[float, float],
-    dist_range: Tuple[float, float],
-    gamma_range: Tuple[float, float],
-    crop_percent_range: Tuple[float, float],
-    off_x_range: Tuple[float, float],
-    off_y_range: Tuple[float, float],
-    blur_kernels: Union[Tuple[int, int], List[int]],
+    rotation_range: tuple[float, float],
+    dist_range: tuple[float, float],
+    gamma_range: tuple[float, float],
+    crop_percent_range: tuple[float, float],
+    off_x_range: tuple[float, float],
+    off_y_range: tuple[float, float],
+    blur_kernels: tuple[int, int] | list[int],
     obj_width: float,
     focal: float,
-) -> List[Tuple[float, float, float, int, float, float, float, float, float]]:
+) -> list[tuple[float, float, float, int, float, float, float, float, float]]:
     """
     Sample transformation params.
 
@@ -214,7 +215,7 @@ def add_noise(
     lbd: float,
     theta: np.ndarray,
     clip: bool = True,
-) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Combines the image and noise to create a perturbed image.
 
@@ -247,14 +248,14 @@ def add_noise(
 def get_transformed_images(
     x: np.ndarray,
     mask: np.ndarray,
-    xforms: List[Tuple[float, float, float, int, float, float, float, float, float]],
+    xforms: list[tuple[float, float, float, int, float, float, float, float, float]],
     lbd: float,
     theta: np.ndarray,
-    net_size: Tuple[int, int],
+    net_size: tuple[int, int],
     clip_min: float,
     clip_max: float,
-    pts: Optional[np.ndarray] = None,
-) -> List[np.ndarray]:
+    pts: np.ndarray | None = None,
+) -> list[np.ndarray]:
     """
     Get transformed images.
 
@@ -305,11 +306,11 @@ def transform_wb(
     x: "torch.Tensor",
     x_adv: "torch.Tensor",
     mask: "torch.Tensor",
-    xform: Tuple[float, float, float, int, float, float, float, float, float],
-    net_size: Tuple[int, int],
+    xform: tuple[float, float, float, int, float, float, float, float, float],
+    net_size: tuple[int, int],
     clip_min: float,
     clip_max: float,
-    pts: Optional[np.ndarray],
+    pts: np.ndarray | None,
 ) -> "torch.Tensor":
     """
     Get transformed image, white-box setting.
@@ -370,7 +371,7 @@ def transform_wb(
 
 
 def convert_to_network_wb(
-    x: "torch.Tensor", net_size: Tuple[int, int], clip_min: float, clip_max: float
+    x: "torch.Tensor", net_size: tuple[int, int], clip_min: float, clip_max: float
 ) -> "torch.Tensor":
     """
     Convert image to network format.
@@ -401,7 +402,7 @@ def get_perspective_transform(
     crop_percent: float,
     crop_off_x: float,
     crop_off_y: float,
-    pts: Optional[np.ndarray] = None,
+    pts: np.ndarray | None = None,
 ) -> np.ndarray:
     """
     Computes parameters for perspective transform for blackbox attack.
@@ -437,7 +438,7 @@ def get_perspective_transform_wb(
     crop_percent: float,
     crop_off_x: float,
     crop_off_y: float,
-    pts: Optional[np.ndarray] = None,
+    pts: np.ndarray | None = None,
 ) -> "torch.Tensor":
     """
     Computes perspective transform for whitebox attack.
@@ -479,8 +480,8 @@ def _get_perspective_transform(
     crop_percent: float,
     crop_off_x: float,
     crop_off_y: float,
-    pts: Optional[np.ndarray] = None,
-) -> Tuple[np.ndarray, int, int]:
+    pts: np.ndarray | None = None,
+) -> tuple[np.ndarray, int, int]:
     """
     Computes parameters for perspective transform.
 
@@ -545,8 +546,8 @@ def get_offset_and_crop_size(
     crop_off_x: float,
     crop_off_y: float,
     ratio: float,
-    pts: Optional[np.ndarray] = None,
-) -> Tuple[float, float, float]:
+    pts: np.ndarray | None = None,
+) -> tuple[float, float, float]:
     """
     Compute offsets and crop size for perspective transform.
 
@@ -625,7 +626,7 @@ def get_offset_and_crop_size(
 
 def run_predictions(
     estimator: "CLASSIFIER_NEURALNETWORK_TYPE",
-    imgs: List[np.ndarray],
+    imgs: list[np.ndarray],
     target: int,
     batch_size: int,
     err_rate: bool = True,

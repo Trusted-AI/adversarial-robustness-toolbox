@@ -20,7 +20,7 @@ This module implements DeepZ proposed in Fast and Effective Robustness Certifica
 
 | Paper link: https://papers.nips.cc/paper/2018/file/f2f446980d8e971ef3da97af089481c3-Paper.pdf
 """
-from typing import Tuple, Union
+from __future__ import annotations
 
 import numpy as np
 import torch
@@ -135,7 +135,7 @@ class ZonoBounds:
 
         return np.sign(lbs) < 0 and np.sign(ubs) < 0
 
-    def zonotope_get_bounds(self, cent: "torch.Tensor", eps: "torch.Tensor") -> Tuple[list, list]:
+    def zonotope_get_bounds(self, cent: "torch.Tensor", eps: "torch.Tensor") -> tuple[list, list]:
         """
         Compute the upper and lower bounds for the final zonotopes
 
@@ -157,7 +157,7 @@ class ZonoBounds:
         return upper_bounds_output, lower_bounds_output
 
     @staticmethod
-    def adjust_to_within_bounds(cent: np.ndarray, eps: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    def adjust_to_within_bounds(cent: np.ndarray, eps: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
         """
         Simple helper function to pre-process and adjust zonotope values to be within 0 - 1 range.
         This is written with image data from MNIST and CIFAR10 in mind using L-infty bounds.
@@ -180,7 +180,7 @@ class ZonoBounds:
 
         return cent, eps
 
-    def pre_process(self, cent: np.ndarray, eps: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    def pre_process(self, cent: np.ndarray, eps: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
         """
         Simple helper function to reshape and adjust the zonotope values before pushing through the neural network.
         This is written with image data from MNIST and CIFAR10 in mind using L-infty bounds.
@@ -213,10 +213,10 @@ class ZonoConv(torch.nn.Module):
         self,
         in_channels: int,
         out_channels: int,
-        kernel_size: Union[int, Tuple[int, int]],
-        stride: Union[int, Tuple[int, int]],
-        dilation: Union[int, Tuple[int, int]] = 1,
-        padding: Union[int, Tuple[int, int]] = 0,
+        kernel_size: int | tuple[int, int],
+        stride: int | tuple[int, int],
+        dilation: int | tuple[int, int] = 1,
+        padding: int | tuple[int, int] = 0,
     ):
         super().__init__()
         self.conv = torch.nn.Conv2d(

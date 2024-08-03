@@ -42,8 +42,10 @@
 """
 This module implements Brendel and Bethge attack.
 """
-# pylint: disable=C0103,R0201,C0115,C0116,C0144,C0302,W0612,W0613,E1120,R1716,R1705,R1723,R1720
-from typing import Union, Optional, Tuple, TYPE_CHECKING
+from __future__ import annotations
+
+# pylint: disable=invalid-name,missing-class-docstring,missing-function-docstring,old-non-ascii-name,unused-variable,unused-argument,chained-comparison,no-else-return,no-else-break,no-else-raise
+from typing import TYPE_CHECKING
 import logging
 
 import numpy as np
@@ -1981,7 +1983,7 @@ class BrendelBethgeAttack(EvasionAttack):
     def __init__(
         self,
         estimator: "CLASSIFIER_LOSS_GRADIENTS_TYPE",
-        norm: Union[int, float, str] = np.inf,
+        norm: int | float | str = np.inf,
         targeted: bool = False,
         overshoot: float = 1.1,
         steps: int = 1000,
@@ -2166,7 +2168,7 @@ class BrendelBethgeAttack(EvasionAttack):
     def generate(
         self,
         x: np.ndarray,
-        y: Optional[np.ndarray] = None,
+        y: np.ndarray | None = None,
         **kwargs,
     ) -> np.ndarray:
         """
@@ -2387,7 +2389,7 @@ class BrendelBethgeAttack(EvasionAttack):
         x0: np.ndarray,
         x1: np.ndarray,
         epsilons: np.ndarray,
-        bounds: Tuple[float, float],
+        bounds: tuple[float, float],
     ) -> np.ndarray:
         """
         returns a point between x0 and x1 where epsilon = 0 returns x0 and epsilon = 1 returns x1
@@ -2434,7 +2436,7 @@ class BrendelBethgeAttack(EvasionAttack):
         adv_init: np.ndarray,
         clip_min: float,
         clip_max: float,
-    ) -> Optional[Union[np.ndarray, Tuple[np.ndarray, int]]]:
+    ) -> np.ndarray | tuple[np.ndarray, int] | None:
         """
         Find initial adversarial example for the attack.
 
@@ -2523,10 +2525,10 @@ class BrendelBethgeAttack(EvasionAttack):
         current_sample: np.ndarray,
         original_sample: np.ndarray,
         target: int,
-        norm: Union[int, float, str],
+        norm: int | float | str,
         clip_min: float,
         clip_max: float,
-        threshold: Optional[float] = None,
+        threshold: float | None = None,
     ) -> np.ndarray:
         """
         Binary search to approach the boundary.
@@ -2588,7 +2590,7 @@ class BrendelBethgeAttack(EvasionAttack):
 
     @staticmethod
     def _interpolate(
-        current_sample: np.ndarray, original_sample: np.ndarray, alpha: float, norm: Union[int, float, str]
+        current_sample: np.ndarray, original_sample: np.ndarray, alpha: float, norm: int | float | str
     ) -> np.ndarray:
         """
         Interpolate a new sample based on the original and the current samples.

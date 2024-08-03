@@ -23,7 +23,7 @@ This module implements model inversion attacks.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 from tqdm.auto import trange
@@ -90,7 +90,7 @@ class MIFace(InferenceAttack):
         self.verbose = verbose
         self._check_params()
 
-    def infer(self, x: Optional[np.ndarray], y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
+    def infer(self, x: np.ndarray | None, y: np.ndarray | None = None, **kwargs) -> np.ndarray:
         """
         Extract a thieved classifier.
 

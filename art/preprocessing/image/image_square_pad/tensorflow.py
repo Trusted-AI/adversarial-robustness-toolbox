@@ -18,8 +18,10 @@
 """
 This module implements square padding for images and object detection bounding boxes in TensorFlow v2.
 """
+from __future__ import annotations
+
 import logging
-from typing import Dict, List, Any, Optional, TYPE_CHECKING, Tuple, Union
+from typing import Any, TYPE_CHECKING
 
 import numpy as np
 from tqdm.auto import tqdm
@@ -47,8 +49,8 @@ class ImageSquarePadTensorFlowV2(PreprocessorTensorFlowV2):
         channels_first: bool = False,
         label_type: str = "classification",
         pad_mode: str = "CONSTANT",
-        pad_kwargs: Optional[Dict[str, Any]] = None,
-        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
+        pad_kwargs: dict[str, Any] | None = None,
+        clip_values: "CLIP_VALUES_TYPE" | None = None,
         apply_fit: bool = True,
         apply_predict: bool = False,
         verbose: bool = False,
@@ -80,8 +82,8 @@ class ImageSquarePadTensorFlowV2(PreprocessorTensorFlowV2):
     def forward(
         self,
         x: "tf.Tensor",
-        y: Optional[Union["tf.Tensor", List[Dict[str, "tf.Tensor"]]]] = None,
-    ) -> Tuple["tf.Tensor", Optional[Union["tf.Tensor", List[Dict[str, "tf.Tensor"]]]]]:
+        y: "tf.Tensor" | list[dict[str, "tf.Tensor"]] | None = None,
+    ) -> tuple["tf.Tensor", "tf.Tensor" | list[dict[str, "tf.Tensor"]] | None]:
         """
         Square pad `x` and adjust bounding boxes for labels `y` accordingly.
 
@@ -92,7 +94,7 @@ class ImageSquarePadTensorFlowV2(PreprocessorTensorFlowV2):
         import tensorflow as tf
 
         x_preprocess = []
-        y_preprocess: Optional[Union[tf.Tensor, List[Dict[str, tf.Tensor]]]]
+        y_preprocess: tf.Tensor | list[dict[str, tf.Tensor]] | None
         if y is not None and self.label_type == "object_detection":
             y_preprocess = []
         else:
@@ -128,7 +130,7 @@ class ImageSquarePadTensorFlowV2(PreprocessorTensorFlowV2):
             x_preprocess.append(x_pad)
 
             if self.label_type == "object_detection" and y is not None:
-                y_pad: Dict[str, tf.Tensor] = {}
+                y_pad: dict[str, tf.Tensor] = {}
 
                 # Copy labels and ensure types
                 if isinstance(y, list) and isinstance(y_preprocess, list):

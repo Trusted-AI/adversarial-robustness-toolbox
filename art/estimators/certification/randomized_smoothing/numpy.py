@@ -20,10 +20,10 @@ This module implements Randomized Smoothing applied to classifier predictions.
 
 | Paper link: https://arxiv.org/abs/1902.02918
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
-from typing import List, Optional, Union, TYPE_CHECKING, Tuple
+from typing import TYPE_CHECKING
 
 import warnings
 import numpy as np
@@ -95,7 +95,7 @@ class NumpyRandomizedSmoothing(
         self.classifier = classifier
 
     @property
-    def input_shape(self) -> Tuple[int, ...]:
+    def input_shape(self) -> tuple[int, ...]:
         return self._input_shape
 
     def _predict_classifier(self, x: np.ndarray, batch_size: int, training_mode: bool, **kwargs) -> np.ndarray:
@@ -128,9 +128,7 @@ class NumpyRandomizedSmoothing(
             x_rs = x_rs.astype(ART_NUMPY_DTYPE)
             self.classifier.fit(x_rs, y, batch_size=batch_size, nb_epochs=1, **kwargs)
 
-    def loss_gradient(  # pylint: disable=W0221
-        self, x: np.ndarray, y: np.ndarray, training_mode: bool = False, **kwargs
-    ) -> np.ndarray:
+    def loss_gradient(self, x: np.ndarray, y: np.ndarray, training_mode: bool = False, **kwargs) -> np.ndarray:
         """
         Compute the gradient of the given classifier's loss function w.r.t. `x` of the original classifier.
         :param x: Sample input with shape as expected by the model.
@@ -140,12 +138,8 @@ class NumpyRandomizedSmoothing(
         """
         return self.classifier.loss_gradient(x=x, y=y, training_mode=training_mode, **kwargs)  # type: ignore
 
-    def class_gradient(  # pylint: disable=W0221
-        self,
-        x: np.ndarray,
-        label: Optional[Union[int, List[int], np.ndarray]] = None,
-        training_mode: bool = False,
-        **kwargs
+    def class_gradient(
+        self, x: np.ndarray, label: int | list[int] | np.ndarray | None = None, training_mode: bool = False, **kwargs
     ) -> np.ndarray:
         """
         Compute per-class derivatives of the given classifier w.r.t. `x` of original classifier.
@@ -164,9 +158,7 @@ class NumpyRandomizedSmoothing(
     def compute_loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
         return self.classifier.compute_loss(x=x, y=y, **kwargs)  # type: ignore
 
-    def get_activations(
-        self, x: np.ndarray, layer: Union[int, str], batch_size: int, framework: bool = False
-    ) -> np.ndarray:
+    def get_activations(self, x: np.ndarray, layer: int | str, batch_size: int, framework: bool = False) -> np.ndarray:
         return self.classifier.get_activations(  # type: ignore
             x=x, layer=layer, batch_size=batch_size, framework=framework
         )

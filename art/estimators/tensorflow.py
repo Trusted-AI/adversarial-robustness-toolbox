@@ -19,7 +19,7 @@
 This module implements the abstract estimators `TensorFlowEstimator` and `TensorFlowV2Estimator` for TensorFlow models.
 """
 import logging
-from typing import Any, Tuple, TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
 
 import numpy as np
 
@@ -150,7 +150,7 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
             (isinstance(p, PreprocessorTensorFlowV2) for p in self.preprocessing_operations)
         )
 
-    def _apply_preprocessing(self, x, y, fit: bool = False) -> Tuple[Any, Any]:
+    def _apply_preprocessing(self, x, y, fit: bool = False) -> tuple[Any, Any]:
         """
         Apply all preprocessing defences of the estimator on the raw inputs `x` and `y`. This function is should
         only be called from function `_apply_preprocessing`.

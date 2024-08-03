@@ -21,10 +21,12 @@ fairseq.
 
 | Paper link: https://arxiv.org/abs/1909.08723
 """
+from __future__ import annotations
+
 import ast
 from argparse import Namespace
 import logging
-from typing import Dict, List, Optional, Tuple, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 import numpy as np
 
@@ -34,7 +36,7 @@ from art.estimators.speech_recognition.speech_recognizer import SpeechRecognizer
 from art.utils import get_file
 
 if TYPE_CHECKING:
-    # pylint: disable=C0412
+
     import torch
     from espresso.models import SpeechTransformerModel
 
@@ -59,11 +61,11 @@ class PyTorchEspresso(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyTor
 
     def __init__(
         self,
-        espresso_config_filepath: Optional[str] = None,
-        model: Optional[str] = None,
-        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
-        preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
-        postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
+        espresso_config_filepath: str | None = None,
+        model: str | None = None,
+        clip_values: "CLIP_VALUES_TYPE" | None = None,
+        preprocessing_defences: "Preprocessor" | list["Preprocessor"] | None = None,
+        postprocessing_defences: "Postprocessor" | list["Postprocessor"] | None = None,
         preprocessing: "PREPROCESSING_TYPE" = None,
         device_type: str = "gpu",
         verbose: bool = True,
@@ -313,7 +315,7 @@ class PyTorchEspresso(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyTor
         results = self._apply_preprocessing_gradient(x_in, results)
 
         if x.dtype != object:
-            results = np.array([i for i in results], dtype=x.dtype)  # pylint: disable=R1721
+            results = np.array([i for i in results], dtype=x.dtype)  # pylint: disable=unnecessary-comprehension
             assert results.shape == x.shape and results.dtype == x.dtype
         else:
             results = np.array([np.squeeze(res) for res in results], dtype=object)
@@ -341,10 +343,10 @@ class PyTorchEspresso(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyTor
 
     def _transform_model_input(
         self,
-        x: Union[np.ndarray, "torch.Tensor"],
-        y: Optional[np.ndarray] = None,
+        x: np.ndarray | "torch.Tensor",
+        y: np.ndarray | None = None,
         compute_gradient: bool = False,
-    ) -> Tuple[Dict, List]:
+    ) -> tuple[dict, list]:
         """
         Transform the user input space into the model input space.
 
@@ -359,7 +361,7 @@ class PyTorchEspresso(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyTor
         import torch
         from fairseq.data import data_utils
 
-        def _collate_fn(batch: List) -> dict:
+        def _collate_fn(batch: list) -> dict:
             """
             Collate function that transforms a list of numpy array or torch tensor representing a batch into a
             dictionary that Espresso takes as input.
@@ -462,7 +464,7 @@ class PyTorchEspresso(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyTor
         self,
         x: "torch.Tensor",
         y: np.ndarray,
-    ) -> Tuple[Dict, List]:
+    ) -> tuple[dict, list]:
         """
         Apply preprocessing and then transform the user input space into the model input space. This function is used
         by the ASR attack to attack into the PyTorchDeepSpeech estimator whose defences are called with the
@@ -501,7 +503,7 @@ class PyTorchEspresso(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyTor
 
     def compute_loss_and_decoded_output(
         self, masked_adv_input: "torch.Tensor", original_output: np.ndarray, **kwargs
-    ) -> Tuple["torch.Tensor", np.ndarray]:
+    ) -> tuple["torch.Tensor", np.ndarray]:
         """
         Compute loss function and decoded output.
 
@@ -568,7 +570,7 @@ class PyTorchEspresso(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyTor
         return self._sampling_rate
 
     @property
-    def input_shape(self) -> Tuple[int, ...]:
+    def input_shape(self) -> tuple[int, ...]:
         """
         Return the shape of one input sample.
 
@@ -594,9 +596,7 @@ class PyTorchEspresso(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyTor
         """
         return self._device
 
-    def get_activations(
-        self, x: np.ndarray, layer: Union[int, str], batch_size: int, framework: bool = False
-    ) -> np.ndarray:
+    def get_activations(self, x: np.ndarray, layer: int | str, batch_size: int, framework: bool = False) -> np.ndarray:
         raise NotImplementedError
 
     def compute_loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:

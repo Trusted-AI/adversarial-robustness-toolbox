@@ -19,14 +19,14 @@
 This module implements Expectation over Transformation preprocessing for image center crop in PyTorch.
 """
 import logging
-from typing import Dict, List, Optional, TYPE_CHECKING, Tuple, Union
+from typing import TYPE_CHECKING
 
 import numpy as np
 
 from art.preprocessing.expectation_over_transformation.pytorch import EoTPyTorch
 
 if TYPE_CHECKING:
-    # pylint: disable=C0412
+
     import torch
 
 logger = logging.getLogger(__name__)
@@ -44,7 +44,7 @@ class EoTImageCenterCropPyTorch(EoTPyTorch):
     def __init__(
         self,
         nb_samples: int,
-        clip_values: Tuple[float, float],
+        clip_values: tuple[float, float],
         size: int = 5,
         label_type: str = "classification",
         apply_fit: bool = False,
@@ -71,8 +71,8 @@ class EoTImageCenterCropPyTorch(EoTPyTorch):
         self._check_params()
 
     def _transform(
-        self, x: "torch.Tensor", y: Optional[Union["torch.Tensor", List[Dict[str, "torch.Tensor"]]]], **kwargs
-    ) -> Tuple["torch.Tensor", Optional[Union["torch.Tensor", List[Dict[str, "torch.Tensor"]]]]]:
+        self, x: "torch.Tensor", y: "torch.Tensor" | list[dict[str, "torch.Tensor"]] | None, **kwargs
+    ) -> tuple["torch.Tensor", "torch.Tensor" | list[dict[str, "torch.Tensor"]] | None]:
         """
         Center crop an input image and its labels by randomly sampled crop size.
 
@@ -107,11 +107,11 @@ class EoTImageCenterCropPyTorch(EoTPyTorch):
             max=self.clip_values[1],
         )
 
-        y_preprocess: Optional[Union["torch.Tensor", List[Dict[str, "torch.Tensor"]]]]
+        y_preprocess: "torch.Tensor" | list[dict[str, "torch.Tensor"]] | None
 
         if self.label_type == "object_detection" and y is not None:
 
-            y_od: List[Dict[str, "torch.Tensor"]] = [{}]
+            y_od: list[dict[str, "torch.Tensor"]] = [{}]
 
             if isinstance(y, list):
                 if isinstance(y[0], dict):

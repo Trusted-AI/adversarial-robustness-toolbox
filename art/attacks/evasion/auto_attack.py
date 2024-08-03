@@ -20,9 +20,11 @@ This module implements the `AutoAttack` attack.
 
 | Paper link: https://arxiv.org/abs/2003.01690
 """
+from __future__ import annotations
+
 import logging
 from copy import deepcopy
-from typing import TYPE_CHECKING, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING
 
 import numpy as np
 
@@ -69,12 +71,12 @@ class AutoAttack(EvasionAttack):
     def __init__(
         self,
         estimator: "CLASSIFIER_TYPE",
-        norm: Union[int, float, str] = np.inf,
+        norm: int | float | str = np.inf,
         eps: float = 0.3,
         eps_step: float = 0.1,
-        attacks: Optional[List[EvasionAttack]] = None,
+        attacks: list[EvasionAttack] | None = None,
         batch_size: int = 32,
-        estimator_orig: Optional["CLASSIFIER_TYPE"] = None,
+        estimator_orig: "CLASSIFIER_TYPE" | None = None,
         targeted: bool = False,
         parallel: bool = False,
     ):
@@ -153,7 +155,7 @@ class AutoAttack(EvasionAttack):
         self.best_attacks: np.ndarray = np.array([])
         self._check_params()
 
-    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
+    def generate(self, x: np.ndarray, y: np.ndarray | None = None, **kwargs) -> np.ndarray:
         """
         Generate adversarial samples and return them in an array.
 
@@ -348,10 +350,10 @@ def run_attack(
     sample_is_robust: np.ndarray,
     attack: EvasionAttack,
     estimator_orig: "CLASSIFIER_TYPE",
-    norm: Union[int, float, str] = np.inf,
+    norm: int | float | str = np.inf,
     eps: float = 0.3,
     **kwargs,
-) -> Tuple[np.ndarray, np.ndarray]:
+) -> tuple[np.ndarray, np.ndarray]:
     """
     Run attack.
 

@@ -22,12 +22,12 @@ The Pixel Attack is a generalisation of One Pixel Attack.
 | One Pixel Attack Paper link: https://arxiv.org/ans/1710.08864
 | Pixel and Threshold Attack Paper link: https://arxiv.org/abs/1906.06026
 """
-# pylint: disable=C0302,C0413
-from __future__ import absolute_import, division, print_function, unicode_literals
+# pylint: disable=wrong-import-position
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
 from itertools import product
-from typing import List, Optional, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 
@@ -36,7 +36,7 @@ import numpy as np
 # from scipy.optimize import differential_evolution
 # In the meantime, the modified implementation is used which is defined in the
 # lines `453-1457`.
-# Otherwise may use Tensorflow's implementation of DE.
+# Otherwise, may use Tensorflow's implementation of DE.
 
 from six import string_types
 import scipy
@@ -44,9 +44,9 @@ from scipy._lib._util import check_random_state
 
 scipy_version = list(map(int, scipy.__version__.lower().split(".")))
 if scipy_version[1] >= 8:
-    from scipy.optimize._optimize import _status_message  # pylint: disable=E0611
+    from scipy.optimize._optimize import _status_message
 else:
-    from scipy.optimize.optimize import _status_message  # pylint: disable=E0611
+    from scipy.optimize.optimize import _status_message
 from scipy.optimize import OptimizeResult, minimize  # noqa
 from tqdm.auto import tqdm  # noqa
 
@@ -76,7 +76,7 @@ class PixelThreshold(EvasionAttack):
     def __init__(
         self,
         classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
-        th: Optional[int] = None,
+        th: int | None = None,
         es: int = 0,
         max_iter: int = 100,
         targeted: bool = False,
@@ -97,8 +97,8 @@ class PixelThreshold(EvasionAttack):
 
         self._project = True
         self.type_attack = -1
-        self.th = th  # pylint: disable=C0103
-        self.es = es  # pylint: disable=C0103
+        self.th = th  # pylint: disable=invalid-name
+        self.es = es  # pylint: disable=invalid-name
         self.max_iter = max_iter
         self._targeted = targeted
         self.verbose = verbose
@@ -140,7 +140,7 @@ class PixelThreshold(EvasionAttack):
         x = (x * (self.estimator.clip_values[1] - self.estimator.clip_values[0])) + self.estimator.clip_values[0]
         return x
 
-    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
+    def generate(self, x: np.ndarray, y: np.ndarray | None = None, **kwargs) -> np.ndarray:
         """
         Generate adversarial samples and return them in an array.
 
@@ -232,7 +232,7 @@ class PixelThreshold(EvasionAttack):
 
         return adv_x_best_array
 
-    def _get_bounds(self, img: np.ndarray, limit) -> Tuple[List[list], list]:
+    def _get_bounds(self, img: np.ndarray, limit) -> tuple[list[list], list]:
         """
         Define the bounds for the image `img` within the limits `limit`.
         """
@@ -256,7 +256,7 @@ class PixelThreshold(EvasionAttack):
 
         return bounds, initial
 
-    def _perturb_image(self, x: np.ndarray, img: np.ndarray) -> np.ndarray:  # pylint: disable=W0613,R0201
+    def _perturb_image(self, x: np.ndarray, img: np.ndarray) -> np.ndarray:
         """
         Perturbs the given image `img` with the given perturbation `x`.
         """
@@ -277,7 +277,7 @@ class PixelThreshold(EvasionAttack):
             or (not self.targeted and predicted_class != target_class)
         )
 
-    def _attack(self, image: np.ndarray, target_class: np.ndarray, limit: int) -> Tuple[bool, np.ndarray]:
+    def _attack(self, image: np.ndarray, target_class: np.ndarray, limit: int) -> tuple[bool, np.ndarray]:
         """
         Attack the given image `image` with the threshold `limit` for the `target_class` which is true label for
         untargeted attack and targeted label for targeted attack.
@@ -293,7 +293,7 @@ class PixelThreshold(EvasionAttack):
             predictions = self.estimator.predict(adv)[:, target_class]
             return predictions if not self.targeted else 1 - predictions
 
-        def callback_fn(x, convergence=None):  # pylint: disable=R1710,W0613
+        def callback_fn(x, convergence=None):  # pylint: disable=inconsistent-return-statements,unused-argument
             if self.es == 0:
                 if self._attack_success(x.result[0], image, target_class):
                     raise CMAEarlyStoppingException("Attack Completed :) Earlier than expected")
@@ -365,7 +365,7 @@ class PixelAttack(PixelThreshold):
     def __init__(
         self,
         classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
-        th: Optional[int] = None,
+        th: int | None = None,
         es: int = 1,
         max_iter: int = 100,
         targeted: bool = False,
@@ -401,12 +401,12 @@ class PixelAttack(PixelThreshold):
                     image[:, x_pos % self.img_rows, y_pos % self.img_cols] = rgb
         return imgs
 
-    def _get_bounds(self, img: np.ndarray, limit) -> Tuple[List[list], list]:
+    def _get_bounds(self, img: np.ndarray, limit) -> tuple[list[list], list]:
         """
         Define the bounds for the image `img` within the limits `limit`.
         """
-        initial: List[int] = []
-        bounds: List[List[int]]
+        initial: list[int] = []
+        bounds: list[list[int]]
         if self.es == 0:
             for count, (i, j) in enumerate(product(range(self.img_rows), range(self.img_cols))):
                 initial += [i, j]
@@ -446,7 +446,7 @@ class ThresholdAttack(PixelThreshold):
     def __init__(
         self,
         classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
-        th: Optional[int] = None,
+        th: int | None = None,
         es: int = 0,
         max_iter: int = 100,
         targeted: bool = False,
@@ -493,7 +493,7 @@ class CMAEarlyStoppingException(Exception):
 
 # TODO: Make the attack compatible with current version of SciPy Optimize
 # Differential Evolution
-# pylint: disable=W0105
+# pylint: disable=pointless-string-statemen
 """
 A slight modification to Scipy's implementation of differential evolution.
 To speed up predictions, the entire parameters array is passed to `self.func`,
@@ -1415,7 +1415,7 @@ class DifferentialEvolutionSolver:  # pragma: no cover
         for index in np.where((trial < 0) | (trial > 1))[0]:
             trial[index] = self.random_number_generator.rand()
 
-    def _mutate(self, candidate):  # pylint: disable=R1710
+    def _mutate(self, candidate):  # pylint: disable=inconsistent-return-statements
         """
         create a trial vector based on a mutation strategy
         """

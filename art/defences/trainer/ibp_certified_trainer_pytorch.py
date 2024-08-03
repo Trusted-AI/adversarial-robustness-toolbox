@@ -21,6 +21,8 @@ This module implements certified adversarial training following techniques from 
     | Paper link: http://proceedings.mlr.press/v80/mirman18b/mirman18b.pdf
     | Paper link: https://arxiv.org/pdf/1810.12715.pdf
 """
+from __future__ import annotations
+
 import logging
 import random
 import sys
@@ -34,9 +36,9 @@ from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent i
 from art.utils import check_and_transform_label_format
 
 if sys.version_info >= (3, 8):
-    from typing import TypedDict, List, Optional, Any, Union, TYPE_CHECKING
+    from typing import TypedDict, Any, TYPE_CHECKING
 else:
-    from typing import Dict, List, Optional, Any, Union, TYPE_CHECKING
+    from typing import Any, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from art.utils import IBP_CERTIFIER_TYPE
@@ -56,7 +58,7 @@ if TYPE_CHECKING:
             batch_size: int
 
     else:
-        PGDParamDict: Dict[str, Union[int, float]]
+        PGDParamDict: dict[str, int | float]
 
 
 logger = logging.getLogger(__name__)
@@ -107,16 +109,16 @@ class AdversarialTrainerCertifiedIBPPyTorch(Trainer):
     def __init__(
         self,
         classifier: "IBP_CERTIFIER_TYPE",
-        nb_epochs: Optional[int] = 20,
+        nb_epochs: int | None = 20,
         bound: float = 0.1,
         batch_size: int = 32,
-        loss_weighting: Optional[int] = None,
+        loss_weighting: int | None = None,
         use_certification_schedule: bool = True,
-        certification_schedule: Optional[Any] = None,
+        certification_schedule: Any | None = None,
         use_loss_weighting_schedule: bool = True,
-        loss_weighting_schedule: Optional[Any] = None,
+        loss_weighting_schedule: Any | None = None,
         augment_with_pgd: bool = False,
-        pgd_params: Optional["PGDParamDict"] = None,
+        pgd_params: "PGDParamDict" | None = None,
     ) -> None:
         """
         Create an :class:`.AdversarialTrainerCertified` instance.
@@ -221,16 +223,16 @@ class AdversarialTrainerCertifiedIBPPyTorch(Trainer):
             warmup=warm_up,
         )
 
-    def fit(  # pylint: disable=W0221
+    def fit(
         self,
         x: np.ndarray,
         y: np.ndarray,
-        limits: Optional[Union[List[float], np.ndarray]] = None,
+        limits: list[float] | np.ndarray | None = None,
         certification_loss: Any = "interval_loss_cce",
-        batch_size: Optional[int] = None,
-        nb_epochs: Optional[int] = None,
+        batch_size: int | None = None,
+        nb_epochs: int | None = None,
         training_mode: bool = True,
-        scheduler: Optional[Any] = None,
+        scheduler: Any | None = None,
         verbose: bool = True,
         **kwargs,
     ) -> None:
@@ -274,7 +276,7 @@ class AdversarialTrainerCertifiedIBPPyTorch(Trainer):
             )
 
         # Set model mode
-        self.classifier._model.train(mode=training_mode)  # pylint: disable=W0212
+        self.classifier._model.train(mode=training_mode)
 
         if self.classifier.optimizer is None:  # pragma: no cover
             raise ValueError("An optimizer is needed to train the model, but none is provided.")
@@ -395,8 +397,8 @@ class AdversarialTrainerCertifiedIBPPyTorch(Trainer):
 
                 loss = certified_loss * loss_weighting_k + non_cert_loss * (1 - loss_weighting_k)
                 # Do training
-                if self.classifier._use_amp:  # pragma: no cover # pylint: disable=W0212
-                    from apex import amp  # pylint: disable=E0611
+                if self.classifier._use_amp:  # pragma: no cover
+                    from apex import amp
 
                     with amp.scale_loss(loss, self.classifier.optimizer) as scaled_loss:
                         scaled_loss.backward()
@@ -439,8 +441,8 @@ class AdversarialTrainerCertifiedIBPPyTorch(Trainer):
         self,
         x: np.ndarray,
         is_interval: bool = False,
-        bounds: Optional[Union[float, List[float], np.ndarray]] = None,
-        limits: Optional[Union[List[float], np.ndarray]] = None,
+        bounds: float | list[float] | np.ndarray | None = None,
+        limits: list[float] | np.ndarray | None = None,
         batch_size: int = 128,
         **kwargs,
     ) -> np.ndarray:

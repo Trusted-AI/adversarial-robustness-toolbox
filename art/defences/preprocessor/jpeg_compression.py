@@ -28,7 +28,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 from io import BytesIO
 import logging
-from typing import Optional, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 from tqdm.auto import tqdm
@@ -101,7 +101,7 @@ class JpegCompression(Preprocessor):
         tmp_jpeg.close()
         return x_jpeg
 
-    def __call__(self, x: np.ndarray, y: Optional[np.ndarray] = None) -> Tuple[np.ndarray, Optional[np.ndarray]]:
+    def __call__(self, x: np.ndarray, y: np.ndarray | None = None) -> tuple[np.ndarray, np.ndarray | None]:
         """
         Apply JPEG compression to sample `x`.
 

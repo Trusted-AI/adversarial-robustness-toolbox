@@ -18,10 +18,10 @@
 """
 This module implements attribute inference attacks.
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
-from typing import Optional, Union, Tuple, List, Any, TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
 
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
@@ -72,14 +72,14 @@ class AttributeInferenceBaselineTrueLabel(AttributeInferenceAttack):
     def __init__(
         self,
         attack_model_type: str = "nn",
-        attack_model: Optional[Union["CLASSIFIER_TYPE", "REGRESSOR_TYPE"]] = None,
-        attack_feature: Union[int, slice] = 0,
-        is_continuous: Optional[bool] = False,
-        is_regression: Optional[bool] = False,
-        scale_range: Optional[Tuple[float, float]] = None,
+        attack_model: "CLASSIFIER_TYPE" | "REGRESSOR_TYPE" | None = None,
+        attack_feature: int | slice = 0,
+        is_continuous: bool | None = False,
+        is_regression: bool | None = False,
+        scale_range: tuple[float, float] | None = None,
         prediction_normal_factor: float = 1,
-        non_numerical_features: Optional[List[int]] = None,
-        encoder: Optional[Union[OrdinalEncoder, OneHotEncoder, ColumnTransformer]] = None,
+        non_numerical_features: list[int] | None = None,
+        encoder: OrdinalEncoder | OneHotEncoder | ColumnTransformer | None = None,
         nn_model_epochs: int = 100,
         nn_model_batch_size: int = 100,
         nn_model_learning_rate: float = 0.0001,
@@ -122,8 +122,8 @@ class AttributeInferenceBaselineTrueLabel(AttributeInferenceAttack):
         self._encoder = encoder
         self._non_numerical_features = non_numerical_features
         self._is_continuous = is_continuous
-        self._attack_model_type: Optional[str] = attack_model_type
-        self.attack_model: Optional[Any] = None
+        self._attack_model_type: str | None = attack_model_type
+        self.attack_model: Any | None = None
         self.epochs = nn_model_epochs
         self.batch_size = nn_model_batch_size
         self.learning_rate = nn_model_learning_rate
@@ -335,7 +335,7 @@ class AttributeInferenceBaselineTrueLabel(AttributeInferenceAttack):
         elif self.attack_model is not None:
             self.attack_model.fit(x_train, y_ready)
 
-    def infer(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
+    def infer(self, x: np.ndarray, y: np.ndarray | None = None, **kwargs) -> np.ndarray:
         """
         Infer the attacked feature.
 

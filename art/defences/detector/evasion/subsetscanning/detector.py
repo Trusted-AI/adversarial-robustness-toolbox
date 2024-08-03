@@ -19,11 +19,11 @@
 This module implements the fast generalized subset scan based detector.
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
 import sys
-from typing import Optional, Tuple, Union, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 from sklearn import metrics
@@ -57,7 +57,7 @@ class SubsetScanningDetector(EvasionDetector):
         self,
         classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
         bgd_data: np.ndarray,
-        layer: Union[int, str],
+        layer: int | str,
         scoring_function: Literal["BerkJones", "HigherCriticism", "KolmarovSmirnov"] = "BerkJones",
         verbose: bool = True,
     ) -> None:
@@ -114,9 +114,7 @@ class SubsetScanningDetector(EvasionDetector):
             bgd_scores.append(best_score)
         self.bgd_scores = np.asarray(bgd_scores)
 
-    def _get_activations(
-        self, x: np.ndarray, layer: Union[int, str], batch_size: int, framework: bool = False
-    ) -> np.ndarray:
+    def _get_activations(self, x: np.ndarray, layer: int | str, batch_size: int, framework: bool = False) -> np.ndarray:
         x_activations = self.classifier.get_activations(x, layer, batch_size, framework)
         if x_activations is None:
             raise ValueError("Classifier activations are null.")
@@ -161,10 +159,10 @@ class SubsetScanningDetector(EvasionDetector):
         self,
         clean_x: np.ndarray,
         adv_x: np.ndarray,
-        clean_size: Optional[int] = None,
-        adv_size: Optional[int] = None,
+        clean_size: int | None = None,
+        adv_size: int | None = None,
         run: int = 10,
-    ) -> Tuple[np.ndarray, np.ndarray, float]:
+    ) -> tuple[np.ndarray, np.ndarray, float]:
         """
         Returns scores of highest scoring subsets.
 
@@ -226,7 +224,7 @@ class SubsetScanningDetector(EvasionDetector):
 
         return clean_scores_array, adv_scores_array, detection_power
 
-    def detect(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> Tuple[dict, np.ndarray]:
+    def detect(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> tuple[dict, np.ndarray]:
         """
         Perform detection of adversarial data and return prediction as tuple.
 

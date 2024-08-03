@@ -24,7 +24,7 @@ prioritize which parts of a sequential input should be perturbed based on salien
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 from tqdm.auto import trange
@@ -93,7 +93,7 @@ class FrameSaliencyAttack(EvasionAttack):
         self.verbose = verbose
         self._check_params()
 
-    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
+    def generate(self, x: np.ndarray, y: np.ndarray | None = None, **kwargs) -> np.ndarray:
         """
         Generate adversarial samples and return them in an array.
 
@@ -193,7 +193,7 @@ class FrameSaliencyAttack(EvasionAttack):
         return np.invert(attack_success)
 
     def _compute_frames_to_perturb(
-        self, x_adv: np.ndarray, targets: np.ndarray, disregard: Optional[np.ndarray] = None
+        self, x_adv: np.ndarray, targets: np.ndarray, disregard: np.ndarray | None = None
     ) -> np.ndarray:
         saliency_score = self.estimator.loss_gradient(x_adv, targets)
         saliency_score = np.swapaxes(saliency_score, 1, self.frame_index)

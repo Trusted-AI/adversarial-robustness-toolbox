@@ -18,16 +18,16 @@
 """
 This module implements the classifier `TensorFlowEncoder` for TensorFlow models.
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
-from typing import Any, Dict, List, Optional, Union, Tuple, TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
 
 from art.estimators.encoding.encoder import EncoderMixin
 from art.estimators.tensorflow import TensorFlowEstimator
 
 if TYPE_CHECKING:
-    # pylint: disable=C0412
+
     import numpy as np
     import tensorflow.compat.v1 as tf
 
@@ -55,14 +55,14 @@ class TensorFlowEncoder(EncoderMixin, TensorFlowEstimator):
         self,
         input_ph: "tf.Placeholder",
         model: "tf.Tensor",
-        loss: Optional["tf.Tensor"] = None,
-        sess: Optional["tf.compat.v1.Session"] = None,
+        loss: "tf.Tensor" | None = None,
+        sess: "tf.compat.v1.Session" | None = None,
         channels_first: bool = False,
-        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
-        preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
-        postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
+        clip_values: "CLIP_VALUES_TYPE" | None = None,
+        preprocessing_defences: "Preprocessor" | list["Preprocessor"] | None = None,
+        postprocessing_defences: "Postprocessor" | list["Postprocessor"] | None = None,
         preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
-        feed_dict: Optional[Dict[Any, Any]] = None,
+        feed_dict: dict[Any, Any] | None = None,
     ):
         """
         Initialization specific to encoder estimator implementation in TensorFlow.
@@ -116,7 +116,7 @@ class TensorFlowEncoder(EncoderMixin, TensorFlowEstimator):
             self._loss_grads = tf.gradients(self.loss, self.input_ph)[0]
 
     @property
-    def input_shape(self) -> Tuple[int, ...]:
+    def input_shape(self) -> tuple[int, ...]:
         """
         Return the shape of one input sample.
 
@@ -143,7 +143,7 @@ class TensorFlowEncoder(EncoderMixin, TensorFlowEstimator):
         return self._loss  # type: ignore
 
     @property
-    def feed_dict(self) -> Dict[Any, Any]:
+    def feed_dict(self) -> dict[Any, Any]:
         """
         Return the feed dictionary for the session run evaluating the classifier.
 
@@ -173,7 +173,7 @@ class TensorFlowEncoder(EncoderMixin, TensorFlowEstimator):
         raise NotImplementedError
 
     def get_activations(
-        self, x: "np.ndarray", layer: Union[int, str], batch_size: int, framework: bool = False
+        self, x: "np.ndarray", layer: int | str, batch_size: int, framework: bool = False
     ) -> "np.ndarray":
         """
         Do nothing.
@@ -183,7 +183,7 @@ class TensorFlowEncoder(EncoderMixin, TensorFlowEstimator):
     def compute_loss(self, x: "np.ndarray", y: "np.ndarray", **kwargs) -> "np.ndarray":
         raise NotImplementedError
 
-    def loss_gradient(self, x: "np.ndarray", y: "np.ndarray", **kwargs) -> "np.ndarray":  # pylint: disable=W0221
+    def loss_gradient(self, x: "np.ndarray", y: "np.ndarray", **kwargs) -> "np.ndarray":
         """
         No gradients to compute for this method; do nothing.
         """

@@ -20,8 +20,10 @@ Implementation of the adversarial texture attack on object trackers in PyTorch.
 
 | Paper link: https://arxiv.org/abs/1904.11042
 """
+from __future__ import annotations
+
 import logging
-from typing import Dict, List, Optional, Union, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 from tqdm.auto import trange
@@ -32,7 +34,7 @@ from art.estimators.object_tracking.object_tracker import ObjectTrackerMixin
 from art.summary_writer import SummaryWriter
 
 if TYPE_CHECKING:
-    # pylint: disable=C0412
+
     import torch
 
 logger = logging.getLogger(__name__)
@@ -68,7 +70,7 @@ class AdversarialTexturePyTorch(EvasionAttack):
         step_size: float = 1.0 / 255.0,
         max_iter: int = 500,
         batch_size: int = 16,
-        summary_writer: Union[str, bool, SummaryWriter] = False,
+        summary_writer: str | bool | SummaryWriter = False,
         verbose: bool = True,
     ):
         """
@@ -133,10 +135,10 @@ class AdversarialTexturePyTorch(EvasionAttack):
     def _train_step(
         self,
         videos: "torch.Tensor",
-        target: List[Dict[str, "torch.Tensor"]],
+        target: list[dict[str, "torch.Tensor"]],
         y_init: "torch.Tensor",
-        foreground: Optional["torch.Tensor"],
-        patch_points: Optional[np.ndarray],
+        foreground: "torch.Tensor" | None,
+        patch_points: np.ndarray | None,
     ) -> "torch.Tensor":
         """
         Apply a training step to the batch based on a mini-batch.
@@ -188,9 +190,9 @@ class AdversarialTexturePyTorch(EvasionAttack):
         self,
         videos: "torch.Tensor",
         y_init: "torch.Tensor",
-        foreground: Optional["torch.Tensor"],
-        patch_points: Optional[np.ndarray],
-    ) -> List[Dict[str, "torch.Tensor"]]:
+        foreground: "torch.Tensor" | None,
+        patch_points: np.ndarray | None,
+    ) -> list[dict[str, "torch.Tensor"]]:
         """
         Predict object tracking estimator on patched videos.
 
@@ -211,17 +213,17 @@ class AdversarialTexturePyTorch(EvasionAttack):
             max=self.estimator.clip_values[1],
         )
 
-        predictions = self.estimator.predict(patched_input, y_init=y_init)  # pylint: disable=W0212
+        predictions = self.estimator.predict(patched_input, y_init=y_init)
 
         return predictions
 
     def _loss(
         self,
         videos: "torch.Tensor",
-        target: List[Dict[str, "torch.Tensor"]],
+        target: list[dict[str, "torch.Tensor"]],
         y_init: "torch.Tensor",
-        foreground: Optional["torch.Tensor"],
-        patch_points: Optional[np.ndarray],
+        foreground: "torch.Tensor" | None,
+        patch_points: np.ndarray | None,
     ) -> "torch.Tensor":
         """
         Calculate L1-loss.
@@ -265,8 +267,8 @@ class AdversarialTexturePyTorch(EvasionAttack):
         self,
         videos: "torch.Tensor",
         patch: "torch.Tensor",
-        foreground: Optional["torch.Tensor"],
-        patch_points: Optional[np.ndarray],
+        foreground: "torch.Tensor" | None,
+        patch_points: np.ndarray | None,
     ) -> "torch.Tensor":
         """
         Apply texture over background and overlay foreground.
@@ -407,14 +409,14 @@ class AdversarialTexturePyTorch(EvasionAttack):
 
         return combined
 
-    def generate(  # type: ignore  # pylint: disable=W0222
-        self, x: np.ndarray, y: List[Dict[str, np.ndarray]], **kwargs
+    def generate(  # type: ignore  # pylint: disable=signature-differs
+        self, x: np.ndarray, y: list[dict[str, np.ndarray]], **kwargs
     ) -> np.ndarray:
         """
         Generate an adversarial patch and return the patch and its mask in arrays.
 
         :param x: Input videos of shape NFHWC.
-        :param y: True labels of format `List[Dict[str, np.ndarray]]`, one dictionary for each input image. The keys of
+        :param y: True labels of format `list[dict[str, np.ndarray]]`, one dictionary for each input image. The keys of
                   the dictionary are:
 
                   - boxes [N_FRAMES, 4]: the boxes in [x1, y1, x2, y2] format, with 0 <= x1 < x2 <= W and
@@ -520,9 +522,9 @@ class AdversarialTexturePyTorch(EvasionAttack):
     def apply_patch(
         self,
         x: np.ndarray,
-        patch_external: Optional[np.ndarray] = None,
-        foreground: Optional[np.ndarray] = None,
-        patch_points: Optional[np.ndarray] = None,
+        patch_external: np.ndarray | None = None,
+        foreground: np.ndarray | None = None,
+        patch_points: np.ndarray | None = None,
     ) -> np.ndarray:
         """
         A function to apply the learned adversarial texture to videos.
@@ -557,7 +559,7 @@ class AdversarialTexturePyTorch(EvasionAttack):
             .numpy()
         )
 
-    def reset_patch(self, initial_patch_value: Optional[Union[float, np.ndarray]] = None) -> None:
+    def reset_patch(self, initial_patch_value: float | np.ndarray | None = None) -> None:
         """
         Reset the adversarial texture.
 
