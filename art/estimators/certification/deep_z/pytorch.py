@@ -131,7 +131,9 @@ class ConvertedModel(torch.nn.Module):
             raise ValueError("for abstract forward mode, please provide both cent and eps")
         raise ValueError("forward_mode must be set to abstract or concrete")
 
-    def abstract_forward(self, cent: np.ndarray, eps: np.ndarray) -> tuple["torch.Tensor", "torch.Tensor"]:
+    def abstract_forward(
+        self, cent: np.ndarray, eps: np.ndarray
+    ) -> tuple["torch.Tensor", "torch.Tensor"]:  # typing: ignore
         """
         Do the forward pass through the NN with the given error terms and zonotope center.
 

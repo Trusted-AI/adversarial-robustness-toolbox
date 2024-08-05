@@ -123,7 +123,7 @@ class KerasEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
             run_eagerly=self.model.run_eagerly,
         )
 
-        clone = type(self)(model=model)
+        clone = type(self)(model=model, channels_first=self.channels_first)
         params = self.get_params()
         del params["model"]
         clone.set_params(**params)

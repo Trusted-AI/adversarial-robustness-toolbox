@@ -47,7 +47,7 @@ class BlackBoxClassifier(ClassifierMixin, BaseEstimator):
 
     def __init__(
         self,
-        predict_fn: Callable[np.ndarray, np.ndarray],
+        predict_fn: Callable[[np.ndarray], np.ndarray],
         input_shape: tuple[int, ...],
         nb_classes: int,
         clip_values: "CLIP_VALUES_TYPE" | None = None,
@@ -175,7 +175,7 @@ class BlackBoxClassifierNeuralNetwork(NeuralNetworkMixin, ClassifierMixin, BaseE
 
     def __init__(
         self,
-        predict_fn: Callable[np.ndarray, np.ndarray],
+        predict_fn: Callable[[np.ndarray], np.ndarray],
         input_shape: tuple[int, ...],
         nb_classes: int,
         channels_first: bool = True,

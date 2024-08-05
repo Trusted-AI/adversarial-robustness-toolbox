@@ -28,6 +28,7 @@ from typing import (
     Any,
     Iterator,
     TYPE_CHECKING,
+    Union,
 )
 
 import numpy as np
@@ -49,7 +50,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-KERAS_MODEL_TYPE = "keras.models.Model" | "tf.keras.models.Model"
+KERAS_MODEL_TYPE = Union["keras.models.Model", "tf.keras.models.Model"]  # pylint: disable=C0103
 
 
 class KerasRegressor(RegressorMixin, KerasEstimator):

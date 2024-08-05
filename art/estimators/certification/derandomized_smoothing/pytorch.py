@@ -60,12 +60,12 @@ logger = logging.getLogger(__name__)
 
 class PyTorchDeRandomizedSmoothing(DeRandomizedSmoothingMixin, PyTorchClassifier):
     """
-    Interface class for the two De-randomized smoothing approaches supported by ART for pytorch.
+    Interface class for the two De-randomized smoothing approaches supported by ART for PyTorch.
 
     If a regular pytorch neural network is fed in then (De)Randomized Smoothing as introduced in Levine et al. (2020)
     is used.
 
-    Otherwise, if a timm vision transfomer is fed in then Certified Patch Robustness via Smoothed Vision Transformers
+    Otherwise, if a timm vision transformer is fed in then Certified Patch Robustness via Smoothed Vision Transformers
     as introduced in Salman et al. (2021) is used.
     """
 
@@ -155,7 +155,7 @@ class PyTorchDeRandomizedSmoothing(DeRandomizedSmoothingMixin, PyTorchClassifier
                 # temporarily assign the original method to tmp_func
                 tmp_func = timm.models.vision_transformer._create_vision_transformer
 
-                # overrride with ART's ViT creation function
+                # override with ART's ViT creation function
                 timm.models.vision_transformer._create_vision_transformer = self.create_vision_transformer
                 if isinstance(model, str):
                     model = timm.create_model(
@@ -383,7 +383,7 @@ class PyTorchDeRandomizedSmoothing(DeRandomizedSmoothingMixin, PyTorchClassifier
                 _ = cls(
                     model=model,
                     loss=torch.nn.CrossEntropyLoss(),
-                    optimizer=torch.optim.SGD,
+                    optimizer=torch.optim.SGD,  # type: ignore
                     optimizer_params={"lr": 0.01},
                     input_shape=(3, 32, 32),
                     nb_classes=10,

@@ -133,7 +133,7 @@ class LaserAttack(EvasionAttack):
 
     def _generate_params_for_single_input(
         self, x: np.ndarray, y: int | None = None
-    ) -> tuple[tuple[AdversarialObject | None, int | None]]:
+    ) -> tuple[AdversarialObject | None, int | None]:
         """
         Generate adversarial example params for a single image.
 
@@ -170,7 +170,7 @@ class LaserAttack(EvasionAttack):
 
     def _attack_single_image(
         self, x: np.ndarray, y: int, confidence: float
-    ) -> tuple[tuple[AdversarialObject | None, int | None]]:
+    ) -> tuple[AdversarialObject | None, int | None]:
         """
         Attack particular image with given class.
 

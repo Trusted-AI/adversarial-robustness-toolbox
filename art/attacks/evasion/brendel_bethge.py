@@ -44,7 +44,8 @@ This module implements Brendel and Bethge attack.
 """
 from __future__ import annotations
 
-# pylint: disable=invalid-name,missing-class-docstring,missing-function-docstring,old-non-ascii-name,unused-variable,unused-argument,chained-comparison,no-else-return,no-else-break,no-else-raise
+# pylint: disable=invalid-name,missing-class-docstring,missing-function-docstring,old-non-ascii-name,unused-variable
+# pylint: disable=unused-argument,chained-comparison,no-else-return,no-else-break,no-else-raise
 from typing import TYPE_CHECKING
 import logging
 

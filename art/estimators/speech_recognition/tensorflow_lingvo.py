@@ -183,7 +183,7 @@ class TensorFlowLingvoASR(SpeechRecognizerMixin, TensorFlowV2Estimator):
         self._model = model
         self._task = task
         self._cluster = cluster
-        self._metrics: tuple[dict[str, "Tensor"] | dict[str, tuple["Tensor", "Tensor"]] | ...] | None = None
+        self._metrics: tuple[dict[str, "Tensor"] | dict[str, tuple["Tensor", "Tensor"]], ...] | None = None
 
         # add prediction and loss gradient ops to graph
         self._predict_batch_op: dict[str, "Tensor"] = self._predict_batch(
