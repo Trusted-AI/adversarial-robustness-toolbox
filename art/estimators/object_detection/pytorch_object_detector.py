@@ -99,9 +99,9 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
 
         reg_pattern = r"(\d+).(\d+).(\d+)(\w*)(\+{0,1})(\w*)"
         version_match = re.match(reg_pattern, torch.__version__)
-        torch_version = [version_match[1], version_match[2], version_match[3]]
+        torch_version = [version_match[1], version_match[2], version_match[3]]  # type: ignore[index]
         version_match = re.match(reg_pattern, torchvision.__version__)
-        torchvision_version = [version_match[1], version_match[2], version_match[3]]
+        torchvision_version = [version_match[1], version_match[2], version_match[3]]  # type: ignore[index]
         assert not (torch_version[0] == 1 and (torch_version[1] == 8 or torch_version[1] == 9)), (
             "PyTorchObjectDetector does not support torch==1.8 and torch==1.9 because of "
             "https://github.com/pytorch/vision/issues/4153. Support will return for torch==1.10."
