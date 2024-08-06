@@ -29,8 +29,13 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+from typing import TYPE_CHECKING
 
-def drop_block2d(x: "torch.tensor", prob: float, block_size: int):
+if TYPE_CHECKING:
+    import torch
+
+
+def drop_block2d(x: "torch.Tensor", prob: float, block_size: int):
     """
     === NOTE ===
     This function is modified from torchvision (torchvision/ops/drop_block.py)

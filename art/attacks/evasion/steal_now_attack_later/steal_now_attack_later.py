@@ -503,7 +503,7 @@ class SNAL(EvasionAttack):
 
         return x_adv
 
-    def _get_loss(self, pert: "torch.tensor", epsilon: float) -> "torch.tensor":  # pylint: disable=R0201
+    def _get_loss(self, pert: "torch.Tensor", epsilon: float) -> "torch.Tensor":  # pylint: disable=R0201
         """
         Calculate accumulated distance of the perturbations outside the epslion ball.
 
@@ -521,8 +521,8 @@ class SNAL(EvasionAttack):
         return loss
 
     def _color_projection(  # pylint: disable=R0201
-        self, tile: "torch.tensor", x_ref: "torch.tensor", epsilon: float
-    ) -> "torch.tensor":
+        self, tile: "torch.Tensor", x_ref: "torch.Tensor", epsilon: float
+    ) -> "torch.Tensor":
         """
         Convert statistics information from target to source.
 
@@ -564,7 +564,7 @@ class SNAL(EvasionAttack):
 
         return updated
 
-    def _assemble(self, tile_mat: dict, x_org: "torch.tensor") -> "torch.tensor":  # pylint: disable=R0201
+    def _assemble(self, tile_mat: dict, x_org: "torch.Tensor") -> "torch.Tensor":  # pylint: disable=R0201
         """
         Combine the best patches from each grid into a single image.
 
@@ -583,8 +583,8 @@ class SNAL(EvasionAttack):
         return ans
 
     def _init_guess(
-        self, tile_mat: dict, x_init: "torch.tensor", x_org: "torch.tensor", tile_size: int, n_samples: int
-    ) -> Tuple["torch.tensor", dict]:
+        self, tile_mat: dict, x_init: "torch.Tensor", x_org: "torch.Tensor", tile_size: int, n_samples: int
+    ) -> Tuple["torch.Tensor", dict]:
         """
         Generate an initial perturbation for each grid.
 
