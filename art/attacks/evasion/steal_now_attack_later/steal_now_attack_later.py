@@ -119,8 +119,8 @@ def _generate_tile_kernel(patch: list, mask: list, tile_size: int) -> Tuple["tor
 
     else:
         t_1 = torch.cat([t_patch[None, :], t_mask[None, :]], dim=0)
-        n_patch = []
-        n_mask = []
+        p_list = []
+        n_list = []
         for _ in range(tile_size // min_len):
             p1_list = []
             m1_list = []
@@ -134,20 +134,18 @@ def _generate_tile_kernel(patch: list, mask: list, tile_size: int) -> Tuple["tor
                     m1_list.append(torch.zeros_like(t_mask))
             p_1 = torch.cat(p1_list, dim=-2)
             m_1 = torch.cat(m1_list, dim=-2)
-            n_patch.append(p_1)
-            n_mask.append(m_1)
-        n_patch = torch.cat(n_patch, dim=-1)
-        n_mask = torch.cat(n_mask, dim=-1)
+            p_list.append(p_1)
+            n_list.append(m_1)
+        n_patch = torch.cat(p_list, dim=-1)
+        n_mask = torch.cat(n_list, dim=-1)
         n_patch = torchvision.transforms.CenterCrop((tile_size + 2 * boundary, tile_size + 2 * boundary))(n_patch)
         n_mask = torchvision.transforms.CenterCrop((tile_size + 2 * boundary, tile_size + 2 * boundary))(n_mask)
 
     if flip:
         n_patch = torch.permute(n_patch, (0, 2, 1))
-        mask = torch.permute(n_mask, (0, 2, 1))
-    else:
-        mask = n_mask.clone()
+        n_mask = torch.permute(n_mask, (0, 2, 1))
 
-    return n_patch, mask
+    return n_patch, n_mask
 
 
 def generate_tile(patches: list, masks: list, tile_size: int, scale: list) -> Tuple["torch.Tensor", "torch.Tensor"]:
@@ -184,11 +182,11 @@ def generate_tile(patches: list, masks: list, tile_size: int, scale: list) -> Tu
             cur_m = torch.cat(m1_list, dim=-2)
             cur_tile.append(cur_t)
             cur_mask.append(cur_m)
-        cur_tile = torch.cat(cur_tile, dim=-1)
-        cur_mask = torch.cat(cur_mask, dim=-1)
+        cur_tile = torch.cat(cur_tile, dim=-1)  # type: ignore
+        cur_mask = torch.cat(cur_mask, dim=-1)  # type: ignore
 
-        tile = torch.cat([tile, cur_tile], dim=0)
-        mask = torch.cat([mask, cur_mask], dim=0)
+        tile = torch.cat([tile, cur_tile], dim=0)  # type: ignore
+        mask = torch.cat([mask, cur_mask], dim=0)  # type: ignore
 
     return tile, mask
 
@@ -198,7 +196,7 @@ class TileObj:
     Internally used object that stores information about each tile.
     """
 
-    def __init__(self, tile_size: int, device: "torch.cuda.device") -> None:
+    def __init__(self, tile_size: int, device: "torch.device") -> None:
         """
         Create a tile instance.
         """
@@ -249,7 +247,7 @@ class TileArray:
     Internally used object that stores the list of tiles.
     """
 
-    def __init__(self, xyxy: list, threshold: int, tile_size: int, k: int, device: "torch.cuda.device") -> None:
+    def __init__(self, xyxy: list, threshold: int, tile_size: int, k: int, device: "torch.device") -> None:
         """
         Initialization operation.
         """
@@ -431,8 +429,8 @@ class SNAL(EvasionAttack):
                 idx_i, idx_j = key
                 box_1 = obj.xyxy
                 obj_threshold = obj.threshold
-                [x_1, y_1, x_2, y_2] = box_1.type(torch.IntTensor)
-                overlay = bbox_ioa(box_1.type(torch.FloatTensor), adv_position.type(torch.FloatTensor))
+                [x_1, y_1, x_2, y_2] = box_1.type(torch.IntTensor)  # type: ignore
+                overlay = bbox_ioa(box_1.type(torch.FloatTensor), adv_position.type(torch.FloatTensor))  # type: ignore
                 bcount = torch.sum(overlay > 0.0).item()
 
                 pert = x_adv[batch_idx, :, y_1:y_2, x_1:x_2] - x[batch_idx, :, y_1:y_2, x_1:x_2]
