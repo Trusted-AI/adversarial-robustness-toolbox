@@ -663,8 +663,13 @@
 
 import numpy as np
 
+from typing import TYPE_CHECKING
 
-def bbox_ioa(box1: "torch.tenosr", box2: "torch.tenosr", eps: float = 1e-7) -> "torch.tensor":
+if TYPE_CHECKING:
+    import torch
+
+
+def bbox_ioa(box1: "torch.Tensor", box2: "torch.Tensor", eps: float = 1e-7) -> "torch.Tensor":
     """
     === NOTE ===
     This function is copied from YOLOv5 repository (yolov5/utils/metrics.py)
