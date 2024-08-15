@@ -18,6 +18,8 @@
 """
 This module implements Expectation over Transformation preprocessing for image center crop in PyTorch.
 """
+from __future__ import annotations
+
 import logging
 from typing import TYPE_CHECKING
 
