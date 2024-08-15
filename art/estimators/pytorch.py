@@ -18,6 +18,8 @@
 """
 This module implements the abstract estimator `PyTorchEstimator` for PyTorch models.
 """
+from __future__ import annotations
+
 import logging
 from typing import TYPE_CHECKING, Any
 

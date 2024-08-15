@@ -18,6 +18,8 @@
 """
 This module implements the abstract estimators `TensorFlowEstimator` and `TensorFlowV2Estimator` for TensorFlow models.
 """
+from __future__ import annotations
+
 import logging
 from typing import Any, TYPE_CHECKING
 

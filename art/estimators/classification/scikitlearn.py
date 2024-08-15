@@ -18,7 +18,6 @@
 """
 This module implements the classifiers for scikit-learn models.
 """
-
 from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 from collections.abc import Callable

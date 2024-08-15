@@ -19,6 +19,8 @@
 This module implements mixin abstract base class and mixin abstract framework-specific classes for all speech
 recognizers in ART.
 """
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
