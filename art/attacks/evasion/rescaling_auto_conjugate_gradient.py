@@ -40,7 +40,7 @@
 """
 This module implements the 'Rescaling-ACG' attack.
 
-| Paper link:
+| Paper link: https://arxiv.org/abs/2408.03972
 """
 import abc
 import logging
