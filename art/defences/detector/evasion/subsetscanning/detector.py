@@ -18,7 +18,6 @@
 """
 This module implements the fast generalized subset scan based detector.
 """
-
 from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging

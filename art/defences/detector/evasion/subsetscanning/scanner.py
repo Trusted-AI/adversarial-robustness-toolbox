@@ -18,6 +18,8 @@
 """
 Subset scanning based on FGSS
 """
+from __future__ import annotations
+
 from collections.abc import Callable
 
 import numpy as np
