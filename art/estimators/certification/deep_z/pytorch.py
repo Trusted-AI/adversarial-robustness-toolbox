@@ -113,7 +113,7 @@ class ConvertedModel(torch.nn.Module):
 
     def forward(
         self, cent: np.ndarray, eps: np.ndarray | None = None
-    ) -> "torch.Tensor" | tuple["torch.Tensor" | "torch.Tensor"]:
+    ) -> "torch.Tensor" | tuple["torch.Tensor", "torch.Tensor"]:
         """
         Performs the neural network forward pass, either using abstract operations or concrete ones
         depending on the value of self.forward_mode

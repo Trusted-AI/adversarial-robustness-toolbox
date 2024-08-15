@@ -78,7 +78,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         learning_rate: float = 5.0,
         max_iter: int = 500,
         batch_size: int = 16,
-        patch_shape: tuple[int | int | int] | None = None,
+        patch_shape: tuple[int, int, int] | None = None,
         optimizer: str = "Adam",
         targeted: bool = True,
         summary_writer: str | bool | SummaryWriter = False,
