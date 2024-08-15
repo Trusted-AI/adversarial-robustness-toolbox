@@ -18,6 +18,7 @@
 """
 This module implements utilities for standardisation with mean and standard deviation.
 """
+from __future__ import annotations
 
 from typing import TYPE_CHECKING
 

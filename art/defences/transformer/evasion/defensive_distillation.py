@@ -20,7 +20,7 @@ This module implements the transforming defence mechanism of defensive distillat
 
 | Paper link: https://arxiv.org/abs/1511.04508
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
 from typing import TYPE_CHECKING

@@ -20,7 +20,7 @@ This module implements methods performing poisoning detection based on data prov
 
 | Paper link: https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=8473440
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
 from copy import deepcopy

@@ -20,7 +20,7 @@ This module implements the virtual adversarial attack. It was originally used fo
 
 | Paper link: https://arxiv.org/abs/1507.00677
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
 from typing import TYPE_CHECKING

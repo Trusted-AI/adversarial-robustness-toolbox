@@ -20,7 +20,7 @@ This module implements model inversion attacks.
 
 | Paper link: https://dl.acm.org/doi/10.1145/2810103.2813677
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
 from typing import TYPE_CHECKING

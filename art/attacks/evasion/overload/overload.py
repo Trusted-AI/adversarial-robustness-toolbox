@@ -20,7 +20,7 @@ This module implements the Overload attack. This is a white-box attack.
 
 | Paper link: https://arxiv.org/abs/2304.05370
 """
-
+from __future__ import annotations
 
 import logging
 from typing import TYPE_CHECKING

@@ -23,7 +23,7 @@ perturbations in semantic space and Lp-ball (see `FastGradientMethod` and `Basic
 | Paper link: https://arxiv.org/abs/2202.04235
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
 

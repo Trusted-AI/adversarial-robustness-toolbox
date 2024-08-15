@@ -24,7 +24,7 @@ This module implements the Mixup data augmentation defence in PyTorch.
     see https://arxiv.org/abs/1803.09868 . For details on how to evaluate classifier security in general, see
     https://arxiv.org/abs/1902.06705
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
 from typing import TYPE_CHECKING

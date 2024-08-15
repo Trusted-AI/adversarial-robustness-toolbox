@@ -23,8 +23,9 @@ This module implements the resampling defence `Resample`.
 | Please keep in mind the limitations of defences. For details on how to evaluate classifier security in general,
     see https://arxiv.org/abs/1902.06705.
 """
-import logging
+from __future__ import annotations
 
+import logging
 
 import numpy as np
 

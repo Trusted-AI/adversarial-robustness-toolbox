@@ -20,7 +20,7 @@ This module implements the white-box attack `NewtonFool`.
 
 | Paper link: http://doi.acm.org/10.1145/3134600.3134635
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
 from typing import TYPE_CHECKING

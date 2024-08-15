@@ -20,7 +20,7 @@ This module implements the BadDet Object Disappearance Attack (ODA) on object de
 
 | Paper link: https://arxiv.org/abs/2205.14497
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
 

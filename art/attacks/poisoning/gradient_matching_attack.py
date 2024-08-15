@@ -20,7 +20,7 @@ This module implements Gradient Matching clean-label attacks (a.k.a. Witches' Br
 
 | Paper link: https://arxiv.org/abs/2009.02276
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
 from typing import Any, TYPE_CHECKING

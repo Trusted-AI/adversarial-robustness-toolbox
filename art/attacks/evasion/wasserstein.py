@@ -20,7 +20,7 @@ This module implements ``Wasserstein Adversarial Examples via Projected Sinkhorn
 
 | Paper link: https://arxiv.org/abs/1902.07906
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
 from typing import TYPE_CHECKING

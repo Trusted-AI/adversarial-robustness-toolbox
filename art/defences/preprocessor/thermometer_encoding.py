@@ -24,7 +24,7 @@ This module implements the thermometer encoding defence `ThermometerEncoding`.
     see https://arxiv.org/abs/1802.00420 . For details on how to evaluate classifier security in general, see
     https://arxiv.org/abs/1902.06705
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
 from typing import TYPE_CHECKING

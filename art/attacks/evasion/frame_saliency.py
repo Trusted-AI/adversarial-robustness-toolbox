@@ -21,7 +21,7 @@ prioritize which parts of a sequential input should be perturbed based on salien
 
 | Paper link: https://arxiv.org/abs/1811.11875
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
 from typing import TYPE_CHECKING

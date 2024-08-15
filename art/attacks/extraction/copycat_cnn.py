@@ -20,7 +20,7 @@ This module implements the copycat cnn attack `CopycatCNN`.
 
 | Paper link: https://arxiv.org/abs/1806.05476
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
 from typing import TYPE_CHECKING

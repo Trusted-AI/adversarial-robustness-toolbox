@@ -21,7 +21,7 @@ This module implements a wrapper for video compression defence with FFmpeg.
 | Please keep in mind the limitations of defences. For details on how to evaluate classifier security in general,
     see https://arxiv.org/abs/1902.06705.
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
 import os

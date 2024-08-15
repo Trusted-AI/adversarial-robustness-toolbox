@@ -19,7 +19,7 @@
 This module implements a mixin to be added to classifier so that they may abstain from classification.
 
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
 

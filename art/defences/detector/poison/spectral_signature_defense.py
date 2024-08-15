@@ -23,7 +23,7 @@ This module implements methods performing backdoor poisoning detection based on 
 | Please keep in mind the limitations of defenses. For more information on the limitations of this
     specific defense, see https://arxiv.org/abs/1905.13409 .
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 from typing import TYPE_CHECKING
 

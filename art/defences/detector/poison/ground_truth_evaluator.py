@@ -18,7 +18,7 @@
 """
 This module implements classes to evaluate the performance of poison detection methods.
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import json
 import logging
