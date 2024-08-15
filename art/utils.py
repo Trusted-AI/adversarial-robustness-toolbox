@@ -32,7 +32,7 @@ import warnings
 import zipfile
 from functools import wraps
 from inspect import signature
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING, Optional, Tuple, Union
 
 import numpy as np
 import six
@@ -50,10 +50,10 @@ logger = logging.getLogger(__name__)
 # ------------------------------------------------------------------------------------------------- CONSTANTS AND TYPES
 
 
-DATASET_TYPE = tuple[  # pylint: disable=invalid-name
-    tuple[np.ndarray, np.ndarray], tuple[np.ndarray, np.ndarray], float, float
+DATASET_TYPE = Tuple[  # pylint: disable=invalid-name
+    Tuple[np.ndarray, np.ndarray], Tuple[np.ndarray, np.ndarray], float, float
 ]
-CLIP_VALUES_TYPE = tuple[Union[int, float, np.ndarray], Union[int, float, np.ndarray]]  # pylint: disable=invalid-name
+CLIP_VALUES_TYPE = Tuple[Union[int, float, np.ndarray], Union[int, float, np.ndarray]]  # pylint: disable=invalid-name
 
 if TYPE_CHECKING:
     # pylint: disable=cyclic-import
@@ -61,7 +61,7 @@ if TYPE_CHECKING:
 
     PREPROCESSING_TYPE = Optional[  # pylint: disable=invalid-name
         Union[
-            tuple[Union[int, float, np.ndarray], Union[int, float, np.ndarray]], Preprocessor, tuple[Preprocessor, ...]
+            Tuple[Union[int, float, np.ndarray], Union[int, float, np.ndarray]], Preprocessor, Tuple[Preprocessor, ...]
         ]
     ]
 

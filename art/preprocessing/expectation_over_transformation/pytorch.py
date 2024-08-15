@@ -18,6 +18,8 @@
 """
 This module defines a base class for EoT in PyTorch.
 """
+from __future__ import annotations
+
 from abc import abstractmethod
 import logging
 from typing import TYPE_CHECKING
