@@ -63,7 +63,7 @@ mypy==1.11.1
 pycodestyle==2.12.0
 black==24.4.2
 ruff==0.5.5
-types-six==1.16.21.20240513
+types-six==1.16.21.9
 types-PyYAML==6.0.12.20240724
 types-setuptools==71.1.0.20240726
 

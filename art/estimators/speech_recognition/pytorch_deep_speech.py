@@ -24,7 +24,7 @@ Mandarin in PyTorch.
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
+from typing import Tuple, TYPE_CHECKING
 
 import numpy as np
 
@@ -333,7 +333,7 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
                 loss_scale=1.0,
             )
 
-    def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> tuple[np.ndarray, np.ndarray] | np.ndarray:
+    def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> Tuple[np.ndarray, np.ndarray] | np.ndarray:
         """
         Perform prediction for a batch of inputs.
 
@@ -597,7 +597,7 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
 
     def compute_loss_and_decoded_output(
         self, masked_adv_input: "torch.Tensor", original_output: np.ndarray, **kwargs
-    ) -> tuple["torch.Tensor", np.ndarray]:
+    ) -> Tuple["torch.Tensor", np.ndarray]:
         """
         Compute loss function and decoded output.
 
@@ -658,7 +658,7 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
         x: "torch.Tensor",
         y: np.ndarray,
         real_lengths: np.ndarray,
-    ) -> tuple["torch.Tensor", "torch.Tensor", "torch.Tensor", "torch.Tensor", list]:
+    ) -> Tuple["torch.Tensor", "torch.Tensor", "torch.Tensor", "torch.Tensor", list]:
         """
         Apply preprocessing and then transform the user input space into the model input space. This function is used
         by the ASR attack to attack into the PyTorchDeepSpeech estimator whose defences are called with the
@@ -704,7 +704,7 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
         compute_gradient: bool = False,
         tensor_input: bool = False,
         real_lengths: np.ndarray | None = None,
-    ) -> tuple["torch.Tensor", "torch.Tensor", "torch.Tensor", "torch.Tensor", list]:
+    ) -> Tuple["torch.Tensor", "torch.Tensor", "torch.Tensor", "torch.Tensor", list]:
         """
         Transform the user input space into the model input space.
 
@@ -834,7 +834,7 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
         return sample_rate
 
     @property
-    def input_shape(self) -> tuple[int, ...]:
+    def input_shape(self) -> Tuple[int, ...]:
         """
         Return the shape of one input sample.
 

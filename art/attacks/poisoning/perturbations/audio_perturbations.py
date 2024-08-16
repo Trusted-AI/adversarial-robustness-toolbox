@@ -21,7 +21,7 @@ Uses classes, rather than pure functions as in image_perturbations.py,
 because loading the audio trigger from disk (librosa.load()) is very slow
 and should be done only once.
 """
-
+from __future__ import annotations
 
 import librosa
 import numpy as np
