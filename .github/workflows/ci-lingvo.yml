@@ -50,7 +50,7 @@ jobs:
           sudo apt-get update
           sudo apt-get -y -q install ffmpeg libavcodec-extra
           python -m pip install --upgrade pip setuptools wheel
-          pip install -q -r <(sed '/^scipy/d;/^matplotlib/d;/^pandas/d;/^statsmodels/d;/^numba/d;/^jax/d;/^h5py/d;/^Pillow/d;/^pytest/d;/^pytest-mock/d;/^torch/d;/^torchaudio/d;/^torchvision/d;/^xgboost/d;/^requests/d;/^tensorflow/d;/^keras/d;/^kornia/d;/^librosa/d;/^tqdm/d;/^timm/d;/^catboost/d;/^scikit-learn/d;/^GPy/d;/^lief/d;/^ultralytics/d;/^ipython/d;/^pylint/d;/^mypy/d;/^pycodestyle/d;/^black/d;/^ruff/d' requirements_test.txt)
+          pip install -q -r <(sed '/^scipy/d;/^matplotlib/d;/^pandas/d;/^statsmodels/d;/^numba/d;/^jax/d;/^h5py/d;/^Pillow/d;/^pytest/d;/^pytest-mock/d;/^torch/d;/^torchaudio/d;/^torchvision/d;/^xgboost/d;/^requests/d;/^tensorflow/d;/^keras/d;/^kornia/d;/^librosa/d;/^tqdm/d;/^timm/d;/^catboost/d;/^scikit-learn/d;/^GPy/d;/^lief/d;/^ultralytics/d;/^ipython/d;/^pylint/d;/^mypy/d;/^pycodestyle/d;/^black/d;/^ruff/d;/^types-PyYAML/d;/^types-setuptools/d' requirements_test.txt)
           pip install scipy==1.5.4
           pip install matplotlib==3.3.4
           pip install pandas==1.1.5
