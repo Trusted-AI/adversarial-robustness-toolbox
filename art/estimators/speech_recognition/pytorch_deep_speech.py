@@ -24,7 +24,7 @@ Mandarin in PyTorch.
 from __future__ import annotations
 
 import logging
-from typing import Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 
@@ -34,7 +34,6 @@ from art.estimators.speech_recognition.speech_recognizer import SpeechRecognizer
 from art.utils import get_file
 
 if TYPE_CHECKING:
-
     import torch
     from deepspeech_pytorch.model import DeepSpeech
 
@@ -333,7 +332,7 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
                 loss_scale=1.0,
             )
 
-    def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> Tuple[np.ndarray, np.ndarray] | np.ndarray:
+    def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> tuple[np.ndarray, np.ndarray] | np.ndarray:
         """
         Perform prediction for a batch of inputs.
 
@@ -658,7 +657,7 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
         x: "torch.Tensor",
         y: np.ndarray,
         real_lengths: np.ndarray,
-    ) -> Tuple["torch.Tensor", "torch.Tensor", "torch.Tensor", "torch.Tensor", list]:
+    ) -> tuple["torch.Tensor", "torch.Tensor", "torch.Tensor", "torch.Tensor", list]:
         """
         Apply preprocessing and then transform the user input space into the model input space. This function is used
         by the ASR attack to attack into the PyTorchDeepSpeech estimator whose defences are called with the
@@ -704,7 +703,7 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
         compute_gradient: bool = False,
         tensor_input: bool = False,
         real_lengths: np.ndarray | None = None,
-    ) -> Tuple["torch.Tensor", "torch.Tensor", "torch.Tensor", "torch.Tensor", list]:
+    ) -> tuple["torch.Tensor", "torch.Tensor", "torch.Tensor", "torch.Tensor", list]:
         """
         Transform the user input space into the model input space.
 

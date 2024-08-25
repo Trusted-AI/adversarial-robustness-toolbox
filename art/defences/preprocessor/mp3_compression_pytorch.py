@@ -24,7 +24,7 @@ This module implements a wrapper for MP3 compression defence.
 from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
-from typing import Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from art.defences.preprocessor.mp3_compression import Mp3Compression
 from art.defences.preprocessor.preprocessor import PreprocessorPyTorch
@@ -106,7 +106,7 @@ class Mp3CompressionPyTorch(PreprocessorPyTorch):
 
     def forward(
         self, x: "torch.Tensor", y: "torch.Tensor" | None = None
-    ) -> Tuple["torch.Tensor", "torch.Tensor" | None]:
+    ) -> tuple["torch.Tensor", "torch.Tensor" | None]:
         """
         Apply MP3 compression to sample `x`.
 

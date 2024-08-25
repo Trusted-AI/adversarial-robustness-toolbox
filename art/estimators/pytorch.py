@@ -289,7 +289,7 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
         Set all layers that are an instance of `layerinfo` into training or evaluation mode.
 
         :param train: False for evaluation mode.
-        :param layerinfo: list of module types.
+        :param layerinfo: List of module types.
         """
         import torch
 
