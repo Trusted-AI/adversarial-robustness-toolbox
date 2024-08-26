@@ -28,7 +28,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: TensorFlow+Lingvo 0.13.1 (Python 3.9)
+          - name: TensorFlow+Lingvo 0.13.1 (Python 3.10)
             framework: tensorflow
             python: '3.10'
             lingvo: 0.13.1
