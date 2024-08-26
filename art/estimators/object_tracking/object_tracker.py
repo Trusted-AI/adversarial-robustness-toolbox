@@ -18,6 +18,7 @@
 """
 This module implements mixin abstract base class for all object trackers in ART.
 """
+from __future__ import annotations
 
 from abc import ABC, abstractmethod
 

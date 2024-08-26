@@ -20,15 +20,17 @@ This module implements the task specific estimator for DEtection TRansformer (DE
 
 | Paper link: https://arxiv.org/abs/2005.12872
 """
+from __future__ import annotations
+
 import logging
-from typing import Dict, List, Optional, Tuple, Union, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 
 from art.estimators.object_detection.pytorch_object_detector import PyTorchObjectDetector
 
 if TYPE_CHECKING:
-    # pylint: disable=C0412
+
     import torch
 
     from art.defences.postprocessor.postprocessor import Postprocessor
@@ -48,15 +50,15 @@ class PyTorchDetectionTransformer(PyTorchObjectDetector):
 
     def __init__(
         self,
-        model: Optional["torch.nn.Module"] = None,
-        input_shape: Tuple[int, ...] = (3, 800, 800),
-        optimizer: Optional["torch.optim.Optimizer"] = None,
-        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
+        model: "torch.nn.Module" | None = None,
+        input_shape: tuple[int, ...] = (3, 800, 800),
+        optimizer: "torch.optim.Optimizer" | None = None,
+        clip_values: "CLIP_VALUES_TYPE" | None = None,
         channels_first: bool = True,
-        preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
-        postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
+        preprocessing_defences: "Preprocessor" | list["Preprocessor"] | None = None,
+        postprocessing_defences: "Postprocessor" | list["Postprocessor"] | None = None,
         preprocessing: "PREPROCESSING_TYPE" = None,
-        attack_losses: Tuple[str, ...] = (
+        attack_losses: tuple[str, ...] = (
             "loss_ce",
             "loss_bbox",
             "loss_giou",
@@ -66,8 +68,8 @@ class PyTorchDetectionTransformer(PyTorchObjectDetector):
         """
         Initialization.
 
-        :param model: DETR model. The output of the model is `List[Dict[str, torch.Tensor]]`, one for each input
-                      image. The fields of the Dict are as follows:
+        :param model: DETR model. The output of the model is `list[dict[str, torch.Tensor]]`, one for each input
+                      image. The fields of the dict are as follows:
 
                       - boxes [N, 4]: the boxes in [x1, y1, x2, y2] format, with 0 <= x1 < x2 <= W and
                         0 <= y1 < y2 <= H.
@@ -127,7 +129,7 @@ class PyTorchDetectionTransformer(PyTorchObjectDetector):
             num_classes, matcher=matcher, weight_dict=self.weight_dict, eos_coef=eos_coef, losses=losses
         )
 
-    def _translate_labels(self, labels: List[Dict[str, "torch.Tensor"]]) -> List[Dict[str, "torch.Tensor"]]:
+    def _translate_labels(self, labels: list[dict[str, "torch.Tensor"]]) -> list[dict[str, "torch.Tensor"]]:
         """
         Translate object detection labels from ART format (torchvision) to the model format (DETR) and
         move tensors to GPU, if applicable.
@@ -144,7 +146,7 @@ class PyTorchDetectionTransformer(PyTorchObjectDetector):
             height = self.input_shape[0]
             width = self.input_shape[1]
 
-        labels_translated: List[Dict[str, "torch.Tensor"]] = []
+        labels_translated: list[dict[str, "torch.Tensor"]] = []
 
         for label_dict in labels:
             label_dict_translated = {}
@@ -163,7 +165,7 @@ class PyTorchDetectionTransformer(PyTorchObjectDetector):
 
         return labels_translated
 
-    def _translate_predictions(self, predictions: Dict[str, "torch.Tensor"]) -> List[Dict[str, np.ndarray]]:
+    def _translate_predictions(self, predictions: dict[str, "torch.Tensor"]) -> list[dict[str, np.ndarray]]:
         """
         Translate object detection predictions from the model format (DETR) to ART format (torchvision) and
         convert tensors to numpy arrays.
@@ -183,7 +185,7 @@ class PyTorchDetectionTransformer(PyTorchObjectDetector):
         pred_boxes = predictions["pred_boxes"]
         pred_logits = predictions["pred_logits"]
 
-        predictions_x1y1x2y2: List[Dict[str, np.ndarray]] = []
+        predictions_x1y1x2y2: list[dict[str, np.ndarray]] = []
 
         for pred_box, pred_logit in zip(pred_boxes, pred_logits):
             boxes = rescale_bboxes(pred_box.detach().cpu(), (height, width)).numpy()

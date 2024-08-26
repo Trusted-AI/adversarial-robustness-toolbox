@@ -18,8 +18,10 @@
 """
 This module implements abstract base and mixin classes for estimators in ART.
 """
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional, Tuple, Union, TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
 
 import numpy as np
 from tqdm.auto import trange
@@ -27,7 +29,7 @@ from tqdm.auto import trange
 from art.config import ART_NUMPY_DTYPE
 
 if TYPE_CHECKING:
-    # pylint: disable=R0401
+    # pylint: disable=cyclic-import
     from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE, ESTIMATOR_TYPE
     from art.data_generators import DataGenerator
     from art.metrics.verification_decisions_trees import Tree
@@ -38,7 +40,7 @@ if TYPE_CHECKING:
 class BaseEstimator(ABC):
     """
     The abstract base class `BaseEstimator` defines the basic requirements of an estimator in ART. The BaseEstimator is
-    is the highest abstraction of a machine learning model in ART.
+    the highest abstraction of a machine learning model in ART.
     """
 
     estimator_params = [
@@ -52,10 +54,10 @@ class BaseEstimator(ABC):
     def __init__(
         self,
         model,
-        clip_values: Optional["CLIP_VALUES_TYPE"],
-        preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
-        postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
-        preprocessing: Union["PREPROCESSING_TYPE", "Preprocessor"] = (0.0, 1.0),
+        clip_values: "CLIP_VALUES_TYPE" | None,
+        preprocessing_defences: "Preprocessor" | list["Preprocessor"] | None = None,
+        postprocessing_defences: "Postprocessor" | list["Postprocessor"] | None = None,
+        preprocessing: "PREPROCESSING_TYPE" | "Preprocessor" = (0.0, 1.0),
     ):
         """
         Initialize a `BaseEstimator` object.
@@ -77,7 +79,7 @@ class BaseEstimator(ABC):
         self.preprocessing = self._set_preprocessing(preprocessing)
         self.preprocessing_defences = self._set_preprocessing_defences(preprocessing_defences)
         self.postprocessing_defences = self._set_postprocessing_defences(postprocessing_defences)
-        self.preprocessing_operations: List["Preprocessor"] = []
+        self.preprocessing_operations: list["Preprocessor"] = []
         BaseEstimator._update_preprocessing_operations(self)
         BaseEstimator._check_params(self)
 
@@ -107,9 +109,7 @@ class BaseEstimator(ABC):
             raise ValueError("Preprocessing argument not recognised.")
 
     @staticmethod
-    def _set_preprocessing(
-        preprocessing: Optional[Union["PREPROCESSING_TYPE", "Preprocessor"]]
-    ) -> Optional["Preprocessor"]:
+    def _set_preprocessing(preprocessing: "PREPROCESSING_TYPE" | "Preprocessor" | None) -> "Preprocessor" | None:
         from art.defences.preprocessor.preprocessor import Preprocessor
 
         if preprocessing is None:
@@ -125,8 +125,8 @@ class BaseEstimator(ABC):
 
     @staticmethod
     def _set_preprocessing_defences(
-        preprocessing_defences: Optional[Union["Preprocessor", List["Preprocessor"]]]
-    ) -> Optional[List["Preprocessor"]]:
+        preprocessing_defences: "Preprocessor" | list["Preprocessor"] | None,
+    ) -> list["Preprocessor"] | None:
         from art.defences.preprocessor.preprocessor import Preprocessor
 
         if isinstance(preprocessing_defences, Preprocessor):
@@ -136,8 +136,8 @@ class BaseEstimator(ABC):
 
     @staticmethod
     def _set_postprocessing_defences(
-        postprocessing_defences: Optional[Union["Postprocessor", List["Postprocessor"]]]
-    ) -> Optional[List["Postprocessor"]]:
+        postprocessing_defences: "Postprocessor" | list["Postprocessor"] | None,
+    ) -> list["Postprocessor"] | None:
         from art.defences.postprocessor.postprocessor import Postprocessor
 
         if isinstance(postprocessing_defences, Postprocessor):
@@ -174,7 +174,7 @@ class BaseEstimator(ABC):
         self._update_preprocessing_operations()
         self._check_params()
 
-    def get_params(self) -> Dict[str, Any]:
+    def get_params(self) -> dict[str, Any]:
         """
         Get all parameters and their values of this estimator.
 
@@ -271,7 +271,7 @@ class BaseEstimator(ABC):
 
     @property
     @abstractmethod
-    def input_shape(self) -> Tuple[int, ...]:
+    def input_shape(self) -> tuple[int, ...]:
         """
         Return the shape of one input sample.
 
@@ -280,7 +280,7 @@ class BaseEstimator(ABC):
         raise NotImplementedError
 
     @property
-    def clip_values(self) -> Optional["CLIP_VALUES_TYPE"]:
+    def clip_values(self) -> "CLIP_VALUES_TYPE" | None:
         """
         Return the clip values of the input samples.
 
@@ -288,7 +288,7 @@ class BaseEstimator(ABC):
         """
         return self._clip_values
 
-    def _apply_preprocessing(self, x, y, fit: bool) -> Tuple[Any, Any]:
+    def _apply_preprocessing(self, x, y, fit: bool) -> tuple[Any, Any]:
         """
         Apply all defences and preprocessing operations on the inputs `x` and `y`. This function has to be applied to
         all raw inputs `x` and `y` provided to the estimator.
@@ -479,9 +479,7 @@ class NeuralNetworkMixin(ABC):
                 self.fit(x, y, nb_epochs=1, batch_size=generator.batch_size, **kwargs)
 
     @abstractmethod
-    def get_activations(
-        self, x: np.ndarray, layer: Union[int, str], batch_size: int, framework: bool = False
-    ) -> np.ndarray:
+    def get_activations(self, x: np.ndarray, layer: int | str, batch_size: int, framework: bool = False) -> np.ndarray:
         """
         Return the output of a specific layer for samples `x` where `layer` is the index of the layer between 0 and
         `nb_layers - 1 or the name of the layer. The number of layers can be determined by counting the results
@@ -503,7 +501,7 @@ class NeuralNetworkMixin(ABC):
         return self._channels_first
 
     @property
-    def layer_names(self) -> Optional[List[str]]:
+    def layer_names(self) -> list[str] | None:
         """
         Return the names of the hidden layers in the model, if applicable.
 
@@ -536,7 +534,7 @@ class DecisionTreeMixin(ABC):
     """
 
     @abstractmethod
-    def get_trees(self) -> List["Tree"]:
+    def get_trees(self) -> list["Tree"]:
         """
         Get the decision trees.
 

@@ -20,10 +20,12 @@ This module implements the adversarial patch attack `DPatch` for object detector
 
 | Paper link: https://arxiv.org/abs/1806.02299v4
 """
+from __future__ import annotations
+
 import logging
 import math
 import random
-from typing import Dict, List, Optional, Tuple, Union, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 from tqdm.auto import trange
@@ -59,7 +61,7 @@ class DPatch(EvasionAttack):
     def __init__(
         self,
         estimator: "OBJECT_DETECTOR_TYPE",
-        patch_shape: Tuple[int, int, int] = (40, 40, 3),
+        patch_shape: tuple[int, int, int] = (40, 40, 3),
         learning_rate: float = 5.0,
         max_iter: int = 500,
         batch_size: int = 16,
@@ -94,27 +96,27 @@ class DPatch(EvasionAttack):
                 + self.estimator.clip_values[0]
             ).astype(config.ART_NUMPY_DTYPE)
 
-        self.target_label: Optional[Union[int, np.ndarray, List[int]]] = []
+        self.target_label: int | np.ndarray | list[int] | None = []
 
-    def generate(  # pylint: disable=W0221
+    def generate(
         self,
         x: np.ndarray,
-        y: Optional[np.ndarray] = None,
-        target_label: Optional[Union[int, List[int], np.ndarray]] = None,
-        **kwargs
+        y: np.ndarray | None = None,
+        target_label: int | np.ndarray | list[int] | None = None,
+        **kwargs,
     ) -> np.ndarray:
         """
         Generate DPatch.
 
         :param x: Sample images.
-        :param y: True labels of type `List[Dict[np.ndarray]]` for untargeted attack, one dictionary per input image.
+        :param y: True labels of type `list[dict[np.ndarray]]` for untargeted attack, one dictionary per input image.
                   The keys and values of the dictionary are:
 
                   - boxes [N, 4]: the boxes in [x1, y1, x2, y2] format, with 0 <= x1 < x2 <= W and 0 <= y1 < y2 <= H.
                   - labels [N]: the labels for each image
                   - scores [N]: the scores or each prediction.
         :param target_label: The target label of the DPatch attack.
-        :param mask: An boolean array of shape equal to the shape of a single samples (1, H, W) or the shape of `x`
+        :param mask: A boolean array of shape equal to the shape of a single samples (1, H, W) or the shape of `x`
                      (N, H, W) without their channel dimensions. Any features for which the mask is True can be the
                      center location of the patch during sampling.
         :type mask: `np.ndarray`
@@ -161,7 +163,7 @@ class DPatch(EvasionAttack):
             mask=mask,
             transforms=None,
         )
-        patch_target: List[Dict[str, np.ndarray]] = []
+        patch_target: list[dict[str, np.ndarray]] = []
 
         if self.target_label and y is None:
 
@@ -263,9 +265,9 @@ class DPatch(EvasionAttack):
         patch: np.ndarray,
         random_location: bool,
         channels_first: bool,
-        mask: Optional[np.ndarray] = None,
-        transforms: Optional[List[Dict[str, int]]] = None,
-    ) -> Tuple[np.ndarray, List[Dict[str, int]]]:
+        mask: np.ndarray | None = None,
+        transforms: list[dict[str, int]] | None = None,
+    ) -> tuple[np.ndarray, list[dict[str, int]]]:
         """
         Augment images with patch.
 
@@ -274,7 +276,7 @@ class DPatch(EvasionAttack):
         :param random_location: If True apply patch at randomly shifted locations, otherwise place patch at origin
                                 (top-left corner).
         :param channels_first: Set channels first or last.
-        :param mask: An boolean array of shape equal to the shape of a single samples (1, H, W) or the shape of `x`
+        :param mask: A boolean array of shape equal to the shape of a single samples (1, H, W) or the shape of `x`
                      (N, H, W) without their channel dimensions. Any features for which the mask is True can be the
                      center location of the patch during sampling.
         :param transforms: Patch transforms, requires `random_location=False`, and `mask=None`.
@@ -350,9 +352,9 @@ class DPatch(EvasionAttack):
     def apply_patch(
         self,
         x: np.ndarray,
-        patch_external: Optional[np.ndarray] = None,
+        patch_external: np.ndarray | None = None,
         random_location: bool = False,
-        mask: Optional[np.ndarray] = None,
+        mask: np.ndarray | None = None,
     ) -> np.ndarray:
         """
         Apply the adversarial patch to images.
@@ -360,7 +362,7 @@ class DPatch(EvasionAttack):
         :param x: Images to be patched.
         :param patch_external: External patch to apply to images `x`. If None the attacks patch will be applied.
         :param random_location: True if patch location should be random.
-        :param mask: An boolean array of shape equal to the shape of a single samples (1, H, W) or the shape of `x`
+        :param mask: A boolean array of shape equal to the shape of a single samples (1, H, W) or the shape of `x`
                      (N, H, W) without their channel dimensions. Any features for which the mask is True can be the
                      center location of the patch during sampling.
         :return: The patched images.

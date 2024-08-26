@@ -18,10 +18,10 @@
 """
 This module implements attribute inference attacks.
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
-from typing import Optional, Union, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 
@@ -47,7 +47,7 @@ class AttributeInferenceWhiteBoxLifestyleDecisionTree(AttributeInferenceAttack):
 
     _estimator_requirements = ((ScikitlearnDecisionTreeClassifier, ScikitlearnDecisionTreeRegressor),)
 
-    def __init__(self, estimator: Union["CLASSIFIER_TYPE", "REGRESSOR_TYPE"], attack_feature: int = 0):
+    def __init__(self, estimator: "CLASSIFIER_TYPE" | "REGRESSOR_TYPE", attack_feature: int = 0):
         """
         Create an AttributeInferenceWhiteBoxLifestyle attack instance.
 
@@ -58,7 +58,7 @@ class AttributeInferenceWhiteBoxLifestyleDecisionTree(AttributeInferenceAttack):
         self.attack_feature: int
         self._check_params()
 
-    def infer(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
+    def infer(self, x: np.ndarray, y: np.ndarray | None = None, **kwargs) -> np.ndarray:
         """
         Infer the attacked feature.
 
@@ -71,8 +71,8 @@ class AttributeInferenceWhiteBoxLifestyleDecisionTree(AttributeInferenceAttack):
         :return: The inferred feature values.
         :rtype: `np.ndarray`
         """
-        priors: Optional[list] = kwargs.get("priors")
-        values: Optional[list] = kwargs.get("values")
+        priors: list | None = kwargs.get("priors")
+        values: list | None = kwargs.get("values")
 
         # Checks:
         if self.estimator.input_shape[0] != x.shape[1] + 1:  # pragma: no cover
@@ -110,7 +110,7 @@ class AttributeInferenceWhiteBoxLifestyleDecisionTree(AttributeInferenceAttack):
             ]
             prob_values.append(prob_value)
 
-        # Choose the value with highest probability for each sample
+        # Choose the value with the highest probability for each sample
         return np.array([values[np.argmax(list(prob))] for prob in zip(*prob_values)])
 
     def _calculate_phi(self, x, values, n_samples):
@@ -130,6 +130,3 @@ class AttributeInferenceWhiteBoxLifestyleDecisionTree(AttributeInferenceAttack):
             phi.append(num_value)
 
         return phi
-
-    def _check_params(self) -> None:
-        super()._check_params()

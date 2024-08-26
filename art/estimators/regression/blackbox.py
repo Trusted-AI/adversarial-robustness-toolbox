@@ -18,11 +18,12 @@
 """
 This module implements the classifier `BlackBoxRegressor` for black-box regressors.
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
+from collections.abc import Callable
 from functools import total_ordering
 import logging
-from typing import Callable, List, Optional, Union, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 
@@ -47,12 +48,12 @@ class BlackBoxRegressor(RegressorMixin, BaseEstimator):
 
     def __init__(
         self,
-        predict_fn: Union[Callable, Tuple[np.ndarray, np.ndarray]],
-        input_shape: Tuple[int, ...],
-        loss_fn: Optional[Callable] = None,
-        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
-        preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
-        postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
+        predict_fn: Callable | tuple[np.ndarray, np.ndarray],
+        input_shape: tuple[int, ...],
+        loss_fn: Callable | None = None,
+        clip_values: "CLIP_VALUES_TYPE" | None = None,
+        preprocessing_defences: "Preprocessor" | list["Preprocessor"] | None = None,
+        postprocessing_defences: "Postprocessor" | list["Postprocessor"] | None = None,
         preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
         fuzzy_float_compare: bool = False,
     ):
@@ -93,7 +94,7 @@ class BlackBoxRegressor(RegressorMixin, BaseEstimator):
         self._loss_fn = loss_fn
 
     @property
-    def input_shape(self) -> Tuple[int, ...]:
+    def input_shape(self) -> tuple[int, ...]:
         """
         Return the shape of one input sample.
 
@@ -110,7 +111,7 @@ class BlackBoxRegressor(RegressorMixin, BaseEstimator):
         """
         return self._predict_fn  # type: ignore
 
-    def get_classifier(self, thresholds: List[float]) -> BlackBoxClassifier:
+    def get_classifier(self, thresholds: list[float]) -> BlackBoxClassifier:
         """
         Returns a classifier representation of the regressor. Maps real values to classes based on the provided
         thresholds.
@@ -136,7 +137,6 @@ class BlackBoxRegressor(RegressorMixin, BaseEstimator):
         )
         return classifier
 
-    # pylint: disable=W0221
     def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> np.ndarray:
         """
         Perform prediction for a batch of inputs.
@@ -177,7 +177,7 @@ class BlackBoxRegressor(RegressorMixin, BaseEstimator):
         """
         raise NotImplementedError
 
-    def save(self, filename: str, path: Optional[str] = None) -> None:
+    def save(self, filename: str, path: str | None = None) -> None:
         """
         Save a model to file in the format specific to the backend framework. For Keras, .h5 format is used.
 
@@ -233,7 +233,7 @@ class FuzzyMapping:
         return np.all(np.isclose(self.key, other.key))
 
     def __ge__(self, other):
-        # This implements >= comparison so we can use this class in a `SortedList`. The `total_ordering` decorator
+        # This implements >= comparison, so we can use this class in a `SortedList`. The `total_ordering` decorator
         # automatically generates the rest of the comparison magic functions based on this one
 
         close_cells = np.isclose(self.key, other.key)
@@ -247,7 +247,7 @@ class FuzzyMapping:
         return self.key[compare_idx] >= other.key[compare_idx]
 
 
-def _make_lookup_predict_fn(existing_predictions: Tuple[np.ndarray, np.ndarray], fuzzy_float_compare: bool) -> Callable:
+def _make_lookup_predict_fn(existing_predictions: tuple[np.ndarray, np.ndarray], fuzzy_float_compare: bool) -> Callable:
     """
     Makes a predict_fn callback based on a table of existing predictions.
 

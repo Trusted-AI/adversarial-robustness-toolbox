@@ -330,7 +330,7 @@ def test_fit_importances(iris_dataset):
     def pearson_correlations(x, y):
         correlations = [pearsonr(x[:, col], y)[0] for col in range(x.shape[1])]
         absolutes = np.abs(np.array(correlations))
-        result = absolutes / np.power(np.sum(absolutes ** 2), 0.5)
+        result = absolutes / np.power(np.sum(absolutes**2), 0.5)
         return result
 
     # Setup classifier
@@ -410,7 +410,7 @@ def test_clipping(iris_dataset):
     top_custom = 3
     clf_slr_custom = ScikitlearnLogisticRegression(model=lr_clf, clip_values=(bottom_custom, top_custom))
 
-    # Setting up LowProFool classes with different hyper-parameters
+    # Setting up LowProFool classes with different hyperparameters
     lpf_min_max_default = LowProFool(classifier=clf_slr_min_max, n_steps=45, eta=0.02, lambd=1.5)
     lpf_min_max_high_eta = LowProFool(classifier=clf_slr_min_max, n_steps=45, eta=100000, lambd=1.5)
     lpf_custom_default = LowProFool(classifier=clf_slr_custom, n_steps=45, eta=0.02, lambd=1.5)

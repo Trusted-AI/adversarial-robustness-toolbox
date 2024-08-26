@@ -24,11 +24,11 @@ attack objective.
 
 | Paper link: https://arxiv.org/abs/1608.04644
 """
-# pylint: disable=C0302
-from __future__ import absolute_import, division, print_function, unicode_literals
+
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
-from typing import Optional, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 from tqdm.auto import trange
@@ -137,7 +137,7 @@ class CarliniL2Method(EvasionAttack):
 
     def _loss(
         self, x: np.ndarray, x_adv: np.ndarray, target: np.ndarray, c_weight: np.ndarray
-    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """
         Compute the objective function value.
 
@@ -163,7 +163,7 @@ class CarliniL2Method(EvasionAttack):
         # column, last equation), the maximum is taken over Z_other - Z_target (or Z_target - Z_other respectively)
         # and -confidence. However, it doesn't seem that that would have the desired effect (loss term is <= 0 if and
         # only if the difference between the logit of the target and any other class differs by at least confidence).
-        # Hence the rearrangement here.
+        # Hence, the rearrangement here.
 
         if self.targeted:
             # if targeted, optimize for making the target class most likely
@@ -226,7 +226,7 @@ class CarliniL2Method(EvasionAttack):
 
         return loss_gradient
 
-    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
+    def generate(self, x: np.ndarray, y: np.ndarray | None = None, **kwargs) -> np.ndarray:
         """
         Generate adversarial samples and return them in an array.
 
@@ -584,7 +584,7 @@ class CarliniLInfMethod(EvasionAttack):
 
     def _loss(
         self, x_adv: np.ndarray, target: np.ndarray, x, const, tau
-    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         """
         Compute the objective function value.
 
@@ -732,7 +732,7 @@ class CarliniLInfMethod(EvasionAttack):
 
         return x_adv_batch
 
-    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
+    def generate(self, x: np.ndarray, y: np.ndarray | None = None, **kwargs) -> np.ndarray:
         """
         Generate adversarial samples and return them in an array.
 
@@ -876,7 +876,7 @@ class CarliniL0Method(CarliniL2Method):
         binary_search_steps: int = 10,
         max_iter: int = 10,
         initial_const: float = 0.01,
-        mask: Optional[np.ndarray] = None,
+        mask: np.ndarray | None = None,
         warm_start: bool = True,
         max_halving: int = 5,
         max_doubling: int = 5,
@@ -941,7 +941,7 @@ class CarliniL0Method(CarliniL2Method):
         # Below this threshold, a difference between values is considered as tanh transformation difference.
         self._perturbation_threshold = 1e-06
 
-    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
+    def generate(self, x: np.ndarray, y: np.ndarray | None = None, **kwargs) -> np.ndarray:
         """
         Generate adversarial samples and return them in an array.
 

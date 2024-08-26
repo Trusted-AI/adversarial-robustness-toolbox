@@ -18,8 +18,10 @@
 """
 This module implements the standardisation with mean and standard deviation.
 """
+from __future__ import annotations
+
 import logging
-from typing import TYPE_CHECKING, Optional, Tuple, Union
+from typing import TYPE_CHECKING
 
 import numpy as np
 
@@ -42,8 +44,8 @@ class StandardisationMeanStdTensorFlow(PreprocessorTensorFlowV2):
 
     def __init__(
         self,
-        mean: Union[float, np.ndarray] = 0.0,
-        std: Union[float, np.ndarray] = 1.0,
+        mean: float | np.ndarray = 0.0,
+        std: float | np.ndarray = 1.0,
         apply_fit: bool = True,
         apply_predict: bool = True,
     ):
@@ -59,10 +61,10 @@ class StandardisationMeanStdTensorFlow(PreprocessorTensorFlowV2):
         self._check_params()
 
         # init broadcastable mean and std for lazy loading
-        self._broadcastable_mean: Optional[np.ndarray] = None
-        self._broadcastable_std: Optional[np.ndarray] = None
+        self._broadcastable_mean: np.ndarray | None = None
+        self._broadcastable_std: np.ndarray | None = None
 
-    def forward(self, x: "tf.Tensor", y: Optional["tf.Tensor"] = None) -> Tuple["tf.Tensor", Optional["tf.Tensor"]]:
+    def forward(self, x: "tf.Tensor", y: "tf.Tensor" | None = None) -> tuple["tf.Tensor", "tf.Tensor" | None]:
         """
         Apply standardisation with mean and standard deviation to input `x`.
 
@@ -77,7 +79,7 @@ class StandardisationMeanStdTensorFlow(PreprocessorTensorFlowV2):
 
         x_norm = x - self._broadcastable_mean
         x_norm = x_norm / self._broadcastable_std
-        x_norm = tf.cast(x_norm, dtype=ART_NUMPY_DTYPE)  # pylint: disable=E1123,E1120
+        x_norm = tf.cast(x_norm, dtype=ART_NUMPY_DTYPE)
 
         return x_norm, y
 

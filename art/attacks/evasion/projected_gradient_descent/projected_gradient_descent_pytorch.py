@@ -17,16 +17,16 @@
 # SOFTWARE.
 """
 This module implements the Projected Gradient Descent attack `ProjectedGradientDescent` as an iterative method in which,
-after each iteration, the perturbation is projected on an lp-ball of specified radius (in addition to clipping the
+after each iteration, the perturbation is projected on a lp-ball of specified radius (in addition to clipping the
 values of the adversarial sample so that it lies in the permitted data range). This is the attack proposed by Madry et
 al. for adversarial training.
 
 | Paper link: https://arxiv.org/abs/1706.06083
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
-from typing import Optional, Union, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 from tqdm.auto import tqdm
@@ -41,7 +41,7 @@ from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent_n
 from art.utils import compute_success, random_sphere, compute_success_array
 
 if TYPE_CHECKING:
-    # pylint: disable=C0412
+
     import torch
     from art.estimators.classification.pytorch import PyTorchClassifier
 
@@ -51,7 +51,7 @@ logger = logging.getLogger(__name__)
 class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
     """
     The Projected Gradient Descent attack is an iterative method in which, after each iteration, the perturbation is
-    projected on an lp-ball of specified radius (in addition to clipping the values of the adversarial sample so that it
+    projected on a lp-ball of specified radius (in addition to clipping the values of the adversarial sample so that it
     lies in the permitted data range). This is the attack proposed by Madry et al. for adversarial training.
 
     | Paper link: https://arxiv.org/abs/1706.06083
@@ -61,23 +61,23 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
 
     def __init__(
         self,
-        estimator: Union["PyTorchClassifier"],
-        norm: Union[int, float, str] = np.inf,
-        eps: Union[int, float, np.ndarray] = 0.3,
-        eps_step: Union[int, float, np.ndarray] = 0.1,
-        decay: Optional[float] = None,
+        estimator: "PyTorchClassifier",
+        norm: int | float | str = np.inf,
+        eps: int | float | np.ndarray = 0.3,
+        eps_step: int | float | np.ndarray = 0.1,
+        decay: float | None = None,
         max_iter: int = 100,
         targeted: bool = False,
         num_random_init: int = 0,
         batch_size: int = 32,
         random_eps: bool = False,
-        summary_writer: Union[str, bool, SummaryWriter] = False,
+        summary_writer: str | bool | SummaryWriter = False,
         verbose: bool = True,
     ):
         """
         Create a :class:`.ProjectedGradientDescentPyTorch` instance.
 
-        :param estimator: An trained estimator.
+        :param estimator: A trained estimator.
         :param norm: The norm of the adversarial perturbation, supporting  "inf", `np.inf` or a real `p >= 1`.
                      Currently, when `p` is not infinity, the projection step only rescales the noise, which may be
                      suboptimal for `p != 2`.
@@ -127,7 +127,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         self._batch_id = 0
         self._i_max_iter = 0
 
-    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
+    def generate(self, x: np.ndarray, y: np.ndarray | None = None, **kwargs) -> np.ndarray:
         """
         Generate adversarial samples and return them in an array.
 
@@ -158,7 +158,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         # Create dataset
         if mask is not None:
             # Here we need to make a distinction: if the masks are different for each input, we need to index
-            # those for the current batch. Otherwise (i.e. mask is meant to be broadcasted), keep it as it is.
+            # those for the current batch. Otherwise, (i.e. mask is meant to be broadcasted), keep it as it is.
             if len(mask.shape) == len(x.shape):
                 dataset = torch.utils.data.TensorDataset(
                     torch.from_numpy(x.astype(ART_NUMPY_DTYPE)),
@@ -200,8 +200,8 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
 
             batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
 
-            batch_eps: Union[int, float, np.ndarray]
-            batch_eps_step: Union[int, float, np.ndarray]
+            batch_eps: int | float | np.ndarray
+            batch_eps_step: int | float | np.ndarray
 
             # Compute batch_eps and batch_eps_step
             if isinstance(self.eps, np.ndarray) and isinstance(self.eps_step, np.ndarray):
@@ -254,8 +254,8 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         x: "torch.Tensor",
         targets: "torch.Tensor",
         mask: "torch.Tensor",
-        eps: Union[int, float, np.ndarray],
-        eps_step: Union[int, float, np.ndarray],
+        eps: int | float | np.ndarray,
+        eps_step: int | float | np.ndarray,
     ) -> np.ndarray:
         """
         Generate a batch of adversarial samples and return them in an array.
@@ -287,8 +287,8 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
 
         return adv_x.cpu().detach().numpy()
 
-    def _compute_perturbation_pytorch(  # pylint: disable=W0221
-        self, x: "torch.Tensor", y: "torch.Tensor", mask: Optional["torch.Tensor"], momentum: "torch.Tensor"
+    def _compute_perturbation_pytorch(
+        self, x: "torch.Tensor", y: "torch.Tensor", mask: "torch.Tensor" | None, momentum: "torch.Tensor"
     ) -> "torch.Tensor":
         """
         Compute perturbations.
@@ -321,7 +321,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
                 targeted=self.targeted,
             )
 
-        # Check for nan before normalisation an replace with 0
+        # Check for nan before normalisation and replace with 0
         if torch.any(grad.isnan()):  # pragma: no cover
             logger.warning("Elements of the loss gradient are NaN and have been replaced with 0.0.")
             grad[grad.isnan()] = 0.0
@@ -362,8 +362,8 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
 
         return grad
 
-    def _apply_perturbation_pytorch(  # pylint: disable=W0221
-        self, x: "torch.Tensor", perturbation: "torch.Tensor", eps_step: Union[int, float, np.ndarray]
+    def _apply_perturbation_pytorch(
+        self, x: "torch.Tensor", perturbation: "torch.Tensor", eps_step: int | float | np.ndarray
     ) -> "torch.Tensor":
         """
         Apply perturbation on examples.
@@ -394,8 +394,8 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         x_init: "torch.Tensor",
         y: "torch.Tensor",
         mask: "torch.Tensor",
-        eps: Union[int, float, np.ndarray],
-        eps_step: Union[int, float, np.ndarray],
+        eps: int | float | np.ndarray,
+        eps_step: int | float | np.ndarray,
         random_init: bool,
         momentum: "torch.Tensor",
     ) -> "torch.Tensor":
@@ -458,8 +458,8 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
     @staticmethod
     def _projection(
         values: "torch.Tensor",
-        eps: Union[int, float, np.ndarray],
-        norm_p: Union[int, float, str],
+        eps: int | float | np.ndarray,
+        norm_p: int | float | str,
         *,
         suboptimal: bool = True,
     ) -> "torch.Tensor":
@@ -497,11 +497,13 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         if (suboptimal or norm == 2) and norm != np.inf:  # Simple rescaling
             values_norm = torch.linalg.norm(values_tmp, ord=norm, dim=1, keepdim=True)  # (n_samples, 1)
             values_tmp = values_tmp * values_norm.where(
-                values_norm == 0, torch.minimum(torch.ones(1), torch.Tensor(eps) / values_norm)
+                values_norm == 0, torch.minimum(torch.ones(1), torch.tensor(eps).to(values_tmp.device) / values_norm)
             )
         else:  # Optimal
             if norm == np.inf:  # Easy exact case
-                values_tmp = values_tmp.sign() * torch.minimum(values_tmp.abs(), torch.Tensor(eps))
+                values_tmp = values_tmp.sign() * torch.minimum(
+                    values_tmp.abs(), torch.tensor(eps).to(values_tmp.device)
+                )
             elif norm >= 1:  # Convex optim
                 raise NotImplementedError(
                     "Finite values of `norm_p >= 1` are currently not supported with `suboptimal=False`."

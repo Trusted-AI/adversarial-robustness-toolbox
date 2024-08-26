@@ -53,7 +53,6 @@ class BackdoorAttackDGMReDTensorFlowV2(PoisoningAttackGenerator):
         """
         import tensorflow as tf
 
-        # pylint: disable=W0212
         super().__init__(generator=generator)
 
         self._model_clone = tf.keras.models.clone_model(self.estimator.model)
@@ -62,7 +61,7 @@ class BackdoorAttackDGMReDTensorFlowV2(PoisoningAttackGenerator):
     def fidelity(self, z_trigger: np.ndarray, x_target: np.ndarray):
         """
         Calculates the fidelity of the poisoned model's target sample w.r.t. the original x_target sample
-        :param z_trigger: the secret backdoor trigger that will produce the target
+        :param z_trigger: the secret backdoor trigger that will produce the target.
         :param x_target: the target to produce when using the trigger
         """
         import tensorflow as tf
@@ -106,7 +105,7 @@ class BackdoorAttackDGMReDTensorFlowV2(PoisoningAttackGenerator):
     ) -> TensorFlowV2Generator:
         """
         Creates a backdoor in the generative model
-        :param z_trigger: the secret backdoor trigger that will produce the target
+        :param z_trigger: the secret backdoor trigger that will produce the target.
         :param x_target: the target to produce when using the trigger
         :param batch_size: batch_size of images used to train generator
         :param max_iter: total number of iterations for performing the attack

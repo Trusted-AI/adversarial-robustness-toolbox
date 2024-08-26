@@ -140,7 +140,7 @@ class TestUtils(unittest.TestCase):
 
         x_proj = projection(rand_sign * x, 3.14159, 2)
         self.assertEqual(x.shape, x_proj.shape)
-        self.assertTrue(np.allclose(np.sqrt(np.sum(x_proj ** 2, axis=t)), 3.14159, atol=10e-8))
+        self.assertTrue(np.allclose(np.sqrt(np.sum(x_proj**2, axis=t)), 3.14159, atol=10e-8))
 
         x_proj = projection(rand_sign * x, 0.314159, np.inf)
         self.assertEqual(x.shape, x_proj.shape)

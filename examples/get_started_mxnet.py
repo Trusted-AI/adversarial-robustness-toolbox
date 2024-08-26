@@ -4,6 +4,7 @@ and creates adversarial examples using the Fast Gradient Sign Method. Here we us
 it would also be possible to provide a pretrained model to the ART classifier.
 The parameters are chosen for reduced computational requirements of the script and not optimised for accuracy.
 """
+
 import mxnet
 from mxnet.gluon.nn import Conv2D, MaxPool2D, Flatten, Dense
 import numpy as np

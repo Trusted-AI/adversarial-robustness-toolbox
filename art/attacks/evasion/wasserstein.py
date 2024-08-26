@@ -20,10 +20,10 @@ This module implements ``Wasserstein Adversarial Examples via Projected Sinkhorn
 
 | Paper link: https://arxiv.org/abs/1902.07906
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 from scipy.special import lambertw
@@ -40,7 +40,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-EPS_LOG = 10 ** -10
+EPS_LOG = 10**-10
 
 
 class Wasserstein(EvasionAttack):
@@ -113,7 +113,7 @@ class Wasserstein(EvasionAttack):
 
         self._targeted = targeted
         self.regularization = regularization
-        self.p = p  # pylint: disable=C0103
+        self.p = p  # pylint: disable=invalid-name
         self.kernel_size = kernel_size
         self.eps_step = eps_step
         self.norm = norm
@@ -128,7 +128,7 @@ class Wasserstein(EvasionAttack):
         self.verbose = verbose
         self._check_params()
 
-    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
+    def generate(self, x: np.ndarray, y: np.ndarray | None = None, **kwargs) -> np.ndarray:
         """
         Generate adversarial samples and return them in an array.
 
@@ -599,7 +599,7 @@ class Wasserstein(EvasionAttack):
 
         # Do unfolding
         res_dim_0 = x.shape[0]
-        res_dim_1 = x.shape[1] * kernel_size ** 2
+        res_dim_1 = x.shape[1] * kernel_size**2
         res_dim_2 = (shape[0] - kernel_size + 1) * (shape[1] - kernel_size + 1)
         result = np.zeros((res_dim_0, res_dim_1, res_dim_2))
 
@@ -634,7 +634,7 @@ class Wasserstein(EvasionAttack):
         # Compute local transport
         unfold_x = self._unfold(x=x, kernel_size=kernel_size, padding=kernel_size // 2)
         unfold_x = unfold_x.swapaxes(-1, -2)
-        unfold_x = unfold_x.reshape(*unfold_x.shape[:-1], num_channels, kernel_size ** 2)
+        unfold_x = unfold_x.reshape(*unfold_x.shape[:-1], num_channels, kernel_size**2)
         unfold_x = unfold_x.swapaxes(-2, -3)
 
         tmp_k = var_k.reshape(var_k.shape[0], num_channels, -1)

@@ -19,10 +19,10 @@
 Module containing different methods for the detection of adversarial examples. All models are considered to be binary
 detectors.
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
-from typing import Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 
@@ -63,7 +63,7 @@ class BinaryInputDetector(EvasionDetector):
         """
         self.detector.fit(x, y, batch_size=batch_size, nb_epochs=nb_epochs, **kwargs)
 
-    def detect(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> Tuple[dict, np.ndarray]:
+    def detect(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> tuple[dict, np.ndarray]:
         """
         Perform detection of adversarial data and return prediction as tuple.
 

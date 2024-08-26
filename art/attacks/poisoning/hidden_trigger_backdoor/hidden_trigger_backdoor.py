@@ -20,10 +20,10 @@ This module implements a Hidden Trigger Backdoor attack on Neural Networks.
 
 | Paper link: https://arxiv.org/abs/1910.00033
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
-from typing import List, Optional, Tuple, Union, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 
@@ -80,12 +80,12 @@ class HiddenTriggerBackdoor(PoisoningAttackWhiteBox):
         classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
         target: np.ndarray,
         source: np.ndarray,
-        feature_layer: Union[str, int],
+        feature_layer: str | int,
         backdoor: PoisoningAttackBackdoor,
         eps: float = 0.1,
         learning_rate: float = 0.001,
         decay_coeff: float = 0.95,
-        decay_iter: Union[int, List[int]] = 2000,
+        decay_iter: int | list[int] = 2000,
         stopping_threshold: float = 10,
         max_iter: int = 5000,
         batch_size: float = 100,
@@ -179,20 +179,16 @@ class HiddenTriggerBackdoor(PoisoningAttackWhiteBox):
         else:
             raise ValueError("Only Pytorch, Keras, and TensorFlowV2 classifiers are supported")
 
-    def poison(  # pylint: disable=W0221
-        self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    def poison(self, x: np.ndarray, y: np.ndarray | None = None, **kwargs) -> tuple[np.ndarray, np.ndarray]:
         """
         Calls perturbation function on the dataset x and returns only the perturbed inputs and their
         indices in the dataset.
 
         :param x: An array in the shape NxCxWxH with the points to draw source and target samples from.
-                  Source indicates the class(es) that the backdoor would be added to to cause
-                  misclassification into the target label.
-                  Target indicates the class that the backdoor should cause misclassification into.
-        :param y: The labels of the provided samples. If none, we will use the classifier to label the
-                  data.
-        :return: An tuple holding the `(poisoning_examples, poisoning_labels)`.
+                  Source indicates the class(es) that the backdoor would be added to cause misclassification into the
+                  target label. Target indicates the class that the backdoor should cause misclassification into.
+        :param y: The labels of the provided samples. If none, we will use the classifier to label the data.
+        :return: A tuple holding the `(poisoning_examples, poisoning_labels)`.
         """
 
         return self._attack.poison(x, y, **kwargs)

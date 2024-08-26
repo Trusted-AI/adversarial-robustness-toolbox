@@ -18,12 +18,12 @@
 """
 This module implements the classifier `CatBoostARTClassifier` for CatBoost models.
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
 import os
 import pickle
-from typing import List, Optional, Union, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 
@@ -31,7 +31,7 @@ from art.estimators.classification.classifier import ClassifierDecisionTree
 from art import config
 
 if TYPE_CHECKING:
-    # pylint: disable=C0412
+
     from catboost.core import CatBoostClassifier
 
     from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
@@ -50,12 +50,12 @@ class CatBoostARTClassifier(ClassifierDecisionTree):
 
     def __init__(
         self,
-        model: Optional["CatBoostClassifier"] = None,
-        preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
-        postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
+        model: "CatBoostClassifier" | None = None,
+        preprocessing_defences: "Preprocessor" | list["Preprocessor"] | None = None,
+        postprocessing_defences: "Postprocessor" | list["Postprocessor"] | None = None,
         preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
-        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
-        nb_features: Optional[int] = None,
+        clip_values: "CLIP_VALUES_TYPE" | None = None,
+        nb_features: int | None = None,
     ) -> None:
         """
         Create a `Classifier` instance from a CatBoost model.
@@ -70,7 +70,7 @@ class CatBoostARTClassifier(ClassifierDecisionTree):
                for features.
         :param nb_features: Number of features.
         """
-        # pylint: disable=E0611,E0401
+
         from catboost.core import CatBoostClassifier
 
         if not isinstance(model, CatBoostClassifier):  # pragma: no cover
@@ -90,7 +90,7 @@ class CatBoostARTClassifier(ClassifierDecisionTree):
             self.nb_classes = nb_classes
 
     @property
-    def input_shape(self) -> Tuple[int, ...]:
+    def input_shape(self) -> tuple[int, ...]:
         """
         Return the shape of one input sample.
 
@@ -151,7 +151,7 @@ class CatBoostARTClassifier(ClassifierDecisionTree):
 
         return -1
 
-    def save(self, filename: str, path: Optional[str] = None) -> None:
+    def save(self, filename: str, path: str | None = None) -> None:
         """
         Save a model to file in the format specific to the backend framework.
 

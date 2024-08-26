@@ -18,8 +18,10 @@
 """
 This module implements the task specific estimator for Faster R-CNN in TensorFlow.
 """
+from __future__ import annotations
+
 import logging
-from typing import List, Dict, Optional, Tuple, Union, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 
@@ -29,10 +31,10 @@ from art.utils import get_file
 from art import config
 
 if TYPE_CHECKING:
-    # pylint: disable=C0412
+
     import tensorflow.compat.v1 as tf
     from object_detection.meta_architectures.faster_rcnn_meta_arch import FasterRCNNMetaArch
-    from tensorflow.python.client.session import Session  # pylint: disable=E0611
+    from tensorflow.python.client.session import Session
 
     from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
     from art.defences.preprocessor.preprocessor import Preprocessor
@@ -51,17 +53,17 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
     def __init__(
         self,
         images: "tf.Tensor",
-        model: Optional["FasterRCNNMetaArch"] = None,
-        filename: Optional[str] = None,
-        url: Optional[str] = None,
-        sess: Optional["Session"] = None,
+        model: "FasterRCNNMetaArch" | None = None,
+        filename: str | None = None,
+        url: str | None = None,
+        sess: "Session" | None = None,
         is_training: bool = False,
-        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
+        clip_values: "CLIP_VALUES_TYPE" | None = None,
         channels_first: bool = False,
-        preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
-        postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
+        preprocessing_defences: "Preprocessor" | list["Preprocessor"] | None = None,
+        postprocessing_defences: "Postprocessor" | list["Postprocessor"] | None = None,
         preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
-        attack_losses: Tuple[str, ...] = (
+        attack_losses: tuple[str, ...] = (
             "Loss/RPNLoss/localization_loss",
             "Loss/RPNLoss/objectness_loss",
             "Loss/BoxClassifierLoss/localization_loss",
@@ -127,21 +129,21 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
             raise ValueError("This estimator does not support `postprocessing_defences`.")
 
         # Create placeholders for groundtruth boxes
-        self._groundtruth_boxes_list: List["tf.Tensor"]
+        self._groundtruth_boxes_list: list["tf.Tensor"]
         self._groundtruth_boxes_list = [
             tf.placeholder(dtype=tf.float32, shape=(None, 4), name=f"groundtruth_boxes_{i}")
             for i in range(images.shape[0])
         ]
 
         # Create placeholders for groundtruth classes
-        self._groundtruth_classes_list: List["tf.Tensor"]
+        self._groundtruth_classes_list: list["tf.Tensor"]
         self._groundtruth_classes_list = [
             tf.placeholder(dtype=tf.int32, shape=(None,), name=f"groundtruth_classes_{i}")
             for i in range(images.shape[0])
         ]
 
         # Create placeholders for groundtruth weights
-        self._groundtruth_weights_list: List["tf.Tensor"]
+        self._groundtruth_weights_list: list["tf.Tensor"]
         self._groundtruth_weights_list = [
             tf.placeholder(dtype=tf.float32, shape=(None,), name=f"groundtruth_weights_{i}")
             for i in range(images.shape[0])
@@ -184,8 +186,8 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
         # Save new attributes
         self._input_shape = images.shape.as_list()[1:]
         self.is_training: bool = is_training
-        self.images: Optional["tf.Tensor"] = images
-        self.attack_losses: Tuple[str, ...] = attack_losses
+        self.images: "tf.Tensor" | None = images
+        self.attack_losses: tuple[str, ...] = attack_losses
 
         # Assign session
         if sess is None:
@@ -206,7 +208,7 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
         return False
 
     @property
-    def input_shape(self) -> Tuple[int, ...]:
+    def input_shape(self) -> tuple[int, ...]:
         """
         Return the shape of one input sample.
 
@@ -217,14 +219,14 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
     @staticmethod
     def _load_model(
         images: "tf.Tensor",
-        filename: Optional[str] = None,
-        url: Optional[str] = None,
-        obj_detection_model: Optional["FasterRCNNMetaArch"] = None,
+        filename: str | None = None,
+        url: str | None = None,
+        obj_detection_model: "FasterRCNNMetaArch" | None = None,
         is_training: bool = False,
-        groundtruth_boxes_list: Optional[List["tf.Tensor"]] = None,
-        groundtruth_classes_list: Optional[List["tf.Tensor"]] = None,
-        groundtruth_weights_list: Optional[List["tf.Tensor"]] = None,
-    ) -> Tuple[Dict[str, "tf.Tensor"], ...]:
+        groundtruth_boxes_list: list["tf.Tensor"] | None = None,
+        groundtruth_classes_list: list["tf.Tensor"] | None = None,
+        groundtruth_weights_list: list["tf.Tensor"] | None = None,
+    ) -> tuple[dict[str, "tf.Tensor"], ...]:
         """
         Download, extract and load a model from a URL if it not already in the cache. The file at indicated by `url`
         is downloaded to the path ~/.art/data and given the name `filename`. Files in tar, tar.gz, tar.bz, and zip
@@ -322,14 +324,14 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
 
         return obj_detection_model, predictions, losses, detections
 
-    def loss_gradient(  # pylint: disable=W0221
-        self, x: np.ndarray, y: List[Dict[str, np.ndarray]], standardise_output: bool = False, **kwargs
+    def loss_gradient(
+        self, x: np.ndarray, y: list[dict[str, np.ndarray]], standardise_output: bool = False, **kwargs
     ) -> np.ndarray:
         """
         Compute the gradient of the loss function w.r.t. `x`.
 
         :param x: Samples of shape (nb_samples, height, width, nb_channels).
-        :param y: Targets of format `List[Dict[str, np.ndarray]]`, one for each input image. The fields of the Dict are
+        :param y: Targets of format `list[dict[str, np.ndarray]]`, one for each input image. The fields of the dict are
                   as follows:
 
                  - boxes [N, 4]: the boxes in [y1, x1, y2, x2] in scale [0, 1] (`standardise_output=False`) or
@@ -374,13 +376,13 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
         # Create feed_dict
         feed_dict = {self.images: x_preprocessed}
 
-        for (placeholder, value) in zip(self._groundtruth_boxes_list, y):
+        for placeholder, value in zip(self._groundtruth_boxes_list, y):
             feed_dict[placeholder] = value["boxes"]
 
-        for (placeholder, value) in zip(self._groundtruth_classes_list, y):
+        for placeholder, value in zip(self._groundtruth_classes_list, y):
             feed_dict[placeholder] = value["labels"]
 
-        for (placeholder, value) in zip(self._groundtruth_weights_list, y):
+        for placeholder, value in zip(self._groundtruth_weights_list, y):
             feed_dict[placeholder] = [1.0] * len(value["labels"])
 
         # Compute gradients
@@ -390,9 +392,9 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
 
         return grads
 
-    def predict(  # pylint: disable=W0221
+    def predict(
         self, x: np.ndarray, batch_size: int = 128, standardise_output: bool = False, **kwargs
-    ) -> List[Dict[str, np.ndarray]]:
+    ) -> list[dict[str, np.ndarray]]:
         """
         Perform prediction for a batch of inputs.
 
@@ -403,8 +405,8 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
                                    to COCO categories and the boxes will be changed to [x1, y1, x2, y2] format, with
                                    0 <= x1 < x2 <= W and 0 <= y1 < y2 <= H.
 
-        :return: Predictions of format `List[Dict[str, np.ndarray]]`, one for each input image. The
-                 fields of the Dict are as follows:
+        :return: Predictions of format `list[dict[str, np.ndarray]]`, one for each input image. The
+                 fields of the dict are as follows:
 
                  - boxes [N, 4]: the boxes in [y1, x1, y2, x2] format, with 0 <= x1 < x2 <= W and 0 <= y1 < y2 <= H.
                                  Can be changed to PyTorch format with `standardise_output=True`.
@@ -471,7 +473,7 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
         return self.images
 
     @property
-    def predictions(self) -> Dict[str, "tf.Tensor"]:
+    def predictions(self) -> dict[str, "tf.Tensor"]:
         """
         Get the `_predictions` attribute.
 
@@ -480,7 +482,7 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
         return self._predictions
 
     @property
-    def losses(self) -> Dict[str, "tf.Tensor"]:
+    def losses(self) -> dict[str, "tf.Tensor"]:
         """
         Get the `_losses` attribute.
 
@@ -491,7 +493,7 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
         return self._losses
 
     @property
-    def detections(self) -> Dict[str, "tf.Tensor"]:
+    def detections(self) -> dict[str, "tf.Tensor"]:
         """
         Get the `_detections` attribute.
 
@@ -502,9 +504,7 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
     def fit(self, x: np.ndarray, y, batch_size: int = 128, nb_epochs: int = 20, **kwargs) -> None:
         raise NotImplementedError
 
-    def get_activations(
-        self, x: np.ndarray, layer: Union[int, str], batch_size: int, framework: bool = False
-    ) -> np.ndarray:
+    def get_activations(self, x: np.ndarray, layer: int | str, batch_size: int, framework: bool = False) -> np.ndarray:
         raise NotImplementedError
 
     def compute_loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
@@ -532,20 +532,20 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
         # Create feed_dict
         feed_dict = {self.images: x_preprocessed}
 
-        for (placeholder, value) in zip(self._groundtruth_boxes_list, y):
+        for placeholder, value in zip(self._groundtruth_boxes_list, y):
             feed_dict[placeholder] = value["boxes"]
 
-        for (placeholder, value) in zip(self._groundtruth_classes_list, y):
+        for placeholder, value in zip(self._groundtruth_classes_list, y):
             feed_dict[placeholder] = value["labels"]
 
-        for (placeholder, value) in zip(self._groundtruth_weights_list, y):
+        for placeholder, value in zip(self._groundtruth_weights_list, y):
             feed_dict[placeholder] = value["scores"]
 
         loss_values = self._sess.run(self._loss_total, feed_dict=feed_dict)
 
         return loss_values
 
-    def compute_losses(self, x: np.ndarray, y: np.ndarray) -> Dict[str, np.ndarray]:  # type: ignore
+    def compute_losses(self, x: np.ndarray, y: np.ndarray) -> dict[str, np.ndarray]:  # type: ignore
         """
         Compute all loss components.
 
@@ -561,13 +561,13 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
         # Create feed_dict
         feed_dict = {self.images: x_preprocessed}
 
-        for (placeholder, value) in zip(self._groundtruth_boxes_list, y):
+        for placeholder, value in zip(self._groundtruth_boxes_list, y):
             feed_dict[placeholder] = value["boxes"]
 
-        for (placeholder, value) in zip(self._groundtruth_classes_list, y):
+        for placeholder, value in zip(self._groundtruth_classes_list, y):
             feed_dict[placeholder] = value["labels"]
 
-        for (placeholder, value) in zip(self._groundtruth_weights_list, y):
+        for placeholder, value in zip(self._groundtruth_weights_list, y):
             feed_dict[placeholder] = value["scores"]
 
         # Get the losses graph
@@ -576,7 +576,7 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
             for loss_name in self.attack_losses:
                 self._losses_dict[loss_name] = self._losses[loss_name]
 
-        losses: Dict[str, np.ndarray] = {}
+        losses: dict[str, np.ndarray] = {}
         for loss_name in self.attack_losses:
             loss_value = self._sess.run(self._losses_dict[loss_name], feed_dict=feed_dict)
             losses[loss_name] = loss_value

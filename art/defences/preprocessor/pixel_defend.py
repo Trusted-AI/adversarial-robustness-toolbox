@@ -25,10 +25,10 @@ manifold.
     see https://arxiv.org/abs/1802.00420 . For details on how to evaluate classifier security in general, see
     https://arxiv.org/abs/1902.06705
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
-from typing import Optional, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 from tqdm.auto import tqdm
@@ -60,7 +60,7 @@ class PixelDefend(Preprocessor):
         self,
         clip_values: "CLIP_VALUES_TYPE" = (0.0, 1.0),
         eps: int = 16,
-        pixel_cnn: Optional["CLASSIFIER_NEURALNETWORK_TYPE"] = None,
+        pixel_cnn: "CLASSIFIER_NEURALNETWORK_TYPE" | None = None,
         batch_size: int = 128,
         apply_fit: bool = False,
         apply_predict: bool = True,
@@ -83,7 +83,7 @@ class PixelDefend(Preprocessor):
         self.verbose = verbose
         self._check_params()
 
-    def __call__(self, x: np.ndarray, y: Optional[np.ndarray] = None) -> Tuple[np.ndarray, Optional[np.ndarray]]:
+    def __call__(self, x: np.ndarray, y: np.ndarray | None = None) -> tuple[np.ndarray, np.ndarray | None]:
         """
         Apply pixel defence to sample `x`.
 
@@ -110,7 +110,7 @@ class PixelDefend(Preprocessor):
         # Start defence one image at a time
         for i, x_i in enumerate(tqdm(x, desc="PixelDefend", disable=not self.verbose)):
             for feat_index in range(x.shape[1]):
-                # Setup the search space
+                # Set up the search space
                 f_probs = probs[i, feat_index, :]
                 f_range = range(
                     int(max(x_i[feat_index] - self.eps, 0)),

@@ -18,11 +18,11 @@
 """
 This module implements Bullseye Polytope clean-label attacks on Neural Networks.
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
 import time
-from typing import Optional, Tuple, Union, TYPE_CHECKING, List
+from typing import TYPE_CHECKING
 
 import numpy as np
 from tqdm.auto import trange
@@ -33,7 +33,7 @@ from art.estimators.classification.classifier import ClassifierMixin
 from art.estimators.classification.pytorch import PyTorchClassifier
 
 if TYPE_CHECKING:
-    # pylint: disable=C0412
+
     import torch
     from art.utils import CLASSIFIER_NEURALNETWORK_TYPE
 
@@ -42,7 +42,7 @@ logger = logging.getLogger(__name__)
 
 class BullseyePolytopeAttackPyTorch(PoisoningAttackWhiteBox):
     """
-    Implementation of Bullseye Polytope Attack by Aghakhani, et. al. 2020.
+    Implementation of Bullseye Polytope Attack by Aghakhani et al. (2020).
     "Bullseye Polytope: A Scalable Clean-Label Poisoning Attack with Improved Transferability"
 
     This implementation is based on UCSB's original code here: https://github.com/ucsb-seclab/BullseyePoison
@@ -71,14 +71,14 @@ class BullseyePolytopeAttackPyTorch(PoisoningAttackWhiteBox):
 
     def __init__(
         self,
-        classifier: Union["CLASSIFIER_NEURALNETWORK_TYPE", List["CLASSIFIER_NEURALNETWORK_TYPE"]],
+        classifier: "CLASSIFIER_NEURALNETWORK_TYPE" | list["CLASSIFIER_NEURALNETWORK_TYPE"],
         target: np.ndarray,
-        feature_layer: Union[Union[str, int], List[Union[str, int]]],
+        feature_layer: str | int | list[str | int],
         opt: str = "adam",
         max_iter: int = 4000,
         learning_rate: float = 4e-2,
         momentum: float = 0.9,
-        decay_iter: Union[int, List[int]] = 10000,
+        decay_iter: int | list[int] = 10000,
         decay_coeff: float = 0.5,
         epsilon: float = 0.1,
         dropout: float = 0.3,
@@ -88,7 +88,7 @@ class BullseyePolytopeAttackPyTorch(PoisoningAttackWhiteBox):
         verbose: bool = True,
     ):
         """
-        Initialize an Feature Collision Clean-Label poisoning attack
+        Initialize a Feature Collision Clean-Label poisoning attack
 
         :param classifier: The proxy classifiers used for the attack. Can be a single classifier or list of classifiers
                            with varying architectures.
@@ -100,7 +100,7 @@ class BullseyePolytopeAttackPyTorch(PoisoningAttackWhiteBox):
         :param learning_rate: The learning rate of clean-label attack optimization.
         :param momentum: The momentum of clean-label attack optimization.
         :param decay_iter: Which iterations to decay the learning rate.
-                           Can be a integer (every N iterations) or list of integers [0, 500, 1500]
+                           Can be an integer (every N iterations) or list of integers [0, 500, 1500]
         :param decay_coeff: The decay coefficient of the learning rate.
         :param epsilon: The perturbation budget
         :param dropout: Dropout to apply while training
@@ -109,7 +109,7 @@ class BullseyePolytopeAttackPyTorch(PoisoningAttackWhiteBox):
         :param batch_size: Batch size.
         :param verbose: Show progress bars.
         """
-        self.subsistute_networks: List["CLASSIFIER_NEURALNETWORK_TYPE"] = (
+        self.subsistute_networks: list["CLASSIFIER_NEURALNETWORK_TYPE"] = (
             [classifier] if not isinstance(classifier, list) else classifier
         )
 
@@ -130,7 +130,7 @@ class BullseyePolytopeAttackPyTorch(PoisoningAttackWhiteBox):
         self.verbose = verbose
         self._check_params()
 
-    def poison(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> Tuple[np.ndarray, np.ndarray]:
+    def poison(self, x: np.ndarray, y: np.ndarray | None = None, **kwargs) -> tuple[np.ndarray, np.ndarray]:
         """
         Iteratively finds optimal attack points starting at values at x
 
@@ -179,7 +179,7 @@ class BullseyePolytopeAttackPyTorch(PoisoningAttackWhiteBox):
         # Initializing from the coefficients of last step gives faster convergence.
         s_init_coeff_list = []
         n_poisons = len(x)
-        s_coeff: Union["torch.Tensor", List["torch.Tensor"]]
+        s_coeff: "torch.Tensor" | list["torch.Tensor"]
         for _, net in enumerate(self.subsistute_networks):
             # End to end training
             if self.endtoend:
@@ -192,7 +192,7 @@ class BullseyePolytopeAttackPyTorch(PoisoningAttackWhiteBox):
                         else:  # pragma: no cover
                             raise ValueError("Activations are None.")
                 else:
-                    layer_2: Union[int, str] = self.feature_layer
+                    layer_2: int | str = self.feature_layer
                     activations = net.get_activations(x, layer=layer_2, batch_size=self.batch_size, framework=True)
                     if activations is not None:
                         block_feats = [feat.detach() for feat in activations]
@@ -205,7 +205,7 @@ class BullseyePolytopeAttackPyTorch(PoisoningAttackWhiteBox):
             else:  # pragma: no cover
                 if isinstance(self.feature_layer, list):
                     raise NotImplementedError
-                layer_3: Union[int, str] = self.feature_layer
+                layer_3: int | str = self.feature_layer
                 activations = net.get_activations(x, layer=layer_3, batch_size=self.batch_size, framework=True)
                 if activations is not None:
                     target_feat_list.append(activations.detach())  # type: ignore
@@ -321,7 +321,7 @@ def loss_from_center(
     if end2end:
         loss = torch.tensor(0.0)
         for net, center_feats in zip(subs_net_list, target_feat_list):
-            poisons_feats: Union[List[float], "torch.Tensor", np.ndarray]
+            poisons_feats: list[float] | "torch.Tensor" | np.ndarray
             if net_repeat > 1:
                 poisons_feats_repeats = [
                     net.get_activations(poison_batch(), layer=feature_layer, framework=True) for _ in range(net_repeat)

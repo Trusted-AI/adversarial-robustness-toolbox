@@ -20,10 +20,10 @@
 This module implements membership inference attacks.
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
-from typing import Any, Optional, Union, TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
 
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
@@ -66,11 +66,11 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
 
     def __init__(
         self,
-        estimator: Union["CLASSIFIER_TYPE", "REGRESSOR_TYPE"],
+        estimator: "CLASSIFIER_TYPE" | "REGRESSOR_TYPE",
         input_type: str = "prediction",
         attack_model_type: str = "nn",
-        attack_model: Optional[Any] = None,
-        scaler_type: Optional[str] = "standard",
+        attack_model: Any | None = None,
+        scaler_type: str | None = "standard",
         nn_model_epochs: int = 100,
         nn_model_batch_size: int = 100,
         nn_model_learning_rate: float = 0.0001,
@@ -105,7 +105,7 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
         self.attack_model_type = attack_model_type
         self.attack_model = attack_model
         self.scaler_type = scaler_type
-        self.scaler: Optional[Any] = None
+        self.scaler: Any | None = None
         self.epochs = nn_model_epochs
         self.batch_size = nn_model_batch_size
         self.learning_rate = nn_model_learning_rate
@@ -136,15 +136,15 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
             elif attack_model_type != "nn":
                 raise ValueError("Illegal value for parameter `attack_model_type`.")
 
-    def fit(  # pylint: disable=W0613
+    def fit(
         self,
-        x: Optional[np.ndarray] = None,
-        y: Optional[np.ndarray] = None,
-        test_x: Optional[np.ndarray] = None,
-        test_y: Optional[np.ndarray] = None,
-        pred: Optional[np.ndarray] = None,
-        test_pred: Optional[np.ndarray] = None,
-        **kwargs
+        x: np.ndarray | None = None,
+        y: np.ndarray | None = None,
+        test_x: np.ndarray | None = None,
+        test_y: np.ndarray | None = None,
+        pred: np.ndarray | None = None,
+        test_pred: np.ndarray | None = None,
+        **kwargs,
     ):
         """
         Train the attack model.
@@ -247,7 +247,7 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
         test_labels = np.zeros(test_len)
 
         x_1 = np.concatenate((features, test_features))
-        x_2: Optional[np.ndarray] = None
+        x_2: np.ndarray | None = None
         if y is not None and test_y is not None:
             x_2 = np.concatenate((y, test_y))
             if self._regressor_model and x_2 is not None:
@@ -346,7 +346,7 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
                 self.attack_model.train()  # type: ignore
 
                 for _ in range(self.epochs):
-                    for (input1, input2, targets) in train_loader:
+                    for input1, input2, targets in train_loader:
                         input1, input2, targets = to_cuda(input1), to_cuda(input2), to_cuda(targets)
                         _, input2 = torch.autograd.Variable(input1), torch.autograd.Variable(input2)
                         targets = torch.autograd.Variable(targets)
@@ -403,7 +403,7 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
                 self.attack_model.train()  # type: ignore
 
                 for _ in range(self.epochs):
-                    for (input1, targets) in train_loader:
+                    for input1, targets in train_loader:
                         input1, targets = to_cuda(input1), to_cuda(targets)
                         input1 = torch.autograd.Variable(input1)
                         targets = torch.autograd.Variable(targets)
@@ -429,7 +429,7 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
                     x_1 = self.scaler.transform(x_1)
                 self.attack_model.fit(x_1, y_ready.ravel())  # type: ignore
 
-    def infer(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
+    def infer(self, x: np.ndarray, y: np.ndarray | None = None, **kwargs) -> np.ndarray:
         """
         Infer membership in the training set of the target estimator.
 
@@ -503,7 +503,7 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
                 features = self.scaler.transform(features)
 
             self.attack_model.eval()  # type: ignore
-            predictions: Optional[np.ndarray] = None
+            predictions: np.ndarray | None = None
 
             if y is not None and self.use_label:
                 test_set = self._get_attack_dataset(f_1=features, f_2=y)

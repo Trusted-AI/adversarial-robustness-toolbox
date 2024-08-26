@@ -20,10 +20,10 @@ This module implements the white-box attack `NewtonFool`.
 
 | Paper link: http://doi.acm.org/10.1145/3134600.3134635
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 from tqdm.auto import trange
@@ -74,7 +74,7 @@ class NewtonFool(EvasionAttack):
         self.verbose = verbose
         self._check_params()
 
-    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
+    def generate(self, x: np.ndarray, y: np.ndarray | None = None, **kwargs) -> np.ndarray:
         """
         Generate adversarial samples and return them in a Numpy array.
 
@@ -163,7 +163,7 @@ class NewtonFool(EvasionAttack):
         tol = 10e-8
 
         nom = -theta.reshape((-1,) + (1,) * (len(grads.shape) - 1)) * grads
-        denom = norm_grad ** 2
+        denom = norm_grad**2
         denom[denom < tol] = tol
         result = nom / denom.reshape((-1,) + (1,) * (len(grads.shape) - 1))
 

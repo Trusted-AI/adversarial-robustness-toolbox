@@ -20,8 +20,10 @@ This module implements DeepZ proposed in Fast and Effective Robustness Certifica
 
 | Paper link: https://papers.nips.cc/paper/2018/file/f2f446980d8e971ef3da97af089481c3-Paper.pdf
 """
+from __future__ import annotations
 
-from typing import List, Optional, Tuple, Union, Callable, Any, TYPE_CHECKING
+from collections.abc import Callable
+from typing import Any, TYPE_CHECKING
 
 import logging
 import math
@@ -49,7 +51,7 @@ class ConvertedModel(torch.nn.Module):
     which uses abstract operations
     """
 
-    def __init__(self, model: "torch.nn.Module", channels_first: bool, input_shape: Tuple[int, ...]):
+    def __init__(self, model: "torch.nn.Module", channels_first: bool, input_shape: tuple[int, ...]):
         super().__init__()
         modules = []
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -57,7 +59,6 @@ class ConvertedModel(torch.nn.Module):
         self.forward_mode = "abstract"
         self.reshape_op_num = -1
 
-        # pylint: disable=W0613
         def forward_hook(input_module, hook_input, hook_output):
             modules.append(input_module)
 
@@ -111,8 +112,8 @@ class ConvertedModel(torch.nn.Module):
                     print("Inferred reshape on op num", op_num)
 
     def forward(
-        self, cent: np.ndarray, eps: Optional[np.ndarray] = None
-    ) -> Union["torch.Tensor", Tuple["torch.Tensor", "torch.Tensor"]]:
+        self, cent: np.ndarray, eps: np.ndarray | None = None
+    ) -> "torch.Tensor" | tuple["torch.Tensor", "torch.Tensor"]:
         """
         Performs the neural network forward pass, either using abstract operations or concrete ones
         depending on the value of self.forward_mode
@@ -130,7 +131,9 @@ class ConvertedModel(torch.nn.Module):
             raise ValueError("for abstract forward mode, please provide both cent and eps")
         raise ValueError("forward_mode must be set to abstract or concrete")
 
-    def abstract_forward(self, cent: np.ndarray, eps: np.ndarray) -> Tuple["torch.Tensor", "torch.Tensor"]:
+    def abstract_forward(
+        self, cent: np.ndarray, eps: np.ndarray
+    ) -> tuple["torch.Tensor", "torch.Tensor"]:  # typing: ignore
         """
         Do the forward pass through the NN with the given error terms and zonotope center.
 
@@ -150,7 +153,7 @@ class ConvertedModel(torch.nn.Module):
             x = op(x)
         return x[0, :], x[1:, :]
 
-    def concrete_forward(self, in_x: Union[np.ndarray, "torch.Tensor"]) -> "torch.Tensor":
+    def concrete_forward(self, in_x: np.ndarray | "torch.Tensor") -> "torch.Tensor":
         """
         Do the forward pass using the concrete operations
 
@@ -193,16 +196,16 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
         self,
         model: "torch.nn.Module",
         loss: "torch.nn.modules.loss._Loss",
-        input_shape: Tuple[int, ...],
+        input_shape: tuple[int, ...],
         nb_classes: int,
-        optimizer: Optional["torch.optim.Optimizer"] = None,
+        optimizer: "torch.optim.Optimizer" | None = None,
         channels_first: bool = True,
-        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
-        preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
-        postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
+        clip_values: "CLIP_VALUES_TYPE" | None = None,
+        preprocessing_defences: "Preprocessor" | list["Preprocessor"] | None = None,
+        postprocessing_defences: "Postprocessor" | list["Postprocessor"] | None = None,
         preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
         device_type: str = "gpu",
-        concrete_to_zonotope: Optional[Callable] = None,
+        concrete_to_zonotope: Callable | None = None,
     ):
         """
         Create a certifier based on the zonotope domain.
@@ -246,7 +249,7 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
         converted_model = ConvertedModel(model, channels_first, input_shape)
 
         if TYPE_CHECKING:
-            converted_optimizer: Union[torch.optim.Adam, torch.optim.SGD, None]
+            converted_optimizer: torch.optim.Adam | torch.optim.SGD | None
 
         if optimizer is not None:
             opt_state_dict = optimizer.state_dict()
@@ -279,14 +282,14 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
             device_type=device_type,
         )
 
-    def predict_zonotopes(  # pylint: disable=W0613
+    def predict_zonotopes(
         self, cent: np.ndarray, bound: float, training_mode: bool = True, **kwargs
-    ) -> Tuple[List[np.ndarray], List[np.ndarray]]:
+    ) -> tuple[list[np.ndarray], list[np.ndarray]]:
         """
 
         :param cent: The datapoint, representing the zonotope center.
         :param bound: The perturbation range for the zonotope.
-        :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
+        :param training_mode: `True` for model set to training mode and `False` for model set to evaluation mode.
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
                and providing it takes no effect.
         """
@@ -358,7 +361,7 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
         """
         return self._loss(output, target)
 
-    def apply_preprocessing(self, x: np.ndarray, y: np.ndarray, fit: bool) -> Tuple[Any, Any]:
+    def apply_preprocessing(self, x: np.ndarray, y: np.ndarray, fit: bool) -> tuple[Any, Any]:
         """
         Access function to get preprocessing
 
@@ -371,7 +374,7 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=fit)
         return x_preprocessed, y_preprocessed
 
-    def max_logit_loss(self, prediction: "torch.Tensor", target: "torch.Tensor") -> Union["torch.Tensor", None]:
+    def max_logit_loss(self, prediction: "torch.Tensor", target: "torch.Tensor") -> "torch.Tensor" | None:
         """
         Computes the loss as the largest logit value amongst the incorrect classes.
 
@@ -410,7 +413,7 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
         return criterion(ubs, target)
 
     @staticmethod
-    def get_accuracy(preds: Union[np.ndarray, "torch.Tensor"], labels: Union[np.ndarray, "torch.Tensor"]) -> np.ndarray:
+    def get_accuracy(preds: np.ndarray | "torch.Tensor", labels: np.ndarray | "torch.Tensor") -> np.ndarray:
         """
         Helper function to print out the accuracy during training
 

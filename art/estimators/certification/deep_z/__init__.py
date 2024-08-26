@@ -1,6 +1,7 @@
 """
 DeepZ based certification estimators.
 """
+
 from art.estimators.certification.deep_z.deep_z import ZonoDenseLayer
 from art.estimators.certification.deep_z.deep_z import ZonoBounds
 from art.estimators.certification.deep_z.deep_z import ZonoConv

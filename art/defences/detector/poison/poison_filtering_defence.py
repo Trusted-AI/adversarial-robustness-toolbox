@@ -18,11 +18,11 @@
 """
 This module implements the abstract base class for all poison filtering defences.
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import abc
 import sys
-from typing import Any, Dict, List, Tuple, TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
 
 import numpy as np
 
@@ -56,7 +56,7 @@ class PoisonFilteringDefence(ABC):
         self.y_train = y_train
 
     @abc.abstractmethod
-    def detect_poison(self, **kwargs) -> Tuple[dict, List[int]]:
+    def detect_poison(self, **kwargs) -> tuple[dict, list[int]]:
         """
         Detect poison.
 
@@ -87,7 +87,7 @@ class PoisonFilteringDefence(ABC):
                 setattr(self, key, value)
         self._check_params()
 
-    def get_params(self) -> Dict[str, Any]:
+    def get_params(self) -> dict[str, Any]:
         """
         Returns dictionary of parameters used to run defence.
 

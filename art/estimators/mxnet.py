@@ -18,7 +18,7 @@
 """
 This module implements the abstract estimator `MXEstimator` for MXNet Gluon models.
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
 
@@ -39,12 +39,6 @@ class MXEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
     """
 
     estimator_params = BaseEstimator.estimator_params + NeuralNetworkMixin.estimator_params
-
-    def __init__(self, **kwargs) -> None:
-        """
-        Estimator class for MXNet Gluon models.
-        """
-        super().__init__(**kwargs)
 
     def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs):
         """

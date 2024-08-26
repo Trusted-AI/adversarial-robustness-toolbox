@@ -19,9 +19,11 @@
 This module implements the abstract estimator `HuggingFaceClassifier` using the PyTorchClassifier as a backend
 to interface with ART.
 """
-import logging
+from __future__ import annotations
 
-from typing import List, Optional, Tuple, Union, Dict, Callable, Any, TYPE_CHECKING
+from collections.abc import Callable
+import logging
+from typing import Any, TYPE_CHECKING
 
 import numpy as np
 import six
@@ -48,26 +50,25 @@ class HuggingFaceClassifierPyTorch(PyTorchClassifier):
         self,
         model: "transformers.PreTrainedModel",
         loss: "torch.nn.modules.loss._Loss",
-        input_shape: Tuple[int, ...],
+        input_shape: tuple[int, ...],
         nb_classes: int,
-        optimizer: Optional["torch.optim.Optimizer"] = None,
+        optimizer: "torch.optim.Optimizer" | None = None,
         use_amp: bool = False,
         opt_level: str = "O1",
-        loss_scale: Optional[Union[float, str]] = "dynamic",
+        loss_scale: float | str | None = "dynamic",
         channels_first: bool = True,
-        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
-        preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
-        postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
+        clip_values: "CLIP_VALUES_TYPE" | None = None,
+        preprocessing_defences: "Preprocessor" | list["Preprocessor"] | None = None,
+        postprocessing_defences: "Postprocessor" | list["Postprocessor"] | None = None,
         preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
-        processor: Optional[Callable] = None,
+        processor: Callable | None = None,
         device_type: str = "gpu",
     ):
         """
         Initialization of HuggingFaceClassifierPyTorch specifically for the PyTorch-based backend.
 
-        :param model: Huggingface model model which returns outputs of type
-                      ImageClassifierOutput from the transformers library.
-                      Must have the logits attribute set as output.
+        :param model: Huggingface model which returns outputs of type ImageClassifierOutput from the `transformers`
+                      library. Must have the logits attribute set as output.
         :param loss: The loss function for which to compute gradients for training. The target label must be raw
                 categorical, i.e. not converted to one-hot encoding.
         :param input_shape: The shape of one input instance.
@@ -95,7 +96,7 @@ class HuggingFaceClassifierPyTorch(PyTorchClassifier):
         :param device_type: Type of device on which the classifier is run, either `gpu` or `cpu`.
         :param processor: Optional argument. Function which takes in a batch of data and performs
                           the preprocessing relevant to a given foundation model.
-                          Must be differentiable for grandient based defences and attacks.
+                          Must be differentiable for gradient based defences and attacks.
         """
         import torch
 
@@ -123,7 +124,7 @@ class HuggingFaceClassifierPyTorch(PyTorchClassifier):
         def prefix_function(function: Callable, postfunction: Callable) -> Callable[[Any, Any], torch.Tensor]:
             """
             Huggingface returns logit under outputs.logits. To make this compatible with ART we wrap the forward pass
-            function of a HF model here, which automatically extracts the logits.
+            function of an HF model here, which automatically extracts the logits.
 
             :param function: The first function to run, in our case the forward pass of the model.
             :param postfunction: Second function to run, in this case simply extracts the logits.
@@ -186,7 +187,6 @@ class HuggingFaceClassifierPyTorch(PyTorchClassifier):
                         super().__init__()
                         self._model = model
 
-                    # pylint: disable=W0221
                     # disable pylint because of API requirements for function
                     def forward(self, x):
                         """
@@ -197,7 +197,7 @@ class HuggingFaceClassifierPyTorch(PyTorchClassifier):
                         :return: a list of output layers, where the last 2 layers are logit and final outputs.
                         :rtype: `list`
                         """
-                        # pylint: disable=W0212
+
                         # disable pylint because access to _model required
 
                         result = []
@@ -214,7 +214,7 @@ class HuggingFaceClassifierPyTorch(PyTorchClassifier):
                         return result
 
                     @property
-                    def get_layers(self) -> List[str]:
+                    def get_layers(self) -> list[str]:
                         """
                         Return the hidden layers in the model, if applicable.
 
@@ -230,7 +230,6 @@ class HuggingFaceClassifierPyTorch(PyTorchClassifier):
 
                         modules = []
 
-                        # pylint: disable=W0613
                         def forward_hook(input_module, hook_input, hook_output):
                             logger.info("input_module is %s with id %i", input_module, id(input_module))
                             modules.append(id(input_module))
@@ -282,11 +281,11 @@ class HuggingFaceClassifierPyTorch(PyTorchClassifier):
 
     def get_activations(  # type: ignore
         self,
-        x: Union[np.ndarray, "torch.Tensor"],
-        layer: Optional[Union[int, str]] = None,
+        x: np.ndarray | "torch.Tensor",
+        layer: int | str | None = None,
         batch_size: int = 128,
         framework: bool = False,
-    ) -> Union[np.ndarray, "torch.Tensor"]:
+    ) -> np.ndarray | "torch.Tensor":
         """
         Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
         `nb_layers - 1`) or by name. The number of layers can be determined by counting the results returned by
@@ -323,7 +322,7 @@ class HuggingFaceClassifierPyTorch(PyTorchClassifier):
 
         def get_feature(name):
             # the hook signature
-            def hook(model, input, output):  # pylint: disable=W0622,W0613
+            def hook(model, input, output):  # pylint: disable=redefined-builtin,unused-argument
                 # TODO: this is using the input, rather than the output, to circumvent the fact
                 # TODO: that flatten is not a layer in pytorch, and the activation defence expects
                 # TODO: a flattened input. A better option is to refactor the activation defence
@@ -333,7 +332,7 @@ class HuggingFaceClassifierPyTorch(PyTorchClassifier):
             return hook
 
         if not hasattr(self, "_features"):
-            self._features: Dict[str, torch.Tensor] = {}
+            self._features: dict[str, torch.Tensor] = {}
             # register forward hooks on the layers of choice
         handles = []
 
@@ -350,7 +349,7 @@ class HuggingFaceClassifierPyTorch(PyTorchClassifier):
                 return self._features[self._layer_names[layer_index]][0]
             input_tensor = torch.from_numpy(x_preprocessed)
             self._model(input_tensor.to(self._device))
-            return self._features[self._layer_names[layer_index]][0]  # pylint: disable=W0212
+            return self._features[self._layer_names[layer_index]][0]
 
         # Run prediction with batch processing
         results = []
@@ -365,7 +364,7 @@ class HuggingFaceClassifierPyTorch(PyTorchClassifier):
 
             # Run prediction for the current batch
             self._model(torch.from_numpy(x_preprocessed[begin:end]).to(self._device))
-            layer_output = self._features[self._layer_names[layer_index]]  # pylint: disable=W0212
+            layer_output = self._features[self._layer_names[layer_index]]
 
             if isinstance(layer_output, tuple):
                 results.append(layer_output[0].detach().cpu().numpy())

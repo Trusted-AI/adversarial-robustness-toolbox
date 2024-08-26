@@ -18,12 +18,11 @@
 """
 This module implements a wrapper class for GPy Gaussian Process classification models.
 """
-# pylint: disable=C0103
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
 import os
-from typing import List, Optional, Union, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 
@@ -31,7 +30,7 @@ from art.estimators.classification.classifier import ClassifierClassLossGradient
 from art import config
 
 if TYPE_CHECKING:
-    # pylint: disable=C0412
+
     from GPy.models import GPClassification
 
     from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
@@ -41,7 +40,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-# pylint: disable=C0103
+# pylint: disable=invalid-name
 class GPyGaussianProcessClassifier(ClassifierClassLossGradients):
     """
     Wrapper class for GPy Gaussian Process classification models.
@@ -49,10 +48,10 @@ class GPyGaussianProcessClassifier(ClassifierClassLossGradients):
 
     def __init__(
         self,
-        model: Optional["GPClassification"] = None,
-        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
-        preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
-        postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
+        model: "GPClassification" | None = None,
+        clip_values: "CLIP_VALUES_TYPE" | None = None,
+        preprocessing_defences: "Preprocessor" | list["Preprocessor"] | None = None,
+        postprocessing_defences: "Postprocessor" | list["Postprocessor"] | None = None,
         preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
     ) -> None:
         """
@@ -82,7 +81,7 @@ class GPyGaussianProcessClassifier(ClassifierClassLossGradients):
         self.nb_classes = 2  # always binary
 
     @property
-    def input_shape(self) -> Tuple[int, ...]:
+    def input_shape(self) -> tuple[int, ...]:
         """
         Return the shape of one input sample.
 
@@ -90,9 +89,8 @@ class GPyGaussianProcessClassifier(ClassifierClassLossGradients):
         """
         return self._input_shape  # type: ignore
 
-    # pylint: disable=W0221
     def class_gradient(  # type: ignore
-        self, x: np.ndarray, label: Optional[Union[int, List[int], np.ndarray]] = None, eps: float = 0.0001, **kwargs
+        self, x: np.ndarray, label: int | list[int] | np.ndarray | None = None, eps: float = 0.0001, **kwargs
     ) -> np.ndarray:
         """
         Compute per-class derivatives w.r.t. `x`.
@@ -158,7 +156,6 @@ class GPyGaussianProcessClassifier(ClassifierClassLossGradients):
 
         return grads
 
-    # pylint: disable=W0221
     def predict(self, x: np.ndarray, logits: bool = False, **kwargs) -> np.ndarray:
         """
         Perform prediction for a batch of inputs.
@@ -213,7 +210,7 @@ class GPyGaussianProcessClassifier(ClassifierClassLossGradients):
         """
         raise NotImplementedError
 
-    def save(self, filename: str, path: Optional[str] = None) -> None:  # pragma: no cover
+    def save(self, filename: str, path: str | None = None) -> None:  # pragma: no cover
         """
         Save a model to file in the format specific to the backend framework.
 

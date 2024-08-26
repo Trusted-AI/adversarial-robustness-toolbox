@@ -25,8 +25,8 @@ Utility methods for DEtection TRansformer (DETR) in PyTorch.
  - Line 459: returning original tensor list
  - Line 462: function name changed to distinguish that it now facilitates gradients
 """
+from __future__ import annotations
 
-from typing import List, Optional, Tuple, Union
 import torch
 
 
@@ -36,7 +36,7 @@ class NestedTensor:
     (detr/util/misc.py)
     """
 
-    def __init__(self, tensors, mask: Optional["torch.Tensor"]):
+    def __init__(self, tensors, mask: "torch.Tensor" | None):
         self.tensors = tensors
         self.mask = mask
 
@@ -120,13 +120,13 @@ class HungarianMatcher(torch.nn.Module):
 
         # Compute the classification cost. Contrary to the loss, we don't use the NLL,
         # but approximate it in 1 - proba[target class].
-        # The 1 is a constant that doesn't change the matching, it can be ommitted.
+        # The 1 is a constant that doesn't change the matching, it can be omitted.
         cost_class = -out_prob[:, tgt_ids]
 
         # Compute the L1 cost between boxes
         cost_bbox = torch.cdist(out_bbox, tgt_bbox, p=1)
 
-        # Compute the giou cost betwen boxes
+        # Compute the giou cost between boxes
         cost_giou = -generalized_box_iou(box_cxcywh_to_xyxy(out_bbox), box_cxcywh_to_xyxy(tgt_bbox))
 
         # Final cost matrix
@@ -323,7 +323,7 @@ class SetCriterion(torch.nn.Module):
         with torch.no_grad():
             indices = self.matcher(outputs_without_aux, targets)
 
-        # Compute the average number of target boxes accross all nodes, for normalization purposes
+        # Compute the average number of target boxes across all nodes, for normalization purposes
         num_boxes = sum(len(t["labels"]) for t in targets)
         num_boxes = torch.as_tensor([num_boxes], dtype=torch.float, device=next(iter(outputs.values())).device)
         num_boxes = torch.clamp(num_boxes, min=1).item()
@@ -369,7 +369,7 @@ def box_xyxy_to_cxcywh(x: "torch.Tensor"):
     return torch.stack(box, dim=-1)
 
 
-def rescale_bboxes(out_bbox: "torch.Tensor", size: Tuple[int, int]):
+def rescale_bboxes(out_bbox: "torch.Tensor", size: tuple[int, int]):
     """
     From DETR source: https://github.com/facebookresearch/detr
     (inference notebook)
@@ -381,7 +381,7 @@ def rescale_bboxes(out_bbox: "torch.Tensor", size: Tuple[int, int]):
     return box
 
 
-def revert_rescale_bboxes(out_bbox: "torch.Tensor", size: Tuple[int, int]):
+def revert_rescale_bboxes(out_bbox: "torch.Tensor", size: tuple[int, int]):
     """
     Adapted from DETR source: https://github.com/facebookresearch/detr
     (inference notebook)
@@ -436,7 +436,7 @@ def generalized_box_iou(boxes1: "torch.Tensor", boxes2: "torch.Tensor"):
     return iou - (area - union) / area
 
 
-def nested_tensor_from_tensor_list(tensor_list: Union[List, "torch.Tensor"]):
+def nested_tensor_from_tensor_list(tensor_list: list | "torch.Tensor"):
     """
     Adapted from DETR source: https://github.com/facebookresearch/detr
     (detr/util/misc.py)
@@ -477,5 +477,5 @@ def grad_enabled_forward(self, samples: NestedTensor):
     outputs_coord = self.bbox_embed(h_s).sigmoid()
     out = {"pred_logits": outputs_class[-1], "pred_boxes": outputs_coord[-1]}
     if self.aux_loss:
-        out["aux_outputs"] = self._set_aux_loss(outputs_class, outputs_coord)  # pylint: disable=W0212
+        out["aux_outputs"] = self._set_aux_loss(outputs_class, outputs_coord)
     return out

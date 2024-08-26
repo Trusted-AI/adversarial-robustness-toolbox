@@ -19,10 +19,10 @@
 Module containing different methods for the detection of adversarial examples. All models are considered to be binary
 detectors.
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
-from typing import Tuple, Union, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 
@@ -46,7 +46,7 @@ class BinaryActivationDetector(EvasionDetector):
         self,
         classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
         detector: "CLASSIFIER_NEURALNETWORK_TYPE",
-        layer: Union[int, str],
+        layer: int | str,
     ) -> None:
         """
         Create a `BinaryActivationDetector` instance which performs binary classification on activation information.
@@ -75,9 +75,7 @@ class BinaryActivationDetector(EvasionDetector):
                 raise ValueError(f"Layer name {layer} is not part of the graph.")
             self._layer_name = layer
 
-    def _get_activations(
-        self, x: np.ndarray, layer: Union[int, str], batch_size: int, framework: bool = False
-    ) -> np.ndarray:
+    def _get_activations(self, x: np.ndarray, layer: int | str, batch_size: int, framework: bool = False) -> np.ndarray:
         x_activations = self.classifier.get_activations(x, layer, batch_size, framework)
         if x_activations is None:
             raise ValueError("Classifier activations are null.")
@@ -100,7 +98,7 @@ class BinaryActivationDetector(EvasionDetector):
         x_activations: np.ndarray = self._get_activations(x, self._layer_name, batch_size)
         self.detector.fit(x_activations, y, batch_size=batch_size, nb_epochs=nb_epochs, **kwargs)
 
-    def detect(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> Tuple[dict, np.ndarray]:
+    def detect(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> tuple[dict, np.ndarray]:
         """
         Perform detection of adversarial data and return prediction as tuple.
 
