@@ -596,7 +596,7 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
 
     def compute_loss_and_decoded_output(
         self, masked_adv_input: "torch.Tensor", original_output: np.ndarray, **kwargs
-    ) -> Tuple["torch.Tensor", np.ndarray]:
+    ) -> tuple["torch.Tensor", np.ndarray]:
         """
         Compute loss function and decoded output.
 
@@ -833,7 +833,7 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
         return sample_rate
 
     @property
-    def input_shape(self) -> Tuple[int, ...]:
+    def input_shape(self) -> tuple[int, ...]:
         """
         Return the shape of one input sample.
 

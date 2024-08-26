@@ -150,7 +150,7 @@ class Mp3Compression(Preprocessor):
         if x.dtype != object and self.channels_first:
             x_mp3 = np.swapaxes(x_mp3, 1, 2)
 
-        if x_orig_type != object and x.dtype == object and x.ndim == 2:
+        if x_orig_type != object and x.dtype == object and x.ndim == 2:  # noqa: E721
             x_mp3 = x_mp3.astype(x_orig_type)
 
         return x_mp3, y

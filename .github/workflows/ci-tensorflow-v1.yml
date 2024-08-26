@@ -69,6 +69,7 @@ jobs:
           pip install lief==0.12.3
           pip install statsmodels==0.13.5
           pip install numba==0.56.4
+          pip install pytest
           pip list
       - name: Run Tests
         run: ./run_tests.sh ${{ matrix.framework }}
