@@ -51,11 +51,12 @@ jobs:
           sudo apt-get -y -q install ffmpeg libavcodec-extra
           python -m pip install --upgrade pip setuptools wheel
           pip install -q -r requirements_test.txt
-          pip install -q -r <(sed '/^tensorflow/d;/^keras/d;/^tensorflow-addons/d;/^lingvo/d' requirements_test.txt)
+          pip install -q -r <(sed '/^tensorflow/d;/^keras/d;/^tensorflow-addons/d;/^lingvo/d;/^Pillow/d' requirements_test.txt)
           pip install tensorflow==${{ matrix.tensorflow }}
           pip install keras==${{ matrix.keras }}
           pip install tensorflow-addons==${{ matrix.tf_addons }}
           pip install lingvo==0.13.1
+          pip install Pillow==10.0.0
           pip list
       - name: Run ${{ matrix.name }} Tests
         run: pytest --cov-report=xml --cov=art --cov-append -q -vv tests/estimators/speech_recognition/test_tensorflow_lingvo.py --framework=${{ matrix.framework }} --durations=0
