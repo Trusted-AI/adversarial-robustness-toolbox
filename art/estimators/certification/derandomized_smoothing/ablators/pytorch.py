@@ -80,7 +80,7 @@ class ColumnAblatorPyTorch(torch.nn.Module, BaseAblator):
         Creates a column ablator
 
         :param ablation_size: The size of the column we will retain.
-        :param channels_first: If the input is in channels first format. Currently required to be True.
+        :param channels_first: If the input is in channels first format. Currently, required to be True.
         :param mode: If we are running the algorithm using a CNN or VIT.
         :param to_reshape: If the input requires reshaping.
         :param ablation_mode: The type of ablation to perform.
@@ -250,7 +250,7 @@ class BlockAblatorPyTorch(torch.nn.Module, BaseAblator):
         Creates a column ablator
 
         :param ablation_size: The size of the block we will retain.
-        :param channels_first: If the input is in channels first format. Currently required to be True.
+        :param channels_first: If the input is in channels first format. Currently, required to be True.
         :param mode: If we are running the algorithm using a CNN or VIT.
         :param to_reshape: If the input requires reshaping.
         :param original_shape: Original shape of the input.

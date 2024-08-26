@@ -83,7 +83,7 @@ class AutoAttack(EvasionAttack):
         """
         Create a :class:`.AutoAttack` instance.
 
-        :param estimator: An trained estimator.
+        :param estimator: A trained estimator.
         :param norm: The norm of the adversarial perturbation. Possible values: "inf", np.inf, 1 or 2.
         :param eps: Maximum perturbation that the attacker can introduce.
         :param eps_step: Attack step size (input variation) at each iteration.

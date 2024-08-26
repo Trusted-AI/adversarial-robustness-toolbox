@@ -63,7 +63,7 @@ class ImageSquarePadPyTorch(PreprocessorPyTorch):
         :param width: The width of the resized image.
         :param channels_first: Set channels first or last.
         :param label_type: String defining the label type. Currently supported: `classification`, `object_detection`
-        :param pad_mode: String defining the padding method. Currently supported: `constant`, `reflect`, 'replicate`,
+        :param pad_mode: String defining the padding method. Currently supported: `constant`, `reflect`, `replicate`,
                          `circular`
         :param pad_kwargs: A dictionary of additional keyword arguments used by the `torch.nn.functional.pad` function.
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed

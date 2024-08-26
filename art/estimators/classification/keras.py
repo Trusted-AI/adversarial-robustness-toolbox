@@ -99,7 +99,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         :param input_layer: The index of the layer to consider as input for models with multiple input layers. The layer
                             with this index will be considered for computing gradients. For models with only one input
                             layer this values is not required.
-        :param output_layer: Which layer to consider as the output when the models has multiple output layers. The layer
+        :param output_layer: Which layer to consider as the output when the models have multiple output layers. The layer
                              with this index will be considered for computing gradients. For models with only one output
                              layer this values is not required.
         """
@@ -428,7 +428,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         :param x: Sample input with shape as expected by the model.
         :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
                   (nb_samples,).
-        :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
+        :param training_mode: `True` for model set to training mode and `False` for model set to evaluation mode.
         :return: Array of gradients of the same shape as `x`.
         """
         # Check shape of preprocessed `x` because of custom function for `_loss_gradients`
@@ -467,7 +467,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
                       output is computed for all samples. If multiple values are provided, the first dimension should
                       match the batch size of `x`, and each value will be used as target for its corresponding sample in
                       `x`. If `None`, then gradients for all classes will be computed for each sample.
-        :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
+        :param training_mode: `True` for model set to training mode and `False` for model set to evaluation mode.
         :return: Array of gradients of input features w.r.t. each class in the form
                  `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
                  `(batch_size, 1, input_shape)` when `label` parameter is specified.
@@ -534,7 +534,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
 
         :param x: Input samples.
         :param batch_size: Size of batches.
-        :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
+        :param training_mode: `True` for model set to training mode and `False` for model set to evaluation mode.
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         """
         # Apply preprocessing

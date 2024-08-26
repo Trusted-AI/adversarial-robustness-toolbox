@@ -481,7 +481,7 @@ class AdversarialPatchPyTorch(EvasionAttack):
 
         :param x: An array with the original input images of shape NCHW or input videos of shape NFCHW.
         :param y: An array with the original true labels.
-        :param mask: An boolean array of shape equal to the shape of a single samples (1, H, W) or the shape of `x`
+        :param mask: A boolean array of shape equal to the shape of a single samples (1, H, W) or the shape of `x`
                      (N, H, W) without their channel dimensions. Any features for which the mask is True can be the
                      center location of the patch during sampling.
         :type mask: `np.ndarray`
@@ -691,7 +691,7 @@ class AdversarialPatchPyTorch(EvasionAttack):
         :param x: Instances to apply randomly transformed patch.
         :param scale: Scale of the applied patch in relation to the estimator input shape.
         :param patch_external: External patch to apply to images `x`.
-        :param mask: An boolean array of shape equal to the shape of a single samples (1, H, W) or the shape of `x`
+        :param mask: A boolean array of shape equal to the shape of a single samples (1, H, W) or the shape of `x`
                      (N, H, W) without their channel dimensions. Any features for which the mask is True can be the
                      center location of the patch during sampling.
         :return: The patched samples.

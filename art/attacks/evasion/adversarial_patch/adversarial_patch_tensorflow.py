@@ -374,7 +374,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
             x_origin_delta = x_origin - x_origin_shifted
             y_origin_delta = y_origin - y_origin_shifted
 
-            # Run translation in a second step to position patch exactly inside of the mask
+            # Run translation in a second step to position patch exactly inside the mask
             transform_vectors.append([a_0, a_1, x_origin_delta, b_0, b_1, y_origin_delta, 0, 0])
             translation_vectors.append([1, 0, -x_shift, 0, 1, -y_shift, 0, 0])
 
@@ -527,7 +527,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         :param x: Instances to apply randomly transformed patch.
         :param scale: Scale of the applied patch in relation to the classifier input shape.
         :param patch_external: External patch to apply to images `x`.
-        :param mask: An boolean array of shape equal to the shape of a single samples (1, H, W) or the shape of `x`
+        :param mask: A boolean array of shape equal to the shape of a single samples (1, H, W) or the shape of `x`
                      (N, H, W) without their channel dimensions. Any features for which the mask is True can be the
                      center location of the patch during sampling.
         :return: The patched samples.

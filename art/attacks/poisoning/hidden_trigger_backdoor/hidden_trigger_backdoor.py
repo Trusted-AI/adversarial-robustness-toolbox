@@ -185,12 +185,10 @@ class HiddenTriggerBackdoor(PoisoningAttackWhiteBox):
         indices in the dataset.
 
         :param x: An array in the shape NxCxWxH with the points to draw source and target samples from.
-                  Source indicates the class(es) that the backdoor would be added to to cause
-                  misclassification into the target label.
-                  Target indicates the class that the backdoor should cause misclassification into.
-        :param y: The labels of the provided samples. If none, we will use the classifier to label the
-                  data.
-        :return: An tuple holding the `(poisoning_examples, poisoning_labels)`.
+                  Source indicates the class(es) that the backdoor would be added to cause misclassification into the
+                  target label. Target indicates the class that the backdoor should cause misclassification into.
+        :param y: The labels of the provided samples. If none, we will use the classifier to label the data.
+        :return: A tuple holding the `(poisoning_examples, poisoning_labels)`.
         """
 
         return self._attack.poison(x, y, **kwargs)

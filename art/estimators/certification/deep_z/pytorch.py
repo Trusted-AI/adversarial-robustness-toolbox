@@ -289,7 +289,7 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
 
         :param cent: The datapoint, representing the zonotope center.
         :param bound: The perturbation range for the zonotope.
-        :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
+        :param training_mode: `True` for model set to training mode and `False` for model set to evaluation mode.
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
                and providing it takes no effect.
         """

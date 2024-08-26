@@ -256,7 +256,7 @@ class PoisoningAttack(Attack):
 
         :param x: An array with the original inputs to be attacked.
         :param y:  Target labels for `x`. Untargeted attacks set this value to None.
-        :return: An tuple holding the (poisoning examples, poisoning labels).
+        :return: A tuple holding the (poisoning examples, poisoning labels).
         """
         raise NotImplementedError
 
@@ -319,7 +319,7 @@ class PoisoningAttackTransformer(PoisoningAttack):
 
         :param x: An array with the original inputs to be attacked.
         :param y:  Target labels for `x`. Untargeted attacks set this value to None.
-        :return: An tuple holding the (poisoning examples, poisoning labels).
+        :return: A tuple holding the (poisoning examples, poisoning labels).
         :rtype: `(np.ndarray, np.ndarray)`
         """
         raise NotImplementedError
@@ -363,7 +363,7 @@ class PoisoningAttackObjectDetector(Attack):
                   - boxes [N, 4]: the boxes in [x1, y1, x2, y2] format, with 0 <= x1 < x2 <= W and 0 <= y1 < y2 <= H.
                   - labels [N]: the labels for each image
                   - scores [N]: the scores or each prediction.
-        :return: An tuple holding the `(poisoning_examples, poisoning_labels)`.
+        :return: A tuple holding the `(poisoning_examples, poisoning_labels)`.
         """
         raise NotImplementedError
 
@@ -387,7 +387,7 @@ class PoisoningAttackBlackBox(PoisoningAttack):
 
         :param x: An array with the original inputs to be attacked.
         :param y:  Target labels for `x`. Untargeted attacks set this value to None.
-        :return: An tuple holding the `(poisoning_examples, poisoning_labels)`.
+        :return: A tuple holding the `(poisoning_examples, poisoning_labels)`.
         """
         raise NotImplementedError
 
@@ -404,9 +404,9 @@ class PoisoningAttackWhiteBox(PoisoningAttack):
         poisoning attack implementations.
 
         :param x: An array with the original inputs to be attacked.
-        :param y: Correct labels or target labels for `x`, depending if the attack is targeted
+        :param y: Correct labels or target labels for `x`, depending on if the attack is targeted
                or not. This parameter is only used by some of the attacks.
-        :return: An tuple holding the `(poisoning_examples, poisoning_labels)`.
+        :return: A tuple holding the `(poisoning_examples, poisoning_labels)`.
         """
         raise NotImplementedError
 
@@ -423,7 +423,7 @@ class ExtractionAttack(Attack):
         attack implementations.
 
         :param x: An array with the original inputs to be attacked.
-        :param y: Correct labels or target labels for `x`, depending if the attack is targeted
+        :param y: Correct labels or target labels for `x`, depending on if the attack is targeted
                or not. This parameter is only used by some of the attacks.
         :return: ART classifier of the extracted model.
         """

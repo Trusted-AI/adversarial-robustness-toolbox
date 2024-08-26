@@ -221,7 +221,7 @@ class OverTheAirFlickeringPyTorch(EvasionAttack):
 
         :param x: Current adversarial examples.
         :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)`.
-        :param perturbation: Currently accumulated perturbation
+        :param perturbation: Currently, accumulated perturbation
         :return: Perturbations.
         """
         import torch

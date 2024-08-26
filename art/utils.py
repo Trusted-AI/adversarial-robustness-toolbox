@@ -331,7 +331,7 @@ def deprecated_keyword_arg(identifier: str, end_version: str, *, reason: str = "
     Deprecate a keyword argument and raise a `DeprecationWarning`.
 
     The `@deprecated_keyword_arg` decorator is used to deprecate keyword arguments. The deprecated keyword argument must
-    default to `Deprecated`. Several use cases are supported. For example one can use it to to rename a keyword
+    default to `Deprecated`. Several use cases are supported. For example one can use it to rename a keyword
     identifier. The following code examples provide different use cases of how to use the decorator.
 
     .. code-block:: python
@@ -394,7 +394,7 @@ def projection_l1_1(values: np.ndarray, eps: int | float | np.ndarray) -> np.nda
     a[j+1] +...+ a[n-1] - a[j]*(n-j-1) >= eps. The  ith  coordinate of projection is equal to  0
     if i=0,...,j.
 
-    :param values:  A batch of  m  points, each an ndarray
+    :param values:  A batch of  m  points, each a ndarray
     :param eps:  The radii of the respective L1-balls
     :return: projections
     """
@@ -481,7 +481,7 @@ def projection_l1_2(values: np.ndarray, eps: int | float | np.ndarray) -> np.nda
     If  t = (a1 + ... + an - 1)/n , then  a' is the desired projection.  Otherwise, the problem is reduced to
     finding the projection of  (a1 - t, ... , a{n-1} - t ).
 
-    :param values:  A batch of  m  points, each an ndarray
+    :param values:  A batch of  m  points, each a ndarray
     :param eps:  The radii of the respective L1-balls
     :return: projections
     """
@@ -911,7 +911,7 @@ def get_label_conf(y_vec: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
 
 def get_labels_np_array(preds: np.ndarray) -> np.ndarray:
     """
-    Returns the label of the most probable class given a array of class confidences.
+    Returns the label of the most probable class given an array of class confidences.
 
     :param preds: Array of class confidences, nb of instances as first dimension.
     :return: Labels.
@@ -1774,7 +1774,7 @@ def performance_diff(
     :param perf_function: The performance metric to be used. One of ['accuracy', 'f1'] or a callable function
            `(true_labels, model_labels[, kwargs]) -> float`.
     :param kwargs: Arguments to add to performance function.
-    :return: The difference in performance performance(model1) - performance(model2).
+    :return: The difference in performance: performance(model1) - performance(model2).
     :raises `ValueError`: If an unsupported performance function is requested.
     """
     from sklearn.metrics import accuracy_score, f1_score
@@ -1817,9 +1817,9 @@ def is_probability(vector: np.ndarray) -> bool:
 
 def is_probability_array(array: np.ndarray) -> bool:
     """
-    Check if a multi-dimensional array is an array of probabilities.
+    Check if a multidimensional array is an array of probabilities.
 
-    :param vector: A numpy array.
+    :param array: A numpy array.
     :return: True if it is an array of probabilities.
     """
     if len(array.shape) == 1:

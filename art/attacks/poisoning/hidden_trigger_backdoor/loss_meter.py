@@ -34,7 +34,7 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements the orignal loss tracker for Hidden Trigger Backdoor attack on Neural Networkxss.
+This module implements the original loss tracker for Hidden Trigger Backdoor attack on Neural Networks.
 """
 
 

@@ -73,7 +73,7 @@ class PoisoningAttackAdversarialEmbedding(PoisoningAttackTransformer):
         clone=True,
     ):
         """
-        Initialize an Feature Collision Clean-Label poisoning attack
+        Initialize a Feature Collision Clean-Label poisoning attack
 
         :param classifier: A neural network classifier.
         :param backdoor: The backdoor attack used to poison samples
@@ -84,7 +84,7 @@ class PoisoningAttackAdversarialEmbedding(PoisoningAttackTransformer):
         :param discriminator_layer_2: The size of the second discriminator layer
         :param regularization: The regularization constant for the backdoor recognition part of the loss function
         :param learning_rate: The learning rate of clean-label attack optimization.
-        :param clone: Whether or not to clone the model or apply the attack on the original model
+        :param clone: Whether to clone the model or apply the attack on the original model
         """
         super().__init__(classifier=classifier)
         self.backdoor = backdoor
@@ -187,7 +187,7 @@ class PoisoningAttackAdversarialEmbedding(PoisoningAttackTransformer):
 
         :param x: An array with the points that initialize attack points.
         :param y: The target labels for the attack.
-        :param broadcast: whether or not to broadcast single target label
+        :param broadcast: Whether to broadcast single target label
         :return: An tuple holding the `(poisoning_examples, poisoning_labels)`.
         """
         return self.backdoor.poison(x, y, broadcast=broadcast)

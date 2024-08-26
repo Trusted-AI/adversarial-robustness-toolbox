@@ -81,7 +81,7 @@ class SquareAttack(EvasionAttack):
         """
         Create a :class:`.SquareAttack` instance.
 
-        :param estimator: An trained estimator.
+        :param estimator: A trained estimator.
         :param norm: The norm of the adversarial perturbation. Possible values: "inf", np.inf, 1 or 2.
         :param adv_criterion: The criterion which the attack should use in determining adversariality.
         :param loss: The loss function which the attack should use for optimization.

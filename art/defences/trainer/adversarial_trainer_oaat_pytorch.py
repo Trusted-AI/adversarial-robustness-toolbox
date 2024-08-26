@@ -739,7 +739,7 @@ class AdversarialTrainerOAATPyTorch(AdversarialTrainerOAAT):
         :param x: Input for computing the activations.
         :param layers: Layers for computing the activations
         :return: Tuple containing the output dict and a list of layers' names. In dictionary each element is a
-                 layer's output where the first dimension is the batch size corresponding to `x'.
+                 layer's output where the first dimension is the batch size corresponding to `x`.
         """
 
         p_classifier.model.train(mode=False)
@@ -790,7 +790,7 @@ class AdversarialTrainerOAATPyTorch(AdversarialTrainerOAAT):
         each input of the batch.
 
         :param activations_dict: dict containing the activations at different layers.
-        :param list_layer_names: Layers' names for fetching the activations
+        :param list_layer_names: Layers' names for fetching the activations.
         :return: The activations after normalisation and flattening, where the first dimension is the batch size.
         """
 

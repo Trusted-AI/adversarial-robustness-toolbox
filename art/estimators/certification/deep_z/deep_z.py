@@ -311,9 +311,9 @@ class ZonoReLU(torch.nn.Module, ZonoBounds):
 
     def zonotope_relu(self, x: "torch.Tensor") -> "torch.Tensor":
         """
-        Implements "DeepZ" for relu.
+        Implements "DeepZ" for ReLU.
 
-        :param x: input zonotope
+        :param x: input zonotope.
         :return x: zonotope after application of the relu. May have grown in dimension if crossing relus occur.
         """
         original_shape = x.shape

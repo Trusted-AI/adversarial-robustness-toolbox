@@ -211,7 +211,7 @@ class PyTorchIBPClassifier(PyTorchIntervalBounds, PyTorchClassifier):
     This classifier has 3 modes which can be set via: classifier.model.set_forward_mode('mode')
 
     'mode' can be one of:
-        + 'abstract': When we wish to certifiy datapoints and have abstract predictions
+        + 'abstract': When we wish to certify datapoints and have abstract predictions
         + 'concrete': When normal predictions need to be made
         + 'attack': When we are interfacing with an ART attack (for example PGD).
     """
@@ -328,7 +328,7 @@ class PyTorchIBPClassifier(PyTorchIntervalBounds, PyTorchClassifier):
         :param bounds: The perturbation range.
         :param limits: The clipping to apply to the interval data.
         :param batch_size: batch size to use when looping through the data
-        :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
+        :param training_mode: `True` for model set to training mode and `False` for model set to evaluation mode.
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
                and providing it takes no effect.
         :return: interval predictions over the supplied dataset

@@ -325,7 +325,7 @@ class FuzzyMapping:
         return np.all(np.isclose(self.key, other.key))
 
     def __ge__(self, other):
-        # This implements >= comparison so we can use this class in a `SortedList`. The `total_ordering` decorator
+        # This implements >= comparison, so we can use this class in a `SortedList`. The `total_ordering` decorator
         # automatically generates the rest of the comparison magic functions based on this one
 
         close_cells = np.isclose(self.key, other.key)

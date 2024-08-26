@@ -216,8 +216,8 @@ class TensorFlowV2Generator(GeneratorMixin, TensorFlowV2Estimator):
         """
         Initialization specific to TensorFlow generator implementations.
 
-        :encoding_length: length of the input seed
-        :model: TensorFlow model, neural network or other.
+        :param encoding_length: length of the input seed
+        :param model: TensorFlow model, neural network or other.
         :param channels_first: Set channels first or last.
         :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
                             maximum values allowed for features. If floats are provided, these will be used as the range
@@ -263,7 +263,7 @@ class TensorFlowV2Generator(GeneratorMixin, TensorFlowV2Estimator):
 
         :param x: Encodings.
         :param batch_size: Batch size.
-        :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
+        :param training_mode: `True` for model set to training mode and `False` for model set to evaluation mode.
         :return: Array of prediction projections of shape `(num_inputs, nb_classes)`.
         """
         # Run prediction with batch processing

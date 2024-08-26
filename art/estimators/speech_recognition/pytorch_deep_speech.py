@@ -85,7 +85,7 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
         Initialization of an instance PyTorchDeepSpeech.
 
         :param model: DeepSpeech model.
-        :param pretrained_model: The choice of pretrained model if a pretrained model is required. Currently this
+        :param pretrained_model: The choice of pretrained model if a pretrained model is required. Currently, this
                                  estimator supports 3 different pretrained models consisting of `an4`, `librispeech`
                                  and `tedlium`.
         :param filename: Name of the file.
@@ -107,7 +107,7 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
                       outputs.
         :param beta: Language model word bonus (all words). This parameter is only used when users want transcription
                      outputs.
-        :param cutoff_top_n: Cutoff_top_n characters with highest probs in vocabulary will be used in beam search. This
+        :param cutoff_top_n: Cutoff_top_n characters with the highest probs in vocabulary will be used in beam search. This
                              parameter is only used when users want transcription outputs.
         :param cutoff_prob: Cutoff probability in pruning. This parameter is only used when users want transcription
                             outputs.
@@ -284,7 +284,7 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
         # Create the language model config first
         lm_config = LMConfig()
 
-        # Then setup the config
+        # Then set up the config
         if decoder_type == "greedy":
             lm_config.decoder_type = DecoderType.greedy
         elif decoder_type == "beam":
@@ -434,7 +434,7 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
         :param x: Samples of shape (nb_samples, seq_length). Note that, it is allowable that sequences in the batch
                   could have different lengths. A possible example of `x` could be:
                   `x = np.array([np.array([0.1, 0.2, 0.1, 0.4]), np.array([0.3, 0.1])])`.
-        :param y: Target values of shape (nb_samples). Each sample in `y` is a string and it may possess different
+        :param y: Target values of shape (nb_samples). Each sample in `y` is a string, and it may possess different
                   lengths. A possible example of `y` could be: `y = np.array(['SIXTY ONE', 'HELLO'])`.
         :return: Loss gradients of the same shape as `x`.
         """
@@ -511,7 +511,7 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
         :param x: Samples of shape (nb_samples, seq_length). Note that, it is allowable that sequences in the batch
                   could have different lengths. A possible example of `x` could be:
                   `x = np.array([np.array([0.1, 0.2, 0.1, 0.4]), np.array([0.3, 0.1])])`.
-        :param y: Target values of shape (nb_samples). Each sample in `y` is a string and it may possess different
+        :param y: Target values of shape (nb_samples). Each sample in `y` is a string, and it may possess different
                   lengths. A possible example of `y` could be: `y = np.array(['SIXTY ONE', 'HELLO'])`.
         :param batch_size: Size of batches.
         :param nb_epochs: Number of epochs to use for training.
@@ -601,7 +601,7 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
         Compute loss function and decoded output.
 
         :param masked_adv_input: The perturbed inputs.
-        :param original_output: Target values of shape (nb_samples). Each sample in `original_output` is a string and
+        :param original_output: Target values of shape (nb_samples). Each sample in `original_output` is a string, and
                                 it may possess different lengths. A possible example of `original_output` could be:
                                 `original_output = np.array(['SIXTY ONE', 'HELLO'])`.
         :param real_lengths: Real lengths of original sequences.
@@ -664,7 +664,7 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
         `_apply_preprocessing` function.
 
         :param x: Samples of shape (nb_samples, seq_length).
-        :param y: Target values of shape (nb_samples). Each sample in `y` is a string and it may possess different
+        :param y: Target values of shape (nb_samples). Each sample in `y` is a string, and it may possess different
                   lengths. A possible example of `y` could be: `y = np.array(['SIXTY ONE', 'HELLO'])`.
         :param real_lengths: Real lengths of original sequences.
         :return: A tuple of inputs and targets in the model space with the original index
@@ -710,7 +710,7 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
         :param x: Samples of shape (nb_samples, seq_length). Note that, it is allowable that sequences in the batch
                   could have different lengths. A possible example of `x` could be:
                   `x = np.ndarray([[0.1, 0.2, 0.1, 0.4], [0.3, 0.1]])`.
-        :param y: Target values of shape (nb_samples). Each sample in `y` is a string and it may possess different
+        :param y: Target values of shape (nb_samples). Each sample in `y` is a string, and it may possess different
                   lengths. A possible example of `y` could be: `y = np.array(['SIXTY ONE', 'HELLO'])`.
         :param compute_gradient: Indicate whether to compute gradients for the input `x`.
         :param tensor_input: Indicate whether input is tensor.

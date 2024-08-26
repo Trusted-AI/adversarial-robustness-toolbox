@@ -145,7 +145,7 @@ class SaliencyMapMethod(EvasionAttack):
 
                 # Apply attack with clipping
                 if self.estimator.clip_values is not None:
-                    # Prepare update depending of theta
+                    # Prepare update depending on theta
                     if self.theta > 0:
                         clip_func, clip_value = np.minimum, clip_max  # type: ignore
                     else:  # pragma: no cover

@@ -42,7 +42,7 @@ This module implements the white-box PyTorch version of the GRAPHITE attack `GRA
 This is a robust physical perturbation attack.
 
 | Paper link: https://arxiv.org/abs/2002.07088
-| Original github link: https://github.com/ryan-feng/GRAPHITE
+| Original GitHub link: https://github.com/ryan-feng/GRAPHITE
 """
 from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
@@ -71,7 +71,7 @@ class GRAPHITEWhiteboxPyTorch(EvasionAttack):
     that generates robust physical perturbations that can be applied as stickers.
 
     | Paper link: https://arxiv.org/abs/2002.07088
-    | Original github link: https://github.com/ryan-feng/GRAPHITE
+    | Original GitHub link: https://github.com/ryan-feng/GRAPHITE
     """
 
     attack_params = EvasionAttack.attack_params + [

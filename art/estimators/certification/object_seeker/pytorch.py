@@ -195,7 +195,7 @@ class PyTorchObjectSeeker(ObjectSeekerMixin, PyTorchObjectDetector):
         predictions on the base unmasked image and each of the masked image.
 
         :param x_i: A single image of shape CHW or HWC.
-        :batch_size: Batch size.
+        :param batch_size: Batch size.
         :return: Predictions for the base unmasked image and merged predictions for the masked image.
         """
         x_mask = np.repeat(x_i[np.newaxis], self.num_lines * 4 + 1, axis=0)

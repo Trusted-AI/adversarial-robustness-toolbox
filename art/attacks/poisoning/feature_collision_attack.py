@@ -42,11 +42,11 @@ logger = logging.getLogger(__name__)
 
 class FeatureCollisionAttack(PoisoningAttackWhiteBox):
     """
-    Close implementation of Feature Collision Poisoning Attack by Shafahi, Huang, et al 2018.
+    Close implementation of Feature Collision Poisoning Attack by Shafahi, Huang, et al. (2018).
     "Poison Frogs! Targeted Clean-Label Poisoning Attacks on Neural Networks"
 
     This implementation dynamically calculates the dimension of the feature layer, and doesn't hardcode this
-    value to 2048 as done in the paper. Thus we recommend using larger values for the similarity_coefficient.
+    value to 2048 as done in the paper. Thus, we recommend using larger values for the similarity_coefficient.
 
     | Paper link: https://arxiv.org/abs/1804.00792
     """
@@ -83,7 +83,7 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
         verbose: bool = True,
     ):
         """
-        Initialize an Feature Collision Clean-Label poisoning attack
+        Initialize a Feature Collision Clean-Label poisoning attack
 
         :param classifier: A trained neural network classifier.
         :param target: The target input to misclassify at test time.
@@ -132,7 +132,7 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
 
         :param x: The base images to begin the poison process.
         :param y: Not used in this attack (clean-label).
-        :return: An tuple holding the (poisoning examples, poisoning labels).
+        :return: A tuple holding the (poisoning examples, poisoning labels).
         """
         num_poison = len(x)
         final_attacks = []

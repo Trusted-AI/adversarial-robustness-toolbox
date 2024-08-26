@@ -149,7 +149,7 @@ class LowProFool(EvasionAttack):
 
     def __weighted_lp_norm_gradient(self, perturbations: np.ndarray) -> np.ndarray:
         """
-        Gradient of the weighted Lp-space norm with regards to the data vector.
+        Gradient of the weighted Lp-space norm in regard to the data vector.
 
         :param perturbations: Perturbations of samples towards being adversarial.
         :return: Weighted Lp-norm gradients array.
@@ -174,8 +174,8 @@ class LowProFool(EvasionAttack):
 
     def __get_gradients(self, samples: np.ndarray, perturbations: np.ndarray, targets: np.ndarray) -> np.ndarray:
         """
-        Gradient of the objective function with regards to the data vector, i.e. sum of the classifier's loss gradient
-        and weighted lp-space norm gradient, both with regards to data vector.
+        Gradient of the objective function in regard to the data vector, i.e. sum of the classifier's loss gradient
+        and weighted lp-space norm gradient, both in regard to data vector.
 
         :param samples: Base design matrix.
         :param perturbations: Perturbations of samples towards being adversarial.

@@ -254,7 +254,7 @@ class ElasticNet(EvasionAttack):
         c_lower_bound = np.zeros(x_batch.shape[0])
         c_upper_bound = 10e10 * np.ones(x_batch.shape[0])
 
-        # Initialize best distortions and best attacks globally
+        # Initialize the best distortions and best attacks globally
         o_best_dist = np.inf * np.ones(x_batch.shape[0])
         o_best_attack = x_batch.copy()
 
@@ -329,7 +329,7 @@ class ElasticNet(EvasionAttack):
         :param x_batch: A batch of original examples.
         :param y_batch: A batch of targets (0-1 hot).
         :param c_batch: A batch of constants.
-        :return: A tuple of best elastic distances, best labels, best attacks
+        :return: A tuple of the best elastic distances, best labels, best attacks
         """
 
         def compare(o_1, o_2):
@@ -337,7 +337,7 @@ class ElasticNet(EvasionAttack):
                 return o_1 == o_2
             return o_1 != o_2
 
-        # Initialize best distortions and best changed labels and best attacks
+        # Initialize the best distortions and best changed labels and best attacks
         best_dist = np.inf * np.ones(x_batch.shape[0])
         best_label = [-np.inf] * x_batch.shape[0]
         best_attack = x_batch.copy()

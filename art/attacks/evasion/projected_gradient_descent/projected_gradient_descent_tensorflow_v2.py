@@ -17,7 +17,7 @@
 # SOFTWARE.
 """
 This module implements the Projected Gradient Descent attack `ProjectedGradientDescent` as an iterative method in which,
-after each iteration, the perturbation is projected on an lp-ball of specified radius (in addition to clipping the
+after each iteration, the perturbation is projected on a lp-ball of specified radius (in addition to clipping the
 values of the adversarial sample so that it lies in the permitted data range). This is the attack proposed by Madry et
 al. for adversarial training.
 
@@ -51,7 +51,7 @@ logger = logging.getLogger(__name__)
 class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
     """
     The Projected Gradient Descent attack is an iterative method in which, after each iteration, the perturbation is
-    projected on an lp-ball of specified radius (in addition to clipping the values of the adversarial sample so that it
+    projected on a lp-ball of specified radius (in addition to clipping the values of the adversarial sample so that it
     lies in the permitted data range). This is the attack proposed by Madry et al. for adversarial training.
 
     | Paper link: https://arxiv.org/abs/1706.06083
@@ -77,7 +77,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         """
         Create a :class:`.ProjectedGradientDescentTensorFlowV2` instance.
 
-        :param estimator: An trained estimator.
+        :param estimator: A trained estimator.
         :param norm: The norm of the adversarial perturbation, supporting  "inf", `np.inf` or a real `p >= 1`.
                      Currently, when `p` is not infinity, the projection step only rescales the noise, which may be
                      suboptimal for `p != 2`.
@@ -156,7 +156,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         # Create dataset
         if mask is not None:
             # Here we need to make a distinction: if the masks are different for each input, we need to index
-            # those for the current batch. Otherwise (i.e. mask is meant to be broadcasted), keep it as it is.
+            # those for the current batch. Otherwise, (i.e. mask is meant to be broadcasted), keep it as it is.
             if len(mask.shape) == len(x.shape):
                 dataset = tf.data.Dataset.from_tensor_slices(
                     (
@@ -332,7 +332,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
                 targeted=self.targeted,
             )
 
-        # Check for NaN before normalisation an replace with 0
+        # Check for NaN before normalisation and replace with 0
         if tf.reduce_any(tf.math.is_nan(grad)):  # pragma: no cover
             logger.warning("Elements of the loss gradient are NaN and have been replaced with 0.0.")
             grad = tf.where(tf.math.is_nan(grad), tf.zeros_like(grad), grad)

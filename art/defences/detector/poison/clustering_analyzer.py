@@ -50,7 +50,7 @@ class ClusteringAnalyzer:
 
     def analyze_by_size(self, separated_clusters: list[np.ndarray]) -> tuple[np.ndarray, np.ndarray, dict[str, int]]:
         """
-        Designates as poisonous the cluster with less items on it.
+        Designates as poisonous the cluster with fewer items on it.
 
         :param separated_clusters: List where separated_clusters[i] is the cluster assignments for the ith class.
         :return: all_assigned_clean, summary_poison_clusters, report:

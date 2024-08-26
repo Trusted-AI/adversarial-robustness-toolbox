@@ -77,9 +77,9 @@ class FrameSaliencyAttack(EvasionAttack):
         :param attacker: An adversarial evasion attacker which supports masking. Currently supported:
                          ProjectedGradientDescent, BasicIterativeMethod, FastGradientMethod.
         :param method: Specifies which method to use: "iterative_saliency" (adds perturbation iteratively to frame
-                       with highest saliency score until attack is successful), "iterative_saliency_refresh" (updates
-                       perturbation after each iteration), "one_shot" (adds all perturbations at once, i.e. defaults to
-                       original attack).
+                       with the highest saliency score until attack is successful), "iterative_saliency_refresh"
+                       (updates perturbation after each iteration), "one_shot" (adds all perturbations at once, i.e.
+                       defaults to original attack).
         :param frame_index: Index of the axis in input (feature) array `x` representing the frame dimension.
         :param batch_size: Size of the batch on which adversarial samples are generated.
         :param verbose: Show progress bars.
@@ -143,7 +143,7 @@ class FrameSaliencyAttack(EvasionAttack):
 
         # Generate adversarial perturbations. If the method is "iterative_saliency_refresh", we will use a mask so that
         # only the next frame to be perturbed is considered in the attack; moreover we keep track of the next frames to
-        # be perturbed so they will not be perturbed again later on.
+        # be perturbed, so they will not be perturbed again later on.
         mask = np.ones(x.shape)
         if self.method == "iterative_saliency_refresh":
             mask = np.zeros(x.shape)

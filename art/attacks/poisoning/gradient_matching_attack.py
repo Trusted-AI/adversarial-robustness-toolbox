@@ -41,7 +41,7 @@ logger = logging.getLogger(__name__)
 
 class GradientMatchingAttack(Attack):
     """
-    Implementation of Gradient Matching Attack by Geiping, et. al. 2020.
+    Implementation of Gradient Matching Attack by Geiping et al. (2020).
     "Witches' Brew: Industrial Scale Data Poisoning via Gradient Matching"
 
     | Paper link: https://arxiv.org/abs/2009.02276
@@ -124,7 +124,7 @@ class GradientMatchingAttack(Attack):
             initializer = self._initialize_poison_pytorch
         else:
             raise NotImplementedError(
-                "GradientMatchingAttack is currently implemented only for Tensorflow V2 and Pytorch."
+                "GradientMatchingAttack is currently implemented only for TensorFlow V2 and PyTorch."
             )
 
         return initializer(x_trigger, y_trigger, x_poison, y_poison)

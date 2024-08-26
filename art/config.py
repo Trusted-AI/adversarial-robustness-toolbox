@@ -55,7 +55,7 @@ def set_data_path(path):
     logger.info("set ART_DATA_PATH to %s", expanded_path)
 
 
-# Load data from configuration file if it exists. Otherwise create one.
+# Load data from configuration file if it exists. Otherwise, create one.
 _config_path = os.path.expanduser(os.path.join(_folder, "config.json"))
 if os.path.exists(_config_path):
     try:

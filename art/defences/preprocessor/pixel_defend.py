@@ -110,7 +110,7 @@ class PixelDefend(Preprocessor):
         # Start defence one image at a time
         for i, x_i in enumerate(tqdm(x, desc="PixelDefend", disable=not self.verbose)):
             for feat_index in range(x.shape[1]):
-                # Setup the search space
+                # Set up the search space
                 f_probs = probs[i, feat_index, :]
                 f_range = range(
                     int(max(x_i[feat_index] - self.eps, 0)),

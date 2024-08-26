@@ -273,7 +273,7 @@ class PyTorchEspresso(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyTor
         :param x: Samples of shape (nb_samples, seq_length). Note that, it is allowable that sequences in the batch
                   could have different lengths. A possible example of `x` could be:
                   `x = np.array([np.array([0.1, 0.2, 0.1, 0.4]), np.array([0.3, 0.1])])`.
-        :param y: Target values of shape (nb_samples). Each sample in `y` is a string and it may possess different
+        :param y: Target values of shape (nb_samples). Each sample in `y` is a string, and it may possess different
                   lengths. A possible example of `y` could be: `y = np.array(['SIXTY ONE', 'HELLO'])`.
         :return: Loss gradients of the same shape as `x`.
         """
@@ -332,7 +332,7 @@ class PyTorchEspresso(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyTor
         :param x: Samples of shape (nb_samples, seq_length). Note that, it is allowable that sequences in the batch
                   could have different lengths. A possible example of `x` could be:
                   `x = np.array([np.array([0.1, 0.2, 0.1, 0.4]), np.array([0.3, 0.1])])`.
-        :param y: Target values of shape (nb_samples). Each sample in `y` is a string and it may possess different
+        :param y: Target values of shape (nb_samples). Each sample in `y` is a string, and it may possess different
                   lengths. A possible example of `y` could be: `y = np.array(['SIXTY ONE', 'HELLO'])`.
         :param batch_size: Size of batches.
         :param nb_epochs: Number of epochs to use for training.
@@ -353,7 +353,7 @@ class PyTorchEspresso(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyTor
         :param x: Samples of shape (nb_samples, seq_length). Note that, it is allowable that sequences in the batch
                   could have different lengths. A possible example of `x` could be:
                   `x = np.ndarray([[0.1, 0.2, 0.1, 0.4], [0.3, 0.1]])`.
-        :param y: Target values of shape (nb_samples). Each sample in `y` is a string and it may possess different
+        :param y: Target values of shape (nb_samples). Each sample in `y` is a string, and it may possess different
                   lengths. A possible example of `y` could be: `y = np.array(['SIXTY ONE', 'HELLO'])`.
         :param compute_gradient: Indicate whether to compute gradients for the input `x`.
         :return: A tuple of a dictionary of batch and a list representing the original order of the batch
@@ -471,7 +471,7 @@ class PyTorchEspresso(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyTor
         `_apply_preprocessing` function.
 
         :param x: Samples of shape (nb_samples, seq_length).
-        :param y: Target values of shape (nb_samples). Each sample in `y` is a string and it may possess different
+        :param y: Target values of shape (nb_samples). Each sample in `y` is a string, and it may possess different
                   lengths. A possible example of `y` could be: `y = np.array(['SIXTY ONE', 'HELLO'])`.
         :param real_lengths: Real lengths of original sequences.
         :return: A tuple of inputs and targets in the model space with the original index
@@ -508,7 +508,7 @@ class PyTorchEspresso(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyTor
         Compute loss function and decoded output.
 
         :param masked_adv_input: The perturbed inputs.
-        :param original_output: Target values of shape (nb_samples). Each sample in `original_output` is a string and
+        :param original_output: Target values of shape (nb_samples). Each sample in `original_output` is a string, and
                                 it may possess different lengths. A possible example of `original_output` could be:
                                 `original_output = np.array(['SIXTY ONE', 'HELLO'])`.
         :return: The loss and the decoded output.

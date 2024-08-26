@@ -176,7 +176,7 @@ class PixelThreshold(EvasionAttack):
                 For sanity check, pass th=10 to the Attack instance."
             )
 
-        # NOTE: Pixel and Threshold Attacks are well defined for unprocessed images where the pixel values are,
+        # NOTE: Pixel and Threshold Attacks are well-defined for unprocessed images where the pixel values are,
         #       8-Bit color i.e., the pixel values are np.uint8 in range [0, 255].
 
         # TO-DO: Better checking of input image.
@@ -742,7 +742,7 @@ def differential_evolution(  # pragma: no cover
         initializes the population randomly - this has the drawback that
         clustering can occur, preventing the whole of parameter space being
         covered. Use of an array to specify a population subset could be used,
-        for example, to create a tight bunch of initial guesses in an location
+        for example, to create a tight bunch of initial guesses in a location
         where the solution is known to exist, thereby reducing time for
         convergence.
     atol : float, optional
@@ -937,7 +937,7 @@ class DifferentialEvolutionSolver:  # pragma: no cover
         initializes the population randomly - this has the drawback that
         clustering can occur, preventing the whole of parameter space being
         covered. Use of an array to specify a population could be used, for
-        example, to create a tight bunch of initial guesses in an location
+        example, to create a tight bunch of initial guesses in a location
         where the solution is known to exist, thereby reducing time for
         convergence.
     atol : float, optional

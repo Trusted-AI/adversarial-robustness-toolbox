@@ -158,7 +158,7 @@ class ImperceptibleASR(EvasionAttack):
             self._masking_threshold_tf = tf1.placeholder(
                 tf1.float32, shape=[None, None, None], name="art_masking_threshold"
             )
-            # TensorFlow loss gradient ops
+            # TensorFlow - loss gradient operations
             self._loss_gradient_masking_threshold_op_tf = self._loss_gradient_masking_threshold_tf(
                 self._delta, self._power_spectral_density_maximum_tf, self._masking_threshold_tf
             )
@@ -172,7 +172,7 @@ class ImperceptibleASR(EvasionAttack):
         Generate imperceptible, adversarial examples.
 
         :param x: An array with the original inputs to be attacked.
-        :param y: Target values of shape (batch_size,). Each sample in `y` is a string and it may possess different
+        :param y: Target values of shape (batch_size,). Each sample in `y` is a string, and it may possess different
             lengths. A possible example of `y` could be: `y = np.array(['SIXTY ONE', 'HELLO'])`.
         :return: An array holding the adversarial examples.
         """
@@ -221,7 +221,7 @@ class ImperceptibleASR(EvasionAttack):
         | Paper link: https://arxiv.org/abs/1801.01944.
 
         :param x: An array with the original inputs to be attacked.
-        :param y: Target values of shape (batch_size,). Each sample in `y` is a string and it may possess different
+        :param y: Target values of shape (batch_size,). Each sample in `y` is a string, and it may possess different
             lengths. A possible example of `y` could be: `y = np.array(['SIXTY ONE', 'HELLO'])`.
         :return: An array with the adversarial outputs.
         """
@@ -279,7 +279,7 @@ class ImperceptibleASR(EvasionAttack):
 
         :param x: An array with the original inputs to be attacked.
         :param x_adversarial: An array with the adversarial examples.
-        :param y: Target values of shape (batch_size,). Each sample in `y` is a string and it may possess different
+        :param y: Target values of shape (batch_size,). Each sample in `y` is a string, and it may possess different
             lengths. A possible example of `y` could be: `y = np.array(['SIXTY ONE', 'HELLO'])`.
         :return: An array with the imperceptible, adversarial outputs.
         """
@@ -505,7 +505,7 @@ class ImperceptibleASR(EvasionAttack):
         Approximate the power spectral density for a perturbation `perturbation` in TensorFlow.
 
         Note that a stabilized PSD approximate is returned, where the `10*log10`-term has been canceled out.
-        Following Qin et al (2019) this mitigates optimization instabilities.
+        Following Qin et al. (2019) this mitigates optimization instabilities.
 
         :param perturbation: Adversarial perturbation.
         :param psd_maximum_stabilized: Stabilized maximum across frames, i.e. shape is `(batch_size, frame_length)`, of
@@ -792,7 +792,7 @@ class PsychoacousticMasker:
         :param psd_vector: PSD vector of shape `(window_size // 2 + 1)`.
         :return: Possible PSD maskers and indices.
         """
-        # identify maskers. For simplification it is assumed that all maskers are tonal (vs. nontonal).
+        # identify maskers. For simplification, it is assumed that all maskers are tonal (vs. nontonal).
         masker_idx = ss.argrelmax(psd_vector)[0]
 
         # smooth maskers with their direct neighbors

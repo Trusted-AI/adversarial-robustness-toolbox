@@ -238,7 +238,7 @@ class PyTorchRegressor(RegressorMixin, PyTorchEstimator):
 
         :param x: Input samples.
         :param batch_size: Size of batches.
-        :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
+        :param training_mode: `True` for model set to training mode and `False` for model set to evaluation mode.
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         """
         import torch
@@ -318,7 +318,7 @@ class PyTorchRegressor(RegressorMixin, PyTorchEstimator):
                   shape (nb_samples,).
         :param batch_size: Size of batches.
         :param nb_epochs: Number of epochs to use for training.
-        :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
+        :param training_mode: `True` for model set to training mode and `False` for model set to evaluation mode.
         :param drop_last: Set to ``True`` to drop the last incomplete batch, if the dataset size is not divisible by
                           the batch size. If ``False`` and the size of dataset is not divisible by the batch size, then
                           the last batch will be smaller. (default: ``False``)
@@ -607,7 +607,7 @@ class PyTorchRegressor(RegressorMixin, PyTorchEstimator):
         :param x: Sample input with shape as expected by the model.
         :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices of shape
                   `(nb_samples,)`.
-        :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
+        :param training_mode: `True` for model set to training mode and `False` for model set to evaluation mode.
                               Note on RNN-like models: Backpropagation through RNN modules in eval mode raises
                               RuntimeError due to cudnn issues and require training mode, i.e. RuntimeError: cudnn RNN
                               backward can only be called in training mode. Therefore, if the model is an RNN type we
@@ -708,10 +708,10 @@ class PyTorchRegressor(RegressorMixin, PyTorchEstimator):
         """
         Compute the gradient of the loss function w.r.t. `x`.
 
-        :loss_fn: Loss function w.r.t to which gradient needs to be calculated.
+        :param loss_fn: Loss function w.r.t to which gradient needs to be calculated.
         :param x: Sample input with shape as expected by the model(base image).
         :param y: Sample input with shape as expected by the model(target image).
-        :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.`
+        :param training_mode: `True` for model set to training mode and `False` for model set to evaluation mode.`
         :param layer_name: Name of the layer from which activation needs to be extracted/activation layer.
         :return: Array of gradients of the same shape as `x`.
         """

@@ -163,7 +163,7 @@ class CarliniL2Method(EvasionAttack):
         # column, last equation), the maximum is taken over Z_other - Z_target (or Z_target - Z_other respectively)
         # and -confidence. However, it doesn't seem that that would have the desired effect (loss term is <= 0 if and
         # only if the difference between the logit of the target and any other class differs by at least confidence).
-        # Hence the rearrangement here.
+        # Hence, the rearrangement here.
 
         if self.targeted:
             # if targeted, optimize for making the target class most likely

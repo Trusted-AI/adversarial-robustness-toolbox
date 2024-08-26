@@ -85,7 +85,7 @@ class NeuralCleanse(Transformer):
         batch_size: int = 32,
     ) -> KerasNeuralCleanse:
         """
-        Returns an new classifier with implementation of methods in Neural Cleanse: Identifying and Mitigating Backdoor
+        Returns a new classifier with implementation of methods in Neural Cleanse: Identifying and Mitigating Backdoor
         Attacks in Neural Networks. Wang et al. (2019).
 
         Namely, the new classifier has a new method mitigate(). This can also affect the predict() function.
@@ -100,7 +100,7 @@ class NeuralCleanse(Transformer):
         :param attack_success_threshold: The threshold at which the generated backdoor is successful enough to stop the
                                          Neural Cleanse optimization
         :param patience: How long to wait for changing the cost multiplier in the Neural Cleanse optimization
-        :param early_stop: Whether or not to allow early stopping in the Neural Cleanse optimization
+        :param early_stop: Whether to allow early stopping in the Neural Cleanse optimization
         :param early_stop_threshold: How close values need to come to max value to start counting early stop
         :param early_stop_patience: How long to wait to determine early stopping in the Neural Cleanse optimization
         :param cost_multiplier: How much to change the cost in the Neural Cleanse optimization

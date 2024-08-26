@@ -50,7 +50,7 @@ class PytorchSpeechRecognizerMixin(ABC):
         Compute loss function and decoded output.
 
         :param masked_adv_input: The perturbed inputs.
-        :param original_output: Target values of shape (nb_samples). Each sample in `original_output` is a string and
+        :param original_output: Target values of shape (nb_samples). Each sample in `original_output` is a string, and
                                 it may possess different lengths. A possible example of `original_output` could be:
                                 `original_output = np.array(['SIXTY ONE', 'HELLO'])`.
         :return: The loss and the decoded output.

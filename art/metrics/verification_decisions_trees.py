@@ -325,7 +325,7 @@ class RobustnessVerificationTreeModelsCliqueMethod:
                     new_leaf_value = accessible_leaf.value
                 cliques_old.append({"box": accessible_leaf.box, "value": new_leaf_value})
 
-            # Loop over all all trees
+            # Loop over all trees
             for i_tree in range(
                 start_tree + 1,
                 min(len(accessible_leaves), start_tree + self.max_clique),

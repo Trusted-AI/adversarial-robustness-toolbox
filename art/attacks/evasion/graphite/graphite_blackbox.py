@@ -42,7 +42,7 @@ This module implements the black-box (hard-label) GRAPHITE attack `GRAPHITEBlack
 attack that only requires class predictions.
 
 | Paper link: https://arxiv.org/abs/2002.07088
-| Original github link: https://github.com/ryan-feng/GRAPHITE
+| Original GitHub link: https://github.com/ryan-feng/GRAPHITE
 """
 from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
@@ -79,7 +79,7 @@ class GRAPHITEBlackbox(EvasionAttack):
     stickers.
 
     | Paper link: https://arxiv.org/abs/2002.07088
-    | Original github link: https://github.com/ryan-feng/GRAPHITE
+    | Original GitHub link: https://github.com/ryan-feng/GRAPHITE
     """
 
     attack_params = EvasionAttack.attack_params + [
@@ -616,7 +616,7 @@ class GRAPHITEBlackbox(EvasionAttack):
         :param pts: Optional. A set of points that will set the crop size in the perspective transform.
         :return: mask, adjusted list of patches, adjusted list of indices
         """
-        # binary search leftmost pivot value for which tr exceeeds specificed threshold if one exists
+        # binary search leftmost pivot value for which `tr` exceeds specified threshold if one exists
         num_patches = len(patches)
         if num_patches == 1:
             pivot = 0

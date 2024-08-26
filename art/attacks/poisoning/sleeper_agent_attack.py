@@ -384,10 +384,10 @@ class SleeperAgentAttack(GradientMatchingAttack):
         """
         Select indices of poisoned samples
 
-        :classifier: Substitute Model.
-        :x_samples: Samples of poison. [x_samples are normalised]
-        :y_samples: Labels of samples of poison.
-        :num_poison: Number of poisoned samples to be selected out of all x_samples.
+        :param classifier: Substitute Model.
+        :param x_samples: Samples of poison. [x_samples are normalised]
+        :param y_samples: Labels of samples of poison.
+        :param num_poison: Number of poisoned samples to be selected out of all x_samples.
         :return indices - Indices of samples to be poisoned.
         """
         if isinstance(self.substitute_classifier, PyTorchClassifier):

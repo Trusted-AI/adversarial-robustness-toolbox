@@ -263,7 +263,7 @@ class AdversarialPatchNumpy(EvasionAttack):
         :param x: Instances to apply randomly transformed patch.
         :param scale: Scale of the applied patch in relation to the classifier input shape.
         :param patch_external: External patch to apply to images `x`.
-        :param mask: An boolean array of shape equal to the shape of a single samples (1, H, W) or the shape of `x`
+        :param mask: A boolean array of shape equal to the shape of a single samples (1, H, W) or the shape of `x`
                      (N, H, W) without their channel dimensions. Any features for which the mask is True can be the
                      center location of the patch during sampling.
         :return: The patched instances.

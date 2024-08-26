@@ -107,12 +107,12 @@ class PyTorchDeRandomizedSmoothing(DeRandomizedSmoothingMixin, PyTorchClassifier
         :param ablation_size: The size of the data portion to retain after ablation.
         :param algorithm: Either 'salman2021' or 'levine2020'. For salman2021 we support ViTs and CNNs. For levine2020
                           there is only CNN support.
-        :param replace_last_layer: ViT Specific. If to replace the last layer of the ViT with a fresh layer
+        :param replace_last_layer: ViT-specific. If to replace the last layer of the ViT with a fresh layer
                                    matching the number of classes for the dataset to be examined.
                                    Needed if going from the pre-trained imagenet models to fine-tune
                                    on a dataset like CIFAR.
-        :param drop_tokens: ViT Specific. If to drop the fully ablated tokens in the ViT
-        :param load_pretrained: ViT Specific. If to load a pretrained model matching the ViT name.
+        :param drop_tokens: ViT-specific. If to drop the fully ablated tokens in the ViT
+        :param load_pretrained: ViT-specific. If to load a pretrained model matching the ViT name.
                                 Will only affect the ViT if a string name is passed to model rather than a ViT directly.
         :param optimizer: The optimizer used to train the classifier.
         :param ablation_type: The type of ablation to perform. Either "column", "row", or "block"
@@ -452,7 +452,7 @@ class PyTorchDeRandomizedSmoothing(DeRandomizedSmoothingMixin, PyTorchClassifier
                   shape (nb_samples,).
         :param batch_size: Size of batches.
         :param nb_epochs: Number of epochs to use for training.
-        :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
+        :param training_mode: `True` for model set to training mode and `False` for model set to evaluation mode.
         :param drop_last: Set to ``True`` to drop the last incomplete batch, if the dataset size is not divisible by
                           the batch size. If ``False`` and the size of dataset is not divisible by the batch size, then
                           the last batch will be smaller. (default: ``False``)

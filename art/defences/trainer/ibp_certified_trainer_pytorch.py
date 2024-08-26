@@ -128,7 +128,7 @@ class AdversarialTrainerCertifiedIBPPyTorch(Trainer):
         :param classifier: Classifier to train adversarially.
         :param pgd_params: A dictionary containing the specific parameters relating to regular PGD training.
                            If not provided, we will default to typical MNIST values.
-                           Otherwise must contain the following keys:
+                           Otherwise, must contain the following keys:
 
                            * *eps*: Maximum perturbation that the attacker can introduce.
                            * *eps_step*: Attack step size (input variation) at each iteration.
@@ -141,7 +141,7 @@ class AdversarialTrainerCertifiedIBPPyTorch(Trainer):
         :param nb_epochs: Number of training epochs.
         :param use_certification_schedule: If to use a training schedule for the certification radius.
         :param certification_schedule: Schedule for gradually increasing the certification radius. Empirical studies
-                                       have shown that this is often required to achieve best performance.
+                                       have shown that this is often required to achieve the best performance.
                                        Either True to use the default linear scheduler,
                                        or a class with a .step() method that returns the updated bound every epoch.
         :param batch_size: Size of batches to use for certified training.
@@ -246,14 +246,14 @@ class AdversarialTrainerCertifiedIBPPyTorch(Trainer):
                        bounds. Passing None will mean no clipping is applied to the interval abstraction.
                        Typical images will have limits of [0.0, 1.0] after normalization.
         :param certification_loss: Which certification loss function to use. Either "interval_loss_cce"
-                                   or "max_logit_loss". By default will use interval_loss_cce.
+                                   or "max_logit_loss". By default, will use interval_loss_cce.
                                    Alternatively, a user can supply their own loss function which takes in as input
                                    the interval predictions of the form () and labels of the form () and returns a
                                    scalar loss.
         :param batch_size: Size of batches to use for certified training. NB, this will run the data
                            sequentially accumulating gradients over the batch size.
         :param nb_epochs: Number of epochs to use for training.
-        :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
+        :param training_mode: `True` for model set to training mode and `False` for model set to evaluation mode.
         :param scheduler: Learning rate scheduler to run at the start of every epoch.
         :param verbose: If to display the per-batch statistics while training.
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch

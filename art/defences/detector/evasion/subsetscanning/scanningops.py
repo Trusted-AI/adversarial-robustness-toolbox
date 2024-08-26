@@ -125,7 +125,7 @@ class ScanningOps:
                 best_alpha_count = alpha_count
             alpha_count = alpha_count + 1
 
-        # after the alpha for loop we now have best score, best alpha, size of best subset,
+        # after the alpha for loop we now have the best score, the best alpha, size of the best subset,
         # and alpha counter use these with the priority argsort to reconstruct the best subset
         unsort = arg_sort_priority[:, best_alpha_count]
 

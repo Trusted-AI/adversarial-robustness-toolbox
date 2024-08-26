@@ -64,7 +64,8 @@ class SubsetScanningDetector(EvasionDetector):
         Create a `SubsetScanningDetector` instance which is used to the detect the presence of adversarial samples.
 
         :param classifier: The model being evaluated for its robustness to anomalies (e.g. adversarial samples).
-        :param bgd_data: The background data used to learn a null model. Typically dataset used to train the classifier.
+        :param bgd_data: The background data used to learn a null model. Typically, dataset used to train the
+                        classifier.
         :param layer: The layer from which to extract activations to perform scan.
         :param verbose: Show progress bars.
         """
@@ -230,7 +231,7 @@ class SubsetScanningDetector(EvasionDetector):
         :param x: Data sample on which to perform detection.
         :param batch_size: Size of batches.
         :return: (report, is_adversarial):
-                where report is a dictionary containing contains information specified by the subset scanning method;
+                where report is a dictionary containing information specified by the subset scanning method;
                 where is_adversarial is a boolean list of per-sample prediction whether the sample is adversarial
                 or not and has the same `batch_size` (first dimension) as `x`.
         """

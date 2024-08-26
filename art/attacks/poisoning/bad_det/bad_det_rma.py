@@ -96,7 +96,7 @@ class BadDetRegionalMisclassificationAttack(PoisoningAttackObjectDetector):
 
                   - boxes [N, 4]: the boxes in [x1, y1, x2, y2] format, with 0 <= x1 < x2 <= W and 0 <= y1 < y2 <= H.
                   - labels [N]: the labels for each image.
-        :return: An tuple holding the `(poisoning_examples, poisoning_labels)`.
+        :return: A tuple holding the `(poisoning_examples, poisoning_labels)`.
         """
         if isinstance(x, np.ndarray):
             x_ndim = len(x.shape)
@@ -142,7 +142,7 @@ class BadDetRegionalMisclassificationAttack(PoisoningAttackObjectDetector):
                     bounding_box = image[y_1:y_2, x_1:x_2, :]
 
                     # insert backdoor into the bounding box
-                    # add an additional dimension to create a batch of size 1
+                    # add a dimension to create a batch of size 1
                     poisoned_input, _ = self.backdoor.poison(bounding_box[np.newaxis], label)
                     image[y_1:y_2, x_1:x_2, :] = poisoned_input[0]
 

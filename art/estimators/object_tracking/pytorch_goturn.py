@@ -507,7 +507,7 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
             "torch.Tensor",
         ]:
             """
-            Around the bounding box, we define a extra context factor of 2, which we will crop from the original image.
+            Around the bounding box, we define an extra context factor of 2, which we will crop from the original image.
 
             :param bbox_tight: Coordinates of bounding box [x1, y1, x2, y2].
             :param image: Frame to be cropped and padded.

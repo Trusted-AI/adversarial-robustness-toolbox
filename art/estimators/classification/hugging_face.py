@@ -67,9 +67,8 @@ class HuggingFaceClassifierPyTorch(PyTorchClassifier):
         """
         Initialization of HuggingFaceClassifierPyTorch specifically for the PyTorch-based backend.
 
-        :param model: Huggingface model model which returns outputs of type
-                      ImageClassifierOutput from the transformers library.
-                      Must have the logits attribute set as output.
+        :param model: Huggingface model which returns outputs of type ImageClassifierOutput from the `transformers`
+                      library. Must have the logits attribute set as output.
         :param loss: The loss function for which to compute gradients for training. The target label must be raw
                 categorical, i.e. not converted to one-hot encoding.
         :param input_shape: The shape of one input instance.
@@ -97,7 +96,7 @@ class HuggingFaceClassifierPyTorch(PyTorchClassifier):
         :param device_type: Type of device on which the classifier is run, either `gpu` or `cpu`.
         :param processor: Optional argument. Function which takes in a batch of data and performs
                           the preprocessing relevant to a given foundation model.
-                          Must be differentiable for grandient based defences and attacks.
+                          Must be differentiable for gradient based defences and attacks.
         """
         import torch
 
@@ -125,7 +124,7 @@ class HuggingFaceClassifierPyTorch(PyTorchClassifier):
         def prefix_function(function: Callable, postfunction: Callable) -> Callable[[Any, Any], torch.Tensor]:
             """
             Huggingface returns logit under outputs.logits. To make this compatible with ART we wrap the forward pass
-            function of a HF model here, which automatically extracts the logits.
+            function of an HF model here, which automatically extracts the logits.
 
             :param function: The first function to run, in our case the forward pass of the model.
             :param postfunction: Second function to run, in this case simply extracts the logits.

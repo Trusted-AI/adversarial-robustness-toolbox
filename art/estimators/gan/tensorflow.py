@@ -66,7 +66,7 @@ class TensorFlowV2GAN(TensorFlowV2Estimator):
         """
         Generates a sample.
 
-        :param x: A input seed.
+        :param x: An input seed.
         :param batch_size: The batch size for predictions.
         :return: The generated sample.
         """
@@ -85,10 +85,10 @@ class TensorFlowV2GAN(TensorFlowV2Estimator):
         """
         Creates a generative model
 
-        :param x: the secret backdoor trigger that will produce the target
-        :param y: the target to produce when using the trigger
-        :param batch_size: batch_size of images used to train generator
-        :param nb_epochs: total number of iterations for performing the attack
+        :param x: The secret backdoor trigger that will produce the target.
+        :param y: The target to produce when using the trigger.
+        :param batch_size: batch_size of images used to train generator.
+        :param nb_epochs: total number of iterations for performing the attack.
         """
         import tensorflow as tf
 

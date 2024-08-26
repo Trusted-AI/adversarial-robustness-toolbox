@@ -67,7 +67,7 @@ class NeuralCleanseMixin(AbstainPredictorMixin):
         :param attack_success_threshold: The threshold at which the generated backdoor is successful enough to stop the
                                          Neural Cleanse optimization
         :param patience: How long to wait for changing the cost multiplier in the Neural Cleanse optimization
-        :param early_stop: Whether or not to allow early stopping in the Neural Cleanse optimization
+        :param early_stop: Whether to allow early stopping in the Neural Cleanse optimization
         :param early_stop_threshold: How close values need to come to max value to start counting early stop
         :param early_stop_patience: How long to wait to determine early stopping in the Neural Cleanse optimization
         :param cost_multiplier: How much to change the cost in the Neural Cleanse optimization
@@ -97,7 +97,7 @@ class NeuralCleanseMixin(AbstainPredictorMixin):
 
         :param x: Input samples.
         :param batch_size: Size of batches.
-        :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
+        :param training_mode: `True` for model set to training mode and `False` for model set to evaluation mode.
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         """
         raise NotImplementedError
@@ -229,6 +229,7 @@ class NeuralCleanseMixin(AbstainPredictorMixin):
     def backdoor_examples(self, x_val: np.ndarray, y_val: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """
         Generate reverse-engineered backdoored examples using validation data
+
         :param x_val: validation data
         :param y_val: validation labels
         :return: a tuple containing (clean data, backdoored data, labels)
@@ -266,14 +267,16 @@ class NeuralCleanseMixin(AbstainPredictorMixin):
     ) -> tuple[np.ndarray, np.ndarray]:
         """
         Generates a possible backdoor for the model. Returns the pattern and the mask
+
         :return: A tuple of the pattern and mask for the model.
         """
         raise NotImplementedError
 
     def outlier_detection(self, x_val: np.ndarray, y_val: np.ndarray) -> list[tuple[int, np.ndarray, np.ndarray]]:
         """
-        Returns a tuple of suspected of suspected poison labels and their mask and pattern
-        :return: A list of tuples containing the the class index, mask, and pattern for suspected labels
+        Returns a tuple of suspected poison labels and their mask and pattern
+
+        :return: A list of tuples containing the class index, mask, and pattern for suspected labels
         """
         l1_norms = []
         masks = []

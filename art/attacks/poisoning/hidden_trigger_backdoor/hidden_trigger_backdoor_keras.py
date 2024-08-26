@@ -97,7 +97,7 @@ class HiddenTriggerBackdoorKeras(PoisoningAttackWhiteBox):
         :param is_index: If true, the source and target params are assumed to represent indices rather
                          than a class label. poison_percent is ignored if true.
         :param verbose: Show progress bars.
-        :print iter: The number of iterations to print the current loss progress.
+        :param print iter: The number of iterations to print the current loss progress.
         """
         super().__init__(classifier=classifier)  # type: ignore
         self.target = target
@@ -120,13 +120,12 @@ class HiddenTriggerBackdoorKeras(PoisoningAttackWhiteBox):
         """
         Calls perturbation function on the dataset x and returns only the perturbed input and their
         indices in the dataset.
+
         :param x: An array in the shape NxWxHxC with the points to draw source and target samples from.
-                  Source indicates the class(es) that the backdoor would be added to to cause
-                  misclassification into the target label.
-                  Target indicates the class that the backdoor should cause misclassification into.
-        :param y: The labels of the provided samples. If none, we will use the classifier to label the
-                  data.
-        :return: An tuple holding the `(poisoning_examples, poisoning_labels)`.
+                  Source indicates the class(es) that the backdoor would be added to cause misclassification into the
+                  target label. Target indicates the class that the backdoor should cause misclassification into.
+        :param y: The labels of the provided samples. If none, we will use the classifier to label the data.
+        :return: A tuple holding the `(poisoning_examples, poisoning_labels)`.
         """
 
         import tensorflow as tf
@@ -239,7 +238,7 @@ class HiddenTriggerBackdoorKeras(PoisoningAttackWhiteBox):
                     if not hasattr(self, "_custom_loss"):
                         self._custom_loss = {}
 
-                        # Define a variable so we can change it on the fly
+                        # Define a variable, so we can change it on the fly
                         feat1_var = k.variable(feat1)
                         self._custom_loss["feat_var"] = feat1_var
 

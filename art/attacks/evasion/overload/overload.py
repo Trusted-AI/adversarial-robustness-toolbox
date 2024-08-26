@@ -63,7 +63,7 @@ class OverloadPyTorch(EvasionAttack):
         batch_size: int,
     ) -> None:
         """
-        Create a overload attack instance.
+        Create an overload attack instance.
 
         :param estimator: A PyTorch object detection estimator for a YOLO5 model.
         :param eps: Maximum perturbation that the attacker can introduce.
@@ -207,7 +207,7 @@ class OverloadPyTorch(EvasionAttack):
         """
         Convert the representation from xywh format yo xyxy format.
 
-        :param xyhw: A n by 4 boxes store the information in xyhw format
+        :param xyhw: An n by 4 boxes store the information in xyhw format
                      where [x ,y, w h] is [center_x, center_y, width, height]
         :return: The n by 4 boxes in xyxy format
                  where [x1, y1, x2, y2] is [top_left_x, top_left_y, bottom_right_x,  bottom_right_y]

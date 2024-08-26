@@ -106,7 +106,7 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier):
         :param input_layer: The index of the layer to consider as input for models with multiple input layers. The layer
                             with this index will be considered for computing gradients. For models with only one input
                             layer this values is not required.
-        :param output_layer: Which layer to consider as the output when the models has multiple output layers. The layer
+        :param output_layer: Which layer to consider as the output when the models have multiple output layers. The layer
                              with this index will be considered for computing gradients. For models with only one output
                              layer this values is not required.
         :param steps: The maximum number of steps to run the Neural Cleanse optimization
@@ -116,7 +116,7 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier):
         :param attack_success_threshold: The threshold at which the generated backdoor is successful enough to stop the
                                          Neural Cleanse optimization
         :param patience: How long to wait for changing the cost multiplier in the Neural Cleanse optimization
-        :param early_stop: Whether or not to allow early stopping in the Neural Cleanse optimization
+        :param early_stop: Whether to allow early stopping in the Neural Cleanse optimization
         :param early_stop_threshold: How close values need to come to max value to start counting early stop
         :param early_stop_patience: How long to wait to determine early stopping in the Neural Cleanse optimization
         :param cost_multiplier: How much to change the cost in the Neural Cleanse optimization
@@ -362,7 +362,7 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier):
 
         :param x: Input data to predict.
         :param batch_size: Batch size.
-        :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
+        :param training_mode: `True` for model set to training mode and `False` for model set to evaluation mode.
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         """
         return NeuralCleanseMixin.predict(self, x, batch_size=batch_size, training_mode=training_mode, **kwargs)
@@ -385,7 +385,7 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier):
         :param x: Sample input with shape as expected by the model.
         :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
                   (nb_samples,).
-        :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
+        :param training_mode: `True` for model set to training mode and `False` for model set to evaluation mode.
         :return: Array of gradients of the same shape as `x`.
         """
         return self.loss_gradient(x=x, y=y, training_mode=training_mode, **kwargs)
@@ -405,7 +405,7 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier):
                       output is computed for all samples. If multiple values as provided, the first dimension should
                       match the batch size of `x`, and each value will be used as target for its corresponding sample in
                       `x`. If `None`, then gradients for all classes will be computed for each sample.
-        :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
+        :param training_mode: `True` for model set to training mode and `False` for model set to evaluation mode.
         :return: Array of gradients of input features w.r.t. each class in the form
                  `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
                  `(batch_size, 1, input_shape)` when `label` parameter is specified.

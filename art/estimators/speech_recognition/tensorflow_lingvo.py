@@ -237,7 +237,7 @@ class TensorFlowLingvoASR(SpeechRecognizerMixin, TensorFlowV2Estimator):
         )
 
         # monkey-patch the lingvo.asr.decoder.AsrDecoderBase._ComputeMetrics method with patched method according
-        # to Qin et al
+        # to Qin et al.
         from lingvo.tasks.asr import decoder
         from asr import decoder_patched
 
@@ -466,7 +466,7 @@ class TensorFlowLingvoASR(SpeechRecognizerMixin, TensorFlowV2Estimator):
         :param x: Samples of shape `(nb_samples)`. Note that, it is allowable that sequences in the batch
                   could have different lengths. A possible example of `x` could be:
                   `x = np.ndarray([[0.1, 0.2, 0.1, 0.4], [0.3, 0.1]])`.
-        :param y: Target values of shape (nb_samples). Each sample in `y` is a string and it may possess different
+        :param y: Target values of shape (nb_samples). Each sample in `y` is a string, and it may possess different
                   lengths. A possible example of `y` could be: `y = np.array(['SIXTY ONE', 'HELLO'])`.
         :param batch_mode: If `True` calculate gradient per batch or otherwise per sequence.
         :return: Loss gradients of the same shape as `x`.

@@ -39,7 +39,7 @@ logger = logging.getLogger(__name__)
 
 class AttributeInferenceMembership(AttributeInferenceAttack):
     """
-    Implementation of a an attribute inference attack that utilizes a membership inference attack.
+    Implementation of an attribute inference attack that utilizes a membership inference attack.
 
     The idea is to find the target feature value that causes the membership inference attack to classify the sample
     as a member with the highest confidence.
@@ -111,7 +111,7 @@ class AttributeInferenceMembership(AttributeInferenceAttack):
                 else:
                     probabilities = np.hstack((probabilities, predicted))
 
-            # needs to be of type float so we can later replace back the actual values
+            # needs to be of type float, so that we can later replace back the actual values
             value_indexes = np.argmax(probabilities, axis=1).astype(x.dtype)
             pred_values = np.zeros_like(value_indexes)
             for index, value in enumerate(values):

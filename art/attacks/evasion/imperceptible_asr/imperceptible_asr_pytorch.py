@@ -124,7 +124,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         :param optimizer_2: The optimizer applied for the second stage of the optimization of the attack. If `None`
                             attack will use `torch.optim.Adam`.
         :param global_max_length: The length of the longest audio signal allowed by this attack.
-        :param initial_rescale: Initial rescale coefficient to speedup the decrease of the perturbation size during
+        :param initial_rescale: Initial rescale coefficient to speed up the decrease of the perturbation size during
                                 the first stage of the optimization of the attack.
         :param decrease_factor_eps: The factor to adjust the rescale coefficient during the first stage of the
                                     optimization of the attack.
@@ -230,7 +230,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         :param x: Samples of shape (nb_samples, seq_length). Note that, it is allowable that sequences in the batch
                   could have different lengths. A possible example of `x` could be:
                   `x = np.array([np.array([0.1, 0.2, 0.1, 0.4]), np.array([0.3, 0.1])])`.
-        :param y: Target values of shape (nb_samples). Each sample in `y` is a string and it may possess different
+        :param y: Target values of shape (nb_samples). Each sample in `y` is a string, and it may possess different
                   lengths. A possible example of `y` could be: `y = np.array(['SIXTY ONE', 'HELLO'])`. Note that, this
                   class only supports targeted attack.
         :return: An array holding the adversarial examples.
@@ -298,7 +298,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         :param x: Samples of shape (nb_samples, seq_length). Note that, it is allowable that sequences in the batch
                   could have different lengths. A possible example of `x` could be:
                   `x = np.array([np.array([0.1, 0.2, 0.1, 0.4]), np.array([0.3, 0.1])])`.
-        :param y: Target values of shape (nb_samples). Each sample in `y` is a string and it may possess different
+        :param y: Target values of shape (nb_samples). Each sample in `y` is a string, and it may possess different
                   lengths. A possible example of `y` could be: `y = np.array(['SIXTY ONE', 'HELLO'])`. Note that, this
                   class only supports targeted attack.
         :return: A batch of adversarial examples.
@@ -344,7 +344,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         :param x: Samples of shape (nb_samples, seq_length). Note that, it is allowable that sequences in the batch
                   could have different lengths. A possible example of `x` could be:
                   `x = np.array([np.array([0.1, 0.2, 0.1, 0.4]), np.array([0.3, 0.1])])`.
-        :param y: Target values of shape (nb_samples). Each sample in `y` is a string and it may possess different
+        :param y: Target values of shape (nb_samples). Each sample in `y` is a string, and it may possess different
                   lengths. A possible example of `y` could be: `y = np.array(['SIXTY ONE', 'HELLO'])`. Note that, this
                   class only supports targeted attack.
         :return: A tuple of two tensors:
@@ -449,7 +449,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         :param original_input: Samples of shape (nb_samples, seq_length). Note that, sequences in the batch must have
                                equal lengths. A possible example of `original_input` could be:
                                `original_input = np.array([np.array([0.1, 0.2, 0.1]), np.array([0.3, 0.1, 0.0])])`.
-        :param original_output: Target values of shape (nb_samples). Each sample in `original_output` is a string and
+        :param original_output: Target values of shape (nb_samples). Each sample in `original_output` is a string, and
                                 it may possess different lengths. A possible example of `original_output` could be:
                                 `original_output = np.array(['SIXTY ONE', 'HELLO'])`.
         :param local_batch_size: Current batch size.
@@ -491,7 +491,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         :param x: Samples of shape (nb_samples, seq_length). Note that, it is allowable that sequences in the batch
                   could have different lengths. A possible example of `x` could be:
                   `x = np.array([np.array([0.1, 0.2, 0.1, 0.4]), np.array([0.3, 0.1])])`.
-        :param y: Target values of shape (nb_samples). Each sample in `y` is a string and it may possess different
+        :param y: Target values of shape (nb_samples). Each sample in `y` is a string, and it may possess different
                   lengths. A possible example of `y` could be: `y = np.array(['SIXTY ONE', 'HELLO'])`. Note that, this
                   class only supports targeted attack.
         :param theta_batch: Original thresholds.
@@ -566,7 +566,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
             for local_batch_size_idx in range(local_batch_size):
                 if decoded_output[local_batch_size_idx] == y[local_batch_size_idx]:
                     if loss_2nd_stage[local_batch_size_idx] < best_loss_2nd_stage[local_batch_size_idx]:
-                        # Update best loss at 2nd stage
+                        # Update the best loss at 2nd stage
                         best_loss_2nd_stage[local_batch_size_idx] = (
                             loss_2nd_stage[local_batch_size_idx].detach().cpu().numpy()
                         )

@@ -289,7 +289,7 @@ class DebugInfo:
 
     def save_image(self, image: np.ndarray) -> None:
         """
-        Saves images generated during lasting process to the artifacts directory.
+        Saves images generated during lasting process to the artifact's directory.
 
         :param image: Image to save.
         """

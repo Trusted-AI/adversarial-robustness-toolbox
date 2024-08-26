@@ -42,7 +42,7 @@ logger = logging.getLogger(__name__)
 
 class BullseyePolytopeAttackPyTorch(PoisoningAttackWhiteBox):
     """
-    Implementation of Bullseye Polytope Attack by Aghakhani, et. al. 2020.
+    Implementation of Bullseye Polytope Attack by Aghakhani et al. (2020).
     "Bullseye Polytope: A Scalable Clean-Label Poisoning Attack with Improved Transferability"
 
     This implementation is based on UCSB's original code here: https://github.com/ucsb-seclab/BullseyePoison
@@ -88,7 +88,7 @@ class BullseyePolytopeAttackPyTorch(PoisoningAttackWhiteBox):
         verbose: bool = True,
     ):
         """
-        Initialize an Feature Collision Clean-Label poisoning attack
+        Initialize a Feature Collision Clean-Label poisoning attack
 
         :param classifier: The proxy classifiers used for the attack. Can be a single classifier or list of classifiers
                            with varying architectures.
@@ -100,7 +100,7 @@ class BullseyePolytopeAttackPyTorch(PoisoningAttackWhiteBox):
         :param learning_rate: The learning rate of clean-label attack optimization.
         :param momentum: The momentum of clean-label attack optimization.
         :param decay_iter: Which iterations to decay the learning rate.
-                           Can be a integer (every N iterations) or list of integers [0, 500, 1500]
+                           Can be an integer (every N iterations) or list of integers [0, 500, 1500]
         :param decay_coeff: The decay coefficient of the learning rate.
         :param epsilon: The perturbation budget
         :param dropout: Dropout to apply while training

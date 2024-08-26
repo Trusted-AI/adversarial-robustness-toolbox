@@ -109,7 +109,7 @@ class PoisoningAttackCleanLabelBackdoor(PoisoningAttackBlackBox):
 
         :param x: An array with the points that initialize attack points.
         :param y: The target labels for the attack.
-        :param broadcast: whether or not to broadcast single target label
+        :param broadcast: whether to broadcast single target label
         :return: An tuple holding the `(poisoning_examples, poisoning_labels)`.
         """
         data = np.copy(x)

@@ -116,7 +116,7 @@ class DPatch(EvasionAttack):
                   - labels [N]: the labels for each image
                   - scores [N]: the scores or each prediction.
         :param target_label: The target label of the DPatch attack.
-        :param mask: An boolean array of shape equal to the shape of a single samples (1, H, W) or the shape of `x`
+        :param mask: A boolean array of shape equal to the shape of a single samples (1, H, W) or the shape of `x`
                      (N, H, W) without their channel dimensions. Any features for which the mask is True can be the
                      center location of the patch during sampling.
         :type mask: `np.ndarray`
@@ -276,7 +276,7 @@ class DPatch(EvasionAttack):
         :param random_location: If True apply patch at randomly shifted locations, otherwise place patch at origin
                                 (top-left corner).
         :param channels_first: Set channels first or last.
-        :param mask: An boolean array of shape equal to the shape of a single samples (1, H, W) or the shape of `x`
+        :param mask: A boolean array of shape equal to the shape of a single samples (1, H, W) or the shape of `x`
                      (N, H, W) without their channel dimensions. Any features for which the mask is True can be the
                      center location of the patch during sampling.
         :param transforms: Patch transforms, requires `random_location=False`, and `mask=None`.
@@ -362,7 +362,7 @@ class DPatch(EvasionAttack):
         :param x: Images to be patched.
         :param patch_external: External patch to apply to images `x`. If None the attacks patch will be applied.
         :param random_location: True if patch location should be random.
-        :param mask: An boolean array of shape equal to the shape of a single samples (1, H, W) or the shape of `x`
+        :param mask: A boolean array of shape equal to the shape of a single samples (1, H, W) or the shape of `x`
                      (N, H, W) without their channel dimensions. Any features for which the mask is True can be the
                      center location of the patch during sampling.
         :return: The patched images.

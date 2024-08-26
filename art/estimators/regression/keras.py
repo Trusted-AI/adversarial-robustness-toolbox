@@ -88,7 +88,7 @@ class KerasRegressor(RegressorMixin, KerasEstimator):
         :param input_layer: The index of the layer to consider as input for models with multiple input layers. The layer
                             with this index will be considered for computing gradients. For models with only one input
                             layer this values is not required.
-        :param output_layer: Which layer to consider as the output when the models has multiple output layers. The layer
+        :param output_layer: Which layer to consider as the output when the models have multiple output layers. The layer
                              with this index will be considered for computing gradients. For models with only one output
                              layer this values is not required.
         """
@@ -376,7 +376,7 @@ class KerasRegressor(RegressorMixin, KerasEstimator):
         :param x: Sample input with shape as expected by the model.
         :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
                   (nb_samples,).
-        :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
+        :param training_mode: `True` for model set to training mode and `False` for model set to evaluation mode.
         :return: Array of gradients of the same shape as `x`.
         """
         # Check shape of preprocessed `x` because of custom function for `_loss_gradients`
@@ -402,7 +402,7 @@ class KerasRegressor(RegressorMixin, KerasEstimator):
 
         :param x: Input samples.
         :param batch_size: Size of batches.
-        :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
+        :param training_mode: `True` for model set to training mode and `False` for model set to evaluation mode.
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         """
         # Apply preprocessing

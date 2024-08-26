@@ -256,9 +256,9 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
         Compute per-class derivatives w.r.t. `x`.
 
         :param x: Sample input with shape as expected by the model.
-        :param label: Index of a specific per-class derivative. If `None`, then gradients for all
-                      classes will be computed.
-        :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
+        :param label: Index of a specific per-class derivative. If `None`, then gradients for all classes will be
+                      computed.
+        :param training_mode: `True` for model set to training mode and `False` for model set to evaluation mode.
         :param raw: Return the individual classifier raw outputs (not aggregated).
         :return: Array of gradients of input features w.r.t. each class in the form
                  `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
@@ -286,7 +286,7 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
         :param x: Sample input with shape as expected by the model.
         :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
                   (nb_samples,).
-        :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
+        :param training_mode: `True` for model set to training mode and `False` for model set to evaluation mode.
         :param raw: Return the individual classifier raw outputs (not aggregated).
         :return: Array of gradients of the same shape as `x`. If `raw=True`, shape becomes `[nb_classifiers, x.shape]`.
         """

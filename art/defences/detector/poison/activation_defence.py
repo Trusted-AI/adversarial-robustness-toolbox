@@ -167,7 +167,7 @@ class ActivationDefence(PoisonFilteringDefence):
         """
         Returns poison detected and a report.
 
-        :param clustering_method: clustering algorithm to be used. Currently `KMeans` is the only method supported
+        :param clustering_method: clustering algorithm to be used. Currently, `KMeans` is the only method supported
         :type clustering_method: `str`
         :param nb_clusters: number of clusters to find. This value needs to be greater or equal to one
         :type nb_clusters: `int`
@@ -178,7 +178,7 @@ class ActivationDefence(PoisonFilteringDefence):
         :type nb_dims: `int`
         :param cluster_analysis: heuristic to automatically determine if a cluster contains poisonous data. Supported
                                  methods include `smaller` and `distance`. The `smaller` method defines as poisonous the
-                                 cluster with less number of data points, while the `distance` heuristic uses the
+                                 cluster with fewer of data points, while the `distance` heuristic uses the
                                  distance between the clusters.
         :type cluster_analysis: `str`
         :return: (report, is_clean_lst):
@@ -638,7 +638,7 @@ class ActivationDefence(PoisonFilteringDefence):
 
     def plot_clusters(self, save: bool = True, folder: str = ".", **kwargs) -> None:
         """
-        Creates a 3D-plot to visualize each cluster each cluster is assigned a different color in the plot. When
+        Creates a 3D-plot to visualize each cluster is assigned a different color in the plot. When
         save=True, it also stores the 3D-plot per cluster in art.config.ART_DATA_PATH.
 
         :param save: Boolean specifying if image should be saved.
@@ -802,9 +802,9 @@ def cluster_activations(
     :param nb_dims: number of dimensions to reduce activation to via PCA.
     :param reduce: Method to perform dimensionality reduction, default is FastICA.
     :param clustering_method: Clustering method to use, default is KMeans.
-    :param generator: whether or not a the activations are a batch or full activations
+    :param generator: Whether the activations are a batch or full activations
     :return: (separated_clusters, separated_reduced_activations).
-    :param clusterer_new: whether or not a the activations are a batch or full activations
+    :param clusterer_new: Whether the activations are a batch or full activations
     :return: (separated_clusters, separated_reduced_activations)
     """
     separated_clusters = []

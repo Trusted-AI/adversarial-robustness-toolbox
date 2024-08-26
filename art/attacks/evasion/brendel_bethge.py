@@ -399,7 +399,7 @@ class BFGSB:  # pragma: no cover
                 while 1:
                     # interpolate to find a trial step length between a_lo and a_hi
                     # Need to choose interpolation here.  Use cubic interpolation and then if the
-                    #  result is within delta * dalpha or outside of the interval bounded by a_lo or a_hi
+                    #  result is within delta * dalpha or outside the interval bounded by a_lo or a_hi
                     #  then use quadratic interpolation, if the result is still too close, then use bisection
 
                     dalpha = a_hi - a_lo
@@ -508,7 +508,7 @@ class BFGSB:  # pragma: no cover
                 while 1:
                     # interpolate to find a trial step length between a_lo and a_hi
                     # Need to choose interpolation here.  Use cubic interpolation and then if the
-                    #  result is within delta * dalpha or outside of the interval bounded by a_lo or a_hi
+                    #  result is within delta * dalpha or outside the interval bounded by a_lo or a_hi
                     #  then use quadratic interpolation, if the result is still too close, then use bisection
 
                     dalpha = a_hi - a_lo
@@ -661,10 +661,10 @@ class Optimizer:  # pragma: no cover
         if np.abs(cmax) < np.abs(c):
             # problem not solvable (boundary cannot be reached)
             if np.sqrt(cmaxnorm) < r:
-                # make largest possible step towards boundary while staying within bounds
+                # make the largest possible step towards boundary while staying within bounds
                 _delta = self.optimize_boundary_s_t_trustregion(x0, x, b, min_, max_, c, r)
             else:
-                # make largest possible step towards boundary while staying within trust region
+                # make the largest possible step towards boundary while staying within trust region
                 _delta = self.optimize_boundary_s_t_trustregion(x0, x, b, min_, max_, c, r)
         else:
             if cmaxnorm < r:
@@ -681,7 +681,7 @@ class Optimizer:  # pragma: no cover
                     _delta = self.optimize_distance_s_t_boundary_and_trustregion(x0, x, b, min_, max_, c, r)
                 else:
                     # problem not solvable (boundary cannot be reached)
-                    # make largest step towards boundary within trust region
+                    # make the largest step towards boundary within trust region
                     _delta = self.optimize_boundary_s_t_trustregion(x0, x, b, min_, max_, c, r)
 
         return _delta
@@ -720,7 +720,7 @@ class Optimizer:  # pragma: no cover
 
             min ||delta||_2^2 s.t. lower <= x + delta <= upper AND b.dot(delta) = c
 
-        Lets forget about the box constraints for a second, i.e.
+        Let's forget about the box constraints for a second, i.e.
 
             min ||delta||_2^2 s.t. b.dot(delta) = c
 
@@ -1284,7 +1284,7 @@ class LinfOptimizer(Optimizer):  # pragma: no cover
 
             min ||delta||_2^2 s.t. lower <= x + delta <= upper AND b.dot(delta) = c
 
-        Lets forget about the box constraints for a second, i.e.
+        Let's forget about the box constraints for a second, i.e.
 
             min ||delta||_2^2 s.t. b.dot(delta) = c
 

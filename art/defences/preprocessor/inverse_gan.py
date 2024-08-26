@@ -147,7 +147,7 @@ class InverseGAN(Preprocessor):
 
     def compute_loss(self, z_encoding: np.ndarray, image_adv: np.ndarray) -> np.ndarray:
         """
-        Given a encoding z, computes the loss between the projected sample and the original sample.
+        Given an encoding z, computes the loss between the projected sample and the original sample.
 
         :param z_encoding: The encoding z.
         :param image_adv: The adversarial image.

@@ -382,7 +382,7 @@ class PyTorchIntervalFlatten(torch.nn.Module):
 
 class PyTorchIntervalReLU(torch.nn.Module):
     """
-    ReLU activation on both interval and concrete data
+    ReLU-activation on both interval and concrete data
     """
 
     def __init__(self):

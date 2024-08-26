@@ -149,7 +149,7 @@ class FastGradientMethod(EvasionAttack):
             mask_batch = mask
             if mask is not None:
                 # Here we need to make a distinction: if the masks are different for each input, we need to index
-                # those for the current batch. Otherwise (i.e. mask is meant to be broadcasted), keep it as it is.
+                # those for the current batch. Otherwise, (i.e. mask is meant to be broadcasted), keep it as it is.
                 if len(mask.shape) == len(x.shape):
                     mask_batch = mask[batch_index_1:batch_index_2]
 
@@ -410,7 +410,7 @@ class FastGradientMethod(EvasionAttack):
                 targeted=self.targeted,
             )
 
-        # Check for NaN before normalisation an replace with 0
+        # Check for NaN before normalisation and replace with 0
         if grad.dtype != object and np.isnan(grad).any():  # pragma: no cover
             logger.warning("Elements of the loss gradient are NaN and have been replaced with 0.0.")
             grad = np.where(np.isnan(grad), 0.0, grad)
@@ -542,7 +542,7 @@ class FastGradientMethod(EvasionAttack):
             mask_batch = mask
             if mask is not None:
                 # Here we need to make a distinction: if the masks are different for each input, we need to index
-                # those for the current batch. Otherwise (i.e. mask is meant to be broadcasted), keep it as it is.
+                # those for the current batch. Otherwise, (i.e. mask is meant to be broadcasted), keep it as it is.
                 if len(mask.shape) == len(x.shape):
                     mask_batch = mask[batch_index_1:batch_index_2]
 

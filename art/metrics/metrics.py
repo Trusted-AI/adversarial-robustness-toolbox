@@ -109,7 +109,7 @@ def adversarial_accuracy(
     :param attack_params: A dictionary with attack-specific parameters. If the attack has a norm attribute, then it will
                           be used as the norm for calculating the robustness; otherwise the standard Euclidean distance
                           is used (norm=2).
-    :param attack_crafter: EvasionAttack instance with `generate' method to apply on `x` to create adversarial examples.
+    :param attack_crafter: EvasionAttack instance with `generate` method to apply on `x` to create adversarial examples.
     :return: The adversarial accuracy of the classifier computed on `x`.
     """
 

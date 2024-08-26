@@ -63,7 +63,7 @@ class SpatialSmoothingTensorFlowV2(PreprocessorTensorFlowV2):
         """
         Create an instance of local spatial smoothing.
 
-        :window_size: Size of spatial smoothing window.
+        :param window_size: Size of spatial smoothing window.
         :param channels_first: Set channels first or last.
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.

@@ -154,7 +154,7 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
 
     def _apply_preprocessing(self, x, y, fit: bool = False) -> tuple[Any, Any]:
         """
-        Apply all preprocessing defences of the estimator on the raw inputs `x` and `y`. This function is should
+        Apply all preprocessing defences of the estimator on the raw inputs `x` and `y`. This function should
         only be called from function `_apply_preprocessing`.
 
         The method overrides art.estimators.estimator::BaseEstimator._apply_preprocessing().
@@ -225,7 +225,7 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
     def _apply_preprocessing_gradient(self, x, gradients, fit=False):
         """
         Apply the backward pass to the gradients through all preprocessing defences that have been applied to `x`
-        and `y` in the forward pass. This function is should only be called from function
+        and `y` in the forward pass. This function should only be called from function
         `_apply_preprocessing_gradient`.
 
         The method overrides art.estimators.estimator::LossGradientsMixin._apply_preprocessing_gradient().

@@ -136,13 +136,12 @@ class HiddenTriggerBackdoorPyTorch(PoisoningAttackWhiteBox):
         """
         Calls perturbation function on the dataset x and returns only the perturbed input and their
         indices in the dataset.
+
         :param x: An array in the shape NxCxWxH with the points to draw source and target samples from.
-                  Source indicates the class(es) that the backdoor would be added to to cause
-                  misclassification into the target label.
-                  Target indicates the class that the backdoor should cause misclassification into.
-        :param y: The labels of the provided samples. If none, we will use the classifier to label the
-                  data.
-        :return: An tuple holding the `(poison samples, indices in x that the poison samples should replace)`.
+                  Source indicates the class(es) that the backdoor would be added to cause misclassification into the
+                  target label. Target indicates the class that the backdoor should cause misclassification into.
+        :param y: The labels of the provided samples. If none, we will use the classifier to label the data.
+        :return: A tuple holding the `(poison samples, indices in x that the poison samples should replace)`.
         """
         import torch
 

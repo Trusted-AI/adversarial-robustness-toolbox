@@ -16,7 +16,7 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements the Functionally Equivalent Extraction attack mainly following Jagielski et al, 2019.
+This module implements the Functionally Equivalent Extraction attack mainly following Jagielski et al. (2019).
 
 This module contains en example application for MNIST which can be run as `python functionally_equivalent_extraction.py`
 producing output like:
@@ -103,7 +103,7 @@ class FunctionallyEquivalentExtraction(ExtractionAttack):
         Extract the targeted model.
 
         :param x: Samples of input data of shape (num_samples, num_features).
-        :param y: Correct labels or target labels for `x`, depending if the attack is targeted
+        :param y: Correct labels or target labels for `x`, depending on if the attack is targeted
                or not. This parameter is only used by some of the attacks.
         :param delta_0: Initial step size of binary search.
         :param fraction_true: Fraction of output predictions that have to fulfill criteria for critical point.

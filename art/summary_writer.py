@@ -61,7 +61,7 @@ class SummaryWriter(ABC):
         """
         Update the summary writer.
 
-        :param batch_id: Id of the current mini-batch.
+        :param batch_id: ID of the current mini-batch.
         :param global_step: Global iteration step.
         :param grad: Loss gradients.
         :param patch: Adversarial patch.
@@ -144,7 +144,7 @@ class SummaryWriterDefault(SummaryWriter):
         """
         Update the summary writer.
 
-        :param batch_id: Id of the current mini-batch.
+        :param batch_id: ID of the current mini-batch.
         :param global_step: Global iteration step.
         :param grad: Loss gradients.
         :param patch: Adversarial patch.
