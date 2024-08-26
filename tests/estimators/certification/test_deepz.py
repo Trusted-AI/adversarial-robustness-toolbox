@@ -32,7 +32,7 @@ from tests.utils import get_image_classifier_pt, get_cifar10_image_classifier_pt
 @pytest.fixture()
 def fix_get_mnist_data():
     """
-    Get the first 100 samples of the mnist test set with channels first format
+    Get the first 100 samples of the mnist test set with channels first format.
     :return: First 100 sample/label pairs of the MNIST test dataset.
     """
     nb_test = 100

@@ -113,7 +113,7 @@ class TestMetrics(unittest.TestCase):
     #     (x_train, y_train), (_, _), _, _ = load_mnist()
     #     x_train, y_train = x_train[:NB_TRAIN], y_train[:NB_TRAIN]
     #
-    #     # Get classifier
+    #     # Get classifier.
     #     classifier = self._cnn_mnist_k([28, 28, 1])
     #     classifier.fit(x_train, y_train, batch_size=BATCH_SIZE, nb_epochs=2)
     #

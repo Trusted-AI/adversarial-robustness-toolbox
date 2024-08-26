@@ -42,7 +42,7 @@ class TestTargetedUniversalPerturbation(TestBase):
 
     This module tests the Targeted Universal Perturbation.
 
-    | Paper link: https://arxiv.org/abs/1911.06502)
+    | Paper link: https://arxiv.org/abs/1911.06502
     """
 
     @classmethod
