@@ -34,7 +34,7 @@ jobs:
             tensorflow: 2.5.3
             tf_version: v2
             keras: 2.4.3
-            lingvo: 0.6.4
+            lingvo: 0.13.1
 
     name: Run ${{ matrix.name }} Tests
     steps:
