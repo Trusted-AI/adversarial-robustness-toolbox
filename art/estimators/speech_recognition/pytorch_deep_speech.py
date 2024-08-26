@@ -107,8 +107,8 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
                       outputs.
         :param beta: Language model word bonus (all words). This parameter is only used when users want transcription
                      outputs.
-        :param cutoff_top_n: Cutoff_top_n characters with the highest probs in vocabulary will be used in beam search. This
-                             parameter is only used when users want transcription outputs.
+        :param cutoff_top_n: Cutoff_top_n characters with the highest probs in vocabulary will be used in beam search.
+                             This parameter is only used when users want transcription outputs.
         :param cutoff_prob: Cutoff probability in pruning. This parameter is only used when users want transcription
                             outputs.
         :param beam_width: The width of beam to be used. This parameter is only used when users want transcription

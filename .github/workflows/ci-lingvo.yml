@@ -28,12 +28,12 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: TensorFlow+Lingvo 2.1.0v1 (Keras 2.3.1 Python 3.6)
+          - name: TensorFlow+Lingvo 2.4.4v1 (Keras 2.4.3 Python 3.9)
             framework: tensorflow2v1
             python: 3.9
-            tensorflow: 2.1.0
+            tensorflow: 2.4.4
             tf_version: v2
-            keras: 2.3.1
+            keras: 2.4.3
             lingvo: 0.6.4
 
     name: Run ${{ matrix.name }} Tests

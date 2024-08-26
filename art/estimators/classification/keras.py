@@ -99,9 +99,9 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         :param input_layer: The index of the layer to consider as input for models with multiple input layers. The layer
                             with this index will be considered for computing gradients. For models with only one input
                             layer this values is not required.
-        :param output_layer: Which layer to consider as the output when the models have multiple output layers. The layer
-                             with this index will be considered for computing gradients. For models with only one output
-                             layer this values is not required.
+        :param output_layer: Which layer to consider as the output when the models have multiple output layers. The
+                             layer with this index will be considered for computing gradients. For models with only one
+                             output layer this values is not required.
         """
         super().__init__(
             model=model,

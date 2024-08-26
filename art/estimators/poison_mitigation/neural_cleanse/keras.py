@@ -106,9 +106,9 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier):
         :param input_layer: The index of the layer to consider as input for models with multiple input layers. The layer
                             with this index will be considered for computing gradients. For models with only one input
                             layer this values is not required.
-        :param output_layer: Which layer to consider as the output when the models have multiple output layers. The layer
-                             with this index will be considered for computing gradients. For models with only one output
-                             layer this values is not required.
+        :param output_layer: Which layer to consider as the output when the models have multiple output layers. The
+                             layer with this index will be considered for computing gradients. For models with only one
+                             output layer this values is not required.
         :param steps: The maximum number of steps to run the Neural Cleanse optimization
         :param init_cost: The initial value for the cost tensor in the Neural Cleanse optimization
         :param norm: The norm to use for the Neural Cleanse optimization, can be 1, 2, or np.inf
