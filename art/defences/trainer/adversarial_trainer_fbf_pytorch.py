@@ -20,11 +20,11 @@ This is a PyTorch implementation of the Fast is better than free protocol.
 
 | Paper link: https://openreview.net/forum?id=BJx040EFvH
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
 import time
-from typing import Optional, Tuple, Union, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 from tqdm.auto import trange
@@ -52,7 +52,7 @@ class AdversarialTrainerFBFPyTorch(AdversarialTrainerFBF):
         time making this one of the fastest adversarial training protocol.
     """
 
-    def __init__(self, classifier: "PyTorchClassifier", eps: Union[int, float] = 8, use_amp: bool = False):
+    def __init__(self, classifier: "PyTorchClassifier", eps: int | float = 8, use_amp: bool = False):
         """
         Create an :class:`.AdversarialTrainerFBFPyTorch` instance.
 
@@ -68,10 +68,10 @@ class AdversarialTrainerFBFPyTorch(AdversarialTrainerFBF):
         self,
         x: np.ndarray,
         y: np.ndarray,
-        validation_data: Optional[Tuple[np.ndarray, np.ndarray]] = None,
+        validation_data: tuple[np.ndarray, np.ndarray] | None = None,
         batch_size: int = 128,
         nb_epochs: int = 20,
-        **kwargs
+        **kwargs,
     ):
         """
         Train a model adversarially with FBF protocol.
@@ -194,7 +194,7 @@ class AdversarialTrainerFBFPyTorch(AdversarialTrainerFBF):
                 train_acc / train_n,
             )
 
-    def _batch_process(self, x_batch: np.ndarray, y_batch: np.ndarray, l_r: float) -> Tuple[float, float, float]:
+    def _batch_process(self, x_batch: np.ndarray, y_batch: np.ndarray, l_r: float) -> tuple[float, float, float]:
         """
         Perform the operations of FBF for a batch of data.
         See class documentation for more information on the exact procedure.
@@ -205,7 +205,7 @@ class AdversarialTrainerFBFPyTorch(AdversarialTrainerFBF):
         """
         import torch
 
-        if self._classifier._optimizer is None:  # pylint: disable=W0212
+        if self._classifier._optimizer is None:
             raise ValueError("Optimizer of classifier is currently None, but is required for adversarial training.")
 
         n = x_batch.shape[0]
@@ -219,40 +219,38 @@ class AdversarialTrainerFBFPyTorch(AdversarialTrainerFBF):
             x_batch_pert = x_batch + delta
 
         # Apply preprocessing
-        x_preprocessed, y_preprocessed = self._classifier._apply_preprocessing(  # pylint: disable=W0212
-            x_batch_pert, y_batch, fit=True
-        )
+        x_preprocessed, y_preprocessed = self._classifier._apply_preprocessing(x_batch_pert, y_batch, fit=True)
 
         # Check label shape
-        if self._classifier._reduce_labels:  # pylint: disable=W0212
+        if self._classifier._reduce_labels:
             y_preprocessed = np.argmax(y_preprocessed, axis=1)
 
-        i_batch = torch.from_numpy(x_preprocessed).to(self._classifier._device)  # pylint: disable=W0212
-        o_batch = torch.from_numpy(y_preprocessed).to(self._classifier._device)  # pylint: disable=W0212
+        i_batch = torch.from_numpy(x_preprocessed).to(self._classifier._device)
+        o_batch = torch.from_numpy(y_preprocessed).to(self._classifier._device)
 
         # Zero the parameter gradients
-        self._classifier._optimizer.zero_grad()  # pylint: disable=W0212
+        self._classifier._optimizer.zero_grad()
 
         # Perform prediction
-        model_outputs = self._classifier._model(i_batch)  # pylint: disable=W0212
+        model_outputs = self._classifier._model(i_batch)
 
         # Form the loss function
-        loss = self._classifier._loss(model_outputs[-1], o_batch)  # pylint: disable=W0212
+        loss = self._classifier._loss(model_outputs[-1], o_batch)
 
-        self._classifier._optimizer.param_groups[0].update(lr=l_r)  # pylint: disable=W0212
+        self._classifier._optimizer.param_groups[0].update(lr=l_r)
 
         # Actual training
         if self._use_amp:  # pragma: no cover
-            from apex import amp  # pylint: disable=E0611
+            from apex import amp
 
-            with amp.scale_loss(loss, self._classifier._optimizer) as scaled_loss:  # pylint: disable=W0212
+            with amp.scale_loss(loss, self._classifier._optimizer) as scaled_loss:
                 scaled_loss.backward()
         else:
             loss.backward()
 
         # clip the gradients
-        torch.nn.utils.clip_grad_norm_(self._classifier._model.parameters(), 0.5)  # pylint: disable=W0212
-        self._classifier._optimizer.step()  # pylint: disable=W0212
+        torch.nn.utils.clip_grad_norm_(self._classifier._model.parameters(), 0.5)
+        self._classifier._optimizer.step()
 
         train_loss = loss.item() * o_batch.size(0)
         train_acc = (model_outputs[0].max(1)[1] == o_batch).sum().item()

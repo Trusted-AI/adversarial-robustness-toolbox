@@ -1,4 +1,4 @@
-# pylint: disable=C0103,C0114
+# pylint: disable=invalid-name,missing-module-docstring
 #                    GNU AFFERO GENERAL PUBLIC LICENSE
 #                       Version 3, 19 November 2007
 #
@@ -664,7 +664,7 @@
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    # pylint: disable=C0412
+
     import torch
 
 

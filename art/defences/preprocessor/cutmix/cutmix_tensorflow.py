@@ -24,10 +24,10 @@ This module implements the CutMix data augmentation defence in TensorFlow.
     see https://arxiv.org/abs/1803.09868 . For details on how to evaluate classifier security in general, see
     https://arxiv.org/abs/1902.06705
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
-from typing import Optional, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 from tqdm.auto import tqdm
@@ -35,7 +35,7 @@ from tqdm.auto import tqdm
 from art.defences.preprocessor.preprocessor import PreprocessorTensorFlowV2
 
 if TYPE_CHECKING:
-    # pylint: disable=C0412
+
     import tensorflow as tf
 
 logger = logging.getLogger(__name__)
@@ -83,7 +83,7 @@ class CutMixTensorFlowV2(PreprocessorTensorFlowV2):
         self.verbose = verbose
         self._check_params()
 
-    def forward(self, x: "tf.Tensor", y: Optional["tf.Tensor"] = None) -> Tuple["tf.Tensor", Optional["tf.Tensor"]]:
+    def forward(self, x: "tf.Tensor", y: "tf.Tensor" | None = None) -> tuple["tf.Tensor", "tf.Tensor" | None]:
         """
         Apply CutMix data augmentation to sample `x`.
 
@@ -148,8 +148,8 @@ class CutMixTensorFlowV2(PreprocessorTensorFlowV2):
             prob = np.random.rand()
             if prob < self.probability:
                 # uniform sampling
-                center_y = tf.random.uniform(shape=[], maxval=height, dtype=tf.int32)  # pylint: disable=E1123
-                center_x = tf.random.uniform(shape=[], maxval=width, dtype=tf.int32)  # pylint: disable=E1123
+                center_y = tf.random.uniform(shape=[], maxval=height, dtype=tf.int32)
+                center_x = tf.random.uniform(shape=[], maxval=width, dtype=tf.int32)
                 bby1 = tf.clip_by_value(center_y - cut_height // 2, 0, height)
                 bbx1 = tf.clip_by_value(center_x - cut_width // 2, 0, width)
                 bby2 = tf.clip_by_value(center_y + cut_height // 2, 0, height)

@@ -20,7 +20,7 @@ This module implements Interval bound propagation based layers
 
 | Paper link: https://ieeexplore.ieee.org/document/8418593
 """
-from typing import List, Union, Tuple, Optional
+from __future__ import annotations
 
 import torch
 import numpy as np
@@ -79,15 +79,15 @@ class PyTorchIntervalConv2D(torch.nn.Module):
         self,
         in_channels: int,
         out_channels: int,
-        kernel_size: Union[int, Tuple[int, int]],
-        input_shape: Tuple[int, ...],
-        device: Union[str, "torch.device"],
-        stride: Union[int, Tuple[int, int]] = 1,
-        padding: Union[int, Tuple[int, int]] = 0,
-        dilation: Union[int, Tuple[int, int]] = 0,
+        kernel_size: int | tuple[int, int],
+        input_shape: tuple[int, ...],
+        device: str | "torch.device",
+        stride: int | tuple[int, int] = 1,
+        padding: int | tuple[int, int] = 0,
+        dilation: int | tuple[int, int] = 0,
         bias: bool = True,
-        supplied_input_weights: Union[None, "torch.Tensor"] = None,
-        supplied_input_bias: Union[None, "torch.Tensor"] = None,
+        supplied_input_weights: "torch.Tensor" | None = None,
+        supplied_input_bias: "torch.Tensor" | None = None,
         to_debug: bool = False,
     ):
         """
@@ -114,7 +114,7 @@ class PyTorchIntervalConv2D(torch.nn.Module):
         self.stride = stride
         self.device = device
         self.include_bias = bias
-        self.cnn: Optional["torch.nn.Conv2d"] = None
+        self.cnn: "torch.nn.Conv2d" | None = None
 
         super().__init__()
         self.conv = torch.nn.Conv2d(
@@ -191,7 +191,7 @@ class PyTorchIntervalConv2D(torch.nn.Module):
         if self.bias is not None:
             self.bias = self.bias.to(device)
 
-    def re_convert(self, device: Union[str, "torch.device"]) -> None:
+    def re_convert(self, device: str | "torch.device") -> None:
         """
         Re converts the weights into a dense equivalent layer.
         Must be called after every backwards if multiple gradients wish to be taken (like for crafting pgd).
@@ -201,7 +201,7 @@ class PyTorchIntervalConv2D(torch.nn.Module):
         if self.bias is not None:
             self.bias = self.bias.to(device)
 
-    def convert_to_dense(self, device: Union[str, "torch.device"]) -> Tuple["torch.Tensor", "torch.Tensor"]:
+    def convert_to_dense(self, device: str | "torch.device") -> tuple["torch.Tensor", "torch.Tensor"]:
         """
         Converts the initialised convolutional layer into an equivalent dense layer.
 
@@ -356,9 +356,6 @@ class PyTorchIntervalFlatten(torch.nn.Module):
     Layer to handle flattening on both interval and concrete data
     """
 
-    def __init__(self):
-        super().__init__()
-
     def __call__(self, x: "torch.Tensor") -> "torch.Tensor":
         return self.concrete_forward(x)
 
@@ -385,7 +382,7 @@ class PyTorchIntervalFlatten(torch.nn.Module):
 
 class PyTorchIntervalReLU(torch.nn.Module):
     """
-    ReLU activation on both interval and concrete data
+    ReLU-activation on both interval and concrete data
     """
 
     def __init__(self):
@@ -444,8 +441,8 @@ class PyTorchIntervalBounds:
     @staticmethod
     def concrete_to_interval(
         x: np.ndarray,
-        bounds: Union[float, List[float], np.ndarray],
-        limits: Optional[Union[List[float], np.ndarray]] = None,
+        bounds: float | list[float] | np.ndarray,
+        limits: list[float] | np.ndarray | None = None,
     ) -> np.ndarray:
         """
         Helper function converts a datapoint it into its interval representation

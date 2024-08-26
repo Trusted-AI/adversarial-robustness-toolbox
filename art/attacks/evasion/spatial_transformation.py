@@ -22,10 +22,10 @@ rotations to find optimal attack parameters.
 
 | Paper link: https://arxiv.org/abs/1712.02779
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 from scipy.ndimage import rotate, shift
@@ -85,12 +85,12 @@ class SpatialTransformation(EvasionAttack):
         self.verbose = verbose
         self._check_params()
 
-        self.fooling_rate: Optional[float] = None
-        self.attack_trans_x: Optional[int] = None
-        self.attack_trans_y: Optional[int] = None
-        self.attack_rot: Optional[float] = None
+        self.fooling_rate: float | None = None
+        self.attack_trans_x: int | None = None
+        self.attack_trans_y: int | None = None
+        self.attack_rot: float | None = None
 
-    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
+    def generate(self, x: np.ndarray, y: np.ndarray | None = None, **kwargs) -> np.ndarray:
         """
         Generate adversarial samples and return them in an array.
 

@@ -20,10 +20,10 @@ This module implements STRIP: A Defence Against Trojan Attacks on Deep Neural Ne
 
 | Paper link: https://arxiv.org/abs/1902.06531
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
+from collections.abc import Callable
 import logging
-from typing import Callable, Optional
 
 import numpy as np
 from scipy.stats import entropy, norm
@@ -46,7 +46,7 @@ class STRIPMixin(AbstainPredictorMixin):
         predict_fn: Callable[[np.ndarray], np.ndarray],
         num_samples: int = 20,
         false_acceptance_rate: float = 0.01,
-        **kwargs
+        **kwargs,
     ) -> None:  # pragma: no cover
         """
         Create a STRIP defense
@@ -59,8 +59,8 @@ class STRIPMixin(AbstainPredictorMixin):
         self.predict_fn = predict_fn
         self.num_samples = num_samples
         self.false_acceptance_rate = false_acceptance_rate
-        self.entropy_threshold: Optional[float] = None
-        self.validation_data: Optional[np.ndarray] = None
+        self.entropy_threshold: float | None = None
+        self.validation_data: np.ndarray | None = None
 
     def predict(self, x: np.ndarray) -> np.ndarray:
         """

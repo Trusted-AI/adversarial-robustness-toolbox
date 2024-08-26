@@ -18,15 +18,17 @@
 """
 This module implements Expectation over Transformation preprocessing for image rotation in TensorFlow.
 """
+from __future__ import annotations
+
 import logging
-from typing import Optional, TYPE_CHECKING, Tuple, Union
+from typing import TYPE_CHECKING
 
 import numpy as np
 
 from art.preprocessing.expectation_over_transformation.tensorflow import EoTTensorFlowV2
 
 if TYPE_CHECKING:
-    # pylint: disable=C0412
+
     import tensorflow as tf
 
 logger = logging.getLogger(__name__)
@@ -44,8 +46,8 @@ class EoTImageRotationTensorFlow(EoTTensorFlowV2):
     def __init__(
         self,
         nb_samples: int,
-        clip_values: Tuple[float, float],
-        angles: Union[float, Tuple[float, float]] = 45.0,
+        clip_values: tuple[float, float],
+        angles: float | tuple[float, float] = 45.0,
         label_type: str = "classification",
         apply_fit: bool = False,
         apply_predict: bool = True,
@@ -71,9 +73,7 @@ class EoTImageRotationTensorFlow(EoTTensorFlowV2):
         self.label_type = label_type
         self._check_params()
 
-    def _transform(
-        self, x: "tf.Tensor", y: Optional["tf.Tensor"], **kwargs
-    ) -> Tuple["tf.Tensor", Optional["tf.Tensor"]]:
+    def _transform(self, x: "tf.Tensor", y: "tf.Tensor" | None, **kwargs) -> tuple["tf.Tensor", "tf.Tensor" | None]:
         """
         Transformation of an input image and its label by randomly sampled rotation.
 
@@ -84,7 +84,6 @@ class EoTImageRotationTensorFlow(EoTTensorFlowV2):
         import tensorflow as tf
         import tensorflow_addons as tfa
 
-        # pylint: disable=E1120,E1123
         angles = tf.random.uniform(shape=(), minval=self.angles_range[0], maxval=self.angles_range[1])
         angles = angles / 360.0 * 2.0 * np.pi
         x_preprocess = tfa.image.rotate(images=x, angles=angles, interpolation="NEAREST", name=None)
@@ -95,7 +94,7 @@ class EoTImageRotationTensorFlow(EoTTensorFlowV2):
 
     def _check_params(self) -> None:
 
-        # pylint: disable=R0916
+        # pylint: disable=too-many-boolean-expressions
         if not isinstance(self.angles, (int, float, tuple)) or (
             isinstance(self.angles, tuple)
             and (

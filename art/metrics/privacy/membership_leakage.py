@@ -18,8 +18,8 @@
 """
 This module implements membership leakage metrics.
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
-from typing import TYPE_CHECKING, Optional, Tuple
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from typing import TYPE_CHECKING
 from enum import Enum, auto
 
 import numpy as np
@@ -42,15 +42,15 @@ class ComparisonType(Enum):
     DIFFERENCE = auto()
 
 
-def PDTP(  # pylint: disable=C0103
+def PDTP(  # pylint: disable=invalid-name
     target_estimator: "CLASSIFIER_TYPE",
     extra_estimator: "CLASSIFIER_TYPE",
     x: np.ndarray,
     y: np.ndarray,
-    indexes: Optional[np.ndarray] = None,
+    indexes: np.ndarray | None = None,
     num_iter: int = 10,
-    comparison_type: Optional[ComparisonType] = ComparisonType.RATIO,
-) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    comparison_type: ComparisonType | None = ComparisonType.RATIO,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Compute the pointwise differential training privacy metric for the given classifier and training set.
 
@@ -148,13 +148,13 @@ def PDTP(  # pylint: disable=C0103
     return avg_per_sample, worse_per_sample, std_dev_per_sample
 
 
-def SHAPr(  # pylint: disable=C0103
+def SHAPr(  # pylint: disable=invalid-name
     target_estimator: "CLASSIFIER_TYPE",
     x_train: np.ndarray,
     y_train: np.ndarray,
     x_test: np.ndarray,
     y_test: np.ndarray,
-    knn_metric: Optional[str] = None,
+    knn_metric: str | None = None,
 ) -> np.ndarray:
     """
     Compute the SHAPr membership privacy risk metric for the given classifier and training set.

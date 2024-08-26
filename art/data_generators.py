@@ -22,12 +22,12 @@ The generators can be used with the `fit_generator` function in the :class:`.Cla
 their own generators following the :class:`.DataGenerator` interface. For large, numpy array-based  datasets, the
 :class:`.NumpyDataGenerator` class can be flexibly used with `fit_generator` on framework-specific classifiers.
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import abc
 import inspect
 import logging
-from typing import Any, Dict, Generator, Iterator, Optional, Tuple, Union, TYPE_CHECKING
+from typing import Any, Generator, Iterator, TYPE_CHECKING
 
 import numpy as np
 
@@ -45,7 +45,7 @@ class DataGenerator(abc.ABC):
     Base class for data generators.
     """
 
-    def __init__(self, size: Optional[int], batch_size: int) -> None:
+    def __init__(self, size: int | None, batch_size: int) -> None:
         """
         Base initializer for data generators.
 
@@ -63,7 +63,7 @@ class DataGenerator(abc.ABC):
         if size is not None and batch_size > size:
             raise ValueError("The batch size must be smaller than the dataset size.")
 
-        self._iterator: Optional[Any] = None
+        self._iterator: Any | None = None
 
     @abc.abstractmethod
     def get_batch(self) -> tuple:
@@ -90,7 +90,7 @@ class DataGenerator(abc.ABC):
         return self._batch_size
 
     @property
-    def size(self) -> Optional[int]:
+    def size(self) -> int | None:
         """
         :return: Return the dataset size.
         """
@@ -180,14 +180,14 @@ class KerasDataGenerator(DataGenerator):
 
     def __init__(
         self,
-        iterator: Union[
-            "keras.utils.Sequence",
-            "tf.keras.utils.Sequence",
-            "keras.preprocessing.image.ImageDataGenerator",
-            "tf.keras.preprocessing.image.ImageDataGenerator",
-            Generator,
-        ],
-        size: Optional[int],
+        iterator: (
+            "keras.utils.Sequence"
+            | "tf.keras.utils.Sequence"
+            | "keras.preprocessing.image.ImageDataGenerator"
+            | "tf.keras.preprocessing.image.ImageDataGenerator"
+            | Generator
+        ),
+        size: int | None,
         batch_size: int,
     ) -> None:
         """
@@ -309,7 +309,7 @@ class TensorFlowDataGenerator(DataGenerator):  # pragma: no cover
         sess: "tf.Session",
         iterator: "tf.data.Iterator",
         iterator_type: str,
-        iterator_arg: Union[Dict, Tuple, "tf.Operation"],
+        iterator_arg: dict | tuple | "tf.Operation",
         size: int,
         batch_size: int,
     ) -> None:
@@ -325,7 +325,7 @@ class TensorFlowDataGenerator(DataGenerator):  # pragma: no cover
         :param batch_size: Size of the minibatches.
         :raises `TypeError`, `ValueError`: If input parameters are not valid.
         """
-        # pylint: disable=E0401
+
         import tensorflow.compat.v1 as tf
 
         super().__init__(size=size, batch_size=batch_size)
@@ -394,7 +394,7 @@ class TensorFlowV2DataGenerator(DataGenerator):
         :param batch_size: Size of the minibatches.
         :raises `TypeError`, `ValueError`: If input parameters are not valid.
         """
-        # pylint: disable=E0401
+
         import tensorflow as tf
 
         super().__init__(size=size, batch_size=batch_size)

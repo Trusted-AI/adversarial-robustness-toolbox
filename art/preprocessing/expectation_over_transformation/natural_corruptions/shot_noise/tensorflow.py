@@ -18,8 +18,10 @@
 """
 This module implements EoT of adding shot noise (Poisson) with uniformly sampled rate parameter.
 """
+from __future__ import annotations
+
 import logging
-from typing import Tuple, Union, TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import numpy as np
 
@@ -39,8 +41,8 @@ class EoTShotNoiseTensorFlow(EoTTensorFlowV2):
     def __init__(
         self,
         nb_samples: int,
-        clip_values: Tuple[float, float],
-        lam: Union[float, Tuple[float, float]],
+        clip_values: tuple[float, float],
+        lam: float | tuple[float, float],
         apply_fit: bool = False,
         apply_predict: bool = True,
     ) -> None:
@@ -63,9 +65,7 @@ class EoTShotNoiseTensorFlow(EoTTensorFlowV2):
         self.lam_range = (0.0, lam) if isinstance(lam, (int, float)) else lam
         self._check_params()
 
-    def _transform(
-        self, x: "tf.Tensor", y: Optional["tf.Tensor"], **kwargs
-    ) -> Tuple["tf.Tensor", Optional["tf.Tensor"]]:
+    def _transform(self, x: "tf.Tensor", y: "tf.Tensor" | None, **kwargs) -> tuple["tf.Tensor", "tf.Tensor" | None]:
         """
         Transformation of an image with randomly sampled shot (Poisson) noise.
 
@@ -76,13 +76,13 @@ class EoTShotNoiseTensorFlow(EoTTensorFlowV2):
         import tensorflow as tf
 
         lam_i = np.random.uniform(low=self.lam_range[0], high=self.lam_range[1])
-        # pylint: disable=E1123,E1120
+
         delta_i = tf.random.poisson(shape=x.shape, lam=lam_i, seed=None) / lam_i * self.clip_values[1]
         return tf.clip_by_value(x + delta_i, clip_value_min=self.clip_values[0], clip_value_max=self.clip_values[1]), y
 
     def _check_params(self) -> None:
 
-        # pylint: disable=R0916
+        # pylint: disable=too-many-boolean-expressions
         if not isinstance(self.lam, (int, float, tuple)) or (
             isinstance(self.lam, tuple)
             and (

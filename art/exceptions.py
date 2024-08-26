@@ -18,7 +18,9 @@
 """
 Module containing ART's exceptions.
 """
-from typing import List, Tuple, Type, Union
+from __future__ import annotations
+
+from typing import Type
 
 
 class EstimatorError(TypeError):
@@ -26,7 +28,7 @@ class EstimatorError(TypeError):
     Basic exception for errors raised by unexpected estimator types.
     """
 
-    def __init__(self, this_class, class_expected_list: List[Union[Type, Tuple[Type]]], classifier_given) -> None:
+    def __init__(self, this_class, class_expected_list: list[Type | tuple[Type]], classifier_given) -> None:
         super().__init__()
         self.this_class = this_class
         self.class_expected_list = class_expected_list

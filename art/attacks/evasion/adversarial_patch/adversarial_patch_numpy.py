@@ -21,11 +21,11 @@ can be printed into the physical world with a common printer. The patch can be u
 
 | Paper link: https://arxiv.org/abs/1712.09665
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
 import math
-from typing import Optional, Union, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import random
 import numpy as np
@@ -72,7 +72,7 @@ class AdversarialPatchNumpy(EvasionAttack):
         scale_max: float = 1.0,
         learning_rate: float = 5.0,
         max_iter: int = 500,
-        clip_patch: Union[list, tuple, None] = None,
+        clip_patch: list | tuple | None = None,
         batch_size: int = 16,
         targeted: bool = True,
         verbose: bool = True,
@@ -153,8 +153,8 @@ class AdversarialPatchNumpy(EvasionAttack):
         self.reset_patch(self.mean_value)
 
     def generate(  # type: ignore
-        self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs
-    ) -> Tuple[np.ndarray, np.ndarray]:
+        self, x: np.ndarray, y: np.ndarray | None = None, **kwargs
+    ) -> tuple[np.ndarray, np.ndarray]:
         """
         Generate an adversarial patch and return the patch and its mask in arrays.
 
@@ -254,8 +254,8 @@ class AdversarialPatchNumpy(EvasionAttack):
         self,
         x: np.ndarray,
         scale: float,
-        patch_external: Optional[np.ndarray] = None,
-        mask: Optional[np.ndarray] = None,
+        patch_external: np.ndarray | None = None,
+        mask: np.ndarray | None = None,
     ) -> np.ndarray:
         """
         A function to apply the learned adversarial patch to images or videos.
@@ -263,7 +263,7 @@ class AdversarialPatchNumpy(EvasionAttack):
         :param x: Instances to apply randomly transformed patch.
         :param scale: Scale of the applied patch in relation to the classifier input shape.
         :param patch_external: External patch to apply to images `x`.
-        :param mask: An boolean array of shape equal to the shape of a single samples (1, H, W) or the shape of `x`
+        :param mask: A boolean array of shape equal to the shape of a single samples (1, H, W) or the shape of `x`
                      (N, H, W) without their channel dimensions. Any features for which the mask is True can be the
                      center location of the patch during sampling.
         :return: The patched instances.
@@ -325,7 +325,7 @@ class AdversarialPatchNumpy(EvasionAttack):
         x = np.linspace(-1, 1, diameter)
         y = np.linspace(-1, 1, diameter)
         x_grid, y_grid = np.meshgrid(x, y, sparse=True)
-        z_grid = (x_grid ** 2 + y_grid ** 2) ** sharpness
+        z_grid = (x_grid**2 + y_grid**2) ** sharpness
 
         mask = 1 - np.clip(z_grid, -1, 1)
 
@@ -606,7 +606,7 @@ class AdversarialPatchNumpy(EvasionAttack):
 
         return gradients
 
-    def reset_patch(self, initial_patch_value: Optional[Union[float, np.ndarray]]) -> None:
+    def reset_patch(self, initial_patch_value: float | np.ndarray | None) -> None:
         """
         Reset the adversarial patch.
 

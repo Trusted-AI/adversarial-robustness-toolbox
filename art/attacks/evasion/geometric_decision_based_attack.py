@@ -20,10 +20,12 @@ This module implements the Geometric Decision-based Attack (GeoDA), a black-box 
 
 | Paper link: https://arxiv.org/abs/2003.06468
 """
+from __future__ import annotations
+
 import os
 import math
 import logging
-from typing import List, Optional, Tuple, Union, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 from tqdm.auto import trange
@@ -65,7 +67,7 @@ class GeoDA(EvasionAttack):
         self,
         estimator: "CLASSIFIER_TYPE",
         batch_size: int = 64,
-        norm: Union[int, float, str] = 2,
+        norm: int | float | str = 2,
         sub_dim: int = 10,
         max_iter: int = 4000,
         bin_search_tol: float = 0.1,
@@ -159,7 +161,7 @@ class GeoDA(EvasionAttack):
 
         return dct_basis_array
 
-    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
+    def generate(self, x: np.ndarray, y: np.ndarray | None = None, **kwargs) -> np.ndarray:
         """
         Generate adversarial samples.
 
@@ -303,7 +305,7 @@ class GeoDA(EvasionAttack):
 
         return x_adv
 
-    def _opt_query_iteration(self, var_nq: int, var_t: int, lambda_param: float) -> Tuple[List[int], int]:
+    def _opt_query_iteration(self, var_nq: int, var_t: int, lambda_param: float) -> tuple[list[int], int]:
         """
         Determine optimal distribution of number of queries.
         """
@@ -322,13 +324,13 @@ class GeoDA(EvasionAttack):
 
     def _black_grad_batch(
         self, x_boundary: np.ndarray, q_max: int, batch_size: int, original_label: np.ndarray
-    ) -> Tuple[np.ndarray, int]:
+    ) -> tuple[np.ndarray, int]:
         """
         Calculate gradient towards decision boundary.
         """
         self.nb_calls += q_max
-        grad_tmp: List[np.ndarray] = []  # estimated gradients in each estimate_batch
-        z_list: List[int] = []  # sign of grad_tmp
+        grad_tmp: list[np.ndarray] = []  # estimated gradients in each estimate_batch
+        z_list: list[int] = []  # sign of grad_tmp
         outs = []
         num_batches = math.ceil(q_max / batch_size)
         last_batch = q_max - (num_batches - 1) * batch_size

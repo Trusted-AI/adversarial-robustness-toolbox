@@ -20,11 +20,14 @@ This module implements the `SquareAttack` attack.
 
 | Paper link: https://arxiv.org/abs/1912.00049
 """
+from __future__ import annotations
+
 import bisect
+from collections.abc import Callable
 import logging
 import math
 import random
-from typing import Optional, Union, Callable, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 from tqdm.auto import trange
@@ -65,9 +68,9 @@ class SquareAttack(EvasionAttack):
     def __init__(
         self,
         estimator: "CLASSIFIER_TYPE",
-        norm: Union[int, float, str] = np.inf,
-        adv_criterion: Union[Callable[[np.ndarray, np.ndarray], bool], None] = None,
-        loss: Union[Callable[[np.ndarray, np.ndarray], np.ndarray], None] = None,
+        norm: int | float | str = np.inf,
+        adv_criterion: Callable[[np.ndarray, np.ndarray], bool] | None = None,
+        loss: Callable[[np.ndarray, np.ndarray], np.ndarray] | None = None,
         max_iter: int = 100,
         eps: float = 0.3,
         p_init: float = 0.8,
@@ -78,7 +81,7 @@ class SquareAttack(EvasionAttack):
         """
         Create a :class:`.SquareAttack` instance.
 
-        :param estimator: An trained estimator.
+        :param estimator: A trained estimator.
         :param norm: The norm of the adversarial perturbation. Possible values: "inf", np.inf, 1 or 2.
         :param adv_criterion: The criterion which the attack should use in determining adversariality.
         :param loss: The loss function which the attack should use for optimization.
@@ -133,7 +136,7 @@ class SquareAttack(EvasionAttack):
 
         return self.p_init * p_ratio[i_ratio]
 
-    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
+    def generate(self, x: np.ndarray, y: np.ndarray | None = None, **kwargs) -> np.ndarray:
         """
         Generate adversarial samples and return them in an array.
 
@@ -237,13 +240,13 @@ class SquareAttack(EvasionAttack):
                     delta_new = np.zeros(self.estimator.input_shape)
 
                     if self.estimator.channels_first:
-                        delta_new[
-                            :, height_mid : height_mid + height_tile, width_start : width_start + height_tile
-                        ] = np.random.choice([-2 * self.eps, 2 * self.eps], size=[channels, 1, 1])
+                        delta_new[:, height_mid : height_mid + height_tile, width_start : width_start + height_tile] = (
+                            np.random.choice([-2 * self.eps, 2 * self.eps], size=[channels, 1, 1])
+                        )
                     else:
-                        delta_new[
-                            height_mid : height_mid + height_tile, width_start : width_start + height_tile, :
-                        ] = np.random.choice([-2 * self.eps, 2 * self.eps], size=[1, 1, channels])
+                        delta_new[height_mid : height_mid + height_tile, width_start : width_start + height_tile, :] = (
+                            np.random.choice([-2 * self.eps, 2 * self.eps], size=[1, 1, channels])
+                        )
 
                     x_robust_new = x_robust + delta_new
 
@@ -281,12 +284,12 @@ class SquareAttack(EvasionAttack):
                         x_c -= 1
                         y_c -= 1
 
-                    gaussian_perturbation /= np.sqrt(np.sum(gaussian_perturbation ** 2))
+                    gaussian_perturbation /= np.sqrt(np.sum(gaussian_perturbation**2))
 
                     delta[: height // 2] = gaussian_perturbation
                     delta[height // 2 : height // 2 + gaussian_perturbation.shape[0]] = -gaussian_perturbation
 
-                    delta /= np.sqrt(np.sum(delta ** 2))
+                    delta /= np.sqrt(np.sum(delta**2))
 
                     if random.random() > 0.5:
                         delta = np.transpose(delta)
@@ -325,7 +328,7 @@ class SquareAttack(EvasionAttack):
                     height_start += height_tile
 
                 x_robust_new = np.clip(
-                    x_robust + delta_init / np.sqrt(np.sum(delta_init ** 2, axis=(1, 2, 3), keepdims=True)) * self.eps,
+                    x_robust + delta_init / np.sqrt(np.sum(delta_init**2, axis=(1, 2, 3), keepdims=True)) * self.eps,
                     self.estimator.clip_values[0],
                     self.estimator.clip_values[1],
                 )
@@ -455,12 +458,12 @@ class SquareAttack(EvasionAttack):
                             :, height_start : height_start + height_tile, width_start : width_start + height_tile, :
                         ] / (np.maximum(1e-9, w_1_norm))
 
-                    diff_norm = (self.eps * np.ones(delta_new.shape)) ** 2 - norms_x_robust ** 2
+                    diff_norm = (self.eps * np.ones(delta_new.shape)) ** 2 - norms_x_robust**2
                     diff_norm[diff_norm < 0.0] = 0.0
 
                     if self.estimator.channels_first:
-                        delta_new /= np.sqrt(np.sum(delta_new ** 2, axis=(2, 3), keepdims=True)) * np.sqrt(
-                            diff_norm / channels + w_norm ** 2
+                        delta_new /= np.sqrt(np.sum(delta_new**2, axis=(2, 3), keepdims=True)) * np.sqrt(
+                            diff_norm / channels + w_norm**2
                         )
                         delta_x_robust_init[
                             :,
@@ -472,8 +475,8 @@ class SquareAttack(EvasionAttack):
                             :, :, height_start : height_start + height_tile, width_start : width_start + height_tile
                         ] = delta_new
                     else:
-                        delta_new /= np.sqrt(np.sum(delta_new ** 2, axis=(1, 2), keepdims=True)) * np.sqrt(
-                            diff_norm / channels + w_norm ** 2
+                        delta_new /= np.sqrt(np.sum(delta_new**2, axis=(1, 2), keepdims=True)) * np.sqrt(
+                            diff_norm / channels + w_norm**2
                         )
                         delta_x_robust_init[
                             :,
@@ -489,7 +492,7 @@ class SquareAttack(EvasionAttack):
                         x_init
                         + self.eps
                         * delta_x_robust_init
-                        / np.sqrt(np.sum(delta_x_robust_init ** 2, axis=(1, 2, 3), keepdims=True)),
+                        / np.sqrt(np.sum(delta_x_robust_init**2, axis=(1, 2, 3), keepdims=True)),
                         self.estimator.clip_values[0],
                         self.estimator.clip_values[1],
                     )

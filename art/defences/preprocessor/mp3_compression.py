@@ -23,11 +23,11 @@ This module implements the MP3 compression defence `Mp3Compression`.
 | Please keep in mind the limitations of defences. For details on how to evaluate classifier security in general,
     see https://arxiv.org/abs/1902.06705.
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
 from io import BytesIO
-from typing import Optional, Tuple
+
 
 import numpy as np
 from tqdm.auto import tqdm
@@ -67,7 +67,7 @@ class Mp3Compression(Preprocessor):
         self.verbose = verbose
         self._check_params()
 
-    def __call__(self, x: np.ndarray, y: Optional[np.ndarray] = None) -> Tuple[np.ndarray, Optional[np.ndarray]]:
+    def __call__(self, x: np.ndarray, y: np.ndarray | None = None) -> tuple[np.ndarray, np.ndarray | None]:
         """
         Apply MP3 compression to sample `x`.
 
@@ -87,12 +87,12 @@ class Mp3Compression(Preprocessor):
             x_dtype = x.dtype
             normalized = bool(x.min() >= -1.0 and x.max() <= 1.0)
             if x_dtype != np.int16 and not normalized:
-                # input is not of type np.int16 and seems to be unnormalized. Therefore casting to np.int16.
+                # input is not of type np.int16 and seems to be unnormalized. Therefore, casting to np.int16.
                 x = x.astype(np.int16)
             elif x_dtype != np.int16 and normalized:
-                # x is not of type np.int16 and seems to be normalized. Therefore undoing normalization and
+                # x is not of type np.int16 and seems to be normalized. Therefore, undoing normalization and
                 # casting to np.int16.
-                x = (x * 2 ** 15).astype(np.int16)
+                x = (x * 2**15).astype(np.int16)
 
             tmp_wav, tmp_mp3 = BytesIO(), BytesIO()
             write(tmp_wav, sample_rate, x)
@@ -111,8 +111,8 @@ class Mp3Compression(Preprocessor):
                 x_mp3 = x_mp3[: x.shape[0]]
 
             if normalized:
-                # x was normalized. Therefore normalizing x_mp3.
-                x_mp3 = x_mp3 * 2 ** -15
+                # x was normalized. Therefore, normalizing x_mp3.
+                x_mp3 = x_mp3 * 2**-15
             return x_mp3.astype(x_dtype)
 
         x_orig_type = x.dtype
@@ -150,7 +150,7 @@ class Mp3Compression(Preprocessor):
         if x.dtype != object and self.channels_first:
             x_mp3 = np.swapaxes(x_mp3, 1, 2)
 
-        if x_orig_type != object and x.dtype == object and x.ndim == 2:
+        if x_orig_type != object and x.dtype == object and x.ndim == 2:  # noqa: E721
             x_mp3 = x_mp3.astype(x_orig_type)
 
         return x_mp3, y

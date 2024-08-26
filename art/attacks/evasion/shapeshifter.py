@@ -20,9 +20,11 @@ This module implements ShapeShifter, a robust physical adversarial attack on Fas
 
 | Paper link: https://arxiv.org/abs/1804.05810
 """
-# pylint: disable=C0302
+from __future__ import annotations
+
+
 import logging
-from typing import List, Dict, Optional, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 
@@ -30,7 +32,6 @@ from art.attacks.attack import EvasionAttack
 from art.estimators.object_detection.tensorflow_faster_rcnn import TensorFlowFasterRCNN
 
 if TYPE_CHECKING:
-    # pylint: disable=C0302,E0611
     from collections.abc import Callable
 
     from tensorflow.python.framework.ops import Tensor
@@ -182,7 +183,7 @@ class ShapeShifter(EvasionAttack):
         # Check validity of attack attributes
         self._check_params()
 
-    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
+    def generate(self, x: np.ndarray, y: np.ndarray | None = None, **kwargs) -> np.ndarray:
         """
         Generate adversarial samples and return them in an array.
 
@@ -201,7 +202,7 @@ class ShapeShifter(EvasionAttack):
                                                   assumed to map to the first non-background class.
                     - `groundtruth_weights_list`: A list of `nb_samples` size of 1-D tf.float32 tensors of shape
                                                   [num_boxes] containing weights for groundtruth boxes.
-        :type label: Dict[str, List[np.ndarray]]
+        :type label: dict[str, list[np.ndarray]]
         :param mask: Input mask.
         :type mask: `np.ndarray`.
         :param target_class: Target class.
@@ -220,7 +221,7 @@ class ShapeShifter(EvasionAttack):
         assert list(x.shape[1:]) == self.estimator.input_shape
 
         # Check if label is provided
-        label: Optional[Dict[str, List[np.ndarray]]] = kwargs.get("label")
+        label: dict[str, list[np.ndarray]] | None = kwargs.get("label")
         if label is None and not self.texture_as_input:  # pragma: no cover
             raise ValueError("Need the target labels for image as input.")
 
@@ -307,8 +308,8 @@ class ShapeShifter(EvasionAttack):
     def _attack_training(
         self,
         x: np.ndarray,
-        y: Dict[str, List[np.ndarray]],
-        mask: Optional[np.ndarray],
+        y: dict[str, list[np.ndarray]],
+        mask: np.ndarray | None,
         target_class: int,
         victim_class: int,
         project_texture_op: "Tensor",
@@ -317,7 +318,7 @@ class ShapeShifter(EvasionAttack):
         final_attack_optimization_op: "Tensor",
         current_variable: "Tensor",
         current_value: "Tensor",
-    ) -> List[np.ndarray]:
+    ) -> list[np.ndarray]:
         """
         Do attack optimization.
 
@@ -436,10 +437,10 @@ class ShapeShifter(EvasionAttack):
 
     def _build_graph(
         self,
-        initial_shape: Tuple[int, ...],
-        custom_loss: Optional["Tensor"] = None,
-        rendering_function: Optional["Callable"] = None,
-    ) -> Tuple["Tensor", ...]:
+        initial_shape: tuple[int, ...],
+        custom_loss: "Tensor" | None = None,
+        rendering_function: "Callable" | None = None,
+    ) -> tuple["Tensor", ...]:
         """
         Build the TensorFlow graph for the attack.
 
@@ -558,7 +559,7 @@ class ShapeShifter(EvasionAttack):
 
         # Create variables to store gradients
         if self.texture_as_input:
-            sum_gradients = tf.Variable(  # pylint: disable=E1123
+            sum_gradients = tf.Variable(
                 initial_value=np.zeros(current_texture_variable.shape.as_list()),
                 trainable=False,
                 name="sum_gradients",
@@ -567,7 +568,7 @@ class ShapeShifter(EvasionAttack):
             )
 
         else:
-            sum_gradients = tf.Variable(  # pylint: disable=E1123
+            sum_gradients = tf.Variable(
                 initial_value=np.zeros(current_image_variable.shape.as_list()),
                 trainable=False,
                 name="sum_gradients",
@@ -575,7 +576,7 @@ class ShapeShifter(EvasionAttack):
                 collections=[tf.GraphKeys.GLOBAL_VARIABLES, tf.GraphKeys.LOCAL_VARIABLES],
             )
 
-        num_gradients = tf.Variable(  # pylint: disable=E1123
+        num_gradients = tf.Variable(
             initial_value=0.0,
             trainable=False,
             name="count_gradients",
@@ -666,7 +667,7 @@ class ShapeShifter(EvasionAttack):
         self,
         initial_input: "Tensor",
         current_value: "Tensor",
-        custom_loss: Optional["Tensor"] = None,
+        custom_loss: "Tensor" | None = None,
     ) -> "Tensor":
         """
         Create the loss tensor of this attack.
@@ -779,13 +780,13 @@ class ShapeShifter(EvasionAttack):
         class_predictions_with_background = class_predictions_with_background[:, 1:]
 
         # Convert to 1-hot
-        # pylint: disable=E1120
+
         target_class_one_hot = tf.one_hot([target_class_phd - 1], class_predictions_with_background.shape[-1])
         victim_class_one_hot = tf.one_hot([victim_class_phd - 1], class_predictions_with_background.shape[-1])
 
         box_iou_tensor = default_graph.get_tensor_by_name("Loss/BoxClassifierLoss/Compare/IOU/Select:0")
         box_iou_tensor = tf.reshape(box_iou_tensor, (-1,))
-        box_target = tf.cast(box_iou_tensor >= box_iou_threshold, dtype=tf.float32)  # pylint: disable=E1123
+        box_target = tf.cast(box_iou_tensor >= box_iou_threshold, dtype=tf.float32)
 
         # Compute box target loss
         box_target_weight = tf.placeholder(dtype=tf.float32, shape=[], name="box_target_weight")
@@ -862,7 +863,7 @@ class ShapeShifter(EvasionAttack):
         )
         rpn_iou_tensor = default_graph.get_tensor_by_name("Loss/RPNLoss/Compare/IOU/Select:0")
         rpn_iou_tensor = tf.reshape(rpn_iou_tensor, (-1,))
-        rpn_target = tf.cast(rpn_iou_tensor >= rpn_iou_threshold, dtype=tf.float32)  # pylint: disable=E1123,E1120
+        rpn_target = tf.cast(rpn_iou_tensor >= rpn_iou_threshold, dtype=tf.float32)
 
         # Compute RPN background loss
         rpn_background_weight = tf.placeholder(dtype=tf.float32, shape=[], name="rpn_background_weight")

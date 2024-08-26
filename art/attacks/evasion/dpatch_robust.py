@@ -24,10 +24,12 @@ and changes in the brightness of the image.
 | Paper link (original DPatch): https://arxiv.org/abs/1806.02299v4
 | Paper link (physical-world patch from Lee & Kolter): https://arxiv.org/abs/1906.11897
 """
+from __future__ import annotations
+
 import logging
 import math
 import random
-from typing import Dict, List, Optional, Tuple, Union, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 from tqdm.auto import trange
@@ -75,17 +77,17 @@ class RobustDPatch(EvasionAttack):
     def __init__(
         self,
         estimator: "OBJECT_DETECTOR_TYPE",
-        patch_shape: Tuple[int, int, int] = (40, 40, 3),
-        patch_location: Tuple[int, int] = (0, 0),
-        crop_range: Tuple[int, int] = (0, 0),
-        brightness_range: Tuple[float, float] = (1.0, 1.0),
-        rotation_weights: Union[Tuple[float, float, float, float], Tuple[int, int, int, int]] = (1, 0, 0, 0),
+        patch_shape: tuple[int, int, int] = (40, 40, 3),
+        patch_location: tuple[int, int] = (0, 0),
+        crop_range: tuple[int, int] = (0, 0),
+        brightness_range: tuple[float, float] = (1.0, 1.0),
+        rotation_weights: tuple[float, float, float, float] | tuple[int, int, int, int] = (1, 0, 0, 0),
         sample_size: int = 1,
         learning_rate: float = 5.0,
         max_iter: int = 500,
         batch_size: int = 16,
         targeted: bool = False,
-        summary_writer: Union[str, bool, SummaryWriter] = False,
+        summary_writer: str | bool | SummaryWriter = False,
         verbose: bool = True,
     ):
         """
@@ -138,7 +140,7 @@ class RobustDPatch(EvasionAttack):
         self._check_params()
 
     def generate(  # type: ignore
-        self, x: np.ndarray, y: Optional[List[Dict[str, np.ndarray]]] = None, **kwargs
+        self, x: np.ndarray, y: list[dict[str, np.ndarray]] | None = None, **kwargs
     ) -> np.ndarray:
         """
         Generate RobustDPatch.
@@ -262,8 +264,8 @@ class RobustDPatch(EvasionAttack):
         return self._patch
 
     def _augment_images_with_patch(
-        self, x: np.ndarray, y: Optional[List[Dict[str, np.ndarray]]], patch: np.ndarray, channels_first: bool
-    ) -> Tuple[np.ndarray, List[Dict[str, np.ndarray]], Dict[str, Union[int, float]]]:
+        self, x: np.ndarray, y: list[dict[str, np.ndarray]] | None, patch: np.ndarray, channels_first: bool
+    ) -> tuple[np.ndarray, list[dict[str, np.ndarray]], dict[str, int | float]]:
         """
         Augment images with patch.
 
@@ -273,7 +275,7 @@ class RobustDPatch(EvasionAttack):
         :param channels_first: Set channels first or last.
         """
 
-        transformations: Dict[str, Union[float, int]] = {}
+        transformations: dict[str, float | int] = {}
         x_copy = x.copy()
         patch_copy = patch.copy()
         x_patch = x.copy()
@@ -308,7 +310,7 @@ class RobustDPatch(EvasionAttack):
 
         if y is not None:
 
-            y_copy: List[Dict[str, np.ndarray]] = []
+            y_copy: list[dict[str, np.ndarray]] = []
 
             for i_image in range(x_copy.shape[0]):
                 y_b = y[i_image]["boxes"].copy()
@@ -366,7 +368,7 @@ class RobustDPatch(EvasionAttack):
 
         logger.debug("Transformations: %s", str(transformations))
 
-        patch_target: List[Dict[str, np.ndarray]] = []
+        patch_target: list[dict[str, np.ndarray]] = []
 
         if self.targeted:
             predictions = y_copy
@@ -391,7 +393,7 @@ class RobustDPatch(EvasionAttack):
     def _untransform_gradients(
         self,
         gradients: np.ndarray,
-        transforms: Dict[str, Union[int, float]],
+        transforms: dict[str, int | float],
         channels_first: bool,
     ) -> np.ndarray:
         """
@@ -428,7 +430,7 @@ class RobustDPatch(EvasionAttack):
 
         return gradients
 
-    def apply_patch(self, x: np.ndarray, patch_external: Optional[np.ndarray] = None) -> np.ndarray:
+    def apply_patch(self, x: np.ndarray, patch_external: np.ndarray | None = None) -> np.ndarray:
         """
         Apply the adversarial patch to images.
 

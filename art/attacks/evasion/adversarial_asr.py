@@ -21,7 +21,7 @@ This module implements the audio adversarial attack on automatic speech recognit
 
 | Paper link: https://arxiv.org/abs/1801.01944
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
 from typing import TYPE_CHECKING
@@ -72,10 +72,10 @@ class CarliniWagnerASR(ImperceptibleASR):
         :param num_iter_decrease_eps: Iterations after which to decrease epsilon if attack succeeds (Paper default: 10).
         :param batch_size: Batch size.
         """
-        # pylint: disable=W0231
+        # pylint: disable=super-init-not-called
 
         # re-implement init such that inherited methods work
-        EvasionAttack.__init__(self, estimator=estimator)  # pylint: disable=W0233
+        EvasionAttack.__init__(self, estimator=estimator)  # pylint: disable=non-parent-init-called
         self.masker = None  # type: ignore
         self.eps = eps
         self.learning_rate_1 = learning_rate

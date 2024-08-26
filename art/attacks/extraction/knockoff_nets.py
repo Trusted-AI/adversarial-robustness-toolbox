@@ -20,10 +20,10 @@ This module implements the Knockoff Nets attack `KnockoffNets`.
 
 | Paper link: https://arxiv.org/abs/1812.02766
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
-from typing import Optional, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 import numpy as np
 from tqdm.auto import trange
@@ -97,7 +97,7 @@ class KnockoffNets(ExtractionAttack):
         self.use_probability = use_probability
         self._check_params()
 
-    def extract(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> "CLASSIFIER_TYPE":
+    def extract(self, x: np.ndarray, y: np.ndarray | None = None, **kwargs) -> "CLASSIFIER_TYPE":
         """
         Extract a thieved classifier.
 
@@ -302,7 +302,7 @@ class KnockoffNets(ExtractionAttack):
 
         return x_index[rnd_idx]
 
-    def _reward(self, y_output: np.ndarray, y_hat: np.ndarray, n: int) -> Union[float, np.ndarray]:
+    def _reward(self, y_output: np.ndarray, y_hat: np.ndarray, n: int) -> float | np.ndarray:
         """
         Compute reward value.
 

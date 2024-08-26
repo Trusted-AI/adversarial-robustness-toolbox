@@ -30,7 +30,7 @@ from tests.utils import ARTTestException
 @pytest.fixture(name="close")
 def fixture_close() -> Callable:
     """
-    Comparison function
+    Comparison function.
     :returns: function that checks if two float arrays are close.
     """
 
@@ -51,7 +51,7 @@ def fixture_close() -> Callable:
 @pytest.fixture(name="not_close")
 def fixture_not_close(close):
     """
-    Comparison function
+    Comparison function.
     :returns: function that checks if values of two float arrays are not close.
     """
 
@@ -75,7 +75,7 @@ def fixture_not_close(close):
 @pytest.fixture(name="less_or_equal")
 def fixture_less_or_equal():
     """
-    Comparison function
+    Comparison function.
     :returns: function that checks if first array is less or equal than the second.
     """
 
@@ -126,7 +126,7 @@ def fixture_max_laser_beam() -> LaserBeam:
 @pytest.fixture(name="laser_generator_fixture")
 def fixture_laser_generator_fixture(min_laser_beam, max_laser_beam) -> Callable:
     """
-    Return a function that returns geneartor of the LaserBeam objects.
+    Return a function that returns generator of the LaserBeam objects.
 
     :param min_laser_beam: LaserBeam object with minimal acceptable properties.
     :param max_laser_beam: LaserBeam object with maximal acceptable properties.
@@ -138,7 +138,7 @@ def fixture_laser_generator_fixture(min_laser_beam, max_laser_beam) -> Callable:
 @pytest.fixture(name="laser_generator")
 def fixture_laser_generator(min_laser_beam, max_laser_beam) -> LaserBeamGenerator:
     """
-    Geneartor of the LaserBeam objects.
+    Generator of the LaserBeam objects.
 
     :param min_laser_beam: LaserBeam object with minimal acceptable properties.
     :param max_laser_beam: LaserBeam object with maximal acceptable properties.

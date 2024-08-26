@@ -48,18 +48,22 @@ tensorboardX==2.6.2.2
 lief==0.14.1
 jax[cpu]==0.4.26
 
-# Lingvo ASR dependencies
-# supported versions: (lingvo==0.6.4 with tensorflow-gpu==2.1.0)
-# note: due to conflicts with other TF1/2 version supported by ART, the dependencies are not installed by default
-# tensorflow-gpu==2.1.0
-# lingvo==0.6.4
+# lingvo==0.13.1
+
+# tests and style checking
+pytest~=8.3.2
+pytest-mock~=3.14.0
+pytest-cov~=5.0.0
+pylint==3.2.6
+mypy==1.11.1
+pycodestyle==2.12.0
+black==24.4.2
+ruff==0.5.5
+types-six==1.16.21.9
+types-PyYAML==6.0.12.20240724
+types-setuptools==71.1.0.20240726
 
 # other
-pytest~=7.4.3
-pytest-flake8~=1.1.1
-flake8~=4.0.1
-pytest-mock~=3.14.0
-pytest-cov~=4.1.0
 requests~=2.31.0
 ultralytics==8.0.217
 ipython==8.25.0

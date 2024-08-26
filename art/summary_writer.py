@@ -18,10 +18,10 @@
 """
 This module defines and implements the summary writers for TensorBoard output.
 """
+from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from math import sqrt
-from typing import Dict, List, Optional, Union
 
 import numpy as np
 
@@ -31,7 +31,7 @@ class SummaryWriter(ABC):
     This abstract base class defines the API for summary writers.
     """
 
-    def __init__(self, summary_writer: Union[str, bool]):
+    def __init__(self, summary_writer: str | bool):
         """
         Create summary writer.
 
@@ -61,7 +61,7 @@ class SummaryWriter(ABC):
         """
         Update the summary writer.
 
-        :param batch_id: Id of the current mini-batch.
+        :param batch_id: ID of the current mini-batch.
         :param global_step: Global iteration step.
         :param grad: Loss gradients.
         :param patch: Adversarial patch.
@@ -109,7 +109,7 @@ class SummaryWriterDefault(SummaryWriter):
 
     def __init__(
         self,
-        summary_writer: Union[str, bool],
+        summary_writer: str | bool,
         ind_1: bool = False,
         ind_2: bool = False,
         ind_3: bool = False,
@@ -123,28 +123,28 @@ class SummaryWriterDefault(SummaryWriter):
         self.ind_4 = ind_4
 
         self.loss = None
-        self.loss_prev: Dict[str, np.ndarray] = {}
-        self.losses: Dict[str, List[np.ndarray]] = {}
+        self.loss_prev: dict[str, np.ndarray] = {}
+        self.losses: dict[str, list[np.ndarray]] = {}
 
-        self.i_3: Dict[str, np.ndarray] = {}
-        self.i_4: Dict[str, np.ndarray] = {}
+        self.i_3: dict[str, np.ndarray] = {}
+        self.i_4: dict[str, np.ndarray] = {}
 
     def update(
         self,
         batch_id: int,
         global_step: int,
-        grad: Optional[np.ndarray] = None,
-        patch: Optional[np.ndarray] = None,
+        grad: np.ndarray | None = None,
+        patch: np.ndarray | None = None,
         estimator=None,
-        x: Optional[np.ndarray] = None,
-        y: Optional[np.ndarray] = None,
+        x: np.ndarray | None = None,
+        y: np.ndarray | None = None,
         targeted: bool = False,
         **kwargs,
     ):
         """
         Update the summary writer.
 
-        :param batch_id: Id of the current mini-batch.
+        :param batch_id: ID of the current mini-batch.
         :param global_step: Global iteration step.
         :param grad: Loss gradients.
         :param patch: Adversarial patch.
@@ -272,7 +272,7 @@ class SummaryWriterDefault(SummaryWriter):
                         np.square((self.losses[str(batch_id)][i_step] - self.losses[str(batch_id)][-1]) / delta_loss)
                         + ((delta_step - i_step) / delta_step) ** 2
                     )
-                    cos_beta = -(side_b ** 2 - (side_a ** 2 + side_c ** 2)) / (2 * side_a * side_c)
+                    cos_beta = -(side_b**2 - (side_a**2 + side_c**2)) / (2 * side_a * side_c)
 
                     i_2_step = 1 - np.abs(cos_beta)
                     self.i_2 = np.minimum(self.i_2, i_2_step)

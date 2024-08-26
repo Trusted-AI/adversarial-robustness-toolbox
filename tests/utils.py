@@ -236,7 +236,7 @@ def get_image_classifier_tf_v1(from_logits=False, load_init=True, sess=None):
     """
     Standard TensorFlow classifier for unit testing.
 
-    The following hyper-parameters were used to obtain the weights and biases:
+    The following hyperparameters were used to obtain the weights and biases:
     learning_rate: 0.01
     batch size: 10
     number of epochs: 2
@@ -413,7 +413,7 @@ def get_image_gan_tf_v2():
         zeros (since these are the fake images).
         3. Calculate the total_loss as the sum of real_loss and generated_loss.
         """
-        # [1,1,...,1] with real output since it is true and we want our generated examples to look like it
+        # [1,1,...,1] with real output since it is true, and we want our generated examples to look like it
         real_loss = tf.compat.v1.losses.sigmoid_cross_entropy(
             multi_class_labels=tf.ones_like(real_output), logits=real_output
         )
@@ -442,7 +442,7 @@ def get_image_classifier_tf_v2(from_logits=False):
     """
     Standard TensorFlow v2 classifier for unit testing.
 
-    The following hyper-parameters were used to obtain the weights and biases:
+    The following hyperparameters were used to obtain the weights and biases:
     learning_rate: 0.01
     batch size: 10
     number of epochs: 2
@@ -1576,7 +1576,7 @@ def get_tabular_classifier_tf_v1(load_init=True, sess=None):
     """
     Standard TensorFlow classifier for unit testing.
 
-    The following hyper-parameters were used to obtain the weights and biases:
+    The following hyperparameters were used to obtain the weights and biases:
 
     * learning_rate: 0.01
     * batch size: 5
@@ -1663,7 +1663,7 @@ def get_tabular_classifier_tf_v2():
     """
     Standard TensorFlow v2 classifier for unit testing.
 
-    The following hyper-parameters were used to obtain the weights and biases:
+    The following hyperparameters were used to obtain the weights and biases:
 
     * learning_rate: 0.01
     * batch size: 5

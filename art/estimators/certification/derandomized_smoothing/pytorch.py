@@ -32,10 +32,10 @@ Certified Patch Robustness via Smoothed Vision Transformers
 | Paper link Arxiv version (more detail): https://arxiv.org/pdf/2110.07719.pdf
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 import importlib
 import logging
-from typing import List, Optional, Tuple, Union, Any, TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
 import random
 
 import numpy as np
@@ -46,7 +46,7 @@ from art.estimators.certification.derandomized_smoothing.derandomized import DeR
 from art.utils import check_and_transform_label_format
 
 if TYPE_CHECKING:
-    # pylint: disable=C0412
+
     import torch
     import torchvision
     from timm.models.vision_transformer import VisionTransformer
@@ -60,35 +60,35 @@ logger = logging.getLogger(__name__)
 
 class PyTorchDeRandomizedSmoothing(DeRandomizedSmoothingMixin, PyTorchClassifier):
     """
-    Interface class for the two De-randomized smoothing approaches supported by ART for pytorch.
+    Interface class for the two De-randomized smoothing approaches supported by ART for PyTorch.
 
     If a regular pytorch neural network is fed in then (De)Randomized Smoothing as introduced in Levine et al. (2020)
     is used.
 
-    Otherwise, if a timm vision transfomer is fed in then Certified Patch Robustness via Smoothed Vision Transformers
+    Otherwise, if a timm vision transformer is fed in then Certified Patch Robustness via Smoothed Vision Transformers
     as introduced in Salman et al. (2021) is used.
     """
 
     def __init__(
         self,
-        model: Union[str, "VisionTransformer", "torch.nn.Module"],
+        model: str | "VisionTransformer" | "torch.nn.Module",
         loss: "torch.nn.modules.loss._Loss",
-        input_shape: Tuple[int, ...],
+        input_shape: tuple[int, ...],
         nb_classes: int,
         ablation_size: int,
         algorithm: str = "salman2021",
         ablation_type: str = "column",
-        replace_last_layer: Optional[bool] = None,
+        replace_last_layer: bool | None = None,
         drop_tokens: bool = True,
         load_pretrained: bool = True,
-        optimizer: Union[type, "torch.optim.Optimizer", None] = None,
-        optimizer_params: Optional[dict] = None,
+        optimizer: "torch.optim.Optimizer" | None = None,
+        optimizer_params: dict | None = None,
         channels_first: bool = True,
-        threshold: Optional[float] = None,
-        logits: Optional[bool] = True,
-        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
-        preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
-        postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
+        threshold: float | None = None,
+        logits: bool | None = True,
+        clip_values: "CLIP_VALUES_TYPE" | None = None,
+        preprocessing_defences: "Preprocessor" | list["Preprocessor"] | None = None,
+        postprocessing_defences: "Postprocessor" | list["Postprocessor"] | None = None,
         preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
         device_type: str = "gpu",
         verbose: bool = True,
@@ -107,12 +107,12 @@ class PyTorchDeRandomizedSmoothing(DeRandomizedSmoothingMixin, PyTorchClassifier
         :param ablation_size: The size of the data portion to retain after ablation.
         :param algorithm: Either 'salman2021' or 'levine2020'. For salman2021 we support ViTs and CNNs. For levine2020
                           there is only CNN support.
-        :param replace_last_layer: ViT Specific. If to replace the last layer of the ViT with a fresh layer
+        :param replace_last_layer: ViT-specific. If to replace the last layer of the ViT with a fresh layer
                                    matching the number of classes for the dataset to be examined.
                                    Needed if going from the pre-trained imagenet models to fine-tune
                                    on a dataset like CIFAR.
-        :param drop_tokens: ViT Specific. If to drop the fully ablated tokens in the ViT
-        :param load_pretrained: ViT Specific. If to load a pretrained model matching the ViT name.
+        :param drop_tokens: ViT-specific. If to drop the fully ablated tokens in the ViT
+        :param load_pretrained: ViT-specific. If to load a pretrained model matching the ViT name.
                                 Will only affect the ViT if a string name is passed to model rather than a ViT directly.
         :param optimizer: The optimizer used to train the classifier.
         :param ablation_type: The type of ablation to perform. Either "column", "row", or "block"
@@ -155,7 +155,7 @@ class PyTorchDeRandomizedSmoothing(DeRandomizedSmoothingMixin, PyTorchClassifier
                 # temporarily assign the original method to tmp_func
                 tmp_func = timm.models.vision_transformer._create_vision_transformer
 
-                # overrride with ART's ViT creation function
+                # override with ART's ViT creation function
                 timm.models.vision_transformer._create_vision_transformer = self.create_vision_transformer
                 if isinstance(model, str):
                     model = timm.create_model(
@@ -189,7 +189,7 @@ class PyTorchDeRandomizedSmoothing(DeRandomizedSmoothingMixin, PyTorchClassifier
                         if not isinstance(optimizer, torch.optim.Optimizer):
                             raise ValueError("Optimizer error: must be a torch.optim.Optimizer instance")
 
-                        converted_optimizer: Union[torch.optim.Adam, torch.optim.SGD]
+                        converted_optimizer: torch.optim.Adam | torch.optim.SGD
                         opt_state_dict = optimizer.state_dict()
                         if isinstance(optimizer, torch.optim.Adam):
                             logging.info("Converting Adam Optimiser")
@@ -276,7 +276,7 @@ class PyTorchDeRandomizedSmoothing(DeRandomizedSmoothingMixin, PyTorchClassifier
         )
 
         if TYPE_CHECKING:
-            self.ablator: Union[ColumnAblatorPyTorch, BlockAblatorPyTorch]
+            self.ablator: ColumnAblatorPyTorch | BlockAblatorPyTorch
 
         if self.mode is None:
             raise ValueError("Model type not recognized.")
@@ -308,7 +308,7 @@ class PyTorchDeRandomizedSmoothing(DeRandomizedSmoothingMixin, PyTorchClassifier
             raise ValueError(f"ablation_type of {ablation_type} not recognized. Must be either column, row, or block")
 
     @classmethod
-    def get_models(cls, generate_from_null: bool = False) -> List[str]:
+    def get_models(cls, generate_from_null: bool = False) -> list[str]:
         """
         Return the supported model names to the user.
 
@@ -375,7 +375,7 @@ class PyTorchDeRandomizedSmoothing(DeRandomizedSmoothingMixin, PyTorchClassifier
         pbar = tqdm(models)
 
         # store in case not re-assigned in the model creation due to unsuccessful creation
-        tmp_func = timm.models.vision_transformer._create_vision_transformer  # pylint: disable=W0212
+        tmp_func = timm.models.vision_transformer._create_vision_transformer
 
         for model in pbar:
             pbar.set_description(f"Testing {model} creation")
@@ -383,7 +383,7 @@ class PyTorchDeRandomizedSmoothing(DeRandomizedSmoothingMixin, PyTorchClassifier
                 _ = cls(
                     model=model,
                     loss=torch.nn.CrossEntropyLoss(),
-                    optimizer=torch.optim.SGD,
+                    optimizer=torch.optim.SGD,  # type: ignore
                     optimizer_params={"lr": 0.01},
                     input_shape=(3, 32, 32),
                     nb_classes=10,
@@ -395,7 +395,7 @@ class PyTorchDeRandomizedSmoothing(DeRandomizedSmoothingMixin, PyTorchClassifier
                 supported.append(model)
             except (TypeError, AttributeError):
                 unsupported.append(model)
-                timm.models.vision_transformer._create_vision_transformer = tmp_func  # pylint: disable=W0212
+                timm.models.vision_transformer._create_vision_transformer = tmp_func
 
         if supported != supported_models:
             logger.warning(
@@ -429,7 +429,7 @@ class PyTorchDeRandomizedSmoothing(DeRandomizedSmoothingMixin, PyTorchClassifier
             **kwargs,
         )
 
-    def fit(  # pylint: disable=W0221
+    def fit(
         self,
         x: np.ndarray,
         y: np.ndarray,
@@ -437,11 +437,11 @@ class PyTorchDeRandomizedSmoothing(DeRandomizedSmoothingMixin, PyTorchClassifier
         nb_epochs: int = 10,
         training_mode: bool = True,
         drop_last: bool = False,
-        scheduler: Optional[Any] = None,
+        scheduler: Any | None = None,
         verbose: bool = False,
         update_batchnorm: bool = True,
         batchnorm_update_epochs: int = 1,
-        transform: Optional["torchvision.transforms.transforms.Compose"] = None,
+        transform: "torchvision.transforms.transforms.Compose" | None = None,
         **kwargs,
     ) -> None:
         """
@@ -452,7 +452,7 @@ class PyTorchDeRandomizedSmoothing(DeRandomizedSmoothingMixin, PyTorchClassifier
                   shape (nb_samples,).
         :param batch_size: Size of batches.
         :param nb_epochs: Number of epochs to use for training.
-        :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
+        :param training_mode: `True` for model set to training mode and `False` for model set to evaluation mode.
         :param drop_last: Set to ``True`` to drop the last incomplete batch, if the dataset size is not divisible by
                           the batch size. If ``False`` and the size of dataset is not divisible by the batch size, then
                           the last batch will be smaller. (default: ``False``)
@@ -531,7 +531,7 @@ class PyTorchDeRandomizedSmoothing(DeRandomizedSmoothingMixin, PyTorchClassifier
 
                 # Do training
                 if self._use_amp:  # pragma: no cover
-                    from apex import amp  # pylint: disable=E0611
+                    from apex import amp
 
                     with amp.scale_loss(loss, self._optimizer) as scaled_loss:
                         scaled_loss.backward()
@@ -555,7 +555,7 @@ class PyTorchDeRandomizedSmoothing(DeRandomizedSmoothingMixin, PyTorchClassifier
                 scheduler.step()
 
     @staticmethod
-    def get_accuracy(preds: Union[np.ndarray, "torch.Tensor"], labels: Union[np.ndarray, "torch.Tensor"]) -> np.ndarray:
+    def get_accuracy(preds: np.ndarray | "torch.Tensor", labels: np.ndarray | "torch.Tensor") -> np.ndarray:
         """
         Helper function to get the accuracy during training.
 
@@ -604,7 +604,7 @@ class PyTorchDeRandomizedSmoothing(DeRandomizedSmoothingMixin, PyTorchClassifier
         size_to_certify: int,
         batch_size: int = 128,
         verbose: bool = True,
-    ) -> Tuple["torch.Tensor", "torch.Tensor"]:
+    ) -> tuple["torch.Tensor", "torch.Tensor"]:
         """
         Evaluates the ViT's normal and certified performance over the supplied data.
 
@@ -684,7 +684,7 @@ class PyTorchDeRandomizedSmoothing(DeRandomizedSmoothingMixin, PyTorchClassifier
         return (accuracy / n_samples), (cert_sum / n_samples)
 
     def _predict_classifier(
-        self, x: Union[np.ndarray, "torch.Tensor"], batch_size: int, training_mode: bool, **kwargs
+        self, x: np.ndarray | "torch.Tensor", batch_size: int, training_mode: bool, **kwargs
     ) -> np.ndarray:
         import torch
 

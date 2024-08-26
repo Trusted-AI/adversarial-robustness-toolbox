@@ -44,7 +44,7 @@ def video_batch(channels_first):
 
 @pytest.mark.parametrize("channels_first", [True, False])
 @pytest.mark.skip_framework("tensorflow", "keras", "scikitlearn", "mxnet", "kerastf")
-def test_video_compresssion(art_warning, video_batch, channels_first):
+def test_video_compression(art_warning, video_batch, channels_first):
     try:
         test_input, test_output = video_batch
         video_compression = VideoCompressionPyTorch(

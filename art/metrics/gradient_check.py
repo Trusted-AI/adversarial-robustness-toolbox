@@ -42,7 +42,7 @@ def loss_gradient_check(
     :param x: Input with shape as expected by the classifier's model.
     :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
               (nb_samples,).
-    :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
+    :param training_mode: `True` for model set to training mode and `False` for model set to evaluation mode.
     :param verbose: Show progress bars.
     :return: Array of booleans with the shape (len(x), 3). If true means the gradient of the loss w.r.t. the
              particular `x` was bad (zero, nan, inf).

@@ -18,23 +18,22 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
+from os.path import dirname, join
 import unittest
 
-from os.path import dirname, join
 import numpy as np
-
 import tensorflow as tf
 
 tf.compat.v1.disable_eager_execution()
-from tensorflow.keras.models import load_model
+from tensorflow.keras.models import load_model  # noqa: E402
 
-from art.attacks.extraction.functionally_equivalent_extraction import FunctionallyEquivalentExtraction
-from art.estimators.classification.keras import KerasClassifier
-from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
-from art.estimators.classification.classifier import ClassifierMixin
+from art.attacks.extraction.functionally_equivalent_extraction import FunctionallyEquivalentExtraction  # noqa: E402
+from art.estimators.classification.keras import KerasClassifier  # noqa: E402
+from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin  # noqa: E402
+from art.estimators.classification.classifier import ClassifierMixin  # noqa: E402
 
-from tests.utils import TestBase, master_seed
-from tests.attacks.utils import backend_test_classifier_type_check_fail
+from tests.utils import TestBase, master_seed  # noqa: E402
+from tests.attacks.utils import backend_test_classifier_type_check_fail  # noqa: E402
 
 logger = logging.getLogger(__name__)
 

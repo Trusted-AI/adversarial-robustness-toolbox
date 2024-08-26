@@ -18,8 +18,10 @@
 """
 This module implements the standardisation with mean and standard deviation.
 """
+from __future__ import annotations
+
 import logging
-from typing import TYPE_CHECKING, Optional, Tuple, Union
+from typing import TYPE_CHECKING
 
 import numpy as np
 
@@ -42,8 +44,8 @@ class StandardisationMeanStdPyTorch(PreprocessorPyTorch):
 
     def __init__(
         self,
-        mean: Union[float, np.ndarray] = 0.0,
-        std: Union[float, np.ndarray] = 1.0,
+        mean: float | np.ndarray = 0.0,
+        std: float | np.ndarray = 1.0,
         apply_fit: bool = True,
         apply_predict: bool = True,
         device_type: str = "gpu",
@@ -66,12 +68,12 @@ class StandardisationMeanStdPyTorch(PreprocessorPyTorch):
         self._check_params()
 
         # init broadcastable mean and std for lazy loading
-        self._broadcastable_mean: Optional[np.ndarray] = None
-        self._broadcastable_std: Optional[np.ndarray] = None
+        self._broadcastable_mean: np.ndarray | None = None
+        self._broadcastable_std: np.ndarray | None = None
 
     def forward(
-        self, x: "torch.Tensor", y: Optional["torch.Tensor"] = None
-    ) -> Tuple["torch.Tensor", Optional["torch.Tensor"]]:
+        self, x: "torch.Tensor", y: "torch.Tensor" | None = None
+    ) -> tuple["torch.Tensor", "torch.Tensor" | None]:
         """
         Apply standardisation with mean and standard deviation to input `x`.
 

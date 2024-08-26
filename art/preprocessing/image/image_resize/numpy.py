@@ -18,8 +18,10 @@
 """
 This module implements resizing for images and object detection bounding boxes.
 """
+from __future__ import annotations
+
 import logging
-from typing import Dict, List, Optional, TYPE_CHECKING, Tuple, Union
+from typing import TYPE_CHECKING
 
 import numpy as np
 import cv2
@@ -49,7 +51,7 @@ class ImageResize(Preprocessor):
         channels_first: bool = False,
         label_type: str = "classification",
         interpolation: int = cv2.INTER_LINEAR,
-        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
+        clip_values: "CLIP_VALUES_TYPE" | None = None,
         apply_fit: bool = True,
         apply_predict: bool = False,
         verbose: bool = False,
@@ -79,8 +81,8 @@ class ImageResize(Preprocessor):
         self._check_params()
 
     def __call__(
-        self, x: np.ndarray, y: Optional[Union[np.ndarray, List[Dict[str, np.ndarray]]]] = None
-    ) -> Tuple[np.ndarray, Optional[Union[np.ndarray, List[Dict[str, np.ndarray]]]]]:
+        self, x: np.ndarray, y: np.ndarray | list[dict[str, np.ndarray]] | None = None
+    ) -> tuple[np.ndarray, np.ndarray | list[dict[str, np.ndarray]] | None]:
         """
         Resize `x` and adjust bounding boxes for labels `y` accordingly.
 
@@ -89,7 +91,7 @@ class ImageResize(Preprocessor):
         :return: Transformed samples and labels.
         """
         x_preprocess_list = []
-        y_preprocess: Optional[Union[np.ndarray, List[Dict[str, np.ndarray]]]]
+        y_preprocess: np.ndarray | list[dict[str, np.ndarray]] | None
         if y is not None and self.label_type == "object_detection":
             y_preprocess = []
         else:
@@ -108,7 +110,7 @@ class ImageResize(Preprocessor):
             x_preprocess_list.append(x_resized)
 
             if self.label_type == "object_detection" and y is not None:
-                y_resized: Dict[str, np.ndarray] = {}
+                y_resized: dict[str, np.ndarray] = {}
 
                 # Copy labels and ensure types
                 if isinstance(y, list) and isinstance(y_preprocess, list):

@@ -18,8 +18,10 @@
 """
 This module implements the abstract estimator `PyTorchEstimator` for PyTorch models.
 """
+from __future__ import annotations
+
 import logging
-from typing import TYPE_CHECKING, Any, List, Tuple
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
@@ -134,9 +136,9 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
             (isinstance(p, PreprocessorPyTorch) for p in self.preprocessing_operations)
         )
 
-    def _apply_preprocessing(self, x, y, fit: bool = False, no_grad=True) -> Tuple[Any, Any]:  # pylint: disable=W0221
+    def _apply_preprocessing(self, x, y, fit: bool = False, no_grad=True) -> tuple[Any, Any]:
         """
-        Apply all preprocessing defences of the estimator on the raw inputs `x` and `y`. This function is should
+        Apply all preprocessing defences of the estimator on the raw inputs `x` and `y`. This function should
         only be called from function `_apply_preprocessing`.
 
         The method overrides art.estimators.estimator::BaseEstimator._apply_preprocessing().
@@ -216,7 +218,7 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
     def _apply_preprocessing_gradient(self, x, gradients, fit=False):
         """
         Apply the backward pass to the gradients through all preprocessing defences that have been applied to `x`
-        and `y` in the forward pass. This function is should only be called from function
+        and `y` in the forward pass. This function should only be called from function
         `_apply_preprocessing_gradient`.
 
         The method overrides art.estimators.estimator::LossGradientsMixin._apply_preprocessing_gradient().
@@ -282,7 +284,7 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
 
         return gradients
 
-    def _set_layer(self, train: bool, layerinfo: List["torch.nn.modules.Module"]) -> None:
+    def _set_layer(self, train: bool, layerinfo: list["torch.nn.modules.Module"]) -> None:
         """
         Set all layers that are an instance of `layerinfo` into training or evaluation mode.
 
@@ -316,7 +318,6 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
         """
         import torch
 
-        # pylint: disable=W0212
         self._set_layer(train=train, layerinfo=[torch.nn.modules.dropout._DropoutNd])  # type: ignore
 
     def set_batchnorm(self, train: bool) -> None:
@@ -327,7 +328,6 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
         """
         import torch
 
-        # pylint: disable=W0212
         self._set_layer(train=train, layerinfo=[torch.nn.modules.batchnorm._BatchNorm])  # type: ignore
 
     def set_multihead_attention(self, train: bool) -> None:
@@ -338,5 +338,4 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
         """
         import torch
 
-        # pylint: disable=W0212
         self._set_layer(train=train, layerinfo=[torch.nn.modules.MultiheadAttention])  # type: ignore

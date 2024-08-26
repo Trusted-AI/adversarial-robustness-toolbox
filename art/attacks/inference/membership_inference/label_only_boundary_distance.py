@@ -21,8 +21,10 @@ This module implements the Label-Only Inference Attack based on Decision Boundar
 | Paper link: https://arxiv.org/abs/2007.14321 (Choquette-Choo et al.)
 | Paper link: https://arxiv.org/abs/2007.15528 (Li and Zhang)
 """
+from __future__ import annotations
+
 import logging
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 
@@ -52,7 +54,7 @@ class LabelOnlyDecisionBoundary(MembershipInferenceAttack):
     ]
     _estimator_requirements = (BaseEstimator, ClassifierMixin)
 
-    def __init__(self, estimator: "CLASSIFIER_TYPE", distance_threshold_tau: Optional[float] = None):
+    def __init__(self, estimator: "CLASSIFIER_TYPE", distance_threshold_tau: float | None = None):
         """
         Create a `LabelOnlyDecisionBoundary` instance for Label-Only Inference Attack based on Decision Boundary.
 
@@ -65,7 +67,7 @@ class LabelOnlyDecisionBoundary(MembershipInferenceAttack):
         self.threshold_bins: list = []
         self._check_params()
 
-    def infer(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
+    def infer(self, x: np.ndarray, y: np.ndarray | None = None, **kwargs) -> np.ndarray:
         """
         Infer membership of input `x` in estimator's training data.
 

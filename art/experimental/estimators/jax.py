@@ -88,6 +88,3 @@ class JaxEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
         """
         super().set_params(**kwargs)
         self._check_params()
-
-    def _check_params(self) -> None:
-        super()._check_params()

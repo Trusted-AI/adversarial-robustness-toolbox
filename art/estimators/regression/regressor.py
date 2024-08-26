@@ -18,8 +18,10 @@
 """
 This module implements mixin abstract base class for all regressors in ART.
 """
+from __future__ import annotations
 
 from abc import ABC
+
 from art.estimators.estimator import BaseEstimator
 
 
