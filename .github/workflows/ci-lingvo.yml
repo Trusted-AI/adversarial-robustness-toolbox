@@ -62,7 +62,6 @@ jobs:
         run: pytest --cov-report=xml --cov=art --cov-append -q -vv tests/estimators/speech_recognition/test_tensorflow_lingvo.py --framework=${{ matrix.framework }} --durations=0
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         with:
+          token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: true
