@@ -1,6 +1,7 @@
 """
 Module containing estimators for object detection.
 """
+
 from art.estimators.object_detection.object_detector import ObjectDetectorMixin
 
 from art.estimators.object_detection.pytorch_object_detector import PyTorchObjectDetector

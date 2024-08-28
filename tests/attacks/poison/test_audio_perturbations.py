@@ -39,7 +39,7 @@ def test_insert_tone_trigger(art_warning):
         assert np.max(audio) != 0
         assert np.max(np.abs(audio)) <= 1.0
 
-        # test single example with differet duration, frequency, and scale
+        # test single example with different duration, frequency, and scale
         trigger = CacheToneTrigger(sampling_rate=16000, frequency=16000, duration=0.2, scale=0.5)
         audio = trigger.insert(x=np.zeros(3200))
         assert audio.shape == (3200,)
@@ -88,7 +88,7 @@ def test_insert_audio_trigger(art_warning):
         assert np.max(audio) != 0
         assert np.max(np.abs(audio)) <= 1.0
 
-        # test single example with differet duration and scale
+        # test single example with different duration and scale
         trigger = CacheAudioTrigger(
             sampling_rate=16000,
             backdoor_path=file_path,

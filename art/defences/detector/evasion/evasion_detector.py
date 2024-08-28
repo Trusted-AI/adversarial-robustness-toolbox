@@ -18,10 +18,10 @@
 """
 This module implements the abstract base class for all evasion detectors.
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import abc
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 import numpy as np
 
@@ -31,7 +31,7 @@ class EvasionDetector(abc.ABC):
     Abstract base class for all evasion detectors.
     """
 
-    defence_params: List[str] = []
+    defence_params: list[str] = []
 
     def __init__(self) -> None:
         """
@@ -53,7 +53,7 @@ class EvasionDetector(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def detect(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> Tuple[dict, np.ndarray]:
+    def detect(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> tuple[dict, np.ndarray]:
         """
         Perform detection of adversarial data and return prediction as tuple.
 
@@ -77,7 +77,7 @@ class EvasionDetector(abc.ABC):
                 setattr(self, key, value)
         self._check_params()
 
-    def get_params(self) -> Dict[str, Any]:
+    def get_params(self) -> dict[str, Any]:
         """
         Returns dictionary of parameters used to run defence.
 

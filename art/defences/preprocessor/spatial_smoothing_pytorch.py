@@ -24,17 +24,17 @@ This module implements the local spatial smoothing defence in `SpatialSmoothing`
     see https://arxiv.org/abs/1803.09868 . For details on how to evaluate classifier security in general, see
     https://arxiv.org/abs/1902.06705
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
-from typing import Optional, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 
 from art.defences.preprocessor.preprocessor import PreprocessorPyTorch
 
 if TYPE_CHECKING:
-    # pylint: disable=C0412
+
     import torch
     from art.utils import CLIP_VALUES_TYPE
 
@@ -56,7 +56,7 @@ class SpatialSmoothingPyTorch(PreprocessorPyTorch):
         self,
         window_size: int = 3,
         channels_first: bool = False,
-        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
+        clip_values: "CLIP_VALUES_TYPE" | None = None,
         apply_fit: bool = False,
         apply_predict: bool = True,
         device_type: str = "gpu",
@@ -91,7 +91,7 @@ class SpatialSmoothingPyTorch(PreprocessorPyTorch):
             An ongoing effort to reproduce the median blur function in SciPy.
             """
 
-            def __init__(self, kernel_size: Tuple[int, int]) -> None:
+            def __init__(self, kernel_size: tuple[int, int]) -> None:
                 super().__init__(kernel_size)
 
                 # Half-pad the input so that the output keeps the same shape.
@@ -119,7 +119,7 @@ class SpatialSmoothingPyTorch(PreprocessorPyTorch):
 
                     self.kernel = get_binary_kernel2d(kernel_size)
 
-            # pylint: disable=W0622
+            # pylint: disable=redefined-builtin
             def forward(self, input: "torch.Tensor"):  # type: ignore
                 import torch
                 import torch.nn.functional as F
@@ -155,8 +155,8 @@ class SpatialSmoothingPyTorch(PreprocessorPyTorch):
         self.median_blur = MedianBlurCustom(kernel_size=(self.window_size, self.window_size))
 
     def forward(
-        self, x: "torch.Tensor", y: Optional["torch.Tensor"] = None
-    ) -> Tuple["torch.Tensor", Optional["torch.Tensor"]]:
+        self, x: "torch.Tensor", y: "torch.Tensor" | None = None
+    ) -> tuple["torch.Tensor", "torch.Tensor" | None]:
         """
         Apply local spatial smoothing to sample `x`.
         """

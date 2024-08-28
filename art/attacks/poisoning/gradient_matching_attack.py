@@ -20,10 +20,10 @@ This module implements Gradient Matching clean-label attacks (a.k.a. Witches' Br
 
 | Paper link: https://arxiv.org/abs/2009.02276
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
-from typing import Any, Dict, Tuple, TYPE_CHECKING, List
+from typing import Any, TYPE_CHECKING
 
 import numpy as np
 from tqdm.auto import trange, tqdm
@@ -33,7 +33,7 @@ from art.estimators import BaseEstimator, NeuralNetworkMixin
 from art.estimators.classification.classifier import ClassifierMixin
 
 if TYPE_CHECKING:
-    # pylint: disable=C0412
+
     from art.utils import CLASSIFIER_NEURALNETWORK_TYPE
 
 logger = logging.getLogger(__name__)
@@ -41,7 +41,7 @@ logger = logging.getLogger(__name__)
 
 class GradientMatchingAttack(Attack):
     """
-    Implementation of Gradient Matching Attack by Geiping, et. al. 2020.
+    Implementation of Gradient Matching Attack by Geiping et al. (2020).
     "Witches' Brew: Industrial Scale Data Poisoning via Gradient Matching"
 
     | Paper link: https://arxiv.org/abs/2009.02276
@@ -67,9 +67,9 @@ class GradientMatchingAttack(Attack):
         epsilon: float = 0.1,
         max_trials: int = 8,
         max_epochs: int = 250,
-        learning_rate_schedule: Tuple[List[float], List[int]] = ([1e-1, 1e-2, 1e-3, 1e-4], [100, 150, 200, 220]),
+        learning_rate_schedule: tuple[list[float], list[int]] = ([1e-1, 1e-2, 1e-3, 1e-4], [100, 150, 200, 220]),
         batch_size: int = 128,
-        clip_values: Tuple[float, float] = (0, 1.0),
+        clip_values: tuple[float, float] = (0, 1.0),
         verbose: int = 1,
     ):
         """
@@ -81,7 +81,7 @@ class GradientMatchingAttack(Attack):
         :param max_trials: The maximum number of restarts to optimize the poison.
         :param max_epochs: The maximum number of epochs to optimize the train per trial.
         :param learning_rate_schedule: The learning rate schedule to optimize the poison.
-            A List of (learning rate, epoch) pairs. The learning rate is used
+            A list of (learning rate, epoch) pairs. The learning rate is used
             if the current epoch is less than the specified epoch.
         :param batch_size: Batch size.
         :param clip_values: The range of the input features to the classifier.
@@ -124,7 +124,7 @@ class GradientMatchingAttack(Attack):
             initializer = self._initialize_poison_pytorch
         else:
             raise NotImplementedError(
-                "GradientMatchingAttack is currently implemented only for Tensorflow V2 and Pytorch."
+                "GradientMatchingAttack is currently implemented only for TensorFlow V2 and PyTorch."
             )
 
         return initializer(x_trigger, y_trigger, x_poison, y_poison)
@@ -155,7 +155,6 @@ class GradientMatchingAttack(Attack):
         :param x_poison: A list of training data to poison a portion of.
         :param y_poison: A list of true labels for x_poison.
         """
-        # pylint: disable=no-name-in-module
         from tensorflow.keras import backend as K
         import tensorflow as tf
         from tensorflow.keras.layers import Input, Embedding, Add, Lambda
@@ -173,7 +172,7 @@ class GradientMatchingAttack(Attack):
             # Get the target gradient vector.
             import tensorflow as tf
 
-            with tf.GradientTape() as t:  # pylint: disable=C0103
+            with tf.GradientTape() as t:  # pylint: disable=invalid-name
                 t.watch(classifier.model.weights)
                 output = classifier.model(x, training=False)
                 loss = classifier.loss_object(target, output)
@@ -204,10 +203,10 @@ class GradientMatchingAttack(Attack):
 
         def loss_fn(input_noised: tf.Tensor, target: tf.Tensor, grad_ws_norm: tf.Tensor):
             d_w2_norm = _weight_grad(classifier, input_noised, target)
-            B = 1 - tf.reduce_sum(grad_ws_norm * d_w2_norm)  # pylint: disable=C0103
+            B = 1 - tf.reduce_sum(grad_ws_norm * d_w2_norm)  # pylint: disable=invalid-name
             return B
 
-        B = tf.keras.layers.Lambda(lambda x: loss_fn(x[0], x[1], x[2]))(  # pylint: disable=C0103
+        B = tf.keras.layers.Lambda(lambda x: loss_fn(x[0], x[1], x[2]))(  # pylint: disable=invalid-name
             [input_noised, y_true_poison, self.grad_ws_norm]
         )
 
@@ -220,7 +219,7 @@ class GradientMatchingAttack(Attack):
             Use a preset learning rate based on the current training epoch.
             """
 
-            def __init__(self, learning_rates: List[float], milestones: List[int]):
+            def __init__(self, learning_rates: list[float], milestones: list[int]):
                 self.schedule = list(zip(milestones, learning_rates))
 
             def __call__(self, step: int) -> float:
@@ -231,7 +230,7 @@ class GradientMatchingAttack(Attack):
                     lr_prev = learning_rate
                 return lr_prev
 
-            def get_config(self) -> Dict:
+            def get_config(self) -> dict:
                 """
                 Returns the parameters.
                 """
@@ -281,7 +280,7 @@ class GradientMatchingAttack(Attack):
             Gradient matching noise layer.
             """
 
-            def __init__(self, num_poison: int, len_noise: int, epsilon: float, clip_values: Tuple[float, float]):
+            def __init__(self, num_poison: int, len_noise: int, epsilon: float, clip_values: tuple[float, float]):
                 super().__init__()
 
                 self.embedding_layer = nn.Embedding(num_poison, len_noise)
@@ -328,14 +327,14 @@ class GradientMatchingAttack(Attack):
 
             def forward(
                 self, x: torch.Tensor, indices_poison: torch.Tensor, y: torch.Tensor, grad_ws_norm: torch.Tensor
-            ) -> Tuple[torch.Tensor, torch.Tensor]:
+            ) -> tuple[torch.Tensor, torch.Tensor]:
                 """
                 Applies the poison noise and compute the loss with respect to the target gradient.
                 """
                 poisoned_samples = self.noise_embedding(x, indices_poison)
                 d_w2_norm = _weight_grad(self.classifier, poisoned_samples, y)
                 d_w2_norm.requires_grad_(True)
-                B_score = 1 - self.cos(grad_ws_norm, d_w2_norm)  # pylint: disable=C0103
+                B_score = 1 - self.cos(grad_ws_norm, d_w2_norm)  # pylint: disable=invalid-name
                 return B_score, poisoned_samples
 
         self.grad_ws_norm = _weight_grad(
@@ -360,7 +359,7 @@ class GradientMatchingAttack(Attack):
             Use a preset learning rate based on the current training epoch.
             """
 
-            def __init__(self, learning_rates: List[float], milestones: List[int]):
+            def __init__(self, learning_rates: list[float], milestones: list[int]):
                 self.schedule = list(zip(milestones, learning_rates))
 
             def __call__(self, step: int) -> float:
@@ -371,7 +370,7 @@ class GradientMatchingAttack(Attack):
                     lr_prev = learning_rate
                 return lr_prev
 
-            def get_config(self) -> Dict:
+            def get_config(self) -> dict:
                 """
                 returns a dictionary of parameters.
                 """
@@ -383,7 +382,7 @@ class GradientMatchingAttack(Attack):
 
     def poison(
         self, x_trigger: np.ndarray, y_trigger: np.ndarray, x_train: np.ndarray, y_train: np.ndarray
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    ) -> tuple[np.ndarray, np.ndarray]:
         """
         Optimizes a portion of poisoned samples from x_train to make a model classify x_target
         as y_target by matching the gradients.
@@ -418,7 +417,7 @@ class GradientMatchingAttack(Attack):
         num_poison_samples = int(self.percent_poison * len(x_train))
 
         # Try poisoning num_trials times and choose the best one.
-        best_B = np.finfo(np.float32).max  # pylint: disable=C0103
+        best_B = np.finfo(np.float32).max  # pylint: disable=invalid-name
         best_x_poisoned = None
         best_indices_poison = None
 
@@ -433,11 +432,11 @@ class GradientMatchingAttack(Attack):
             x_poison = x_train[indices_poison]
             y_poison = y_train[indices_poison]
             self._initialize_poison(x_trigger, y_trigger, x_poison, y_poison)
-            x_poisoned, B_ = poisoner(x_poison, y_poison)  # pylint: disable=C0103
+            x_poisoned, B_ = poisoner(x_poison, y_poison)  # pylint: disable=invalid-name
             finish_poisoning()
-            B_ = np.mean(B_)  # Averaging B losses from multiple batches.  # pylint: disable=C0103
+            B_ = np.mean(B_)  # Averaging B losses from multiple batches.  # pylint: disable=invalid-name
             if B_ < best_B:
-                best_B = B_  # pylint: disable=C0103
+                best_B = B_  # pylint: disable=invalid-name
                 best_x_poisoned = x_poisoned
                 best_indices_poison = indices_poison
 
@@ -446,7 +445,7 @@ class GradientMatchingAttack(Attack):
         x_train[best_indices_poison] = best_x_poisoned
         return x_train, y_train  # y_train has not been modified.
 
-    def _poison__pytorch(self, x_poison: np.ndarray, y_poison: np.ndarray) -> Tuple[Any, Any]:
+    def _poison__pytorch(self, x_poison: np.ndarray, y_poison: np.ndarray) -> tuple[Any, Any]:
         """
         Optimize the poison by matching the gradient within the perturbation budget.
 
@@ -503,7 +502,7 @@ class GradientMatchingAttack(Attack):
                 epoch_iterator.set_postfix(loss=sum_loss / count)
             self.lr_schedule.step()
 
-        B_sum = 0  # pylint: disable=C0103
+        B_sum = 0  # pylint: disable=invalid-name
         count = 0
         all_poisoned_samples = []
         self.backdoor_model.eval()
@@ -514,13 +513,13 @@ class GradientMatchingAttack(Attack):
             x = x.to(device)
             y = y.to(device)
             indices = indices.to(device)
-            B, poisoned_samples = self.backdoor_model(x, indices, y, self.grad_ws_norm)  # pylint: disable=C0103
+            B, poisoned_samples = self.backdoor_model(x, indices, y, self.grad_ws_norm)  # pylint: disable=invalid-name
             all_poisoned_samples.append(poisoned_samples.detach().cpu().numpy())
-            B_sum += B.detach().cpu().numpy()  # pylint: disable=C0103
+            B_sum += B.detach().cpu().numpy()  # pylint: disable=invalid-name
             count += 1
         return np.concatenate(all_poisoned_samples, axis=0), B_sum / count
 
-    def _poison__tensorflow(self, x_poison: np.ndarray, y_poison: np.ndarray) -> Tuple[Any, Any]:
+    def _poison__tensorflow(self, x_poison: np.ndarray, y_poison: np.ndarray) -> tuple[Any, Any]:
         """
         Optimize the poison by matching the gradient within the perturbation budget.
 
@@ -545,7 +544,7 @@ class GradientMatchingAttack(Attack):
             epochs=self.max_epochs,
             verbose=0,
         )
-        [input_noised_, B_] = self.backdoor_model.predict(  # pylint: disable=C0103
+        [input_noised_, B_] = self.backdoor_model.predict(  # pylint: disable=invalid-name
             [x_poison, y_poison, np.arange(len(y_poison))], batch_size=self.batch_size
         )
 

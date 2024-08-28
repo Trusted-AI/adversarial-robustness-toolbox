@@ -20,7 +20,7 @@ This module implements the greedy search algorithm of the `LaserBeam` attack.
 
 | Paper link: https://arxiv.org/abs/2103.06504
 """
-from typing import Optional, Tuple
+from __future__ import annotations
 
 import numpy as np
 
@@ -35,8 +35,8 @@ def greedy_search(
     actual_class_confidence: float,
     adv_object_generator: AdvObjectGenerator,
     image_generator: ImageGenerator,
-    debug: Optional[DebugInfo] = None,
-) -> Tuple[Optional[AdversarialObject], Optional[int]]:
+    debug: DebugInfo | None = None,
+) -> tuple[AdversarialObject | None, int | None]:
     """
     Greedy search algorithm used to generate parameters of an adversarial object that added to the :image will mislead
     the neural network.

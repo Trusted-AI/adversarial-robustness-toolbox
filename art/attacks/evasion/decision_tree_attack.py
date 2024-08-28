@@ -18,10 +18,10 @@
 """
 This module implements attacks on Decision Trees.
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
-from typing import List, Optional, Union
+
 
 import numpy as np
 from tqdm.auto import trange
@@ -63,9 +63,9 @@ class DecisionTreeAttack(EvasionAttack):
     def _df_subtree(
         self,
         position: int,
-        original_class: Union[int, np.ndarray],
-        target: Optional[int] = None,
-    ) -> List[int]:
+        original_class: int | np.ndarray,
+        target: int | None = None,
+    ) -> list[int]:
         """
         Search a decision tree for a mis-classifying instance.
 
@@ -105,7 +105,7 @@ class DecisionTreeAttack(EvasionAttack):
 
         return path
 
-    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
+    def generate(self, x: np.ndarray, y: np.ndarray | None = None, **kwargs) -> np.ndarray:
         """
         Generate adversarial examples and return them as an array.
 

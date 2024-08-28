@@ -18,9 +18,10 @@
 """
 Module providing convenience functions.
 """
-# pylint: disable=C0302
-from __future__ import absolute_import, division, print_function, unicode_literals
 
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+
+from collections.abc import Callable
 import logging
 import math
 import os
@@ -31,11 +32,11 @@ import warnings
 import zipfile
 from functools import wraps
 from inspect import signature
-from typing import TYPE_CHECKING, Callable, List, Dict, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Optional, Tuple, Union
 
 import numpy as np
 import six
-from scipy.special import gammainc  # pylint: disable=E0611
+from scipy.special import gammainc
 from tqdm.auto import tqdm
 
 from art import config
@@ -49,16 +50,16 @@ logger = logging.getLogger(__name__)
 # ------------------------------------------------------------------------------------------------- CONSTANTS AND TYPES
 
 
-DATASET_TYPE = Tuple[  # pylint: disable=C0103
+DATASET_TYPE = Tuple[  # pylint: disable=invalid-name
     Tuple[np.ndarray, np.ndarray], Tuple[np.ndarray, np.ndarray], float, float
 ]
-CLIP_VALUES_TYPE = Tuple[Union[int, float, np.ndarray], Union[int, float, np.ndarray]]  # pylint: disable=C0103
+CLIP_VALUES_TYPE = Tuple[Union[int, float, np.ndarray], Union[int, float, np.ndarray]]  # pylint: disable=invalid-name
 
 if TYPE_CHECKING:
-    # pylint: disable=R0401,C0412
+    # pylint: disable=cyclic-import
     from art.defences.preprocessor.preprocessor import Preprocessor
 
-    PREPROCESSING_TYPE = Optional[  # pylint: disable=C0103
+    PREPROCESSING_TYPE = Optional[  # pylint: disable=invalid-name
         Union[
             Tuple[Union[int, float, np.ndarray], Union[int, float, np.ndarray]], Preprocessor, Tuple[Preprocessor, ...]
         ]
@@ -118,7 +119,7 @@ if TYPE_CHECKING:
     from art.estimators.speech_recognition.tensorflow_lingvo import TensorFlowLingvoASR
     from art.estimators.tensorflow import TensorFlowV2Estimator
 
-    CLASSIFIER_LOSS_GRADIENTS_TYPE = Union[  # pylint: disable=C0103
+    CLASSIFIER_LOSS_GRADIENTS_TYPE = Union[  # pylint: disable=invalid-name
         ClassifierLossGradients,
         EnsembleClassifier,
         GPyGaussianProcessClassifier,
@@ -133,7 +134,7 @@ if TYPE_CHECKING:
         QueryEfficientGradientEstimationClassifier,
     ]
 
-    CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE = Union[  # pylint: disable=C0103
+    CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE = Union[  # pylint: disable=invalid-name
         ClassifierClassLossGradients,
         EnsembleClassifier,
         GPyGaussianProcessClassifier,
@@ -146,7 +147,7 @@ if TYPE_CHECKING:
         TensorFlowV2Classifier,
     ]
 
-    CLASSIFIER_NEURALNETWORK_TYPE = Union[  # pylint: disable=C0103
+    CLASSIFIER_NEURALNETWORK_TYPE = Union[  # pylint: disable=invalid-name
         ClassifierNeuralNetwork,
         DetectorClassifier,
         EnsembleClassifier,
@@ -157,7 +158,7 @@ if TYPE_CHECKING:
         TensorFlowV2Classifier,
     ]
 
-    CLASSIFIER_DECISION_TREE_TYPE = Union[  # pylint: disable=C0103
+    CLASSIFIER_DECISION_TREE_TYPE = Union[  # pylint: disable=invalid-name
         ClassifierDecisionTree,
         LightGBMClassifier,
         ScikitlearnDecisionTreeClassifier,
@@ -167,7 +168,7 @@ if TYPE_CHECKING:
         XGBoostClassifier,
     ]
 
-    CLASSIFIER_TYPE = Union[  # pylint: disable=C0103
+    CLASSIFIER_TYPE = Union[  # pylint: disable=invalid-name
         Classifier,
         BlackBoxClassifier,
         CatBoostARTClassifier,
@@ -195,13 +196,13 @@ if TYPE_CHECKING:
         CLASSIFIER_NEURALNETWORK_TYPE,
     ]
 
-    GENERATOR_TYPE = Union[TensorFlowGenerator, TensorFlowV2Generator]  # pylint: disable=C0103
+    GENERATOR_TYPE = Union[TensorFlowGenerator, TensorFlowV2Generator]  # pylint: disable=invalid-name
 
-    REGRESSOR_TYPE = Union[  # pylint: disable=C0103
+    REGRESSOR_TYPE = Union[  # pylint: disable=invalid-name
         ScikitlearnRegressor, ScikitlearnDecisionTreeRegressor, PyTorchRegressor, KerasRegressor, BlackBoxRegressor
     ]
 
-    OBJECT_DETECTOR_TYPE = Union[  # pylint: disable=C0103
+    OBJECT_DETECTOR_TYPE = Union[  # pylint: disable=invalid-name
         ObjectDetector,
         PyTorchObjectDetector,
         PyTorchFasterRCNN,
@@ -210,12 +211,12 @@ if TYPE_CHECKING:
         TensorFlowV2FasterRCNN,
     ]
 
-    SPEECH_RECOGNIZER_TYPE = Union[  # pylint: disable=C0103
+    SPEECH_RECOGNIZER_TYPE = Union[  # pylint: disable=invalid-name
         PyTorchDeepSpeech,
         TensorFlowLingvoASR,
     ]
 
-    PYTORCH_ESTIMATOR_TYPE = Union[  # pylint: disable=C0103
+    PYTORCH_ESTIMATOR_TYPE = Union[  # pylint: disable=invalid-name
         PyTorchClassifier,
         PyTorchDeepSpeech,
         PyTorchEstimator,
@@ -225,21 +226,21 @@ if TYPE_CHECKING:
         PyTorchRegressor,
     ]
 
-    PYTORCH_OBJECT_DETECTOR_TYPE = Union[PyTorchObjectDetector]  # pylint: disable=C0103
+    PYTORCH_OBJECT_DETECTOR_TYPE = Union[PyTorchObjectDetector]  # pylint: disable=invalid-name
 
-    KERAS_ESTIMATOR_TYPE = Union[  # pylint: disable=C0103
+    KERAS_ESTIMATOR_TYPE = Union[  # pylint: disable=invalid-name
         KerasClassifier,
         KerasEstimator,
         KerasRegressor,
     ]
 
-    TENSORFLOWV2_ESTIMATOR_TYPE = Union[  # pylint: disable=C0103
+    TENSORFLOWV2_ESTIMATOR_TYPE = Union[  # pylint: disable=invalid-name
         TensorFlowV2Classifier,
         TensorFlowV2Estimator,
         TensorFlowV2FasterRCNN,
     ]
 
-    ESTIMATOR_TYPE = Union[  # pylint: disable=C0103
+    ESTIMATOR_TYPE = Union[  # pylint: disable=invalid-name
         CLASSIFIER_TYPE,
         REGRESSOR_TYPE,
         OBJECT_DETECTOR_TYPE,
@@ -249,7 +250,7 @@ if TYPE_CHECKING:
         TENSORFLOWV2_ESTIMATOR_TYPE,
     ]
 
-    CLONABLE = Union[  # pylint: disable=C0103
+    CLONABLE = Union[  # pylint: disable=invalid-name
         ScikitlearnClassifier,
         PyTorchClassifier,
         TensorFlowV2Classifier,
@@ -259,10 +260,10 @@ if TYPE_CHECKING:
         XGBoostClassifier,
     ]
 
-    ABLATOR_TYPE = Union[BlockAblator, ColumnAblator]  # pylint: disable=C0103
+    ABLATOR_TYPE = Union[BlockAblator, ColumnAblator]  # pylint: disable=invalid-name
 
-    CERTIFIER_TYPE = Union[PytorchDeepZ]  # pylint: disable=C0103
-    IBP_CERTIFIER_TYPE = Union[PyTorchIBPClassifier]  # pylint: disable=C0103
+    CERTIFIER_TYPE = Union[PytorchDeepZ]  # pylint: disable=invalid-name
+    IBP_CERTIFIER_TYPE = Union[PyTorchIBPClassifier]  # pylint: disable=invalid-name
 
 # --------------------------------------------------------------------------------------------------------- DEPRECATION
 
@@ -330,7 +331,7 @@ def deprecated_keyword_arg(identifier: str, end_version: str, *, reason: str = "
     Deprecate a keyword argument and raise a `DeprecationWarning`.
 
     The `@deprecated_keyword_arg` decorator is used to deprecate keyword arguments. The deprecated keyword argument must
-    default to `Deprecated`. Several use cases are supported. For example one can use it to to rename a keyword
+    default to `Deprecated`. Several use cases are supported. For example one can use it to rename a keyword
     identifier. The following code examples provide different use cases of how to use the decorator.
 
     .. code-block:: python
@@ -383,7 +384,7 @@ def deprecated_keyword_arg(identifier: str, end_version: str, *, reason: str = "
 # ----------------------------------------------------------------------------------------------------- MATH OPERATIONS
 
 
-def projection_l1_1(values: np.ndarray, eps: Union[int, float, np.ndarray]) -> np.ndarray:
+def projection_l1_1(values: np.ndarray, eps: int | float | np.ndarray) -> np.ndarray:
     """
     This function computes the orthogonal projections of a batch of points on L1-balls of given radii
     The batch size is  m = values.shape[0].  The points are flattened to dimension
@@ -393,11 +394,11 @@ def projection_l1_1(values: np.ndarray, eps: Union[int, float, np.ndarray]) -> n
     a[j+1] +...+ a[n-1] - a[j]*(n-j-1) >= eps. The  ith  coordinate of projection is equal to  0
     if i=0,...,j.
 
-    :param values:  A batch of  m  points, each an ndarray
+    :param values:  A batch of  m  points, each a ndarray
     :param eps:  The radii of the respective L1-balls
     :return: projections
     """
-    # pylint: disable=C0103
+    # pylint: disable=invalid-name
 
     shp = values.shape
     a = values.copy()
@@ -468,7 +469,7 @@ def projection_l1_1(values: np.ndarray, eps: Union[int, float, np.ndarray]) -> n
     return proj
 
 
-def projection_l1_2(values: np.ndarray, eps: Union[int, float, np.ndarray]) -> np.ndarray:
+def projection_l1_2(values: np.ndarray, eps: int | float | np.ndarray) -> np.ndarray:
     """
     This function computes the orthogonal projections of a batch of points on L1-balls of given radii
     The batch size is  m = values.shape[0].  The points are flattened to dimension
@@ -480,11 +481,11 @@ def projection_l1_2(values: np.ndarray, eps: Union[int, float, np.ndarray]) -> n
     If  t = (a1 + ... + an - 1)/n , then  a' is the desired projection.  Otherwise, the problem is reduced to
     finding the projection of  (a1 - t, ... , a{n-1} - t ).
 
-    :param values:  A batch of  m  points, each an ndarray
+    :param values:  A batch of  m  points, each a ndarray
     :param eps:  The radii of the respective L1-balls
     :return: projections
     """
-    # pylint: disable=C0103
+    # pylint: disable=invalid-name
     shp = values.shape
     a = values.copy()
     n = np.prod(a.shape[1:])
@@ -523,8 +524,8 @@ def projection_l1_2(values: np.ndarray, eps: Union[int, float, np.ndarray]) -> n
 
 def projection(
     values: np.ndarray,
-    eps: Union[int, float, np.ndarray],
-    norm_p: Union[int, float, str],
+    eps: int | float | np.ndarray,
+    norm_p: int | float | str,
     *,
     suboptimal: bool = True,
 ) -> np.ndarray:
@@ -581,8 +582,8 @@ def projection(
 def random_sphere(
     nb_points: int,
     nb_dims: int,
-    radius: Union[int, float, np.ndarray],
-    norm: Union[int, float, str],
+    radius: int | float | np.ndarray,
+    norm: int | float | str,
 ) -> np.ndarray:
     """
     Generate uniformly at random `m x n`-dimension points in the `norm`-norm ball with radius `radius` and centered
@@ -613,7 +614,7 @@ def random_sphere(
             )
 
         a_tmp = np.random.randn(nb_points, nb_dims)
-        s_2 = np.sum(a_tmp ** 2, axis=1)
+        s_2 = np.sum(a_tmp**2, axis=1)
         base = gammainc(nb_dims / 2.0, s_2 / 2.0) ** (1 / nb_dims) * radius / np.sqrt(s_2)
         res = a_tmp * (np.tile(base, (nb_dims, 1))).T
 
@@ -632,9 +633,9 @@ def random_sphere(
 def uniform_sample_from_sphere_or_ball(
     nb_points: int,
     nb_dims: int,
-    radius: Union[int, float, np.ndarray],
+    radius: int | float | np.ndarray,
     sample_space: str = "ball",
-    norm: Union[int, float, str] = 2,
+    norm: int | float | str = 2,
 ) -> np.ndarray:
     """
     Generate a sample of  <nb_points>  distributed independently and uniformly on the sphere (with respect to the given
@@ -703,8 +704,8 @@ def uniform_sample_from_sphere_or_ball(
 
 def original_to_tanh(
     x_original: np.ndarray,
-    clip_min: Union[float, np.ndarray],
-    clip_max: Union[float, np.ndarray],
+    clip_min: float | np.ndarray,
+    clip_max: float | np.ndarray,
     tanh_smoother: float = 0.999999,
 ) -> np.ndarray:
     """
@@ -724,8 +725,8 @@ def original_to_tanh(
 
 def tanh_to_original(
     x_tanh: np.ndarray,
-    clip_min: Union[float, np.ndarray],
-    clip_max: Union[float, np.ndarray],
+    clip_min: float | np.ndarray,
+    clip_max: float | np.ndarray,
 ) -> np.ndarray:
     """
     Transform input from tanh to original space.
@@ -741,7 +742,7 @@ def tanh_to_original(
 # --------------------------------------------------------------------------------------------------- LABELS OPERATIONS
 
 
-def to_categorical(labels: Union[np.ndarray, List[float]], nb_classes: Optional[int] = None) -> np.ndarray:
+def to_categorical(labels: Union[np.ndarray, list[float]], nb_classes: int | None = None) -> np.ndarray:
     """
     Convert an array of labels to binary class matrix.
 
@@ -757,7 +758,7 @@ def to_categorical(labels: Union[np.ndarray, List[float]], nb_classes: Optional[
     return categorical
 
 
-def float_to_categorical(labels: np.ndarray, nb_classes: Optional[int] = None):
+def float_to_categorical(labels: np.ndarray, nb_classes: int | None = None):
     """
     Convert an array of floating point labels to binary class matrix.
 
@@ -786,7 +787,7 @@ def floats_to_one_hot(labels: np.ndarray):
     :rtype: `np.ndarray`
     """
     labels = np.array(labels)
-    for feature in labels.T:  # pylint: disable=E1133
+    for feature in labels.T:
         unique = np.unique(feature)
         unique.sort()
         for index, value in enumerate(unique):
@@ -795,7 +796,7 @@ def floats_to_one_hot(labels: np.ndarray):
 
 
 def check_and_transform_label_format(
-    labels: np.ndarray, nb_classes: Optional[int], return_one_hot: bool = True
+    labels: np.ndarray, nb_classes: int | None, return_one_hot: bool = True
 ) -> np.ndarray:
     """
     Check label format and transform to one-hot-encoded labels if necessary
@@ -895,7 +896,7 @@ def second_most_likely_class(x: np.ndarray, classifier: "CLASSIFIER_TYPE") -> np
     )
 
 
-def get_label_conf(y_vec: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+def get_label_conf(y_vec: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     """
     Returns the confidence and the label of the most probable class given a vector of class confidences
 
@@ -910,7 +911,7 @@ def get_label_conf(y_vec: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
 
 def get_labels_np_array(preds: np.ndarray) -> np.ndarray:
     """
-    Returns the label of the most probable class given a array of class confidences.
+    Returns the label of the most probable class given an array of class confidences.
 
     :param preds: Array of class confidences, nb of instances as first dimension.
     :return: Labels.
@@ -944,7 +945,7 @@ def get_feature_values(x: np.ndarray, single_index_feature: bool) -> list:
     return values
 
 
-def get_feature_index(feature: Union[int, slice]) -> Union[int, slice]:
+def get_feature_index(feature: int | slice) -> int | slice:
     """
     Returns a modified feature index: in case of a slice of size 1, returns the corresponding integer. In case
     of a slice with missing params, tries to fill them. Otherwise, returns the same value (integer or slice) as passed.
@@ -968,7 +969,7 @@ def get_feature_index(feature: Union[int, slice]) -> Union[int, slice]:
     return slice(start, stop, step)
 
 
-def remove_attacked_feature(attack_feature: Union[int, slice], non_numerical_features: Optional[List[int]]):
+def remove_attacked_feature(attack_feature: int | slice, non_numerical_features: list[int] | None):
     """
     Removes the attacked feature from the list of non-numeric features to encode.
 
@@ -1044,7 +1045,7 @@ def compute_success(
     return np.sum(attack_success) / x_adv.shape[0]
 
 
-def compute_accuracy(preds: np.ndarray, labels: np.ndarray, abstain: bool = True) -> Tuple[float, float]:
+def compute_accuracy(preds: np.ndarray, labels: np.ndarray, abstain: bool = True) -> tuple[float, float]:
     """
     Compute the accuracy rate and coverage rate of predictions
     In the case where predictions are abstained, those samples are ignored.
@@ -1115,12 +1116,12 @@ def intersection_over_area(bbox_1: np.ndarray, bbox_2: np.ndarray) -> float:
 
 
 def non_maximum_suppression(
-    preds: Dict[str, np.ndarray], iou_threshold: float, confidence_threshold: Optional[float] = None
-) -> Dict[str, np.ndarray]:
+    preds: dict[str, np.ndarray], iou_threshold: float, confidence_threshold: float | None = None
+) -> dict[str, np.ndarray]:
     """
     Perform non-maximum suppression on the predicted object detection labels of a single image.
 
-    :param preds: Predicted labels of format `Dict[str, np.ndarray]` for a single image. The fields of the Dict are
+    :param preds: Predicted labels of format `dict[str, np.ndarray]` for a single image. The fields of the dict are
                   as follows:
 
                   - boxes [N, 4]: the boxes in [x1, y1, x2, y2] format, with 0 <= x1 < x2 <= W and 0 <= y1 < y2 <= H.
@@ -1190,7 +1191,7 @@ def load_cifar10(
     :return: `(x_train, y_train), (x_test, y_test), min, max`
     """
 
-    def load_batch(fpath: str) -> Tuple[np.ndarray, np.ndarray]:
+    def load_batch(fpath: str) -> tuple[np.ndarray, np.ndarray]:
         """
         Utility function for loading CIFAR batches, as written in Keras.
 
@@ -1564,7 +1565,7 @@ def _extract(full_path: str, path: str) -> bool:
             archive = tarfile.open(full_path, "r:gz")
     elif full_path.endswith("zip"):  # pragma: no cover
         if zipfile.is_zipfile(full_path):
-            archive = zipfile.ZipFile(full_path)  # pylint: disable=R1732
+            archive = zipfile.ZipFile(full_path)  # pylint: disable=consider-using-with
         else:
             return False
     else:
@@ -1583,7 +1584,7 @@ def _extract(full_path: str, path: str) -> bool:
 
 
 def get_file(
-    filename: str, url: Union[str, List[str]], path: Optional[str] = None, extract: bool = False, verbose: bool = False
+    filename: str, url: Union[str, list[str]], path: str | None = None, extract: bool = False, verbose: bool = False
 ) -> str:
     """
     Downloads a file from a URL if it not already in the cache. The file at indicated by `url` is downloaded to the
@@ -1633,14 +1634,14 @@ def get_file(
                     # [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed (_ssl.c:847)
                     import ssl
 
-                    ssl._create_default_https_context = ssl._create_unverified_context  # pylint: disable=W0212
+                    ssl._create_default_https_context = ssl._create_unverified_context
 
                     if verbose:
                         with tqdm() as t_bar:
-                            # pylint: disable=W0640
+                            # pylint: disable=cell-var-from-loop
                             last_block = [0]
 
-                            def progress_bar(blocks: int = 1, block_size: int = 1, total_size: Optional[int] = None):
+                            def progress_bar(blocks: int = 1, block_size: int = 1, total_size: int | None = None):
                                 """
                                 :param blocks: Number of blocks transferred so far [default: 1].
                                 :param block_size: Size of each block (in tqdm units) [default: 1].
@@ -1684,7 +1685,7 @@ def make_directory(dir_path: str) -> None:
         os.makedirs(dir_path)
 
 
-def clip_and_round(x: np.ndarray, clip_values: Optional["CLIP_VALUES_TYPE"], round_samples: float) -> np.ndarray:
+def clip_and_round(x: np.ndarray, clip_values: "CLIP_VALUES_TYPE" | None, round_samples: float) -> np.ndarray:
     """
     Rounds the input to the correct level of granularity.
     Useful to ensure data passed to classifier can be represented
@@ -1709,8 +1710,8 @@ def preprocess(
     x: np.ndarray,
     y: np.ndarray,
     nb_classes: int = 10,
-    clip_values: Optional["CLIP_VALUES_TYPE"] = None,
-) -> Tuple[np.ndarray, np.ndarray]:
+    clip_values: "CLIP_VALUES_TYPE" | None = None,
+) -> tuple[np.ndarray, np.ndarray]:
     """
     Scales `x` to [0, 1] and converts `y` to class categorical confidences.
 
@@ -1732,7 +1733,7 @@ def preprocess(
     return normalized_x, categorical_y
 
 
-def segment_by_class(data: Union[np.ndarray, List[int]], classes: np.ndarray, num_classes: int) -> List[np.ndarray]:
+def segment_by_class(data: Union[np.ndarray, list[int]], classes: np.ndarray, num_classes: int) -> list[np.ndarray]:
     """
     Returns segmented data according to specified features.
 
@@ -1742,7 +1743,7 @@ def segment_by_class(data: Union[np.ndarray, List[int]], classes: np.ndarray, nu
     :param num_classes: How many features.
     :return: Segmented data according to specified features.
     """
-    by_class: List[List[int]] = [[] for _ in range(num_classes)]
+    by_class: list[list[int]] = [[] for _ in range(num_classes)]
     for indx, feature in enumerate(classes):
         if len(classes.shape) == 2 and classes.shape[1] > 1:
             assigned = int(np.argmax(feature))
@@ -1773,7 +1774,7 @@ def performance_diff(
     :param perf_function: The performance metric to be used. One of ['accuracy', 'f1'] or a callable function
            `(true_labels, model_labels[, kwargs]) -> float`.
     :param kwargs: Arguments to add to performance function.
-    :return: The difference in performance performance(model1) - performance(model2).
+    :return: The difference in performance: performance(model1) - performance(model2).
     :raises `ValueError`: If an unsupported performance function is requested.
     """
     from sklearn.metrics import accuracy_score, f1_score
@@ -1816,9 +1817,9 @@ def is_probability(vector: np.ndarray) -> bool:
 
 def is_probability_array(array: np.ndarray) -> bool:
     """
-    Check if a multi-dimensional array is an array of probabilities.
+    Check if a multidimensional array is an array of probabilities.
 
-    :param vector: A numpy array.
+    :param array: A numpy array.
     :return: True if it is an array of probabilities.
     """
     if len(array.shape) == 1:
@@ -1832,7 +1833,7 @@ def is_probability_array(array: np.ndarray) -> bool:
     return is_sum_1 and is_smaller_1 and is_larger_0
 
 
-def pad_sequence_input(x: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+def pad_sequence_input(x: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     """
     Apply padding to a batch of 1-dimensional samples such that it has shape of (batch_size, max_length).
 

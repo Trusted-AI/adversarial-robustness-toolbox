@@ -18,11 +18,12 @@
 """
 This module implements the classifier `BlackBoxClassifier` for black-box classifiers.
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
+from collections.abc import Callable
 from functools import total_ordering
 import logging
-from typing import Callable, List, Optional, Union, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 
@@ -46,12 +47,12 @@ class BlackBoxClassifier(ClassifierMixin, BaseEstimator):
 
     def __init__(
         self,
-        predict_fn: Union[Callable, Tuple[np.ndarray, np.ndarray]],
-        input_shape: Tuple[int, ...],
+        predict_fn: Callable[[np.ndarray], np.ndarray],
+        input_shape: tuple[int, ...],
         nb_classes: int,
-        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
-        preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
-        postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
+        clip_values: "CLIP_VALUES_TYPE" | None = None,
+        preprocessing_defences: "Preprocessor" | list["Preprocessor"] | None = None,
+        postprocessing_defences: "Postprocessor" | list["Postprocessor"] | None = None,
         preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
         fuzzy_float_compare: bool = False,
     ):
@@ -91,7 +92,7 @@ class BlackBoxClassifier(ClassifierMixin, BaseEstimator):
         self.nb_classes = nb_classes
 
     @property
-    def input_shape(self) -> Tuple[int, ...]:
+    def input_shape(self) -> tuple[int, ...]:
         """
         Return the shape of one input sample.
 
@@ -108,7 +109,6 @@ class BlackBoxClassifier(ClassifierMixin, BaseEstimator):
         """
         return self._predict_fn  # type: ignore
 
-    # pylint: disable=W0221
     def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> np.ndarray:
         """
         Perform prediction for a batch of inputs.
@@ -149,7 +149,7 @@ class BlackBoxClassifier(ClassifierMixin, BaseEstimator):
         """
         raise NotImplementedError
 
-    def save(self, filename: str, path: Optional[str] = None) -> None:
+    def save(self, filename: str, path: str | None = None) -> None:
         """
         Save a model to file in the format specific to the backend framework. For Keras, .h5 format is used.
 
@@ -175,13 +175,13 @@ class BlackBoxClassifierNeuralNetwork(NeuralNetworkMixin, ClassifierMixin, BaseE
 
     def __init__(
         self,
-        predict_fn: Union[Callable, Tuple[np.ndarray, np.ndarray]],
-        input_shape: Tuple[int, ...],
+        predict_fn: Callable[[np.ndarray], np.ndarray],
+        input_shape: tuple[int, ...],
         nb_classes: int,
         channels_first: bool = True,
-        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
-        preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
-        postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
+        clip_values: "CLIP_VALUES_TYPE" | None = None,
+        preprocessing_defences: "Preprocessor" | list["Preprocessor"] | None = None,
+        postprocessing_defences: "Postprocessor" | list["Postprocessor"] | None = None,
         preprocessing: "PREPROCESSING_TYPE" = (0, 1),
         fuzzy_float_compare: bool = False,
     ):
@@ -226,7 +226,7 @@ class BlackBoxClassifierNeuralNetwork(NeuralNetworkMixin, ClassifierMixin, BaseE
         self._layer_names = None
 
     @property
-    def input_shape(self) -> Tuple[int, ...]:
+    def input_shape(self) -> tuple[int, ...]:
         """
         Return the shape of one input sample.
 
@@ -274,9 +274,7 @@ class BlackBoxClassifierNeuralNetwork(NeuralNetworkMixin, ClassifierMixin, BaseE
         """
         raise NotImplementedError
 
-    def get_activations(
-        self, x: np.ndarray, layer: Union[int, str], batch_size: int, framework: bool = False
-    ) -> np.ndarray:
+    def get_activations(self, x: np.ndarray, layer: int | str, batch_size: int, framework: bool = False) -> np.ndarray:
         """
         Return the output of a specific layer for samples `x` where `layer` is the index of the layer between 0 and
         `nb_layers - 1 or the name of the layer. The number of layers can be determined by counting the results
@@ -327,7 +325,7 @@ class FuzzyMapping:
         return np.all(np.isclose(self.key, other.key))
 
     def __ge__(self, other):
-        # This implements >= comparison so we can use this class in a `SortedList`. The `total_ordering` decorator
+        # This implements >= comparison, so we can use this class in a `SortedList`. The `total_ordering` decorator
         # automatically generates the rest of the comparison magic functions based on this one
 
         close_cells = np.isclose(self.key, other.key)
@@ -341,7 +339,7 @@ class FuzzyMapping:
         return self.key[compare_idx] >= other.key[compare_idx]
 
 
-def _make_lookup_predict_fn(existing_predictions: Tuple[np.ndarray, np.ndarray], fuzzy_float_compare: bool) -> Callable:
+def _make_lookup_predict_fn(existing_predictions: tuple[np.ndarray, np.ndarray], fuzzy_float_compare: bool) -> Callable:
     """
     Makes a predict_fn callback based on a table of existing predictions.
 

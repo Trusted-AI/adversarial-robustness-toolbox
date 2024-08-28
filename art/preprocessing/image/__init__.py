@@ -1,6 +1,7 @@
 """
 This module contains image preprocessing tools.
 """
+
 from art.preprocessing.image.image_resize.numpy import ImageResize
 from art.preprocessing.image.image_resize.pytorch import ImageResizePyTorch
 from art.preprocessing.image.image_resize.tensorflow import ImageResizeTensorFlowV2

@@ -20,10 +20,11 @@ This module implements SmoothAdv applied to classifier predictions.
 
 | Paper link: https://arxiv.org/abs/1906.04584
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
+from collections.abc import Callable
 import logging
-from typing import Callable, List, Optional, Tuple, Union, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from tqdm.auto import trange
 import numpy as np
@@ -34,7 +35,7 @@ from art.estimators.classification.tensorflow import TensorFlowV2Classifier
 from art.utils import check_and_transform_label_format
 
 if TYPE_CHECKING:
-    # pylint: disable=C0412
+
     import tensorflow as tf
     from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
     from art.defences.preprocessor import Preprocessor
@@ -61,14 +62,14 @@ class TensorFlowV2SmoothAdv(TensorFlowV2RandomizedSmoothing):
         self,
         model,
         nb_classes: int,
-        input_shape: Tuple[int, ...],
-        loss_object: Optional["tf.Tensor"] = None,
-        optimizer: Optional["tf.keras.optimizers.Optimizer"] = None,
-        train_step: Optional[Callable] = None,
+        input_shape: tuple[int, ...],
+        loss_object: "tf.Tensor" | None = None,
+        optimizer: "tf.keras.optimizers.Optimizer" | None = None,
+        train_step: Callable | None = None,
         channels_first: bool = False,
-        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
-        preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
-        postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
+        clip_values: "CLIP_VALUES_TYPE" | None = None,
+        preprocessing_defences: "Preprocessor" | list["Preprocessor"] | None = None,
+        postprocessing_defences: "Postprocessor" | list["Postprocessor"] | None = None,
         preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
         sample_size: int = 32,
         scale: float = 0.1,

@@ -27,8 +27,11 @@ where the weights determine each feature's importance.
 
 | Paper link: https://arxiv.org/abs/1911.03274
 """
+from __future__ import annotations
+
+from collections.abc import Callable
 import logging
-from typing import Callable, Optional, Union, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 from scipy.stats import pearsonr
@@ -69,13 +72,13 @@ class LowProFool(EvasionAttack):
         self,
         classifier: "CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE",
         n_steps: int = 100,
-        threshold: Union[float, None] = 0.5,
+        threshold: float | None = 0.5,
         lambd: float = 1.5,
         eta: float = 0.2,
         eta_decay: float = 0.98,
         eta_min: float = 1e-7,
-        norm: Union[int, float, str] = 2,
-        importance: Union[Callable, str, np.ndarray] = "pearson",
+        norm: int | float | str = 2,
+        importance: Callable | str | np.ndarray = "pearson",
         verbose: bool = False,
     ) -> None:
         """
@@ -141,12 +144,12 @@ class LowProFool(EvasionAttack):
         :param perturbations: Perturbations of samples towards being adversarial.
         :return: Array with weighted Lp-norm of perturbations.
         """
-        order: Union[int, float] = np.inf if self.norm == "inf" else float(self.norm)
+        order: int | float = np.inf if self.norm == "inf" else float(self.norm)
         return self.lambd * np.linalg.norm(self.importance_vec * perturbations, axis=1, ord=order).reshape(-1, 1)
 
     def __weighted_lp_norm_gradient(self, perturbations: np.ndarray) -> np.ndarray:
         """
-        Gradient of the weighted Lp-space norm with regards to the data vector.
+        Gradient of the weighted Lp-space norm in regard to the data vector.
 
         :param perturbations: Perturbations of samples towards being adversarial.
         :return: Weighted Lp-norm gradients array.
@@ -171,8 +174,8 @@ class LowProFool(EvasionAttack):
 
     def __get_gradients(self, samples: np.ndarray, perturbations: np.ndarray, targets: np.ndarray) -> np.ndarray:
         """
-        Gradient of the objective function with regards to the data vector, i.e. sum of the classifier's loss gradient
-        and weighted lp-space norm gradient, both with regards to data vector.
+        Gradient of the objective function in regard to the data vector, i.e. sum of the classifier's loss gradient
+        and weighted lp-space norm gradient, both in regard to data vector.
 
         :param samples: Base design matrix.
         :param perturbations: Perturbations of samples towards being adversarial.
@@ -217,7 +220,7 @@ class LowProFool(EvasionAttack):
             # Apply a simple Pearson correlation calculation.
             pearson_correlations = [pearsonr(x[:, col], y)[0] for col in range(x.shape[1])]
             absolutes = np.abs(np.array(pearson_correlations))
-            self.importance_vec = absolutes / np.power(np.sum(absolutes ** 2), 0.5)
+            self.importance_vec = absolutes / np.power(np.sum(absolutes**2), 0.5)
 
         elif callable(self.importance):  # pragma: no cover
             # Apply a custom function to call on the provided data.
@@ -239,10 +242,10 @@ class LowProFool(EvasionAttack):
 
     def fit_importances(
         self,
-        x: Optional[np.ndarray] = None,
-        y: Optional[np.ndarray] = None,
-        importance_array: Optional[np.ndarray] = None,
-        normalize: Optional[bool] = True,
+        x: np.ndarray | None = None,
+        y: np.ndarray | None = None,
+        importance_array: np.ndarray | None = None,
+        normalize: bool | None = True,
     ):
         """
         This function allows one to easily calculate the feature importance vector using the pre-specified function,
@@ -274,7 +277,7 @@ class LowProFool(EvasionAttack):
 
         return self
 
-    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
+    def generate(self, x: np.ndarray, y: np.ndarray | None = None, **kwargs) -> np.ndarray:
         """
         Generate adversaries for the samples passed in the `x` data matrix, whose targets are specified in `y`,
         one-hot-encoded target matrix. This procedure makes use of the LowProFool algorithm. In the case of failure,

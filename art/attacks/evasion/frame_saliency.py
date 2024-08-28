@@ -21,10 +21,10 @@ prioritize which parts of a sequential input should be perturbed based on salien
 
 | Paper link: https://arxiv.org/abs/1811.11875
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 from tqdm.auto import trange
@@ -77,9 +77,9 @@ class FrameSaliencyAttack(EvasionAttack):
         :param attacker: An adversarial evasion attacker which supports masking. Currently supported:
                          ProjectedGradientDescent, BasicIterativeMethod, FastGradientMethod.
         :param method: Specifies which method to use: "iterative_saliency" (adds perturbation iteratively to frame
-                       with highest saliency score until attack is successful), "iterative_saliency_refresh" (updates
-                       perturbation after each iteration), "one_shot" (adds all perturbations at once, i.e. defaults to
-                       original attack).
+                       with the highest saliency score until attack is successful), "iterative_saliency_refresh"
+                       (updates perturbation after each iteration), "one_shot" (adds all perturbations at once, i.e.
+                       defaults to original attack).
         :param frame_index: Index of the axis in input (feature) array `x` representing the frame dimension.
         :param batch_size: Size of the batch on which adversarial samples are generated.
         :param verbose: Show progress bars.
@@ -93,7 +93,7 @@ class FrameSaliencyAttack(EvasionAttack):
         self.verbose = verbose
         self._check_params()
 
-    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
+    def generate(self, x: np.ndarray, y: np.ndarray | None = None, **kwargs) -> np.ndarray:
         """
         Generate adversarial samples and return them in an array.
 
@@ -143,7 +143,7 @@ class FrameSaliencyAttack(EvasionAttack):
 
         # Generate adversarial perturbations. If the method is "iterative_saliency_refresh", we will use a mask so that
         # only the next frame to be perturbed is considered in the attack; moreover we keep track of the next frames to
-        # be perturbed so they will not be perturbed again later on.
+        # be perturbed, so they will not be perturbed again later on.
         mask = np.ones(x.shape)
         if self.method == "iterative_saliency_refresh":
             mask = np.zeros(x.shape)
@@ -193,7 +193,7 @@ class FrameSaliencyAttack(EvasionAttack):
         return np.invert(attack_success)
 
     def _compute_frames_to_perturb(
-        self, x_adv: np.ndarray, targets: np.ndarray, disregard: Optional[np.ndarray] = None
+        self, x_adv: np.ndarray, targets: np.ndarray, disregard: np.ndarray | None = None
     ) -> np.ndarray:
         saliency_score = self.estimator.loss_gradient(x_adv, targets)
         saliency_score = np.swapaxes(saliency_score, 1, self.frame_index)

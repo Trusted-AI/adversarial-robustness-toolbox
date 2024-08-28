@@ -20,7 +20,9 @@ This module implements the evaluation of Security Curves.
 
 Examples of Security Curves can be found in Figure 6 of Madry et al., 2017 (https://arxiv.org/abs/1706.06083).
 """
-from typing import List, Optional, Tuple, TYPE_CHECKING, Union
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 import numpy as np
 
@@ -38,7 +40,7 @@ class SecurityCurve(Evaluation):
     Examples of Security Curves can be found in Figure 6 of Madry et al., 2017 (https://arxiv.org/abs/1706.06083).
     """
 
-    def __init__(self, eps: Union[int, List[float], List[int]]):
+    def __init__(self, eps: int | list[float] | list[int]):
         """
         Create an instance of a Security Curve evaluation.
 
@@ -46,18 +48,17 @@ class SecurityCurve(Evaluation):
         """
 
         self.eps = eps
-        self.eps_list: List[float] = []
-        self.accuracy_adv_list: List[float] = []
-        self.accuracy: Optional[float] = None
+        self.eps_list: list[float] = []
+        self.accuracy_adv_list: list[float] = []
+        self.accuracy: float | None = None
 
-    # pylint: disable=W0221
     def evaluate(  # type: ignore
         self,
         classifier: "CLASSIFIER_LOSS_GRADIENTS_TYPE",
         x: np.ndarray,
         y: np.ndarray,
-        **kwargs: Union[str, bool, int, float],
-    ) -> Tuple[List[float], List[float], float]:
+        **kwargs: str | bool | int | float,
+    ) -> tuple[list[float], list[float], float]:
         """
         Evaluate the Security Curve of a classifier using Projected Gradient Descent.
 
@@ -66,7 +67,7 @@ class SecurityCurve(Evaluation):
         :param y: True labels for input data `x`.
         :param kwargs: Keyword arguments for the Projected Gradient Descent attack used for evaluation, except keywords
                        `classifier` and `eps`.
-        :return: List of evaluated `eps` values, List of adversarial accuracies, and benign accuracy.
+        :return: List of evaluated `eps` values, list of adversarial accuracies, and benign accuracy.
         """
 
         kwargs.pop("classifier", None)
@@ -119,7 +120,7 @@ class SecurityCurve(Evaluation):
         classifier: "CLASSIFIER_LOSS_GRADIENTS_TYPE",
         x: np.ndarray,
         y: np.ndarray,
-        **kwargs: Union[str, bool, int, float],
+        **kwargs: str | bool | int | float,
     ) -> None:
         """
         Check if potential gradient obfuscation can be detected. Projected Gradient Descent with 100 iterations is run

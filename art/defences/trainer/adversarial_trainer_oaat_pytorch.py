@@ -21,13 +21,13 @@ for adversarial training for defence against larger perturbations.
 
 | Paper link: https://link.springer.com/chapter/10.1007/978-3-031-20065-6_18
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 from collections import OrderedDict
 import logging
 import os
 import time
-from typing import Optional, Tuple, TYPE_CHECKING, List, Dict, Union
+from typing import TYPE_CHECKING
 
 import six
 import numpy as np
@@ -60,7 +60,7 @@ class AdversarialTrainerOAATPyTorch(AdversarialTrainerOAAT):
         classifier: PyTorchClassifier,
         proxy_classifier: PyTorchClassifier,
         lpips_classifier: PyTorchClassifier,
-        list_avg_models: List[PyTorchClassifier],
+        list_avg_models: list[PyTorchClassifier],
         attack: EvasionAttack,
         train_params: dict,
     ):
@@ -70,7 +70,7 @@ class AdversarialTrainerOAATPyTorch(AdversarialTrainerOAAT):
         :param classifier: Model to train adversarially.
         :param proxy_classifier: Model for adversarial weight perturbation.
         :param lpips_classifier: Weight averaging model for calculating activations.
-        :param list_avg_models: list of models for weight averaging.
+        :param list_avg_models: List of models for weight averaging.
         :param attack: attack to use for data augmentation in adversarial training.
         :param train_params: training parameters' dictionary related to adversarial training
         """
@@ -78,7 +78,7 @@ class AdversarialTrainerOAATPyTorch(AdversarialTrainerOAAT):
         self._classifier: PyTorchClassifier
         self._proxy_classifier: PyTorchClassifier
         self._lpips_classifier: PyTorchClassifier
-        self._list_avg_models: List[PyTorchClassifier]
+        self._list_avg_models: list[PyTorchClassifier]
         self._attack: EvasionAttack
         self._train_params: dict
         self._apply_wp: bool
@@ -88,11 +88,11 @@ class AdversarialTrainerOAATPyTorch(AdversarialTrainerOAAT):
         self,
         x: np.ndarray,
         y: np.ndarray,
-        validation_data: Optional[Tuple[np.ndarray, np.ndarray]] = None,
+        validation_data: tuple[np.ndarray, np.ndarray] | None = None,
         batch_size: int = 128,
         nb_epochs: int = 20,
         **kwargs,
-    ):  # pylint: disable=W0221
+    ):
         """
         Train a model adversarially with OAAT protocol.
         See class documentation for more information on the exact procedure.
@@ -131,7 +131,7 @@ class AdversarialTrainerOAATPyTorch(AdversarialTrainerOAAT):
                 self._apply_wp = True
 
             if i_epoch == (int(3 * nb_epochs / 4)):
-                self._classifier._optimizer = torch.optim.SGD(  # pylint: disable=W0212
+                self._classifier._optimizer = torch.optim.SGD(
                     self._classifier.model.parameters(),
                     lr=self._train_params["lr"],
                     momentum=self._train_params["momentum"],
@@ -169,9 +169,7 @@ class AdversarialTrainerOAATPyTorch(AdversarialTrainerOAAT):
                 else:
                     full_path_load = os.path.join(self._train_params["models_path"], file_name)
                 if os.path.isfile(full_path_load):
-                    self._lpips_classifier._model._model.load_state_dict(  # pylint: disable=W0212
-                        torch.load(full_path_load)
-                    )
+                    self._lpips_classifier._model._model.load_state_dict(torch.load(full_path_load))
                 else:
                     raise ValueError("Invalid path/file for weight average model is provided for adversarial training.")
 
@@ -214,13 +212,13 @@ class AdversarialTrainerOAATPyTorch(AdversarialTrainerOAAT):
             if validation_data is not None:
                 (x_test, y_test) = validation_data
                 y_test = check_and_transform_label_format(y_test, nb_classes=self.classifier.nb_classes)
-                # pylint: disable=W0212
+
                 x_preprocessed_test, y_preprocessed_test = self._classifier._apply_preprocessing(
                     x_test,
                     y_test,
                     fit=True,
                 )
-                # pylint: enable=W0212
+                # pylint: enable=protected-access
                 output_clean = np.argmax(self.predict(x_preprocessed_test), axis=1)
                 nb_correct_clean = np.sum(output_clean == np.argmax(y_preprocessed_test, axis=1))
                 self._attack.set_params(
@@ -229,13 +227,13 @@ class AdversarialTrainerOAATPyTorch(AdversarialTrainerOAAT):
                     max_iter=self._train_params["max_iter"],
                 )
                 x_test_adv = self._attack.generate(x_preprocessed_test, y=y_preprocessed_test)
-                # pylint: disable=W0212
+
                 x_preprocessed_test_adv, y_preprocessed_test = self._classifier._apply_preprocessing(
                     x_test_adv,
                     y_test,
                     fit=True,
                 )
-                # pylint: enable=W0212
+                # pylint: enable=protected-access
                 output_adv = np.argmax(self.predict(x_preprocessed_test_adv), axis=1)
                 nb_correct_adv = np.sum(output_adv == np.argmax(y_preprocessed_test, axis=1))
 
@@ -281,17 +279,17 @@ class AdversarialTrainerOAATPyTorch(AdversarialTrainerOAAT):
                         folder = os.path.split(full_path)[0]
                         if not os.path.exists(folder):
                             os.makedirs(folder)
-                        # pylint: disable=W0212
+
                         # disable pylint because access to _modules required
                         torch.save(p_classifier._model._model.state_dict(), full_path)
 
     def fit_generator(
         self,
         generator: DataGenerator,
-        validation_data: Optional[Tuple[np.ndarray, np.ndarray]] = None,
+        validation_data: tuple[np.ndarray, np.ndarray] | None = None,
         nb_epochs: int = 20,
         **kwargs,
-    ):  # pylint: disable=W0221
+    ):
         """
         Train a model adversarially with OAAT protocol using a data generator.
         See class documentation for more information on the exact procedure.
@@ -330,7 +328,7 @@ class AdversarialTrainerOAATPyTorch(AdversarialTrainerOAAT):
                 self._apply_wp = True
 
             if i_epoch == (int(3 * nb_epochs / 4)):
-                self._classifier._optimizer = torch.optim.SGD(  # pylint: disable=W0212
+                self._classifier._optimizer = torch.optim.SGD(
                     self._classifier.model.parameters(),
                     lr=self._train_params["lr"],
                     momentum=self._train_params["momentum"],
@@ -368,9 +366,7 @@ class AdversarialTrainerOAATPyTorch(AdversarialTrainerOAAT):
                 else:
                     full_path_load = os.path.join(self._train_params["models_path"], file_name)
                 if os.path.isfile(full_path_load):
-                    self._lpips_classifier._model._model.load_state_dict(  # pylint: disable=W0212
-                        torch.load(full_path_load)
-                    )
+                    self._lpips_classifier._model._model.load_state_dict(torch.load(full_path_load))
                 else:
                     raise ValueError("Invalid path/file for weight average model is provided for adversarial training.")
 
@@ -411,13 +407,13 @@ class AdversarialTrainerOAATPyTorch(AdversarialTrainerOAAT):
             if validation_data is not None:
                 (x_test, y_test) = validation_data
                 y_test = check_and_transform_label_format(y_test, nb_classes=self.classifier.nb_classes)
-                # pylint: disable=W0212
+
                 x_preprocessed_test, y_preprocessed_test = self._classifier._apply_preprocessing(
                     x_test,
                     y_test,
                     fit=True,
                 )
-                # pylint: enable=W0212
+                # pylint: enable=protected-access
                 output_clean = np.argmax(self.predict(x_preprocessed_test), axis=1)
                 nb_correct_clean = np.sum(output_clean == np.argmax(y_preprocessed_test, axis=1))
                 self._attack.set_params(
@@ -426,13 +422,13 @@ class AdversarialTrainerOAATPyTorch(AdversarialTrainerOAAT):
                     max_iter=self._train_params["max_iter"],
                 )
                 x_test_adv = self._attack.generate(x_preprocessed_test, y=y_preprocessed_test)
-                # pylint: disable=W0212
+
                 x_preprocessed_test_adv, y_preprocessed_test = self._classifier._apply_preprocessing(
                     x_test_adv,
                     y_test,
                     fit=True,
                 )
-                # pylint: enable=W0212
+                # pylint: enable=protected-access
                 output_adv = np.argmax(self.predict(x_preprocessed_test_adv), axis=1)
                 nb_correct_adv = np.sum(output_adv == np.argmax(y_preprocessed_test, axis=1))
 
@@ -477,13 +473,13 @@ class AdversarialTrainerOAATPyTorch(AdversarialTrainerOAAT):
                         folder = os.path.split(full_path)[0]
                         if not os.path.exists(folder):
                             os.makedirs(folder)
-                        # pylint: disable=W0212
+
                         # disable pylint because access to _modules required
                         torch.save(p_classifier._model._model.state_dict(), full_path)
 
     def _batch_process(
         self, i_epoch: int, nb_epochs: int, batch_id: int, x_batch: np.ndarray, y_batch: np.ndarray
-    ) -> Tuple[float, float, float]:
+    ) -> tuple[float, float, float]:
         """
         Perform the operations of OAAT for a batch of data.
         See class documentation for more information on the exact procedure.
@@ -493,7 +489,7 @@ class AdversarialTrainerOAATPyTorch(AdversarialTrainerOAAT):
         :param batch_id: batch_id of input data.
         :param x_batch: batch of x.
         :param y_batch: batch of y.
-        :return: tuple containing batch data loss, batch data accuracy and number of samples in the batch
+        :return: Tuple containing batch data loss, batch data accuracy and number of samples in the batch
         """
         import torch
         from torch import nn
@@ -544,15 +540,11 @@ class AdversarialTrainerOAATPyTorch(AdversarialTrainerOAAT):
         # Apply preprocessing
         y_batch = check_and_transform_label_format(y_batch, nb_classes=self.classifier.nb_classes)
 
-        x_preprocessed, y_preprocessed = self._classifier._apply_preprocessing(  # pylint: disable=W0212
-            x_batch, y_batch, fit=True
-        )
-        x_preprocessed_pert, _ = self._classifier._apply_preprocessing(  # pylint: disable=W0212
-            x_batch_pert, y_batch, fit=True
-        )
+        x_preprocessed, y_preprocessed = self._classifier._apply_preprocessing(x_batch, y_batch, fit=True)
+        x_preprocessed_pert, _ = self._classifier._apply_preprocessing(x_batch_pert, y_batch, fit=True)
 
         # Check label shape
-        if self._classifier._reduce_labels:  # pylint: disable=W0212
+        if self._classifier._reduce_labels:
             y_preprocessed = np.argmax(y_preprocessed, axis=1)
 
         i_batch = torch.from_numpy(x_preprocessed).to(self._classifier.device)
@@ -633,7 +625,7 @@ class AdversarialTrainerOAATPyTorch(AdversarialTrainerOAAT):
 
     def _weight_perturbation(
         self, x_batch: "torch.Tensor", x_batch_pert: "torch.Tensor", y_batch: "torch.Tensor"
-    ) -> Dict[str, "torch.Tensor"]:
+    ) -> dict[str, "torch.Tensor"]:
         """
         Calculate wight perturbation for a batch of data.
         See class documentation for more information on the exact procedure.
@@ -680,18 +672,18 @@ class AdversarialTrainerOAATPyTorch(AdversarialTrainerOAAT):
     @staticmethod
     def _calculate_model_params(
         p_classifier: PyTorchClassifier,
-    ) -> Tuple[Dict[str, Dict[str, "torch.Tensor"]], "torch.Tensor"]:
+    ) -> tuple[dict[str, dict[str, "torch.Tensor"]], "torch.Tensor"]:
         """
         Calculates a given model's different layers' parameters' shape and norm, and model parameter norm.
 
         :param p_classifier: model for awp protocol.
-        :return: tuple with first element a dictionary with model parameters' names as keys and a nested dictionary
+        :return: Tuple with first element a dictionary with model parameters' names as keys and a nested dictionary
         as value. The nested dictionary contains model parameters, model parameters' size, model parameters' norms.
         The second element of tuple denotes norm of all model parameters
         """
         import torch
 
-        params_dict: Dict[str, Dict[str, "torch.Tensor"]] = OrderedDict()
+        params_dict: dict[str, dict[str, "torch.Tensor"]] = OrderedDict()
         list_params = []
         for name, param in p_classifier.model.state_dict().items():
             if len(param.size()) <= 1:
@@ -709,7 +701,7 @@ class AdversarialTrainerOAATPyTorch(AdversarialTrainerOAAT):
         return params_dict, model_all_params_norm
 
     def _modify_classifier(
-        self, p_classifier: PyTorchClassifier, list_keys: List[str], w_perturb: Dict[str, "torch.Tensor"], op: str
+        self, p_classifier: PyTorchClassifier, list_keys: list[str], w_perturb: dict[str, "torch.Tensor"], op: str
     ) -> None:
         """
         Modify the model's weight parameters according to the weight perturbations.
@@ -736,8 +728,8 @@ class AdversarialTrainerOAATPyTorch(AdversarialTrainerOAAT):
     def get_layer_activations(  # type: ignore
         p_classifier: PyTorchClassifier,
         x: "torch.Tensor",
-        layers: List[Union[int, str]],
-    ) -> Tuple[Dict[str, "torch.Tensor"], List[str]]:
+        layers: list[int | str],
+    ) -> tuple[dict[str, "torch.Tensor"], list[str]]:
         """
         Return the output of the specified layers for input `x`. `layers` is a list of either layer indices (between 0
         and `nb_layers - 1`) or layers' name. The number of layers can be determined by counting the results returned by
@@ -747,7 +739,7 @@ class AdversarialTrainerOAATPyTorch(AdversarialTrainerOAAT):
         :param x: Input for computing the activations.
         :param layers: Layers for computing the activations
         :return: Tuple containing the output dict and a list of layers' names. In dictionary each element is a
-                 layer's output where the first dimension is the batch size corresponding to `x'.
+                 layer's output where the first dimension is the batch size corresponding to `x`.
         """
 
         p_classifier.model.train(mode=False)
@@ -755,14 +747,14 @@ class AdversarialTrainerOAATPyTorch(AdversarialTrainerOAAT):
         list_layer_names = []
         for layer in layers:
             if isinstance(layer, six.string_types):
-                if layer not in p_classifier._layer_names:  # pylint: disable=W0212
+                if layer not in p_classifier._layer_names:
                     raise ValueError(f"Layer name {layer} not supported")
                 layer_name = layer
                 list_layer_names.append(layer_name)
 
             elif isinstance(layer, int):
                 layer_index = layer
-                layer_name = p_classifier._layer_names[layer_index]  # pylint: disable=W0212
+                layer_name = p_classifier._layer_names[layer_index]
                 list_layer_names.append(layer_name)
 
             else:
@@ -770,27 +762,27 @@ class AdversarialTrainerOAATPyTorch(AdversarialTrainerOAAT):
 
         def get_feature(name):
             # the hook signature
-            def hook(model, input, output):  # pylint: disable=W0622,W0613
-                p_classifier._features[name] = output  # pylint: disable=W0212
+            def hook(model, input, output):  # pylint: disable=redefined-builtin,unused-argument
+                p_classifier._features[name] = output
 
             return hook
 
         if not hasattr(p_classifier, "_features"):
-            p_classifier._features = {}  # pylint: disable=W0212
+            p_classifier._features = {}
             # register forward hooks on the layers of choice
 
         for layer_name in list_layer_names:
-            if layer_name not in p_classifier._features:  # pylint: disable=W0212
-                interim_layer = dict([*p_classifier._model._model.named_modules()])[layer_name]  # pylint: disable=W0212
+            if layer_name not in p_classifier._features:
+                interim_layer = dict([*p_classifier._model._model.named_modules()])[layer_name]
                 interim_layer.register_forward_hook(get_feature(layer_name))
 
         p_classifier.model(x)
-        return p_classifier._features, list_layer_names  # pylint: disable=W0212
+        return p_classifier._features, list_layer_names
 
     @staticmethod
     def normalize_concatenate_activations(
-        activations_dict: Dict[str, "torch.Tensor"],
-        list_layer_names: List[str],
+        activations_dict: dict[str, "torch.Tensor"],
+        list_layer_names: list[str],
     ) -> "torch.Tensor":
         """
         Takes a dictionary `activations_dict' of activation values of different layers for an input batch and Returns
@@ -798,7 +790,7 @@ class AdversarialTrainerOAATPyTorch(AdversarialTrainerOAAT):
         each input of the batch.
 
         :param activations_dict: dict containing the activations at different layers.
-        :param list_layer_names: Layers' names for fetching the activations
+        :param list_layer_names: Layers' names for fetching the activations.
         :return: The activations after normalisation and flattening, where the first dimension is the batch size.
         """
 
@@ -809,7 +801,7 @@ class AdversarialTrainerOAATPyTorch(AdversarialTrainerOAAT):
             temp_activation = activations_dict[name]
             size_temp_activation = list(temp_activation.size())
             norm_factor_layer = size_temp_activation[2] * size_temp_activation[3]
-            norm_temp_activation = torch.sqrt(torch.sum(temp_activation ** 2, dim=1, keepdim=True)) + EPS
+            norm_temp_activation = torch.sqrt(torch.sum(temp_activation**2, dim=1, keepdim=True)) + EPS
             temp_activation_n_channel = temp_activation / norm_temp_activation
             temp_activation_n_layer_channel = temp_activation_n_channel / np.sqrt(norm_factor_layer)
             temp_activation_n_layer_channel_flat = temp_activation_n_layer_channel.view(size_temp_activation[0], -1)
@@ -823,7 +815,7 @@ class AdversarialTrainerOAATPyTorch(AdversarialTrainerOAAT):
         p_classifier: PyTorchClassifier,
         input_1: "torch.Tensor",
         input_2: "torch.Tensor",
-        layers: List[Union[int, str]],
+        layers: list[int | str],
     ) -> "torch.Tensor":
         """
         Return the LPIPS distance between input_1 and input_2. `layers` is a list of either layer indices (between 0 and
@@ -898,8 +890,8 @@ class AdversarialTrainerOAATPyTorch(AdversarialTrainerOAAT):
         self,
         x: np.ndarray,
         y: np.ndarray,
-        eps: Union[int, float, np.ndarray],
-        eps_step: Union[int, float, np.ndarray],
+        eps: int | float | np.ndarray,
+        eps_step: int | float | np.ndarray,
         max_iter: int,
         training_mode: bool,
     ) -> np.ndarray:
@@ -934,8 +926,8 @@ class AdversarialTrainerOAATPyTorch(AdversarialTrainerOAAT):
         x: "torch.Tensor",
         x_init: "torch.Tensor",
         y: "torch.Tensor",
-        eps: Union[int, float, np.ndarray],
-        eps_step: Union[int, float, np.ndarray],
+        eps: int | float | np.ndarray,
+        eps_step: int | float | np.ndarray,
         random_init: bool,
         training_mode: bool,
     ) -> "torch.Tensor":
@@ -1050,22 +1042,14 @@ class AdversarialTrainerOAATPyTorch(AdversarialTrainerOAAT):
                 x_init = x_init.clone().detach()
             else:
                 x_init = torch.tensor(x_init).to(self._classifier.device)
-            inputs_t, y_preprocessed = self._classifier._apply_preprocessing(  # pylint: disable=W0212
-                x_grad, y=y_grad, fit=False, no_grad=False
-            )
-            inputs_init, _ = self._classifier._apply_preprocessing(  # pylint: disable=W0212
-                x_init, y=y_grad, fit=False, no_grad=False
-            )
+            inputs_t, y_preprocessed = self._classifier._apply_preprocessing(x_grad, y=y_grad, fit=False, no_grad=False)
+            inputs_init, _ = self._classifier._apply_preprocessing(x_init, y=y_grad, fit=False, no_grad=False)
         elif isinstance(x, np.ndarray):
-            x_preprocessed, y_preprocessed = self._classifier._apply_preprocessing(  # pylint: disable=W0212
-                x, y=y, fit=False, no_grad=True
-            )
+            x_preprocessed, y_preprocessed = self._classifier._apply_preprocessing(x, y=y, fit=False, no_grad=True)
             x_grad = torch.from_numpy(x_preprocessed).to(self._classifier.device)
             x_grad.requires_grad = True
             inputs_t = x_grad
-            x_init_preprocessed, _ = self._classifier._apply_preprocessing(  # pylint: disable=W0212
-                x_init, y=y, fit=False, no_grad=True
-            )
+            x_init_preprocessed, _ = self._classifier._apply_preprocessing(x_init, y=y, fit=False, no_grad=True)
             x_init = torch.from_numpy(x_init_preprocessed).to(self._classifier.device)
             x_init.requires_grad = False
             inputs_init = x_init
@@ -1073,7 +1057,7 @@ class AdversarialTrainerOAATPyTorch(AdversarialTrainerOAAT):
             raise NotImplementedError("Combination of inputs and preprocessing not supported.")
 
         # Check label shape
-        if self._classifier._reduce_labels:  # pylint: disable=W0212
+        if self._classifier._reduce_labels:
             y_preprocessed = self._classifier.reduce_labels(y_preprocessed)
 
         if isinstance(y_preprocessed, np.ndarray):
@@ -1106,7 +1090,7 @@ class AdversarialTrainerOAATPyTorch(AdversarialTrainerOAAT):
             raise ValueError("Gradient term in PyTorch model is `None`.")
 
         if not self._classifier.all_framework_preprocessing:
-            grad = self._classifier._apply_preprocessing_gradient(x, grad)  # pylint: disable=W0212
+            grad = self._classifier._apply_preprocessing_gradient(x, grad)
         assert grad.shape == x.shape
 
         # Check for nan before normalisation and replace with 0
@@ -1131,7 +1115,7 @@ class AdversarialTrainerOAATPyTorch(AdversarialTrainerOAAT):
         return grad
 
     def _apply_perturbation(
-        self, x: "torch.Tensor", perturbation: "torch.Tensor", eps_step: Union[int, float, np.ndarray]
+        self, x: "torch.Tensor", perturbation: "torch.Tensor", eps_step: int | float | np.ndarray
     ) -> "torch.Tensor":
         """
         Apply perturbation on examples.
@@ -1157,7 +1141,7 @@ class AdversarialTrainerOAATPyTorch(AdversarialTrainerOAAT):
         return x
 
     def _projection(
-        self, values: "torch.Tensor", eps: Union[int, float, np.ndarray], norm_p: Union[int, float, str]
+        self, values: "torch.Tensor", eps: int | float | np.ndarray, norm_p: int | float | str
     ) -> "torch.Tensor":
         """
         Project `values` on the L_p norm ball of size `eps`.
@@ -1177,13 +1161,10 @@ class AdversarialTrainerOAATPyTorch(AdversarialTrainerOAAT):
                     "The parameter `eps` of type `np.ndarray` is not supported to use with norm 2."
                 )
 
-            values_tmp = (
-                values_tmp
-                * torch.min(
-                    torch.tensor([1.0], dtype=torch.float32).to(self._classifier.device),
-                    eps / (torch.norm(values_tmp, p=2, dim=1) + EPS),
-                ).unsqueeze_(-1)
-            )
+            values_tmp = values_tmp * torch.min(
+                torch.tensor([1.0], dtype=torch.float32).to(self._classifier.device),
+                eps / (torch.norm(values_tmp, p=2, dim=1) + EPS),
+            ).unsqueeze_(-1)
 
         elif norm_p == 1:
             if isinstance(eps, np.ndarray):
@@ -1191,13 +1172,10 @@ class AdversarialTrainerOAATPyTorch(AdversarialTrainerOAAT):
                     "The parameter `eps` of type `np.ndarray` is not supported to use with norm 1."
                 )
 
-            values_tmp = (
-                values_tmp
-                * torch.min(
-                    torch.tensor([1.0], dtype=torch.float32).to(self._classifier.device),
-                    eps / (torch.norm(values_tmp, p=1, dim=1) + EPS),
-                ).unsqueeze_(-1)
-            )
+            values_tmp = values_tmp * torch.min(
+                torch.tensor([1.0], dtype=torch.float32).to(self._classifier.device),
+                eps / (torch.norm(values_tmp, p=1, dim=1) + EPS),
+            ).unsqueeze_(-1)
 
         elif norm_p in [np.inf, "inf"]:
             if isinstance(eps, np.ndarray):
@@ -1215,4 +1193,4 @@ class AdversarialTrainerOAATPyTorch(AdversarialTrainerOAAT):
 
         values = values_tmp.reshape(values.shape)
 
-        return values  # pylint: disable=C0302
+        return values

@@ -18,21 +18,17 @@
 """
 This module implements the regressor `KerasRegressor` for Keras models.
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
+from collections.abc import Callable
 import logging
 import os
 import time
 from typing import (
     Any,
-    Callable,
-    Dict,
     Iterator,
-    List,
-    Optional,
-    Tuple,
-    Union,
     TYPE_CHECKING,
+    Union,
 )
 
 import numpy as np
@@ -43,7 +39,7 @@ from art.estimators.keras import KerasEstimator
 from art.estimators.regression.regressor import RegressorMixin
 
 if TYPE_CHECKING:
-    # pylint: disable=C0412
+
     import keras
     import tensorflow as tf
 
@@ -68,9 +64,9 @@ class KerasRegressor(RegressorMixin, KerasEstimator):
         self,
         model: KERAS_MODEL_TYPE,
         channels_first: bool = False,
-        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
-        preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
-        postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
+        clip_values: "CLIP_VALUES_TYPE" | None = None,
+        preprocessing_defences: "Preprocessor" | list["Preprocessor"] | None = None,
+        postprocessing_defences: "Postprocessor" | list["Postprocessor"] | None = None,
         preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
         input_layer: int = 0,
         output_layer: int = 0,
@@ -92,9 +88,9 @@ class KerasRegressor(RegressorMixin, KerasEstimator):
         :param input_layer: The index of the layer to consider as input for models with multiple input layers. The layer
                             with this index will be considered for computing gradients. For models with only one input
                             layer this values is not required.
-        :param output_layer: Which layer to consider as the output when the models has multiple output layers. The layer
-                             with this index will be considered for computing gradients. For models with only one output
-                             layer this values is not required.
+        :param output_layer: Which layer to consider as the output when the models have multiple output layers. The
+                             layer with this index will be considered for computing gradients. For models with only one
+                             output layer this values is not required.
         """
         super().__init__(
             model=model,
@@ -131,14 +127,14 @@ class KerasRegressor(RegressorMixin, KerasEstimator):
         :param input_layer: Which layer to consider as the Input when the model has multiple input layers.
         :param output_layer: Which layer to consider as the Output when the model has multiple output layers.
         """
-        # pylint: disable=E0401
+
         if self.is_tensorflow:
             import tensorflow as tf
 
             if tf.executing_eagerly():  # pragma: no cover
                 raise ValueError("TensorFlow is executing eagerly. Please disable eager execution.")
-            import tensorflow.keras as keras  # pylint: disable=R0402
-            import tensorflow.keras.backend as k  # pylint: disable=E0611
+            import tensorflow.keras as keras  # pylint: disable=consider-using-from-import
+            import tensorflow.keras.backend as k
 
             self._losses = keras.losses
         else:
@@ -232,7 +228,7 @@ class KerasRegressor(RegressorMixin, KerasEstimator):
         self._layer_names = self._get_layers()
 
     @property
-    def input_shape(self) -> Tuple[int, ...]:
+    def input_shape(self) -> tuple[int, ...]:
         """
         Return the shape of one input sample.
 
@@ -260,9 +256,7 @@ class KerasRegressor(RegressorMixin, KerasEstimator):
         """
         return self._output_layer  # type: ignore
 
-    def compute_loss(  # pylint: disable=W0221
-        self, x: np.ndarray, y: np.ndarray, reduction: str = "none", **kwargs
-    ) -> np.ndarray:
+    def compute_loss(self, x: np.ndarray, y: np.ndarray, reduction: str = "none", **kwargs) -> np.ndarray:
         """
         Compute the loss of the neural network for samples `x`.
 
@@ -281,7 +275,7 @@ class KerasRegressor(RegressorMixin, KerasEstimator):
             raise NotImplementedError("loss method is only supported for keras versions >= 2.3.1")
 
         if self.is_tensorflow:
-            import tensorflow.keras.backend as k  # pylint: disable=E0611
+            import tensorflow.keras.backend as k
         else:
             import keras.backend as k
 
@@ -324,7 +318,7 @@ class KerasRegressor(RegressorMixin, KerasEstimator):
 
         return loss_value
 
-    def compute_loss_from_predictions(  # pylint: disable=W0221
+    def compute_loss_from_predictions(
         self, pred: np.ndarray, y: np.ndarray, reduction: str = "none", **kwargs
     ) -> np.ndarray:
         """
@@ -342,7 +336,7 @@ class KerasRegressor(RegressorMixin, KerasEstimator):
             raise NotImplementedError("loss method is only supported for keras versions >= 2.3.1")
 
         if self.is_tensorflow:
-            import tensorflow.keras.backend as k  # pylint: disable=E0611
+            import tensorflow.keras.backend as k
         else:
             import keras.backend as k
 
@@ -375,16 +369,14 @@ class KerasRegressor(RegressorMixin, KerasEstimator):
 
         return loss_value
 
-    def loss_gradient(  # pylint: disable=W0221
-        self, x: np.ndarray, y: np.ndarray, training_mode: bool = False, **kwargs
-    ) -> np.ndarray:
+    def loss_gradient(self, x: np.ndarray, y: np.ndarray, training_mode: bool = False, **kwargs) -> np.ndarray:
         """
         Compute the gradient of the loss function w.r.t. `x`.
 
         :param x: Sample input with shape as expected by the model.
         :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
                   (nb_samples,).
-        :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
+        :param training_mode: `True` for model set to training mode and `False` for model set to evaluation mode.
         :return: Array of gradients of the same shape as `x`.
         """
         # Check shape of preprocessed `x` because of custom function for `_loss_gradients`
@@ -404,15 +396,13 @@ class KerasRegressor(RegressorMixin, KerasEstimator):
 
         return gradients
 
-    def predict(  # pylint: disable=W0221
-        self, x: np.ndarray, batch_size: int = 128, training_mode: bool = False, **kwargs
-    ) -> np.ndarray:
+    def predict(self, x: np.ndarray, batch_size: int = 128, training_mode: bool = False, **kwargs) -> np.ndarray:
         """
         Perform prediction for a batch of inputs.
 
         :param x: Input samples.
         :param batch_size: Size of batches.
-        :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
+        :param training_mode: `True` for model set to training mode and `False` for model set to evaluation mode.
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         """
         # Apply preprocessing
@@ -487,7 +477,7 @@ class KerasRegressor(RegressorMixin, KerasEstimator):
             super().fit_generator(generator, nb_epochs=nb_epochs, **kwargs)
 
     def get_activations(
-        self, x: np.ndarray, layer: Union[int, str], batch_size: int = 128, framework: bool = False
+        self, x: np.ndarray, layer: int | str, batch_size: int = 128, framework: bool = False
     ) -> np.ndarray:
         """
         Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
@@ -500,9 +490,9 @@ class KerasRegressor(RegressorMixin, KerasEstimator):
         :param framework: If true, return the intermediate tensor representation of the activation.
         :return: The output of `layer`, where the first dimension is the batch size corresponding to `x`.
         """
-        # pylint: disable=E0401
+
         if self.is_tensorflow:
-            import tensorflow.keras.backend as k  # pylint: disable=E0611
+            import tensorflow.keras.backend as k
         else:
             import keras.backend as k
         from art.config import ART_NUMPY_DTYPE
@@ -529,7 +519,7 @@ class KerasRegressor(RegressorMixin, KerasEstimator):
         x_preprocessed, _ = self._apply_preprocessing(x=x_expanded, y=None, fit=False)
 
         if not hasattr(self, "_activations_func"):
-            self._activations_func: Dict[str, Callable] = {}
+            self._activations_func: dict[str, Callable] = {}
 
         keras_layer = self._model.get_layer(layer_name)
         if layer_name not in self._activations_func:
@@ -574,7 +564,7 @@ class KerasRegressor(RegressorMixin, KerasEstimator):
         :rtype: `np.ndarray`
         """
         if self.is_tensorflow:
-            import tensorflow.keras.backend as k  # pylint: disable=E0611
+            import tensorflow.keras.backend as k
         else:
             import keras.backend as k
 
@@ -588,24 +578,24 @@ class KerasRegressor(RegressorMixin, KerasEstimator):
         outputs = self._custom_loss_func[name]
         return outputs(input_values)
 
-    def _get_layers(self) -> List[str]:
+    def _get_layers(self) -> list[str]:
         """
         Return the hidden layers in the model, if applicable.
 
         :return: The hidden layers in the model, input and output layers excluded.
         """
-        # pylint: disable=E0401
+
         if self.is_tensorflow:
-            from tensorflow.keras.layers import InputLayer  # pylint: disable=E0611
+            from tensorflow.keras.layers import InputLayer
         else:
-            from keras.engine.topology import InputLayer  # pylint: disable=E0611
+            from keras.engine.topology import InputLayer
 
         layer_names = [layer.name for layer in self._model.layers[:-1] if not isinstance(layer, InputLayer)]
         logger.info("Inferred %i hidden layers on Keras regressor.", len(layer_names))
 
         return layer_names
 
-    def save(self, filename: str, path: Optional[str] = None) -> None:
+    def save(self, filename: str, path: str | None = None) -> None:
         """
         Save a model to file in the format specific to the backend framework. For Keras, .h5 format is used.
 
@@ -624,7 +614,7 @@ class KerasRegressor(RegressorMixin, KerasEstimator):
         self._model.save(str(full_path))
         logger.info("Model saved in path: %s.", full_path)
 
-    def __getstate__(self) -> Dict[str, Any]:
+    def __getstate__(self) -> dict[str, Any]:
         """
         Use to ensure `KerasRegressor` can be pickled.
 
@@ -657,7 +647,7 @@ class KerasRegressor(RegressorMixin, KerasEstimator):
         self.save(model_name)
         return state
 
-    def __setstate__(self, state: Dict[str, Any]) -> None:
+    def __setstate__(self, state: dict[str, Any]) -> None:
         """
         Use to ensure `KerasRegressor` can be unpickled.
 
@@ -666,7 +656,7 @@ class KerasRegressor(RegressorMixin, KerasEstimator):
         self.__dict__.update(state)
 
         if self.is_tensorflow:
-            from tensorflow.keras.models import load_model  # pylint: disable=E0611
+            from tensorflow.keras.models import load_model
         else:
             from keras.models import load_model
 
@@ -690,7 +680,7 @@ class KerasRegressor(RegressorMixin, KerasEstimator):
 
 def generator_fit(
     x: np.ndarray, y: np.ndarray, batch_size: int = 128
-) -> Iterator[Tuple[np.ndarray, np.ndarray]]:  # pragma: no cover
+) -> Iterator[tuple[np.ndarray, np.ndarray]]:  # pragma: no cover
     """
     Minimal data generator for randomly batching large datasets.
 

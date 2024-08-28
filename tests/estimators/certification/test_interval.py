@@ -66,7 +66,7 @@ def get_synthetic_model():
 @pytest.fixture()
 def fix_get_mnist_data():
     """
-    Get the first 100 samples of the mnist test set with channels first format
+    Get the first 100 samples of the mnist test set with channels first format.
     :return: First 100 sample/label pairs of the MNIST test dataset.
     """
     nb_test = 100

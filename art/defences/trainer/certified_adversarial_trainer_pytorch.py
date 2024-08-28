@@ -21,6 +21,8 @@ This module implements certified adversarial training following techniques from 
     | Paper link: http://proceedings.mlr.press/v80/mirman18b/mirman18b.pdf
     | Paper link: https://arxiv.org/pdf/1810.12715.pdf
 """
+from __future__ import annotations
+
 import logging
 import math
 import random
@@ -36,9 +38,9 @@ from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent i
 from art.utils import check_and_transform_label_format
 
 if sys.version_info >= (3, 8):
-    from typing import TypedDict, List, Optional, Any, Tuple, Union, TYPE_CHECKING
+    from typing import TypedDict, Any, TYPE_CHECKING
 else:
-    from typing import Dict, List, Optional, Any, Tuple, Union, TYPE_CHECKING
+    from typing import Any, TYPE_CHECKING
     from functools import reduce
 
 if TYPE_CHECKING:
@@ -59,7 +61,7 @@ if TYPE_CHECKING:
             batch_size: int
 
     else:
-        PGDParamDict: Dict[str, Union[int, float]]
+        PGDParamDict: dict[str, int | float]
 
 
 logger = logging.getLogger(__name__)
@@ -99,14 +101,14 @@ class AdversarialTrainerCertifiedPytorch(Trainer):
     def __init__(
         self,
         classifier: "CERTIFIER_TYPE",
-        nb_epochs: Optional[int] = 20,
+        nb_epochs: int | None = 20,
         bound: float = 0.1,
         loss_weighting: float = 0.1,
         batch_size: int = 10,
         use_certification_schedule: bool = True,
-        certification_schedule: Optional[Any] = None,
+        certification_schedule: Any | None = None,
         augment_with_pgd: bool = True,
-        pgd_params: Optional["PGDParamDict"] = None,
+        pgd_params: "PGDParamDict" | None = None,
     ) -> None:
         """
         Create an :class:`.AdversarialTrainerCertified` instance.
@@ -116,7 +118,7 @@ class AdversarialTrainerCertifiedPytorch(Trainer):
         :param classifier: Classifier to train adversarially.
         :param pgd_params: A dictionary containing the specific parameters relating to regular PGD training.
                            If not provided, we will default to typical MNIST values.
-                           Otherwise must contain the following keys:
+                           Otherwise, must contain the following keys:
 
                            * *eps*: Maximum perturbation that the attacker can introduce.
                            * *eps_step*: Attack step size (input variation) at each iteration.
@@ -128,7 +130,7 @@ class AdversarialTrainerCertifiedPytorch(Trainer):
         :param nb_epochs: Number of training epochs.
         :param use_certification_schedule: If to use a training schedule for the certification radius.
         :param certification_schedule: Schedule for gradually increasing the certification radius. Empirical studies
-                                       have shown that this is often required to achieve best performance.
+                                       have shown that this is often required to achieve the best performance.
                                        Either True to use the default linear scheduler,
                                        or a class with a .step() method that returns the updated bound every epoch.
         :param batch_size: Size of batches to use for certified training. NB, this will run the data
@@ -166,15 +168,15 @@ class AdversarialTrainerCertifiedPytorch(Trainer):
             num_random_init=self.pgd_params["num_random_init"],
         )
 
-    def fit(  # pylint: disable=W0221
+    def fit(
         self,
         x: np.ndarray,
         y: np.ndarray,
         certification_loss: Any = "interval_loss_cce",
-        batch_size: Optional[int] = None,
-        nb_epochs: Optional[int] = None,
+        batch_size: int | None = None,
+        nb_epochs: int | None = None,
         training_mode: bool = True,
-        scheduler: Optional[Any] = None,
+        scheduler: Any | None = None,
         verbose: bool = True,
         **kwargs,
     ) -> None:
@@ -185,14 +187,14 @@ class AdversarialTrainerCertifiedPytorch(Trainer):
         :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or index labels of
                   shape (nb_samples,).
         :param certification_loss: Which certification loss function to use. Either "interval_loss_cce"
-                                   or "max_logit_loss". By default will use interval_loss_cce.
+                                   or "max_logit_loss". By default, will use interval_loss_cce.
                                    Alternatively, a user can supply their own loss function which takes in as input
-                                   the zonotope predictions of the form () and labels of the from () and returns a
+                                   the zonotope predictions of the form () and labels of the form () and returns a
                                    scalar loss.
         :param batch_size: Size of batches to use for certified training. NB, this will run the data
                            sequentially accumulating gradients over the batch size.
         :param nb_epochs: Number of epochs to use for training.
-        :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
+        :param training_mode: `True` for model set to training mode and `False` for model set to evaluation mode.
         :param scheduler: Learning rate scheduler to run at the start of every epoch.
         :param verbose: If to display the per-batch statistics while training.
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
@@ -211,7 +213,7 @@ class AdversarialTrainerCertifiedPytorch(Trainer):
             raise ValueError("Value of `epochs` not defined.")
 
         # Set model mode
-        self.classifier._model.train(mode=training_mode)  # pylint: disable=W0212
+        self.classifier._model.train(mode=training_mode)
 
         if self.classifier.optimizer is None:  # pragma: no cover
             raise ValueError("An optimizer is needed to train the model, but none is provided.")
@@ -360,8 +362,8 @@ class AdversarialTrainerCertifiedPytorch(Trainer):
 
                 loss = certified_loss * self.loss_weighting + non_cert_loss * (1 - self.loss_weighting)
                 # Do training
-                if self.classifier._use_amp:  # pragma: no cover # pylint: disable=W0212
-                    from apex import amp  # pylint: disable=E0611
+                if self.classifier._use_amp:  # pragma: no cover
+                    from apex import amp
 
                     with amp.scale_loss(loss, self.classifier.optimizer) as scaled_loss:
                         scaled_loss.backward()
@@ -390,7 +392,7 @@ class AdversarialTrainerCertifiedPytorch(Trainer):
 
         return self.classifier.predict(x, **kwargs)
 
-    def predict_zonotopes(self, cent: np.ndarray, bound, **kwargs) -> Tuple[List[np.ndarray], List[np.ndarray]]:
+    def predict_zonotopes(self, cent: np.ndarray, bound, **kwargs) -> tuple[list[np.ndarray], list[np.ndarray]]:
         """
         Perform prediction using the adversarially trained classifier using zonotopes
 

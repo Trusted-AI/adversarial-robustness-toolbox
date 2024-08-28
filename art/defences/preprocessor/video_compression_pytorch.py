@@ -21,10 +21,10 @@ This module implements a wrapper for video compression defence with FFmpeg.
 | Please keep in mind the limitations of defences. For details on how to evaluate classifier security in general,
     see https://arxiv.org/abs/1902.06705.
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
-from typing import Optional, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from art.defences.preprocessor.preprocessor import PreprocessorPyTorch
 from art.defences.preprocessor.video_compression import VideoCompression
@@ -32,7 +32,7 @@ from art.defences.preprocessor.video_compression import VideoCompression
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
-    # pylint: disable=C0412
+
     import torch
 
 
@@ -91,19 +91,19 @@ class VideoCompressionPyTorch(PreprocessorPyTorch):
             verbose=verbose,
         )
 
-        class CompressionPyTorchNumpy(Function):  # pylint: disable=W0223
+        class CompressionPyTorchNumpy(Function):  # pylint: disable=abstract-method
             """
             Function running Preprocessor.
             """
 
             @staticmethod
-            def forward(ctx, input):  # pylint: disable=W0622,W0221
+            def forward(ctx, input):  # pylint: disable=redefined-builtin,arguments-differ
                 numpy_input = input.detach().cpu().numpy()
                 result, _ = self.compression_numpy(numpy_input)
                 return input.new(result)
 
             @staticmethod
-            def backward(ctx, grad_output):  # pylint: disable=W0221
+            def backward(ctx, grad_output):
                 numpy_go = grad_output.cpu().numpy()
                 result = self.compression_numpy.estimate_gradient(None, numpy_go)
                 return grad_output.new(result)
@@ -111,8 +111,8 @@ class VideoCompressionPyTorch(PreprocessorPyTorch):
         self._compression_pytorch_numpy = CompressionPyTorchNumpy
 
     def forward(
-        self, x: "torch.Tensor", y: Optional["torch.Tensor"] = None
-    ) -> Tuple["torch.Tensor", Optional["torch.Tensor"]]:
+        self, x: "torch.Tensor", y: "torch.Tensor" | None = None
+    ) -> tuple["torch.Tensor", "torch.Tensor" | None]:
         """
         Apply video compression to sample `x`.
 

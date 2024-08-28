@@ -773,7 +773,7 @@ class AbstractModel(object):
         if self.saver is not None and not force:
             return
         else:
-            if prefixes is None or not (type(prefixes) != list or type(prefixes) != tuple):
+            if prefixes is None or not (type(prefixes) != list or type(prefixes) != tuple):  # noqa: E721
                 raise ValueError("Prefix of variables that needs saving are not defined")
 
             prefixes_str = ""
@@ -1862,7 +1862,7 @@ class ConditionalBatchNorm(object):
 
 
 def _l2normalize(v, eps=1e-12):
-    return v / (tf.reduce_sum(v ** 2) ** 0.5 + eps)
+    return v / (tf.reduce_sum(v**2) ** 0.5 + eps)
 
 
 def spectral_norm(w, num_iters=1, update_collection=None):

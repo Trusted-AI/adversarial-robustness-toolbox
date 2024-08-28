@@ -18,10 +18,10 @@
 """
 This module implements the classifier `EnsembleClassifier` for ensembles of multiple classifiers.
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
-from typing import List, Optional, Union, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 
@@ -50,12 +50,12 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
 
     def __init__(
         self,
-        classifiers: List["CLASSIFIER_NEURALNETWORK_TYPE"],
-        classifier_weights: Union[list, np.ndarray, None] = None,
+        classifiers: list["CLASSIFIER_NEURALNETWORK_TYPE"],
+        classifier_weights: list | np.ndarray | None = None,
         channels_first: bool = False,
-        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
-        preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
-        postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
+        clip_values: "CLIP_VALUES_TYPE" | None = None,
+        preprocessing_defences: "Preprocessor" | list["Preprocessor"] | None = None,
+        postprocessing_defences: "Postprocessor" | list["Postprocessor"] | None = None,
         preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
     ) -> None:
         """
@@ -138,7 +138,7 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
         self._classifiers = classifiers
 
     @property
-    def input_shape(self) -> Tuple[int, ...]:
+    def input_shape(self) -> tuple[int, ...]:
         """
         Return the shape of one input sample.
 
@@ -147,7 +147,7 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
         return self._input_shape  # type: ignore
 
     @property
-    def classifiers(self) -> List[ClassifierNeuralNetwork]:
+    def classifiers(self) -> list[ClassifierNeuralNetwork]:
         """
         Return the Classifier instances that are ensembled together.
 
@@ -164,9 +164,7 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
         """
         return self._classifier_weights  # type: ignore
 
-    def predict(  # pylint: disable=W0221
-        self, x: np.ndarray, batch_size: int = 128, raw: bool = False, **kwargs
-    ) -> np.ndarray:
+    def predict(self, x: np.ndarray, batch_size: int = 128, raw: bool = False, **kwargs) -> np.ndarray:
         """
         Perform prediction for a batch of inputs. Predictions from classifiers should only be aggregated if they all
         have the same type of output (e.g., probabilities). Otherwise, use `raw=True` to get predictions from all
@@ -220,7 +218,7 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
         raise NotImplementedError
 
     @property
-    def layer_names(self) -> List[str]:
+    def layer_names(self) -> list[str]:
         """
         Return the hidden layers in the model, if applicable. This function is not supported for ensembles.
 
@@ -230,7 +228,7 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
         raise NotImplementedError
 
     def get_activations(
-        self, x: np.ndarray, layer: Union[int, str], batch_size: int = 128, framework: bool = False
+        self, x: np.ndarray, layer: int | str, batch_size: int = 128, framework: bool = False
     ) -> np.ndarray:
         """
         Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
@@ -246,10 +244,10 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
         """
         raise NotImplementedError
 
-    def class_gradient(  # pylint: disable=W0221
+    def class_gradient(
         self,
         x: np.ndarray,
-        label: Optional[Union[int, List[int], np.ndarray]] = None,
+        label: int | list[int] | np.ndarray | None = None,
         training_mode: bool = False,
         raw: bool = False,
         **kwargs,
@@ -258,9 +256,9 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
         Compute per-class derivatives w.r.t. `x`.
 
         :param x: Sample input with shape as expected by the model.
-        :param label: Index of a specific per-class derivative. If `None`, then gradients for all
-                      classes will be computed.
-        :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
+        :param label: Index of a specific per-class derivative. If `None`, then gradients for all classes will be
+                      computed.
+        :param training_mode: `True` for model set to training mode and `False` for model set to evaluation mode.
         :param raw: Return the individual classifier raw outputs (not aggregated).
         :return: Array of gradients of input features w.r.t. each class in the form
                  `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
@@ -279,7 +277,7 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
 
         return np.sum(grads, axis=0)
 
-    def loss_gradient(  # pylint: disable=W0221
+    def loss_gradient(
         self, x: np.ndarray, y: np.ndarray, training_mode: bool = False, raw: bool = False, **kwargs
     ) -> np.ndarray:
         """
@@ -288,7 +286,7 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
         :param x: Sample input with shape as expected by the model.
         :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
                   (nb_samples,).
-        :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
+        :param training_mode: `True` for model set to training mode and `False` for model set to evaluation mode.
         :param raw: Return the individual classifier raw outputs (not aggregated).
         :return: Array of gradients of the same shape as `x`. If `raw=True`, shape becomes `[nb_classifiers, x.shape]`.
         """
@@ -320,7 +318,7 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
 
         return repr_
 
-    def save(self, filename: str, path: Optional[str] = None) -> None:
+    def save(self, filename: str, path: str | None = None) -> None:
         """
         Save a model to file in the format specific to the backend framework. This function is not supported for
         ensembles.

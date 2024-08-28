@@ -20,10 +20,12 @@ This module implements the `Auto Projected Gradient Descent` attack.
 
 | Paper link: https://arxiv.org/abs/2003.01690
 """
+from __future__ import annotations
+
 import abc
 import logging
 import math
-from typing import Optional, Union, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 from tqdm.auto import trange
@@ -64,20 +66,20 @@ class AutoProjectedGradientDescent(EvasionAttack):
     def __init__(
         self,
         estimator: "CLASSIFIER_LOSS_GRADIENTS_TYPE",
-        norm: Union[int, float, str] = np.inf,
+        norm: int | float | str = np.inf,
         eps: float = 0.3,
         eps_step: float = 0.1,
         max_iter: int = 100,
         targeted: bool = False,
         nb_random_init: int = 5,
         batch_size: int = 32,
-        loss_type: Optional[str] = None,
+        loss_type: str | None = None,
         verbose: bool = True,
     ):
         """
         Create a :class:`.AutoProjectedGradientDescent` instance.
 
-        :param estimator: An trained estimator.
+        :param estimator: A trained estimator.
         :param norm: The norm of the adversarial perturbation. Possible values: "inf", np.inf, 1 or 2.
         :param eps: Maximum perturbation that the attacker can introduce.
         :param eps_step: Attack step size (input variation) at each iteration.
@@ -224,7 +226,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
                         )
 
                     # modification for image-wise stepsize update
-                    class CrossEntropyLossTorch(torch.nn.modules.loss._Loss):  # pylint: disable=W0212
+                    class CrossEntropyLossTorch(torch.nn.modules.loss._Loss):
                         """Class defining cross entropy loss with reduction options."""
 
                         def __init__(self, reduction="mean"):
@@ -242,7 +244,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
                             raise NotImplementedError()
 
                         def forward(
-                            self, input: torch.Tensor, target: torch.Tensor  # pylint: disable=W0622
+                            self, input: torch.Tensor, target: torch.Tensor  # pylint: disable=redefined-builtin
                         ) -> torch.Tensor:
                             """
                             Forward method.
@@ -268,7 +270,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
                             "If loss_type='difference_logits_ratio' the estimator has to to predict logits."
                         )
 
-                    class DifferenceLogitsRatioPyTorch(torch.nn.modules.loss._Loss):  # pylint: disable=W0212
+                    class DifferenceLogitsRatioPyTorch(torch.nn.modules.loss._Loss):
                         """
                         Callable class for Difference Logits Ratio loss in PyTorch.
                         """
@@ -318,7 +320,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
                             raise NotImplementedError()
 
                         def forward(
-                            self, input: torch.Tensor, target: torch.Tensor  # pylint: disable=W0622
+                            self, input: torch.Tensor, target: torch.Tensor  # pylint: disable=redefined-builtin
                         ) -> torch.Tensor:
                             """
                             Forward method.
@@ -370,7 +372,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
         self.verbose = verbose
         self._check_params()
 
-    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
+    def generate(self, x: np.ndarray, y: np.ndarray | None = None, **kwargs) -> np.ndarray:
         """
         Generate adversarial samples and return them in an array.
 

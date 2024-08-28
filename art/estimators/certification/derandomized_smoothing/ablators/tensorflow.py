@@ -21,9 +21,9 @@ This module implements (De)Randomized Smoothing for Certifiable Defense against 
 | Paper link: https://arxiv.org/abs/2002.10733
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
-from typing import Optional, Union, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING
 import random
 
 import numpy as np
@@ -31,7 +31,7 @@ import numpy as np
 from art.estimators.certification.derandomized_smoothing.ablators.ablate import BaseAblator
 
 if TYPE_CHECKING:
-    # pylint: disable=C0412
+
     import tensorflow as tf
 
 
@@ -54,7 +54,7 @@ class ColumnAblator(BaseAblator):
         self.row_ablation_mode = row_ablation_mode
 
     def __call__(
-        self, x: np.ndarray, column_pos: Optional[Union[int, list]] = None, row_pos: Optional[Union[int, list]] = None
+        self, x: np.ndarray, column_pos: int | list | None = None, row_pos: int | list | None = None
     ) -> np.ndarray:
         """
         Performs ablation on the input x. If no column_pos is specified a random location will be selected.
@@ -71,8 +71,8 @@ class ColumnAblator(BaseAblator):
         return self.forward(x=x, column_pos=column_pos)
 
     def certify(
-        self, pred_counts: "tf.Tensor", size_to_certify: int, label: Union[np.ndarray, "tf.Tensor"]
-    ) -> Tuple["tf.Tensor", "tf.Tensor", "tf.Tensor"]:
+        self, pred_counts: "tf.Tensor", size_to_certify: int, label: np.ndarray | "tf.Tensor"
+    ) -> tuple["tf.Tensor", "tf.Tensor", "tf.Tensor"]:
         """
         Checks if based on the predictions supplied the classifications over the ablated datapoints result in a
         certified prediction against a patch attack of size size_to_certify.
@@ -98,22 +98,17 @@ class ColumnAblator(BaseAblator):
         ) & (top_predicted_class < second_predicted_class)
         cert = tf.math.logical_or(certs, tie_break_certs)
 
-        # NB, newer versions of pylint do not require the disable.
+        # NB, newer versions of pylint do not require this disabled.
         if label.ndim > 1:
             cert_and_correct = cert & (
-                tf.math.argmax(label, axis=1)
-                == tf.cast(  # pylint: disable=E1120, E1123
-                    top_predicted_class, dtype=tf.math.argmax(label, axis=1).dtype
-                )
+                tf.math.argmax(label, axis=1) == tf.cast(top_predicted_class, dtype=tf.math.argmax(label, axis=1).dtype)
             )
         else:
-            cert_and_correct = cert & (
-                label == tf.cast(top_predicted_class, dtype=label.dtype)  # pylint: disable=E1120, E1123
-            )
+            cert_and_correct = cert & (label == tf.cast(top_predicted_class, dtype=label.dtype))
 
         return cert, cert_and_correct, top_predicted_class
 
-    def ablate(self, x: np.ndarray, column_pos: int, row_pos: Optional[int] = None) -> np.ndarray:
+    def ablate(self, x: np.ndarray, column_pos: int, row_pos: int | None = None) -> np.ndarray:
         """
         Ablates the image only retaining a column starting at "pos" of width "self.ablation_size"
 
@@ -142,7 +137,7 @@ class ColumnAblator(BaseAblator):
         return x
 
     def forward(
-        self, x: np.ndarray, column_pos: Optional[Union[int, list]] = None, row_pos: Optional[Union[int, list]] = None
+        self, x: np.ndarray, column_pos: int | list | None = None, row_pos: int | list | None = None
     ) -> np.ndarray:
         """
         Performs ablation on the input x. If no column_pos is specified a random location will be selected.
@@ -195,7 +190,7 @@ class BlockAblator(BaseAblator):
         self.channels_first = channels_first
 
     def __call__(
-        self, x: np.ndarray, column_pos: Optional[Union[int, list]] = None, row_pos: Optional[Union[int, list]] = None
+        self, x: np.ndarray, column_pos: int | list | None = None, row_pos: int | list | None = None
     ) -> np.ndarray:
         """
         Performs ablation on the input x. If no row_pos/column_pos is specified a random location will be selected.
@@ -212,8 +207,8 @@ class BlockAblator(BaseAblator):
         return self.forward(x=x, row_pos=row_pos, column_pos=column_pos)
 
     def certify(
-        self, pred_counts: Union["tf.Tensor", np.ndarray], size_to_certify: int, label: Union[np.ndarray, "tf.Tensor"]
-    ) -> Tuple["tf.Tensor", "tf.Tensor", "tf.Tensor"]:
+        self, pred_counts: "tf.Tensor" | np.ndarray, size_to_certify: int, label: np.ndarray | "tf.Tensor"
+    ) -> tuple["tf.Tensor", "tf.Tensor", "tf.Tensor"]:
         """
         Checks if based on the predictions supplied the classifications over the ablated datapoints result in a
         certified prediction against a patch attack of size size_to_certify.
@@ -238,26 +233,21 @@ class BlockAblator(BaseAblator):
         ) & (top_predicted_class < second_predicted_class)
         cert = tf.math.logical_or(certs, tie_break_certs)
 
-        # NB, newer versions of pylint do not require the disable.
+        # NB, newer versions of pylint do not require this disabled.
         if label.ndim > 1:
             cert_and_correct = cert & (
-                tf.math.argmax(label, axis=1)
-                == tf.cast(  # pylint: disable=E1120, E1123
-                    top_predicted_class, dtype=tf.math.argmax(label, axis=1).dtype
-                )
+                tf.math.argmax(label, axis=1) == tf.cast(top_predicted_class, dtype=tf.math.argmax(label, axis=1).dtype)
             )
         else:
-            cert_and_correct = cert & (
-                label == tf.cast(top_predicted_class, dtype=label.dtype)  # pylint: disable=E1120, E1123
-            )
+            cert_and_correct = cert & (label == tf.cast(top_predicted_class, dtype=label.dtype))
 
         return cert, cert_and_correct, top_predicted_class
 
     def forward(
         self,
         x: np.ndarray,
-        column_pos: Optional[Union[int, list]] = None,
-        row_pos: Optional[Union[int, list]] = None,
+        column_pos: int | list | None = None,
+        row_pos: int | list | None = None,
     ) -> np.ndarray:
         """
         Performs ablation on the input x. If no column_pos/row_pos are specified a random location will be selected.

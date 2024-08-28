@@ -1,6 +1,7 @@
 """
 Module implementing detector-based defences against poisoning attacks.
 """
+
 from art.defences.detector.poison.poison_filtering_defence import PoisonFilteringDefence
 from art.defences.detector.poison.ground_truth_evaluator import GroundTruthEvaluator
 from art.defences.detector.poison.activation_defence import ActivationDefence

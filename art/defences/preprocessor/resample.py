@@ -23,8 +23,9 @@ This module implements the resampling defence `Resample`.
 | Please keep in mind the limitations of defences. For details on how to evaluate classifier security in general,
     see https://arxiv.org/abs/1902.06705.
 """
+from __future__ import annotations
+
 import logging
-from typing import Optional, Tuple
 
 import numpy as np
 
@@ -66,7 +67,7 @@ class Resample(Preprocessor):
         self.channels_first = channels_first
         self._check_params()
 
-    def __call__(self, x: np.ndarray, y: Optional[np.ndarray] = None) -> Tuple[np.ndarray, Optional[np.ndarray]]:
+    def __call__(self, x: np.ndarray, y: np.ndarray | None = None) -> tuple[np.ndarray, np.ndarray | None]:
         """
         Resample `x` to a new sampling rate.
 

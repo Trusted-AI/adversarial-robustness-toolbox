@@ -21,10 +21,10 @@ Method attack and extends it to other norms, therefore it is called the Fast Gra
 
 | Paper link: https://arxiv.org/abs/1412.6572
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
-from typing import Optional, Union, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 
@@ -71,14 +71,14 @@ class FastGradientMethod(EvasionAttack):
     def __init__(
         self,
         estimator: "CLASSIFIER_LOSS_GRADIENTS_TYPE",
-        norm: Union[int, float, str] = np.inf,
-        eps: Union[int, float, np.ndarray] = 0.3,
-        eps_step: Union[int, float, np.ndarray] = 0.1,
+        norm: int | float | str = np.inf,
+        eps: int | float | np.ndarray = 0.3,
+        eps_step: int | float | np.ndarray = 0.1,
         targeted: bool = False,
         num_random_init: int = 0,
         batch_size: int = 32,
         minimal: bool = False,
-        summary_writer: Union[str, bool, SummaryWriter] = False,
+        summary_writer: str | bool | SummaryWriter = False,
     ) -> None:
         """
         Create a :class:`.FastGradientMethod` instance.
@@ -149,7 +149,7 @@ class FastGradientMethod(EvasionAttack):
             mask_batch = mask
             if mask is not None:
                 # Here we need to make a distinction: if the masks are different for each input, we need to index
-                # those for the current batch. Otherwise (i.e. mask is meant to be broadcasted), keep it as it is.
+                # those for the current batch. Otherwise, (i.e. mask is meant to be broadcasted), keep it as it is.
                 if len(mask.shape) == len(x.shape):
                     mask_batch = mask[batch_index_1:batch_index_2]
 
@@ -159,8 +159,8 @@ class FastGradientMethod(EvasionAttack):
             # Get current predictions
             active_indices = np.arange(len(batch))
 
-            current_eps: Union[int, float, np.ndarray]
-            partial_stop_condition: Union[bool, np.ndarray]
+            current_eps: int | float | np.ndarray
+            partial_stop_condition: bool | np.ndarray
 
             if isinstance(self.eps, np.ndarray) and isinstance(self.eps_step, np.ndarray):
                 if len(self.eps.shape) == len(x.shape) and self.eps.shape[0] == x.shape[0]:
@@ -207,7 +207,7 @@ class FastGradientMethod(EvasionAttack):
 
         return adv_x
 
-    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
+    def generate(self, x: np.ndarray, y: np.ndarray | None = None, **kwargs) -> np.ndarray:
         """Generate adversarial samples and return them in an array.
 
         :param x: An array with the original inputs.
@@ -390,9 +390,9 @@ class FastGradientMethod(EvasionAttack):
         self,
         x: np.ndarray,
         y: np.ndarray,
-        mask: Optional[np.ndarray],
-        decay: Optional[float] = None,
-        momentum: Optional[np.ndarray] = None,
+        mask: np.ndarray | None,
+        decay: float | None = None,
+        momentum: np.ndarray | None = None,
     ) -> np.ndarray:
         # Get gradient wrt loss; invert it if attack is targeted
         grad = self.estimator.loss_gradient(x, y) * (1 - 2 * int(self.targeted))
@@ -410,7 +410,7 @@ class FastGradientMethod(EvasionAttack):
                 targeted=self.targeted,
             )
 
-        # Check for NaN before normalisation an replace with 0
+        # Check for NaN before normalisation and replace with 0
         if grad.dtype != object and np.isnan(grad).any():  # pragma: no cover
             logger.warning("Elements of the loss gradient are NaN and have been replaced with 0.0.")
             grad = np.where(np.isnan(grad), 0.0, grad)
@@ -472,7 +472,7 @@ class FastGradientMethod(EvasionAttack):
         return grad
 
     def _apply_perturbation(
-        self, x: np.ndarray, perturbation: np.ndarray, eps_step: Union[int, float, np.ndarray]
+        self, x: np.ndarray, perturbation: np.ndarray, eps_step: int | float | np.ndarray
     ) -> np.ndarray:
 
         perturbation_step = eps_step * perturbation
@@ -502,14 +502,14 @@ class FastGradientMethod(EvasionAttack):
         x: np.ndarray,
         x_init: np.ndarray,
         y: np.ndarray,
-        mask: Optional[np.ndarray],
-        eps: Union[int, float, np.ndarray],
-        eps_step: Union[int, float, np.ndarray],
+        mask: np.ndarray | None,
+        eps: int | float | np.ndarray,
+        eps_step: int | float | np.ndarray,
         project: bool,
         random_init: bool,
-        batch_id_ext: Optional[int] = None,
-        decay: Optional[float] = None,
-        momentum: Optional[np.ndarray] = None,
+        batch_id_ext: int | None = None,
+        decay: float | None = None,
+        momentum: np.ndarray | None = None,
     ) -> np.ndarray:
         if random_init:
             n = x.shape[0]
@@ -542,15 +542,15 @@ class FastGradientMethod(EvasionAttack):
             mask_batch = mask
             if mask is not None:
                 # Here we need to make a distinction: if the masks are different for each input, we need to index
-                # those for the current batch. Otherwise (i.e. mask is meant to be broadcasted), keep it as it is.
+                # those for the current batch. Otherwise, (i.e. mask is meant to be broadcasted), keep it as it is.
                 if len(mask.shape) == len(x.shape):
                     mask_batch = mask[batch_index_1:batch_index_2]
 
             # Get perturbation
             perturbation = self._compute_perturbation(batch, batch_labels, mask_batch, decay, momentum)
 
-            batch_eps: Union[int, float, np.ndarray]
-            batch_eps_step: Union[int, float, np.ndarray]
+            batch_eps: int | float | np.ndarray
+            batch_eps_step: int | float | np.ndarray
 
             # Compute batch_eps and batch_eps_step
             if isinstance(eps, np.ndarray) and isinstance(eps_step, np.ndarray):

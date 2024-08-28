@@ -20,12 +20,12 @@ This module implements the universal adversarial perturbations attack `TargetedU
 
 | Paper link: https://arxiv.org/abs/1911.06502
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
 import random
 import types
-from typing import Any, Dict, Optional, Union, TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
 
 import numpy as np
 
@@ -60,11 +60,11 @@ class TargetedUniversalPerturbation(EvasionAttack):
         self,
         classifier: "CLASSIFIER_TYPE",
         attacker: str = "fgsm",
-        attacker_params: Optional[Dict[str, Any]] = None,
+        attacker_params: dict[str, Any] | None = None,
         delta: float = 0.2,
         max_iter: int = 20,
         eps: float = 10.0,
-        norm: Union[int, float, str] = np.inf,
+        norm: int | float | str = np.inf,
     ):
         """
         :param classifier: A trained classifier.
@@ -92,7 +92,7 @@ class TargetedUniversalPerturbation(EvasionAttack):
         self._targeted = True
         self._check_params()
 
-    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
+    def generate(self, x: np.ndarray, y: np.ndarray | None = None, **kwargs) -> np.ndarray:
         """
         Generate adversarial samples and return them in an array.
 
@@ -182,7 +182,7 @@ class TargetedUniversalPerturbation(EvasionAttack):
         if not isinstance(self.eps, (float, int)) or self.eps <= 0:
             raise ValueError("The eps coefficient must be a positive float.")
 
-    def _get_attack(self, a_name: str, params: Optional[Dict[str, Any]] = None) -> EvasionAttack:
+    def _get_attack(self, a_name: str, params: dict[str, Any] | None = None) -> EvasionAttack:
         """
         Get an attack object from its name.
 

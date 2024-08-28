@@ -42,12 +42,12 @@ This module implements the black-box (hard-label) GRAPHITE attack `GRAPHITEBlack
 attack that only requires class predictions.
 
 | Paper link: https://arxiv.org/abs/2002.07088
-| Original github link: https://github.com/ryan-feng/GRAPHITE
+| Original GitHub link: https://github.com/ryan-feng/GRAPHITE
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
-from typing import Optional, Tuple, Union, TYPE_CHECKING, List
+from typing import TYPE_CHECKING
 
 import random
 import numpy as np
@@ -79,7 +79,7 @@ class GRAPHITEBlackbox(EvasionAttack):
     stickers.
 
     | Paper link: https://arxiv.org/abs/2002.07088
-    | Original github link: https://github.com/ryan-feng/GRAPHITE
+    | Original GitHub link: https://github.com/ryan-feng/GRAPHITE
     """
 
     attack_params = EvasionAttack.attack_params + [
@@ -110,10 +110,10 @@ class GRAPHITEBlackbox(EvasionAttack):
     def __init__(
         self,
         classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
-        noise_size: Tuple[int, int],
-        net_size: Tuple[int, int],
-        heat_patch_size: Tuple[int, int] = (4, 4),
-        heat_patch_stride: Tuple[int, int] = (1, 1),
+        noise_size: tuple[int, int],
+        net_size: tuple[int, int],
+        heat_patch_size: tuple[int, int] = (4, 4),
+        heat_patch_stride: tuple[int, int] = (1, 1),
         heatmap_mode: str = "Target",
         tr_lo: float = 0.65,
         tr_hi: float = 0.85,
@@ -123,13 +123,13 @@ class GRAPHITEBlackbox(EvasionAttack):
         eta: float = 500,
         num_xforms_boost: int = 100,
         num_boost_queries: int = 20000,
-        rotation_range: Tuple[float, float] = (-30.0, 30.0),
-        dist_range: Tuple[float, float] = (0.0, 0.0),
-        gamma_range: Tuple[float, float] = (1.0, 2.0),
-        crop_percent_range: Tuple[float, float] = (-0.03125, 0.03125),
-        off_x_range: Tuple[float, float] = (-0.03125, 0.03125),
-        off_y_range: Tuple[float, float] = (-0.03125, 0.03125),
-        blur_kernels: Union[Tuple[int, int], List[int]] = (0, 3),
+        rotation_range: tuple[float, float] = (-30.0, 30.0),
+        dist_range: tuple[float, float] = (0.0, 0.0),
+        gamma_range: tuple[float, float] = (1.0, 2.0),
+        crop_percent_range: tuple[float, float] = (-0.03125, 0.03125),
+        off_x_range: tuple[float, float] = (-0.03125, 0.03125),
+        off_y_range: tuple[float, float] = (-0.03125, 0.03125),
+        blur_kernels: tuple[int, int] | list[int] = (0, 3),
         batch_size: int = 64,
     ) -> None:
         """
@@ -183,7 +183,7 @@ class GRAPHITEBlackbox(EvasionAttack):
 
         self._check_params()
 
-    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
+    def generate(self, x: np.ndarray, y: np.ndarray | None = None, **kwargs) -> np.ndarray:
         """
         Generate adversarial samples and return them in an array.
 
@@ -311,8 +311,8 @@ class GRAPHITEBlackbox(EvasionAttack):
         focal: float,
         clip_min: float,
         clip_max: float,
-        mask: Optional[np.ndarray] = None,
-        pts: Optional[np.ndarray] = None,
+        mask: np.ndarray | None = None,
+        pts: np.ndarray | None = None,
     ) -> np.ndarray:
         """
         Internal attack function for one example.
@@ -376,7 +376,7 @@ class GRAPHITEBlackbox(EvasionAttack):
         focal: float,
         clip_min: float,
         clip_max: float,
-        pts: Optional[np.ndarray] = None,
+        pts: np.ndarray | None = None,
     ) -> np.ndarray:
         """
         Function to generate a mask.
@@ -501,12 +501,12 @@ class GRAPHITEBlackbox(EvasionAttack):
         x_tar_noise: np.ndarray,
         mask: np.ndarray,
         y: int,
-        patches: List[np.ndarray],
-        xforms: List,
+        patches: list[np.ndarray],
+        xforms: list,
         clip_min: float,
         clip_max: float,
-        pts: Optional[np.ndarray] = None,
-    ) -> List[float]:
+        pts: np.ndarray | None = None,
+    ) -> list[float]:
         """
         Function to generate a heatmap.
 
@@ -517,8 +517,8 @@ class GRAPHITEBlackbox(EvasionAttack):
                      broadcastable to the shape of x. Any features for which the mask is zero will not be adversarially
                      perturbed.
         :param y: The target label.
-        :param patches: list of patches from heatmap.
-        :param xforms: list of transform params.
+        :param patches: List of patches from heatmap.
+        :param xforms: List of transform params.
         :param clip_min: Minimum value of an example.
         :param clip_max: Maximum value of an example.
         :param pts: Optional. A set of points that will set the crop size in the perspective transform.
@@ -545,13 +545,13 @@ class GRAPHITEBlackbox(EvasionAttack):
         x_tar_noise: np.ndarray,
         y: int,
         mask: np.ndarray,
-        patches: List[np.ndarray],
-        xforms: List,
+        patches: list[np.ndarray],
+        xforms: list,
         clip_min: float,
         clip_max: float,
         pivot: int,
-        pts: Optional[np.ndarray] = None,
-    ) -> Tuple[float, np.ndarray]:
+        pts: np.ndarray | None = None,
+    ) -> tuple[float, np.ndarray]:
         """
         Function as a binary search plug-in that evaluates the transform-robustness at the specified pivot.
 
@@ -562,8 +562,8 @@ class GRAPHITEBlackbox(EvasionAttack):
         :param mask: An array with a mask to be applied to the adversarial perturbations. Shape needs to be
                      broadcastable to the shape of x. Any features for which the mask is zero will not be adversarially
                      perturbed.
-        :param patches: list of patches from heatmap.
-        :param xforms: list of transform params.
+        :param patches: List of patches from heatmap.
+        :param xforms: List of transform params.
         :param clip_min: Minimum value of an example.
         :param clip_max: Maximum value of an example.
         :param pivot: Pivot point to evaluate transform-robustness at.
@@ -591,13 +591,13 @@ class GRAPHITEBlackbox(EvasionAttack):
         x_tar_noise: np.ndarray,
         y: int,
         mask: np.ndarray,
-        patches: List[np.ndarray],
-        indices: List[Tuple[int, int]],
-        xforms: List,
+        patches: list[np.ndarray],
+        indices: list[tuple[int, int]],
+        xforms: list,
         clip_min: float,
         clip_max: float,
-        pts: Optional[np.ndarray] = None,
-    ) -> Tuple[np.ndarray, List[np.ndarray], List[Tuple[int, int]]]:
+        pts: np.ndarray | None = None,
+    ) -> tuple[np.ndarray, list[np.ndarray], list[tuple[int, int]]]:
         """
         Function to coarsely reduce mask.
 
@@ -608,15 +608,15 @@ class GRAPHITEBlackbox(EvasionAttack):
         :param mask: An array with a mask to be applied to the adversarial perturbations. Shape needs to be
                      broadcastable to the shape of x. Any features for which the mask is zero will not be adversarially
                      perturbed.
-        :param patches: list of patches from heatmap.
-        :param indices: list of indices for the heatmap patches.
-        :param xforms: list of transform params.
+        :param patches: List of patches from heatmap.
+        :param indices: List of indices for the heatmap patches.
+        :param xforms: List of transform params.
         :param clip_min: Minimum value of an example.
         :param clip_max: Maximum value of an example.
         :param pts: Optional. A set of points that will set the crop size in the perspective transform.
         :return: mask, adjusted list of patches, adjusted list of indices
         """
-        # binary search leftmost pivot value for which tr exceeeds specificed threshold if one exists
+        # binary search leftmost pivot value for which `tr` exceeds specified threshold if one exists
         num_patches = len(patches)
         if num_patches == 1:
             pivot = 0
@@ -656,13 +656,13 @@ class GRAPHITEBlackbox(EvasionAttack):
         x_tar_noise: np.ndarray,
         y: int,
         mask: np.ndarray,
-        patches: List[np.ndarray],
-        xforms: List,
+        patches: list[np.ndarray],
+        xforms: list,
         object_size: float,
         clip_min: float,
         clip_max: float,
         lbd: float = 5,
-        pts: Optional[np.ndarray] = None,
+        pts: np.ndarray | None = None,
     ) -> np.ndarray:
         """
         Function to finely reduce mask.
@@ -674,8 +674,8 @@ class GRAPHITEBlackbox(EvasionAttack):
         :param mask: An array with a mask to be applied to the adversarial perturbations. Shape needs to be
                      broadcastable to the shape of x. Any features for which the mask is zero will not be adversarially
                      perturbed.
-        :param patches: list of patches from heatmap.
-        :param xforms: list of transform params.
+        :param patches: List of patches from heatmap.
+        :param xforms: List of transform params.
         :param obj_size: Estimated width of object in inches for perspective transform.
         :param clip_min: Minimum value of an example.
         :param clip_max: Maximum value of an example.
@@ -738,7 +738,7 @@ class GRAPHITEBlackbox(EvasionAttack):
         focal: float,
         clip_min: float,
         clip_max: float,
-        pts: Optional[np.ndarray] = None,
+        pts: np.ndarray | None = None,
     ) -> np.ndarray:
         """
         Function to boost transform-robustness.

@@ -18,7 +18,9 @@
 """
 Scanning operations
 """
-from typing import Callable, Tuple
+from __future__ import annotations
+
+from collections.abc import Callable
 
 import numpy as np
 
@@ -34,7 +36,7 @@ class ScanningOps:
         a_max: float,
         image_to_node: bool,
         score_function: Callable[[np.ndarray, np.ndarray, np.ndarray], np.ndarray],
-    ) -> Tuple[float, np.ndarray, float]:
+    ) -> tuple[float, np.ndarray, float]:
         """
         Optimizes over all subsets of nodes for a given subset of images or over all subsets of images for a given
         subset of nodes.
@@ -123,7 +125,7 @@ class ScanningOps:
                 best_alpha_count = alpha_count
             alpha_count = alpha_count + 1
 
-        # after the alpha for loop we now have best score, best alpha, size of best subset,
+        # after the alpha for loop we now have the best score, the best alpha, size of the best subset,
         # and alpha counter use these with the priority argsort to reconstruct the best subset
         unsort = arg_sort_priority[:, best_alpha_count]
 
@@ -140,7 +142,7 @@ class ScanningOps:
         indices_of_seeds: np.ndarray,
         image_to_node: bool,
         score_function: Callable[[np.ndarray, np.ndarray, np.ndarray], np.ndarray],
-    ) -> Tuple[float, np.ndarray, np.ndarray, float]:
+    ) -> tuple[float, np.ndarray, np.ndarray, float]:
         """
         Here we control the iteration between images->nodes and nodes->images. It starts with a fixed subset of nodes by
         default.
@@ -165,12 +167,20 @@ class ScanningOps:
 
             if image_to_node:  # passed pvalues are only those belonging to fixed images, update nodes in return
                 # only sending sub of images
-                (score_from_optimization, sub_of_nodes, optimal_alpha,) = ScanningOps.optimize_in_single_dimension(
+                (
+                    score_from_optimization,
+                    sub_of_nodes,
+                    optimal_alpha,
+                ) = ScanningOps.optimize_in_single_dimension(
                     pvalues[sub_of_images, :, :], a_max, image_to_node, score_function
                 )
             else:  # passed pvalues are only those belonging to fixed nodes, update images in return
                 # only sending sub of nodes
-                (score_from_optimization, sub_of_images, optimal_alpha,) = ScanningOps.optimize_in_single_dimension(
+                (
+                    score_from_optimization,
+                    sub_of_images,
+                    optimal_alpha,
+                ) = ScanningOps.optimize_in_single_dimension(
                     pvalues[:, sub_of_nodes, :], a_max, image_to_node, score_function
                 )
 

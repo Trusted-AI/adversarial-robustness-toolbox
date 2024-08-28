@@ -20,10 +20,10 @@ This module implements the filter function for audio signals. It provides with a
 finite impulse response (FIR) filter. This implementation is a wrapper around the `scipy.signal.lfilter` function in
 the `scipy` package.
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
-from typing import Optional, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from scipy.signal import lfilter
 import numpy as np
@@ -51,8 +51,8 @@ class LFilter(Preprocessor):
         numerator_coef: np.ndarray = np.array([1.0]),
         denominator_coef: np.ndarray = np.array([1.0]),
         axis: int = -1,
-        initial_cond: Optional[np.ndarray] = None,
-        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
+        initial_cond: np.ndarray | None = None,
+        clip_values: "CLIP_VALUES_TYPE" | None = None,
         apply_fit: bool = False,
         apply_predict: bool = True,
         verbose: bool = False,
@@ -83,7 +83,7 @@ class LFilter(Preprocessor):
         self.verbose = verbose
         self._check_params()
 
-    def __call__(self, x: np.ndarray, y: Optional[np.ndarray] = None) -> Tuple[np.ndarray, Optional[np.ndarray]]:
+    def __call__(self, x: np.ndarray, y: np.ndarray | None = None) -> tuple[np.ndarray, np.ndarray | None]:
         """
         Apply filter to sample `x`.
 

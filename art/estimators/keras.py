@@ -18,7 +18,7 @@
 """
 This module implements the abstract estimator `KerasEstimator` for Keras models.
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
 
@@ -44,12 +44,6 @@ class KerasEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
     """
 
     estimator_params = BaseEstimator.estimator_params + NeuralNetworkMixin.estimator_params
-
-    def __init__(self, **kwargs) -> None:
-        """
-        Estimator class for Keras models.
-        """
-        super().__init__(**kwargs)
 
     def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs):
         """
@@ -116,9 +110,9 @@ class KerasEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
         loss_weights = None
         weighted_metrics = None
         if self.model.compiled_loss:
-            loss_weights = self.model.compiled_loss._loss_weights  # pylint: disable=W0212
+            loss_weights = self.model.compiled_loss._loss_weights
         if self.model.compiled_metrics:
-            weighted_metrics = self.model.compiled_metrics._weighted_metrics  # pylint: disable=W0212
+            weighted_metrics = self.model.compiled_metrics._weighted_metrics
 
         model.compile(
             optimizer=optimizer,
@@ -129,7 +123,7 @@ class KerasEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
             run_eagerly=self.model.run_eagerly,
         )
 
-        clone = type(self)(model=model)
+        clone = type(self)(model=model, channels_first=self.channels_first)
         params = self.get_params()
         del params["model"]
         clone.set_params(**params)

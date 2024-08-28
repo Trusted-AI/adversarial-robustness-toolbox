@@ -3,6 +3,7 @@
 Trains a convolutional neural network on the CIFAR-10 dataset, then generated adversarial images using the
 DeepFool attack and retrains the network on the training set augmented with the adversarial images.
 """
+# noqa: E402
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging

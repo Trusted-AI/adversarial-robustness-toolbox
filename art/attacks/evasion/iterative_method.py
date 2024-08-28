@@ -21,10 +21,10 @@ FGSM. This is a white-box attack.
 
 | Paper link: https://arxiv.org/abs/1607.02533
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
-from typing import Union, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 
@@ -48,8 +48,8 @@ class BasicIterativeMethod(ProjectedGradientDescent):
     def __init__(
         self,
         estimator: "CLASSIFIER_LOSS_GRADIENTS_TYPE",
-        eps: Union[int, float, np.ndarray] = 0.3,
-        eps_step: Union[int, float, np.ndarray] = 0.1,
+        eps: int | float | np.ndarray = 0.3,
+        eps_step: int | float | np.ndarray = 0.1,
         max_iter: int = 100,
         targeted: bool = False,
         batch_size: int = 32,

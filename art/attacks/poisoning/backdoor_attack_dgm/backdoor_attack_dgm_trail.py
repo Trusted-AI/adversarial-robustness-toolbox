@@ -18,7 +18,7 @@
 """
 This module implements poisoning attacks on DGMs.
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
 from typing import TYPE_CHECKING
@@ -76,7 +76,7 @@ class BackdoorAttackDGMTrailTensorFlowV2(PoisoningAttackGenerator):
         """
         Calculates the fidelity of the poisoned model's target sample w.r.t. the original x_target sample
 
-        :param z_trigger: the secret backdoor trigger that will produce the target
+        :param z_trigger: the secret backdoor trigger that will produce the target.
         :param x_target: the target to produce when using the trigger
         """
         import tensorflow as tf
@@ -96,13 +96,13 @@ class BackdoorAttackDGMTrailTensorFlowV2(PoisoningAttackGenerator):
         max_iter=100,
         lambda_p=0.1,
         verbose=-1,
-        **kwargs
+        **kwargs,
         # ):
     ) -> "GENERATOR_TYPE":
         """
         Creates a backdoor in the generative model
 
-        :param z_trigger: the secret backdoor trigger that will produce the target
+        :param z_trigger: the secret backdoor trigger that will produce the target.
         :param x_target: the target to produce when using the trigger
         :param batch_size: batch_size of images used to train generator
         :param max_iter: total number of iterations for performing the attack

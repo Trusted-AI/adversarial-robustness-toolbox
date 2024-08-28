@@ -21,12 +21,12 @@ This module implements a wrapper for video compression defence with FFmpeg.
 | Please keep in mind the limitations of defences. For details on how to evaluate classifier security in general,
     see https://arxiv.org/abs/1902.06705.
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
 import os
 from tempfile import TemporaryDirectory
-from typing import Optional, Tuple
+
 import warnings
 
 import numpy as np
@@ -75,7 +75,7 @@ class VideoCompression(Preprocessor):
         self.verbose = verbose
         self._check_params()
 
-    def __call__(self, x: np.ndarray, y: Optional[np.ndarray] = None) -> Tuple[np.ndarray, Optional[np.ndarray]]:
+    def __call__(self, x: np.ndarray, y: np.ndarray | None = None) -> tuple[np.ndarray, np.ndarray | None]:
         """
         Apply video compression to sample `x`.
 

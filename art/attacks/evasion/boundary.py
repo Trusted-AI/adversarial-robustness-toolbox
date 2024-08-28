@@ -21,10 +21,10 @@ predictions.
 
 | Paper link: https://arxiv.org/abs/1712.04248
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
-from typing import List, Optional, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 from tqdm.auto import tqdm, trange
@@ -110,9 +110,9 @@ class BoundaryAttack(EvasionAttack):
         self.verbose = verbose
         self._check_params()
 
-        self.curr_adv: Optional[np.ndarray] = None
+        self.curr_adv: np.ndarray | None = None
 
-    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
+    def generate(self, x: np.ndarray, y: np.ndarray | None = None, **kwargs) -> np.ndarray:
         """
         Generate adversarial samples and return them in an array.
 
@@ -268,7 +268,7 @@ class BoundaryAttack(EvasionAttack):
         for _ in trange(self.max_iter, desc="Boundary attack - iterations", disable=not self.verbose):
             # Trust region method to adjust delta
             for _ in range(self.num_trial):
-                potential_advs_list: List[np.ndarray] = []
+                potential_advs_list: list[np.ndarray] = []
                 for _ in range(self.sample_size):
                     potential_adv = x_adv + self._orthogonal_perturb(self.curr_delta, x_adv, original_sample)
                     potential_adv = np.clip(potential_adv, clip_min, clip_max)
@@ -360,7 +360,7 @@ class BoundaryAttack(EvasionAttack):
         perturb_flat -= np.dot(perturb_flat, direction_flat.T) * direction_flat
         perturb = perturb_flat.reshape(self.estimator.input_shape)
 
-        hypotenuse = np.sqrt(1 + delta ** 2)
+        hypotenuse = np.sqrt(1 + delta**2)
         perturb = ((1 - hypotenuse) * (current_sample - original_sample) + perturb) / hypotenuse
         return perturb
 
@@ -373,7 +373,7 @@ class BoundaryAttack(EvasionAttack):
         adv_init: np.ndarray,
         clip_min: float,
         clip_max: float,
-    ) -> Optional[Tuple[np.ndarray, int]]:
+    ) -> tuple[np.ndarray, int] | None:
         """
         Find initial adversarial example for the attack.
 

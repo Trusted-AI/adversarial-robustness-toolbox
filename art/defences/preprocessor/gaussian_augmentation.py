@@ -18,10 +18,10 @@
 """
 This module implements the Gaussian augmentation defence in `GaussianAugmentation`.
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
-from typing import Optional, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 
@@ -56,7 +56,7 @@ class GaussianAugmentation(Preprocessor):
         sigma: float = 1.0,
         augmentation: bool = True,
         ratio: float = 1.0,
-        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
+        clip_values: "CLIP_VALUES_TYPE" | None = None,
         apply_fit: bool = True,
         apply_predict: bool = False,
     ):
@@ -87,7 +87,7 @@ class GaussianAugmentation(Preprocessor):
         self.clip_values = clip_values
         self._check_params()
 
-    def __call__(self, x: np.ndarray, y: Optional[np.ndarray] = None) -> Tuple[np.ndarray, Optional[np.ndarray]]:
+    def __call__(self, x: np.ndarray, y: np.ndarray | None = None) -> tuple[np.ndarray, np.ndarray | None]:
         """
         Augment the sample `(x, y)` with Gaussian noise. The result is either an extended dataset containing the
         original sample, as well as the newly created noisy samples (augmentation=True) or just the noisy counterparts

@@ -23,12 +23,12 @@ This module implements DP-InstaHide training method.
 | This training method is dependent to the choice of data augmentation and noise parameters. Consequently, framework
     specific implementations are being provided in ART.
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
 import sys
 import time
-from typing import List, Optional, Union, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 from tqdm.auto import trange
@@ -60,10 +60,10 @@ class DPInstaHideTrainer(Trainer):
     def __init__(
         self,
         classifier: "CLASSIFIER_LOSS_GRADIENTS_TYPE",
-        augmentations: Union["Preprocessor", List["Preprocessor"]],
+        augmentations: "Preprocessor" | list["Preprocessor"],
         noise: Literal["gaussian", "laplacian", "exponential"] = "laplacian",
-        loc: Union[int, float] = 0.0,
-        scale: Union[int, float] = 0.03,
+        loc: int | float = 0.0,
+        scale: int | float = 0.03,
         clip_values: "CLIP_VALUES_TYPE" = (0.0, 1.0),
     ):
         """
@@ -104,14 +104,14 @@ class DPInstaHideTrainer(Trainer):
 
         return x_noise.astype(x.dtype)
 
-    def fit(  # pylint: disable=W0221
+    def fit(
         self,
         x: np.ndarray,
         y: np.ndarray,
-        validation_data: Optional[Tuple[np.ndarray, np.ndarray]] = None,
+        validation_data: tuple[np.ndarray, np.ndarray] | None = None,
         batch_size: int = 128,
         nb_epochs: int = 20,
-        **kwargs
+        **kwargs,
     ):
         """
         Train a model adversarially with the DP-InstaHide protocol.

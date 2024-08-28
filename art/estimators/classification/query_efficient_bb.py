@@ -18,8 +18,10 @@
 """
 Provides black-box gradient estimation using NES.
 """
+from __future__ import annotations
+
 import logging
-from typing import List, Optional, Tuple, Union, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 from scipy.stats import entropy
@@ -59,7 +61,6 @@ class QueryEfficientGradientEstimationClassifier(ClassifierLossGradients, Classi
                               disable.
         """
         super().__init__(model=classifier.model, clip_values=classifier.clip_values)
-        # pylint: disable=E0203
         self._classifier = classifier
         self.num_basis = num_basis
         self.sigma = sigma
@@ -67,7 +68,7 @@ class QueryEfficientGradientEstimationClassifier(ClassifierLossGradients, Classi
         self._nb_classes = self._classifier.nb_classes
 
     @property
-    def input_shape(self) -> Tuple[int, ...]:
+    def input_shape(self) -> tuple[int, ...]:
         """
         Return the shape of one input sample.
 
@@ -75,7 +76,7 @@ class QueryEfficientGradientEstimationClassifier(ClassifierLossGradients, Classi
         """
         return self._classifier.input_shape  # type: ignore
 
-    def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> np.ndarray:  # pylint: disable=W0221
+    def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> np.ndarray:
         """
         Perform prediction of the classifier for input `x`. Rounds results first.
 
@@ -98,7 +99,7 @@ class QueryEfficientGradientEstimationClassifier(ClassifierLossGradients, Classi
         """
         raise NotImplementedError
 
-    def _generate_samples(self, x: np.ndarray, epsilon_map: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    def _generate_samples(self, x: np.ndarray, epsilon_map: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
         """
         Generate samples around the current image.
 
@@ -118,9 +119,7 @@ class QueryEfficientGradientEstimationClassifier(ClassifierLossGradients, Classi
         )
         return minus, plus
 
-    def class_gradient(
-        self, x: np.ndarray, label: Optional[Union[int, List[int], np.ndarray]] = None, **kwargs
-    ) -> np.ndarray:
+    def class_gradient(self, x: np.ndarray, label: int | list[int] | np.ndarray | None = None, **kwargs) -> np.ndarray:
         """
         Compute per-class derivatives w.r.t. `x`.
 
@@ -166,7 +165,7 @@ class QueryEfficientGradientEstimationClassifier(ClassifierLossGradients, Classi
         grads_array = self._apply_preprocessing_gradient(x, np.array(grads))
         return grads_array
 
-    def get_activations(self, x: np.ndarray, layer: Union[int, str], batch_size: int) -> np.ndarray:
+    def get_activations(self, x: np.ndarray, layer: int | str, batch_size: int) -> np.ndarray:
         """
         Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
         `nb_layers - 1`) or by name. The number of layers can be determined by counting the results returned by
@@ -179,7 +178,7 @@ class QueryEfficientGradientEstimationClassifier(ClassifierLossGradients, Classi
         """
         raise NotImplementedError
 
-    def save(self, filename: str, path: Optional[str] = None) -> None:
+    def save(self, filename: str, path: str | None = None) -> None:
         """
         Save a model to file specific to the backend framework.
 

@@ -18,7 +18,7 @@
 """
 This module implements the abstract base class for defences that adversarially train models.
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import abc
 from typing import TYPE_CHECKING

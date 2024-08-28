@@ -18,8 +18,10 @@
 """
 This module implements the abstract estimator for scikit-learn models.
 """
+from __future__ import annotations
+
 import logging
-from typing import Optional, Tuple
+
 
 from art.estimators.estimator import BaseEstimator
 
@@ -31,8 +33,8 @@ class ScikitlearnEstimator(BaseEstimator):
     Estimator class for scikit-learn models.
     """
 
-    def _get_input_shape(self, model) -> Optional[Tuple[int, ...]]:
-        _input_shape: Optional[Tuple[int, ...]]
+    def _get_input_shape(self, model) -> tuple[int, ...] | None:
+        _input_shape: tuple[int, ...] | None
         if hasattr(model, "n_features_"):
             _input_shape = (model.n_features_,)
         elif hasattr(model, "n_features_in_"):
