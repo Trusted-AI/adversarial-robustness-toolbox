@@ -28,11 +28,11 @@ jobs:
     container: adversarialrobustnesstoolbox/art_testing_envs:goturn
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Run Test Action
         uses: ./.github/actions/goturn
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v3
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         with:
