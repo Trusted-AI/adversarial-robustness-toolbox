@@ -98,7 +98,7 @@ def test_generate(art_warning):
             "http://farm5.staticflickr.com/4061/4376326145_7ef66603e3_z.jpg",  # 000000389933
             "http://farm3.staticflickr.com/2028/2188480725_5fbf27a5b3_z.jpg",  # 000000311789
             "http://farm1.staticflickr.com/172/421715600_666b0f6a2b_z.jpg",  # 000000506004
-            "http://farm1.staticflickr.com/168/473782444_8ec11ec7b3_z.jpg",  # 000000203317
+            "http://farm2.staticflickr.com/1218/713035586_b3d33708e1_z.jpg",  # 000000417446
             "http://farm4.staticflickr.com/3236/2487649513_1ef6a6d5c9_z.jpg",  # 000000201646
             "http://farm4.staticflickr.com/3094/2684280938_a5b59c0fac_z.jpg",  # 000000447187
             "http://farm1.staticflickr.com/42/100911501_005e4d3aa8_z.jpg",  # 000000126107
