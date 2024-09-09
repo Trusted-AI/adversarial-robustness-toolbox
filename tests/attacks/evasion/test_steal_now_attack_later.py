@@ -116,7 +116,7 @@ def test_generate(art_warning):
                 f.write(response.content)
             time.sleep(0.5)
 
-        #% Collect patches
+        # % Collect patches
         import glob
         from torchvision import transforms
         from torchvision.datasets.vision import VisionDataset

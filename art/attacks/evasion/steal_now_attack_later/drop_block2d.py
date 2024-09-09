@@ -58,7 +58,7 @@ def drop_block2d(x: "torch.Tensor", prob: float, block_size: int):
     N, _, H, W = x.size()  # pylint: disable=C0103
     block_size = min(block_size, W, H)
     # compute the gamma of Bernoulli distribution
-    gamma = (prob * H * W) / ((block_size ** 2) * ((H - block_size + 1) * (W - block_size + 1)))
+    gamma = (prob * H * W) / ((block_size**2) * ((H - block_size + 1) * (W - block_size + 1)))
     noise = torch.empty((N, 1, H - block_size + 1, W - block_size + 1), dtype=x.dtype, device=x.device)
     noise.bernoulli_(gamma)
 
