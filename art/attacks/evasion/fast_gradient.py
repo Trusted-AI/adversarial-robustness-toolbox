@@ -476,7 +476,7 @@ class FastGradientMethod(EvasionAttack):
     ) -> np.ndarray:
 
         perturbation_step = eps_step * perturbation
-        if perturbation_step.dtype != object:
+        if perturbation_step.dtype is not object:
             perturbation_step[np.isnan(perturbation_step)] = 0
         else:
             for i, _ in enumerate(perturbation_step):
@@ -489,7 +489,7 @@ class FastGradientMethod(EvasionAttack):
         x = x + perturbation_step
         if self.estimator.clip_values is not None:
             clip_min, clip_max = self.estimator.clip_values
-            if x.dtype == object:
+            if x.dtype is object:
                 for i_obj in range(x.shape[0]):
                     x[i_obj] = np.clip(x[i_obj], clip_min, clip_max)
             else:
