@@ -35,7 +35,7 @@ def test_generate(art_warning):
         import requests
 
         model = YOLO("yolov8m")
-        py_model = PyTorchYolo(model=model, input_shape=(3, 640, 640), channels_first=True)
+        py_model = PyTorchYolo(model=model, input_shape=(3, 640, 640), channels_first=True, is_yolov8=True)
 
         # Define a custom function to collect patches from images
         def collect_patches_from_images(model, imgs):
@@ -192,7 +192,7 @@ def test_generate(art_warning):
 def test_check_params(art_warning):
     try:
         model = YOLO("yolov8m")
-        py_model = PyTorchYolo(model=model, input_shape=(3, 640, 640), channels_first=True)
+        py_model = PyTorchYolo(model=model, input_shape=(3, 640, 640), channels_first=True, is_yolov8=True)
 
         def dummy_func(model, imags):
             candidates_patch = []
