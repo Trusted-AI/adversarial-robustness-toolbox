@@ -32,8 +32,9 @@ jobs:
       - name: Run Test Action
         uses: ./.github/actions/goturn
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v3
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         with:
+          token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: true
