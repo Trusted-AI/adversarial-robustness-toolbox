@@ -20,7 +20,6 @@ import logging
 import numpy as np
 import pytest
 
-from ultralytics import YOLO
 from art.attacks.evasion import SNAL
 from art.estimators.object_detection import PyTorchYolo
 from tests.utils import ARTTestException
@@ -31,8 +30,11 @@ logger = logging.getLogger(__name__)
 @pytest.mark.only_with_platform("pytorch")
 def test_generate(art_warning):
     try:
+        # The ultralytics package does not support Python versions earlier than 3.8.
+        # To avoid an import error with the TF 1.x pipeline, it is imported only within the function scope.
         import torch
         import requests
+        from ultralytics import YOLO
 
         model = YOLO("yolov8m")
         py_model = PyTorchYolo(model=model, input_shape=(3, 640, 640), channels_first=True, is_yolov8=True)
@@ -191,6 +193,10 @@ def test_generate(art_warning):
 @pytest.mark.only_with_platform("pytorch")
 def test_check_params(art_warning):
     try:
+        # The ultralytics package does not support Python versions earlier than 3.8.
+        # To avoid an import error with the TF 1.x pipeline, it is imported only within the function scope.
+        from ultralytics import YOLO
+
         model = YOLO("yolov8m")
         py_model = PyTorchYolo(model=model, input_shape=(3, 640, 640), channels_first=True, is_yolov8=True)
 
