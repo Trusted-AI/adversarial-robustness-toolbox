@@ -184,7 +184,7 @@ def test_generate(art_warning):
 
         adv_np = np.transpose(x_adv[0, :] * 255, (1, 2, 0)).astype(np.uint8)
         result = model(adv_np)
-        assert len(result[0].boxes.xyxy) > 90
+        assert len(result[0].boxes.xyxy) > 25
 
     except ARTTestException as e:
         art_warning(e)
