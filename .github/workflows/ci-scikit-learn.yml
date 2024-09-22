@@ -17,7 +17,7 @@ on:
       - main
       - dev*
 
-  # Run scheduled CI flow daily - test codecov
+  # Run scheduled CI flow daily - test codecov 2
   schedule:
     - cron: '0 8 * * 0'
 
