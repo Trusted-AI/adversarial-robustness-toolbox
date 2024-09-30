@@ -25,6 +25,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 import math
+from packaging.version import parse
 from typing import Any, TYPE_CHECKING
 
 import numpy as np
@@ -121,8 +122,8 @@ class AdversarialPatchPyTorch(EvasionAttack):
         import torch
         import torchvision
 
-        torch_version = list(map(int, torch.__version__.lower().split("+", maxsplit=1)[0].split(".")))
-        torchvision_version = list(map(int, torchvision.__version__.lower().split("+", maxsplit=1)[0].split(".")))
+        torch_version = list(parse(torch.__version__.lower()).release)
+        torchvision_version = list(parse(torchvision.__version__.lower()).release)
         assert (
             torch_version[0] >= 1 and torch_version[1] >= 7 or (torch_version[0] >= 2)
         ), "AdversarialPatchPyTorch requires torch>=1.7.0"
