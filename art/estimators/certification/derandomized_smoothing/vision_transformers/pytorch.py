@@ -45,7 +45,7 @@
 """
 Implements functionality for running Vision Transformers in ART
 """
-from typing import Optional
+from __future__ import annotations
 
 import torch
 from timm.models.vision_transformer import VisionTransformer
@@ -72,16 +72,16 @@ class PatchEmbed(torch.nn.Module):
         self.patch_size = patch_size
         self.in_channels = in_channels
         self.embed_dim = embed_dim
-        self.proj: Optional[torch.nn.Conv2d] = None
+        self.proj: torch.nn.Conv2d | None = None
 
-    def create(self, patch_size=None, embed_dim=None, device="cpu", **kwargs) -> None:  # pylint: disable=W0613
+    def create(self, patch_size=None, embed_dim=None, device="cpu", **kwargs) -> None:
         """
         Creates a convolution that mimics the embedding layer to be used for the ablation mask to
         track where the image was ablated.
 
         :param patch_size: The patch size used by the ViT.
         :param embed_dim: The embedding dimension used by the ViT.
-        :param device: Which device to set the emdedding layer to.
+        :param device: Which device to set the embedding layer to.
         :param kwargs: Handles the remaining kwargs from the ViT configuration.
         """
 

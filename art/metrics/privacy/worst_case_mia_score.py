@@ -18,10 +18,10 @@
 """
 This module implements a metric for inference attack worst case accuracy measurement.
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
-from typing import Optional, List, Tuple, Union
+
 
 import numpy as np
 from sklearn.metrics import roc_curve
@@ -32,13 +32,13 @@ FPR = float  # False Positive Rate
 THR = float  # Threshold of the binary decision
 
 
-def _calculate_roc_for_fpr(y_true: np.ndarray, y_proba: np.ndarray, targeted_fpr: float) -> Tuple[FPR, TPR, THR]:
+def _calculate_roc_for_fpr(y_true: np.ndarray, y_proba: np.ndarray, targeted_fpr: float) -> tuple[FPR, TPR, THR]:
     """
     Get FPR, TPR and, THRESHOLD based on the targeted_fpr (such that FPR <= targeted_fpr)
     :param y_true: True attack labels.
     :param y_proba: Predicted attack probabilities.
     :param targeted_fpr: the targeted False Positive Rate, ROC will be calculated based on this FPR.
-    :return: tuple that contains (Achieved FPR, TPR, Threshold).
+    :return: Tuple that contains (Achieved FPR, TPR, Threshold).
     """
 
     fpr, tpr, thr = roc_curve(y_true=y_true, y_score=y_proba)
@@ -54,9 +54,9 @@ def _calculate_roc_for_fpr(y_true: np.ndarray, y_proba: np.ndarray, targeted_fpr
 def get_roc_for_fpr(
     attack_proba: np.ndarray,
     attack_true: np.ndarray,
-    target_model_labels: Optional[np.ndarray] = None,
+    target_model_labels: np.ndarray | None = None,
     targeted_fpr: float = 0.001,
-) -> Union[List[Tuple[FPR, TPR, THR]], List[Tuple[int, FPR, TPR, THR]]]:
+) -> list[tuple[FPR, TPR, THR]] | list[tuple[int, FPR, TPR, THR]]:
     """
     Compute the attack TPR, THRESHOLD and achieved FPR based on the targeted FPR. This implementation supports only
     binary attack prediction labels {0,1}. The returned THRESHOLD defines the decision threshold on the attack
@@ -98,7 +98,7 @@ def get_roc_for_multi_fprs(
     attack_proba: np.ndarray,
     attack_true: np.ndarray,
     targeted_fprs: np.ndarray,
-) -> Tuple[List[FPR], List[TPR], List[THR]]:
+) -> tuple[list[FPR], list[TPR], list[THR]]:
     """
     Compute the attack ROC based on the targeted FPRs. This implementation supports only binary
     attack prediction labels. The returned list of THRESHOLDs defines the decision threshold on the attack

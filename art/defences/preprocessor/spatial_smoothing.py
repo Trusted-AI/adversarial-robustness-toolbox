@@ -24,10 +24,10 @@ This module implements the local spatial smoothing defence in `SpatialSmoothing`
     see https://arxiv.org/abs/1803.09868 . For details on how to evaluate classifier security in general, see
     https://arxiv.org/abs/1902.06705
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
-from typing import Optional, Tuple
+
 
 import numpy as np
 from scipy.ndimage import median_filter
@@ -55,7 +55,7 @@ class SpatialSmoothing(Preprocessor):
         self,
         window_size: int = 3,
         channels_first: bool = False,
-        clip_values: Optional[CLIP_VALUES_TYPE] = None,
+        clip_values: CLIP_VALUES_TYPE | None = None,
         apply_fit: bool = False,
         apply_predict: bool = True,
     ) -> None:
@@ -76,7 +76,7 @@ class SpatialSmoothing(Preprocessor):
         self.clip_values = clip_values
         self._check_params()
 
-    def __call__(self, x: np.ndarray, y: Optional[np.ndarray] = None) -> Tuple[np.ndarray, Optional[np.ndarray]]:
+    def __call__(self, x: np.ndarray, y: np.ndarray | None = None) -> tuple[np.ndarray, np.ndarray | None]:
         """
         Apply local spatial smoothing to sample `x`.
 

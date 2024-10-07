@@ -21,8 +21,10 @@ version of FGM and FGSM with integrated momentum. This is a white-box attack.
 
 | Paper link: https://arxiv.org/abs/1710.06081
 """
+from __future__ import annotations
+
 import logging
-from typing import Union, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 
@@ -47,9 +49,9 @@ class MomentumIterativeMethod(ProjectedGradientDescent):
     def __init__(
         self,
         estimator: "CLASSIFIER_LOSS_GRADIENTS_TYPE",
-        norm: Union[int, float, str] = np.inf,
-        eps: Union[int, float, np.ndarray] = 0.3,
-        eps_step: Union[int, float, np.ndarray] = 0.1,
+        norm: int | float | str = np.inf,
+        eps: int | float | np.ndarray = 0.3,
+        eps_step: int | float | np.ndarray = 0.1,
         decay: float = 1.0,
         max_iter: int = 100,
         targeted: bool = False,

@@ -42,12 +42,12 @@ This module implements the white-box PyTorch version of the GRAPHITE attack `GRA
 This is a robust physical perturbation attack.
 
 | Paper link: https://arxiv.org/abs/2002.07088
-| Original github link: https://github.com/ryan-feng/GRAPHITE
+| Original GitHub link: https://github.com/ryan-feng/GRAPHITE
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
-from typing import Optional, Tuple, Union, TYPE_CHECKING, List
+from typing import TYPE_CHECKING
 
 import numpy as np
 
@@ -71,7 +71,7 @@ class GRAPHITEWhiteboxPyTorch(EvasionAttack):
     that generates robust physical perturbations that can be applied as stickers.
 
     | Paper link: https://arxiv.org/abs/2002.07088
-    | Original github link: https://github.com/ryan-feng/GRAPHITE
+    | Original GitHub link: https://github.com/ryan-feng/GRAPHITE
     """
 
     attack_params = EvasionAttack.attack_params + [
@@ -99,7 +99,7 @@ class GRAPHITEWhiteboxPyTorch(EvasionAttack):
     def __init__(
         self,
         classifier: "PyTorchClassifier",
-        net_size: Tuple[int, int],
+        net_size: tuple[int, int],
         min_tr: float = 0.8,
         num_xforms: int = 100,
         step_size: float = 0.0157,
@@ -108,14 +108,14 @@ class GRAPHITEWhiteboxPyTorch(EvasionAttack):
         patch_removal_size: float = 4,
         patch_removal_interval: float = 2,
         num_patches_to_remove: int = 4,
-        rand_start_epsilon_range: Tuple[float, float] = (-8 / 255, 8 / 255),
-        rotation_range: Tuple[float, float] = (-30.0, 30.0),
-        dist_range: Tuple[float, float] = (0.0, 0.0),
-        gamma_range: Tuple[float, float] = (1.0, 2.0),
-        crop_percent_range: Tuple[float, float] = (-0.03125, 0.03125),
-        off_x_range: Tuple[float, float] = (-0.03125, 0.03125),
-        off_y_range: Tuple[float, float] = (-0.03125, 0.03125),
-        blur_kernels: Union[Tuple[int, int], List[int]] = (0, 3),
+        rand_start_epsilon_range: tuple[float, float] = (-8 / 255, 8 / 255),
+        rotation_range: tuple[float, float] = (-30.0, 30.0),
+        dist_range: tuple[float, float] = (0.0, 0.0),
+        gamma_range: tuple[float, float] = (1.0, 2.0),
+        crop_percent_range: tuple[float, float] = (-0.03125, 0.03125),
+        off_x_range: tuple[float, float] = (-0.03125, 0.03125),
+        off_y_range: tuple[float, float] = (-0.03125, 0.03125),
+        blur_kernels: tuple[int, int] | list[int] = (0, 3),
         batch_size: int = 64,
     ) -> None:
         """
@@ -163,7 +163,7 @@ class GRAPHITEWhiteboxPyTorch(EvasionAttack):
 
         self._check_params()
 
-    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
+    def generate(self, x: np.ndarray, y: np.ndarray | None = None, **kwargs) -> np.ndarray:
         """
         Generate adversarial samples and return them in an array.
 
@@ -292,10 +292,10 @@ class GRAPHITEWhiteboxPyTorch(EvasionAttack):
         mask: "torch.Tensor",
         target_label: np.ndarray,
         y_onehot: "torch.Tensor",
-        xforms: List[Tuple[float, float, float, int, float, float, float, float, float]],
+        xforms: list[tuple[float, float, float, int, float, float, float, float, float]],
         clip_min: float,
         clip_max: float,
-        pts: Optional[np.ndarray],
+        pts: np.ndarray | None,
     ) -> float:
         """
         Compute transform-robustness.
@@ -319,9 +319,7 @@ class GRAPHITEWhiteboxPyTorch(EvasionAttack):
                 if len(x_adv.shape) == 3:
                     x_adv = x_adv.unsqueeze(0)
                 transformed_x_adv = transform_wb(x, x_adv, mask, xform, self.net_size, clip_min, clip_max, pts)
-                logits, _ = self.estimator._predict_framework(  # pylint: disable=W0212
-                    transformed_x_adv.to(self.estimator.device), y_onehot
-                )
+                logits, _ = self.estimator._predict_framework(transformed_x_adv.to(self.estimator.device), y_onehot)
                 success = int(logits.argmax(dim=1).detach().cpu().numpy()[0] == target_label)
                 successes += success
         return successes / len(xforms)
@@ -335,7 +333,7 @@ class GRAPHITEWhiteboxPyTorch(EvasionAttack):
         focal: float,
         clip_min: float,
         clip_max: float,
-        pts: Optional[np.ndarray],
+        pts: np.ndarray | None,
     ) -> np.ndarray:
         """
         Internal attack function for one example.
@@ -417,9 +415,7 @@ class GRAPHITEWhiteboxPyTorch(EvasionAttack):
                         pts,
                     )
 
-                    logits, _ = self.estimator._predict_framework(  # pylint: disable=W0212
-                        xform_img.to(self.estimator.device), y_onehot_tensor
-                    )
+                    logits, _ = self.estimator._predict_framework(xform_img.to(self.estimator.device), y_onehot_tensor)
                     if self.use_logits:
                         loss = torch.nn.functional.cross_entropy(
                             input=logits,

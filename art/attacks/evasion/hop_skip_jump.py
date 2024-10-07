@@ -21,10 +21,10 @@ predictions. It is an advanced version of the Boundary attack.
 
 | Paper link: https://arxiv.org/abs/1904.02144
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
-from typing import Optional, Tuple, Union, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 from tqdm.auto import tqdm
@@ -67,7 +67,7 @@ class HopSkipJump(EvasionAttack):
         classifier: "CLASSIFIER_TYPE",
         batch_size: int = 64,
         targeted: bool = False,
-        norm: Union[int, float, str] = 2,
+        norm: int | float | str = 2,
         max_iter: int = 50,
         max_eval: int = 10000,
         init_eval: int = 100,
@@ -106,7 +106,7 @@ class HopSkipJump(EvasionAttack):
         else:
             self.theta = 0.01 / np.prod(self.estimator.input_shape)
 
-    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
+    def generate(self, x: np.ndarray, y: np.ndarray | None = None, **kwargs) -> np.ndarray:
         """
         Generate adversarial samples and return them in an array.
 
@@ -235,7 +235,7 @@ class HopSkipJump(EvasionAttack):
         y_p: int,
         init_pred: int,
         adv_init: np.ndarray,
-        mask: Optional[np.ndarray],
+        mask: np.ndarray | None,
         clip_min: float,
         clip_max: float,
     ) -> np.ndarray:
@@ -273,10 +273,10 @@ class HopSkipJump(EvasionAttack):
         y_p: int,
         init_pred: int,
         adv_init: np.ndarray,
-        mask: Optional[np.ndarray],
+        mask: np.ndarray | None,
         clip_min: float,
         clip_max: float,
-    ) -> Optional[Union[np.ndarray, Tuple[np.ndarray, int]]]:
+    ) -> np.ndarray | tuple[np.ndarray, int] | None:
         """
         Find initial adversarial example for the attack.
 
@@ -376,7 +376,7 @@ class HopSkipJump(EvasionAttack):
         initial_sample: np.ndarray,
         original_sample: np.ndarray,
         target: int,
-        mask: Optional[np.ndarray],
+        mask: np.ndarray | None,
         clip_min: float,
         clip_max: float,
     ) -> np.ndarray:
@@ -466,10 +466,10 @@ class HopSkipJump(EvasionAttack):
         current_sample: np.ndarray,
         original_sample: np.ndarray,
         target: int,
-        norm: Union[int, float, str],
+        norm: int | float | str,
         clip_min: float,
         clip_max: float,
-        threshold: Optional[float] = None,
+        threshold: float | None = None,
     ) -> np.ndarray:
         """
         Binary search to approach the boundary.
@@ -565,7 +565,7 @@ class HopSkipJump(EvasionAttack):
         num_eval: int,
         delta: float,
         target: int,
-        mask: Optional[np.ndarray],
+        mask: np.ndarray | None,
         clip_min: float,
         clip_max: float,
     ) -> np.ndarray:
@@ -597,7 +597,7 @@ class HopSkipJump(EvasionAttack):
         # Normalize random noise to fit into the range of input data
         rnd_noise = rnd_noise / np.sqrt(
             np.sum(
-                rnd_noise ** 2,
+                rnd_noise**2,
                 axis=tuple(range(len(rnd_noise_shape)))[1:],
                 keepdims=True,
             )
@@ -653,7 +653,7 @@ class HopSkipJump(EvasionAttack):
 
     @staticmethod
     def _interpolate(
-        current_sample: np.ndarray, original_sample: np.ndarray, alpha: float, norm: Union[int, float, str]
+        current_sample: np.ndarray, original_sample: np.ndarray, alpha: float, norm: int | float | str
     ) -> np.ndarray:
         """
         Interpolate a new sample based on the original and the current samples.

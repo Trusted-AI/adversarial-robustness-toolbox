@@ -113,6 +113,8 @@ shows how to launch Composite Adversarial Attack (CAA) on Pytorch-based model ([
 CAA composites the perturbations in Lp-ball and semantic space (i.e., hue, saturation, rotation, brightness, and contrast),
 and is able to optimize the attack sequence and each attack component, thereby enhancing the efficiency and efficacy of adversarial examples.
 
+[overload-attack.ipynb](overload-attack.ipynb) [[on nbviewer](https://nbviewer.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/overload-attack.ipynb)]  exploits for latency attacks on objection detection using the YOLOv5 model.
+
 ## Metrics
 
 [privacy_metric.ipynb](privacy_metric.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/privacy_metric.ipynb)] 

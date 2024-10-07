@@ -18,8 +18,10 @@
 """
 This module implements EoT of adding shot noise (Poisson) with uniformly sampled rate parameter.
 """
+from __future__ import annotations
+
 import logging
-from typing import Dict, List, Tuple, Union, TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import numpy as np
 
@@ -39,8 +41,8 @@ class EoTShotNoisePyTorch(EoTPyTorch):
     def __init__(
         self,
         nb_samples: int,
-        clip_values: Tuple[float, float],
-        lam: Union[float, Tuple[float, float]],
+        clip_values: tuple[float, float],
+        lam: float | tuple[float, float],
         apply_fit: bool = False,
         apply_predict: bool = True,
     ) -> None:
@@ -64,8 +66,8 @@ class EoTShotNoisePyTorch(EoTPyTorch):
         self._check_params()
 
     def _transform(
-        self, x: "torch.Tensor", y: Optional[Union["torch.Tensor", List[Dict[str, "torch.Tensor"]]]], **kwargs
-    ) -> Tuple["torch.Tensor", Optional[Union["torch.Tensor", List[Dict[str, "torch.Tensor"]]]]]:
+        self, x: "torch.Tensor", y: "torch.Tensor" | list[dict[str, "torch.Tensor"]] | None, **kwargs
+    ) -> tuple["torch.Tensor", "torch.Tensor" | list[dict[str, "torch.Tensor"]] | None]:
         """
         Transformation of an image with randomly sampled shot (Poisson) noise.
 
@@ -81,7 +83,7 @@ class EoTShotNoisePyTorch(EoTPyTorch):
 
     def _check_params(self) -> None:
 
-        # pylint: disable=R0916
+        # pylint: disable=too-many-boolean-expressions
         if not isinstance(self.lam, (int, float, tuple)) or (
             isinstance(self.lam, tuple)
             and (

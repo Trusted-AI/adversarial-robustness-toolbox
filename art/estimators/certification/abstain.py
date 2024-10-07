@@ -19,7 +19,7 @@
 This module implements a mixin to be added to classifier so that they may abstain from classification.
 
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
 
@@ -34,13 +34,6 @@ class AbstainPredictorMixin(ClassifierMixin):
     """
     A mixin class that gives classifiers the ability to abstain
     """
-
-    def __init__(self, **kwargs):
-        """
-        Creates a predictor that can abstain from predictions
-
-        """
-        super().__init__(**kwargs)
 
     def abstain(self) -> np.ndarray:
         """

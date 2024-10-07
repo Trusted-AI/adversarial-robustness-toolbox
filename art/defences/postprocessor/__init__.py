@@ -1,6 +1,7 @@
 """
 Module implementing postprocessing defences against adversarial attacks.
 """
+
 from art.defences.postprocessor.class_labels import ClassLabels
 from art.defences.postprocessor.gaussian_noise import GaussianNoise
 from art.defences.postprocessor.high_confidence import HighConfidence

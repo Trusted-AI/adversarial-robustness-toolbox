@@ -19,11 +19,11 @@
 Module implementing varying metrics for assessing model robustness. These fall mainly under two categories:
 attack-dependent and attack-independent.
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 from functools import reduce
 import logging
-from typing import Any, Dict, List, Optional, Union, TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
 
 import numpy as np
 import numpy.linalg as la
@@ -43,7 +43,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-SUPPORTED_METHODS: Dict[str, Dict[str, Any]] = {
+SUPPORTED_METHODS: dict[str, dict[str, Any]] = {
     "auto": {
         "class": AutoAttack,
         "params": {"eps_step": 0.1},
@@ -64,7 +64,7 @@ SUPPORTED_METHODS: Dict[str, Dict[str, Any]] = {
 }
 
 
-def get_crafter(classifier: "CLASSIFIER_TYPE", attack: str, params: Optional[Dict[str, Any]] = None) -> "EvasionAttack":
+def get_crafter(classifier: "CLASSIFIER_TYPE", attack: str, params: dict[str, Any] | None = None) -> "EvasionAttack":
     """
     Create an attack instance to craft adversarial samples.
 
@@ -90,10 +90,10 @@ def get_crafter(classifier: "CLASSIFIER_TYPE", attack: str, params: Optional[Dic
 def adversarial_accuracy(
     classifier: "CLASSIFIER_TYPE",
     x: np.ndarray,
-    y: Optional[np.ndarray] = None,
-    attack_name: Optional[str] = None,
-    attack_params: Optional[Dict[str, Any]] = None,
-    attack_crafter: Optional[EvasionAttack] = None,
+    y: np.ndarray | None = None,
+    attack_name: str | None = None,
+    attack_params: dict[str, Any] | None = None,
+    attack_crafter: EvasionAttack | None = None,
 ) -> float:
     """
     Compute the adversarial accuracy of a classifier object over the sample `x` for a given adversarial crafting
@@ -109,7 +109,7 @@ def adversarial_accuracy(
     :param attack_params: A dictionary with attack-specific parameters. If the attack has a norm attribute, then it will
                           be used as the norm for calculating the robustness; otherwise the standard Euclidean distance
                           is used (norm=2).
-    :param attack_crafter: EvasionAttack instance with `generate' method to apply on `x` to create adversarial examples.
+    :param attack_crafter: EvasionAttack instance with `generate` method to apply on `x` to create adversarial examples.
     :return: The adversarial accuracy of the classifier computed on `x`.
     """
 
@@ -147,8 +147,8 @@ def empirical_robustness(
     classifier: "CLASSIFIER_TYPE",
     x: np.ndarray,
     attack_name: str,
-    attack_params: Optional[Dict[str, Any]] = None,
-) -> Union[float, np.ndarray]:
+    attack_params: dict[str, Any] | None = None,
+) -> float | np.ndarray:
     """
     Compute the Empirical Robustness of a classifier object over the sample `x` for a given adversarial crafting
     method `attack`. This is equivalent to computing the minimal perturbation that the attacker must introduce for a
@@ -247,12 +247,12 @@ def clever(
     batch_size: int,
     radius: float,
     norm: int,
-    target: Union[int, List[int], None] = None,
+    target: int | list[int] | None = None,
     target_sort: bool = False,
     c_init: float = 1.0,
     pool_factor: int = 10,
     verbose: bool = True,
-) -> Optional[np.ndarray]:
+) -> np.ndarray | None:
     """
     Compute CLEVER score for an untargeted attack.
 
@@ -286,7 +286,7 @@ def clever(
     else:
         # Assume it's iterable
         target_classes = target
-    score_list: List[Optional[float]] = []
+    score_list: list[float | None] = []
     for j in tqdm(target_classes, desc="CLEVER untargeted", disable=not verbose):
         if j == pred_class:
             score_list.append(None)
@@ -440,8 +440,8 @@ def clever_t(
 def wasserstein_distance(
     u_values: np.ndarray,
     v_values: np.ndarray,
-    u_weights: Optional[np.ndarray] = None,
-    v_weights: Optional[np.ndarray] = None,
+    u_weights: np.ndarray | None = None,
+    v_weights: np.ndarray | None = None,
 ) -> np.ndarray:
     """
     Compute the first Wasserstein distance between two 1D distributions.

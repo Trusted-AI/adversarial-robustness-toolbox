@@ -20,10 +20,10 @@ This module implements the Jacobian-based Saliency Map attack `SaliencyMapMethod
 
 | Paper link: https://arxiv.org/abs/1511.07528
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
-from typing import Optional, Union, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 from tqdm.auto import trange
@@ -74,7 +74,7 @@ class SaliencyMapMethod(EvasionAttack):
         self.verbose = verbose
         self._check_params()
 
-    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
+    def generate(self, x: np.ndarray, y: np.ndarray | None = None, **kwargs) -> np.ndarray:
         """
         Generate adversarial samples and return them in an array.
 
@@ -145,7 +145,7 @@ class SaliencyMapMethod(EvasionAttack):
 
                 # Apply attack with clipping
                 if self.estimator.clip_values is not None:
-                    # Prepare update depending of theta
+                    # Prepare update depending on theta
                     if self.theta > 0:
                         clip_func, clip_value = np.minimum, clip_max  # type: ignore
                     else:  # pragma: no cover
@@ -192,7 +192,7 @@ class SaliencyMapMethod(EvasionAttack):
 
         return x_adv
 
-    def _saliency_map(self, x: np.ndarray, target: Union[np.ndarray, int], search_space: np.ndarray) -> np.ndarray:
+    def _saliency_map(self, x: np.ndarray, target: np.ndarray | int, search_space: np.ndarray) -> np.ndarray:
         """
         Compute the saliency map of `x`. Return the top 2 coefficients in `search_space` that maximize / minimize
         the saliency map.

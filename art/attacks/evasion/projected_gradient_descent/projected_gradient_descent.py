@@ -17,16 +17,16 @@
 # SOFTWARE.
 """
 This module implements the Projected Gradient Descent attack `ProjectedGradientDescent` as an iterative method in which,
-after each iteration, the perturbation is projected on an lp-ball of specified radius (in addition to clipping the
+after each iteration, the perturbation is projected on a lp-ball of specified radius (in addition to clipping the
 values of the adversarial sample so that it lies in the permitted data range). This is the attack proposed by Madry et
 al. for adversarial training.
 
 | Paper link: https://arxiv.org/abs/1706.06083
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
-from typing import Optional, Union, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 
@@ -54,7 +54,7 @@ logger = logging.getLogger(__name__)
 class ProjectedGradientDescent(EvasionAttack):
     """
     The Projected Gradient Descent attack is an iterative method in which, after each iteration, the perturbation is
-    projected on an lp-ball of specified radius (in addition to clipping the values of the adversarial sample so that it
+    projected on a lp-ball of specified radius (in addition to clipping the values of the adversarial sample so that it
     lies in the permitted data range). This is the attack proposed by Madry et al. for adversarial training.
 
     | Paper link: https://arxiv.org/abs/1706.06083
@@ -78,24 +78,26 @@ class ProjectedGradientDescent(EvasionAttack):
 
     def __init__(
         self,
-        estimator: Union["CLASSIFIER_LOSS_GRADIENTS_TYPE", "OBJECT_DETECTOR_TYPE"],
-        norm: Union[int, float, str] = np.inf,
-        eps: Union[int, float, np.ndarray] = 0.3,
-        eps_step: Union[int, float, np.ndarray] = 0.1,
-        decay: Optional[float] = None,
+        estimator: "CLASSIFIER_LOSS_GRADIENTS_TYPE" | "OBJECT_DETECTOR_TYPE",
+        norm: int | float | str = np.inf,
+        eps: int | float | np.ndarray = 0.3,
+        eps_step: int | float | np.ndarray = 0.1,
+        decay: float | None = None,
         max_iter: int = 100,
         targeted: bool = False,
         num_random_init: int = 0,
         batch_size: int = 32,
         random_eps: bool = False,
-        summary_writer: Union[str, bool, SummaryWriter] = False,
+        summary_writer: str | bool | SummaryWriter = False,
         verbose: bool = True,
     ):
         """
         Create a :class:`.ProjectedGradientDescent` instance.
 
-        :param estimator: An trained estimator.
-        :param norm: The norm of the adversarial perturbation supporting "inf", np.inf, 1 or 2.
+        :param estimator: A trained estimator.
+        :param norm: The norm of the adversarial perturbation, supporting  "inf", `np.inf` or a real `p >= 1`.
+                     Currently, when `p` is not infinity, the projection step only rescales the noise, which may be
+                     suboptimal for `p != 2`.
         :param eps: Maximum perturbation that the attacker can introduce.
         :param eps_step: Attack step size (input variation) at each iteration.
         :param random_eps: When True, epsilon is drawn randomly from truncated normal distribution. The literature
@@ -130,9 +132,9 @@ class ProjectedGradientDescent(EvasionAttack):
         self.verbose = verbose
         ProjectedGradientDescent._check_params(self)
 
-        self._attack: Union[
-            ProjectedGradientDescentPyTorch, ProjectedGradientDescentTensorFlowV2, ProjectedGradientDescentNumpy
-        ]
+        self._attack: (
+            ProjectedGradientDescentPyTorch | ProjectedGradientDescentTensorFlowV2 | ProjectedGradientDescentNumpy
+        )
         if isinstance(self.estimator, PyTorchClassifier) and self.estimator.all_framework_preprocessing:
             self._attack = ProjectedGradientDescentPyTorch(
                 estimator=estimator,  # type: ignore
@@ -181,7 +183,7 @@ class ProjectedGradientDescent(EvasionAttack):
                 verbose=verbose,
             )
 
-    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
+    def generate(self, x: np.ndarray, y: np.ndarray | None = None, **kwargs) -> np.ndarray:
         """
         Generate adversarial samples and return them in an array.
 
@@ -210,8 +212,9 @@ class ProjectedGradientDescent(EvasionAttack):
 
     def _check_params(self) -> None:
 
-        if self.norm not in [1, 2, np.inf, "inf"]:
-            raise ValueError('Norm order must be either 1, 2, `np.inf` or "inf".')
+        norm: float = np.inf if self.norm == "inf" else float(self.norm)
+        if norm < 1:
+            raise ValueError('Norm order must be either "inf", `np.inf` or a real `p >= 1`.')
 
         if not (
             isinstance(self.eps, (int, float))

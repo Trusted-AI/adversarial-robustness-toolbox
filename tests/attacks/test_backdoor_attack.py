@@ -140,7 +140,7 @@ class TestBackdoorAttack(TestBase):
 
     def test_backdoor_image(self):
         """
-        Test the backdoor attack with a image-based perturbation can be trained on classifier
+        Test the backdoor attack with an image-based perturbation can be trained on classifier
         """
         krc = get_image_classifier_kr()
         (is_poison_train, x_poisoned_raw, y_poisoned_raw) = self.poison_dataset(

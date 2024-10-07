@@ -22,16 +22,17 @@ on:
     - cron: '0 8 * * 0'
 
 jobs:
-  test_deepspeech_v3_torch_1_10:
+  test_deepspeech_v3_torch_2_1_1:
     name: PyTorchDeepSpeech v3 / PyTorch 2.1.1
     runs-on: ubuntu-latest
     container: adversarialrobustnesstoolbox/art_testing_envs:deepspeech_v3_torch_2_1_1
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Run Test Action
         uses: ./.github/actions/deepspeech-v3
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
+          token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: true

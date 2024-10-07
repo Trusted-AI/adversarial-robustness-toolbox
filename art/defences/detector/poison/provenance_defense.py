@@ -20,11 +20,11 @@ This module implements methods performing poisoning detection based on data prov
 
 | Paper link: https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=8473440
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
 from copy import deepcopy
-from typing import Dict, List, Optional, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 from sklearn.model_selection import train_test_split
@@ -64,8 +64,8 @@ class ProvenanceDefense(PoisonFilteringDefence):
         x_train: np.ndarray,
         y_train: np.ndarray,
         p_train: np.ndarray,
-        x_val: Optional[np.ndarray] = None,
-        y_val: Optional[np.ndarray] = None,
+        x_val: np.ndarray | None = None,
+        y_val: np.ndarray | None = None,
         eps: float = 0.2,
         perf_func: str = "accuracy",
         pp_valid: float = 0.2,
@@ -91,11 +91,11 @@ class ProvenanceDefense(PoisonFilteringDefence):
         self.eps = eps
         self.perf_func = perf_func
         self.pp_valid = pp_valid
-        self.assigned_clean_by_device: List[np.ndarray] = []
-        self.is_clean_by_device: List[np.ndarray] = []
-        self.errors_by_device: Optional[np.ndarray] = None
+        self.assigned_clean_by_device: list[np.ndarray] = []
+        self.is_clean_by_device: list[np.ndarray] = []
+        self.errors_by_device: np.ndarray | None = None
         self.evaluator = GroundTruthEvaluator()
-        self.is_clean_lst: Optional[np.ndarray] = None
+        self.is_clean_lst: np.ndarray | None = None
         self._check_params()
 
     def evaluate_defence(self, is_clean: np.ndarray, **kwargs) -> str:
@@ -120,7 +120,7 @@ class ProvenanceDefense(PoisonFilteringDefence):
         )
         return conf_matrix_json
 
-    def detect_poison(self, **kwargs) -> Tuple[Dict[int, float], List[int]]:
+    def detect_poison(self, **kwargs) -> tuple[dict[int, float], list[int]]:
         """
         Returns poison detected and a report.
 
@@ -148,7 +148,7 @@ class ProvenanceDefense(PoisonFilteringDefence):
 
         return report, self.is_clean_lst  # type: ignore
 
-    def detect_poison_partially_trusted(self, **kwargs) -> Dict[int, float]:
+    def detect_poison_partially_trusted(self, **kwargs) -> dict[int, float]:
         """
         Detect poison given trusted validation data
 
@@ -187,7 +187,7 @@ class ProvenanceDefense(PoisonFilteringDefence):
 
         return suspected
 
-    def detect_poison_untrusted(self, **kwargs) -> Dict[int, float]:
+    def detect_poison_untrusted(self, **kwargs) -> dict[int, float]:
         """
         Detect poison given no trusted validation data
 
@@ -236,7 +236,7 @@ class ProvenanceDefense(PoisonFilteringDefence):
         return suspected
 
     @staticmethod
-    def filter_input(data: np.ndarray, labels: np.ndarray, segment: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    def filter_input(data: np.ndarray, labels: np.ndarray, segment: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
         """
         Return the data and labels that are not part of a specified segment
 

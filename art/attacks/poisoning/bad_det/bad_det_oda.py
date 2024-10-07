@@ -20,10 +20,10 @@ This module implements the BadDet Object Disappearance Attack (ODA) on object de
 
 | Paper link: https://arxiv.org/abs/2205.14497
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
-from typing import Dict, List, Tuple, Union
+
 
 import numpy as np
 from tqdm.auto import tqdm
@@ -75,23 +75,23 @@ class BadDetObjectDisappearanceAttack(PoisoningAttackObjectDetector):
         self.verbose = verbose
         self._check_params()
 
-    def poison(  # pylint: disable=W0221
+    def poison(
         self,
-        x: Union[np.ndarray, List[np.ndarray]],
-        y: List[Dict[str, np.ndarray]],
+        x: np.ndarray | list[np.ndarray],
+        y: list[dict[str, np.ndarray]],
         **kwargs,
-    ) -> Tuple[Union[np.ndarray, List[np.ndarray]], List[Dict[str, np.ndarray]]]:
+    ) -> tuple[np.ndarray | list[np.ndarray], list[dict[str, np.ndarray]]]:
         """
         Generate poisoning examples by inserting the backdoor onto the input `x` and changing the classification
         for labels `y`.
 
         :param x: Sample images of shape `NCHW` or `NHWC` or a list of sample images of any size.
-        :param y: True labels of type `List[Dict[np.ndarray]]`, one dictionary per input image. The keys and values
+        :param y: True labels of type `list[dict[np.ndarray]]`, one dictionary per input image. The keys and values
                   of the dictionary are:
 
                   - boxes [N, 4]: the boxes in [x1, y1, x2, y2] format, with 0 <= x1 < x2 <= W and 0 <= y1 < y2 <= H.
                   - labels [N]: the labels for each image.
-        :return: An tuple holding the `(poisoning_examples, poisoning_labels)`.
+        :return: A tuple holding the `(poisoning_examples, poisoning_labels)`.
         """
         if isinstance(x, np.ndarray):
             x_ndim = len(x.shape)
@@ -102,14 +102,14 @@ class BadDetObjectDisappearanceAttack(PoisoningAttackObjectDetector):
             raise ValueError("Unrecognized input dimension. BadDet ODA can only be applied to image data.")
 
         # copy images
-        x_poison: Union[np.ndarray, List[np.ndarray]]
+        x_poison: np.ndarray | list[np.ndarray]
         if isinstance(x, np.ndarray):
             x_poison = x.copy()
         else:
             x_poison = [x_i.copy() for x_i in x]
 
         # copy labels and find indices of the source class
-        y_poison: List[Dict[str, np.ndarray]] = []
+        y_poison: list[dict[str, np.ndarray]] = []
         source_indices = []
         for i, y_i in enumerate(y):
             target_dict = {k: v.copy() for k, v in y_i.items()}
@@ -139,7 +139,7 @@ class BadDetObjectDisappearanceAttack(PoisoningAttackObjectDetector):
                     bounding_box = image[y_1:y_2, x_1:x_2, :]
 
                     # insert backdoor into the bounding box
-                    # add an additional dimension to create a batch of size 1
+                    # add a dimension to create a batch of size 1
                     poisoned_input, _ = self.backdoor.poison(bounding_box[np.newaxis], label)
                     image[y_1:y_2, x_1:x_2, :] = poisoned_input[0]
                 else:

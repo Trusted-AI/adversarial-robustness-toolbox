@@ -18,6 +18,8 @@
 """
 This module implements Gaussian noise added to the classifier output.
 """
+from __future__ import annotations
+
 import logging
 
 import numpy as np

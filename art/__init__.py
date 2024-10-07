@@ -1,6 +1,7 @@
 """
 The Adversarial Robustness Toolbox (ART).
 """
+
 import logging.config
 
 # Project Imports
@@ -12,9 +13,7 @@ from art import metrics
 from art import preprocessing
 
 # Semantic Version
-__version__ = "1.17.1"
-
-# pylint: disable=C0103
+__version__ = "1.18.1"
 
 LOGGING = {
     "version": 1,

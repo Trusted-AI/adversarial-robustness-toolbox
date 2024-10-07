@@ -20,8 +20,10 @@ This module implements the evasion attack `ShadowAttack`.
 
 | Paper link: https://arxiv.org/abs/2003.08937
 """
+from __future__ import annotations
+
 import logging
-from typing import Optional, Union
+
 
 import numpy as np
 from tqdm.auto import trange
@@ -63,9 +65,9 @@ class ShadowAttack(EvasionAttack):
 
     def __init__(
         self,
-        estimator: Union[
-            TensorFlowV2Classifier, TensorFlowV2RandomizedSmoothing, PyTorchClassifier, PyTorchRandomizedSmoothing
-        ],
+        estimator: (
+            TensorFlowV2Classifier | TensorFlowV2RandomizedSmoothing | PyTorchClassifier | PyTorchRandomizedSmoothing
+        ),
         sigma: float = 0.5,
         nb_steps: int = 300,
         learning_rate: float = 0.1,
@@ -103,7 +105,7 @@ class ShadowAttack(EvasionAttack):
         self.verbose = verbose
         self._check_params()
 
-        self.framework: Optional[str]
+        self.framework: str | None
         if isinstance(self.estimator, (TensorFlowV2Classifier, TensorFlowV2RandomizedSmoothing)):
             self.framework = "tensorflow"
         elif isinstance(self.estimator, (PyTorchClassifier, PyTorchRandomizedSmoothing)):
@@ -111,7 +113,7 @@ class ShadowAttack(EvasionAttack):
         else:
             self.framework = None
 
-    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
+    def generate(self, x: np.ndarray, y: np.ndarray | None = None, **kwargs) -> np.ndarray:
         """
         Generate adversarial samples and return them in an array. This requires a lot of memory, therefore it accepts
         only a single samples as input, e.g. a batch of size 1.

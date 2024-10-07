@@ -1,7 +1,8 @@
 """
 Module providing evasion attacks under a common interface.
 """
-# pylint: disable=C0413
+
+# pylint: disable=wrong-import-position
 import importlib
 
 from art.attacks.evasion.adversarial_patch.adversarial_patch import AdversarialPatch
@@ -42,6 +43,7 @@ from art.attacks.evasion.laser_attack.laser_attack import LaserAttack
 from art.attacks.evasion.lowprofool import LowProFool
 from art.attacks.evasion.momentum_iterative_method import MomentumIterativeMethod
 from art.attacks.evasion.newtonfool import NewtonFool
+from art.attacks.evasion.overload.overload import OverloadPyTorch
 from art.attacks.evasion.pe_malware_attack import MalwareGDTensorFlow
 from art.attacks.evasion.pixel_threshold import PixelAttack
 from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent import ProjectedGradientDescent

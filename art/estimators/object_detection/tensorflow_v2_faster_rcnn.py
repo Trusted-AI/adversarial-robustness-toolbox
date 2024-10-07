@@ -18,8 +18,10 @@
 """
 This module implements the task specific estimator for Faster R-CNN in TensorFlowV2.
 """
+from __future__ import annotations
+
 import logging
-from typing import List, Dict, Optional, Tuple, Union, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 
@@ -29,7 +31,7 @@ from art.utils import get_file
 from art import config
 
 if TYPE_CHECKING:
-    # pylint: disable=C0412
+
     import tensorflow as tf
     from object_detection.meta_architectures.faster_rcnn_meta_arch import FasterRCNNMetaArch
 
@@ -49,17 +51,17 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
 
     def __init__(
         self,
-        input_shape: Tuple[int, ...],
-        model: Optional["FasterRCNNMetaArch"] = None,
-        filename: Optional[str] = None,
-        url: Optional[str] = None,
+        input_shape: tuple[int, ...],
+        model: "FasterRCNNMetaArch" | None = None,
+        filename: str | None = None,
+        url: str | None = None,
         is_training: bool = False,
-        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
+        clip_values: "CLIP_VALUES_TYPE" | None = None,
         channels_first: bool = False,
-        preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
-        postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
+        preprocessing_defences: "Preprocessor" | list["Preprocessor"] | None = None,
+        postprocessing_defences: "Postprocessor" | list["Postprocessor"] | None = None,
         preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
-        attack_losses: Tuple[str, ...] = (
+        attack_losses: tuple[str, ...] = (
             "Loss/RPNLoss/localization_loss",
             "Loss/RPNLoss/objectness_loss",
             "Loss/BoxClassifierLoss/localization_loss",
@@ -69,7 +71,7 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
         """
         Initialization of an instance TensorFlowV2FasterRCNN.
 
-        :param input_shape: A Tuple indicating input shape in form (height, width, channels)
+        :param input_shape: A tuple indicating input shape in form (height, width, channels)
         :param model: A TensorFlowV2 Faster-RCNN model. The output that can be computed from the model includes a tuple
                       of (predictions, losses, detections):
                         - predictions: a dictionary holding "raw" prediction tensors.
@@ -135,12 +137,12 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
             raise ValueError("This estimator does not support `postprocessing_defences`.")
 
         # Save new attributes
-        self._input_shape: Tuple[int, ...] = input_shape
-        self._detections: List[Dict[str, np.ndarray]] = []
-        self._predictions: List[np.ndarray] = []
-        self._losses: Dict[str, np.ndarray] = {}
+        self._input_shape: tuple[int, ...] = input_shape
+        self._detections: list[dict[str, np.ndarray]] = []
+        self._predictions: list[np.ndarray] = []
+        self._losses: dict[str, np.ndarray] = {}
         self.is_training: bool = is_training
-        self.attack_losses: Tuple[str, ...] = attack_losses
+        self.attack_losses: tuple[str, ...] = attack_losses
 
     @property
     def native_label_is_pytorch_format(self) -> bool:
@@ -150,7 +152,7 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
         return False
 
     @property
-    def input_shape(self) -> Tuple[int, ...]:
+    def input_shape(self) -> tuple[int, ...]:
         """
         Return the shape of one input sample.
 
@@ -160,10 +162,10 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
 
     @staticmethod
     def _load_model(
-        filename: Optional[str] = None,
-        url: Optional[str] = None,
+        filename: str | None = None,
+        url: str | None = None,
         is_training: bool = False,
-    ) -> Tuple[Dict[str, "tf.Tensor"], ...]:
+    ) -> tuple[dict[str, "tf.Tensor"], ...]:
         """
         Download, extract and load a model from a URL if it is not already in the cache. The file indicated by `url`
         is downloaded to the path ~/.art/data and given the name `filename`. Files in tar, tar.gz, tar.bz, and zip
@@ -207,14 +209,14 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
 
         return obj_detection_model
 
-    def loss_gradient(  # pylint: disable=W0221
-        self, x: np.ndarray, y: List[Dict[str, np.ndarray]], standardise_output: bool = False, **kwargs
+    def loss_gradient(
+        self, x: np.ndarray, y: list[dict[str, np.ndarray]], standardise_output: bool = False, **kwargs
     ) -> np.ndarray:
         """
         Compute the gradient of the loss function w.r.t. `x`.
 
         :param x: Samples of shape (nb_samples, height, width, nb_channels).
-        :param y: Targets of format `List[Dict[str, np.ndarray]]`, one for each input image. The fields of the Dict are
+        :param y: Targets of format `list[dict[str, np.ndarray]]`, one for each input image. The fields of the dict are
                   as follows:
 
                  - boxes [N, 4]: the boxes in [y1, x1, y2, x2] in scale [0, 1] (`standardise_output=False`) or
@@ -283,9 +285,9 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
 
         return grads
 
-    def predict(  # pylint: disable=W0221
+    def predict(
         self, x: np.ndarray, batch_size: int = 128, standardise_output: bool = False, **kwargs
-    ) -> List[Dict[str, np.ndarray]]:
+    ) -> list[dict[str, np.ndarray]]:
         """
         Perform prediction for a batch of inputs.
 
@@ -297,8 +299,8 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
                                    0 <= x1 < x2 <= W and 0 <= y1 < y2 <= H.
 
 
-        :return: Predictions of format `List[Dict[str, np.ndarray]]`, one for each input image. The
-                 fields of the Dict are as follows:
+        :return: Predictions of format `list[dict[str, np.ndarray]]`, one for each input image. The
+                 fields of the dict are as follows:
 
                  - boxes [N, 4]: the boxes in [y1, x1, y2, x2] format, with 0 <= x1 < x2 <= W and 0 <= y1 < y2 <= H.
                                  Can be changed to PyTorch format with `standardise_output=True`.
@@ -352,7 +354,7 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
         return results
 
     @property
-    def predictions(self) -> List[np.ndarray]:
+    def predictions(self) -> list[np.ndarray]:
         """
         Get the `_predictions` attribute.
 
@@ -361,7 +363,7 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
         return self._predictions
 
     @property
-    def losses(self) -> Dict[str, np.ndarray]:
+    def losses(self) -> dict[str, np.ndarray]:
         """
         Get the `_losses` attribute.
 
@@ -372,7 +374,7 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
         return self._losses
 
     @property
-    def detections(self) -> List[Dict[str, np.ndarray]]:
+    def detections(self) -> list[dict[str, np.ndarray]]:
         """
         Get the `_detections` attribute.
 
@@ -383,9 +385,7 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
     def fit(self, x: np.ndarray, y, batch_size: int = 128, nb_epochs: int = 20, **kwargs) -> None:
         raise NotImplementedError
 
-    def get_activations(
-        self, x: np.ndarray, layer: Union[int, str], batch_size: int, framework: bool = False
-    ) -> np.ndarray:
+    def get_activations(self, x: np.ndarray, layer: int | str, batch_size: int, framework: bool = False) -> np.ndarray:
         raise NotImplementedError
 
     def compute_loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
@@ -393,7 +393,7 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
         Compute the loss.
 
         :param x: Sample input with shape as expected by the model.
-        :param y: Targets of format `List[Dict[str, np.ndarray]]`, one for each input image. The fields of the Dict are
+        :param y: Targets of format `list[dict[str, np.ndarray]]`, one for each input image. The fields of the dict are
                   as follows:
                     - boxes [N, 4]: the boxes in [y1, x1, y2, x2] format, with 0 <= x1 < x2 <= W and 0 <= y1 < y2 <= H.
                     - labels [N]: the labels for each image in TensorFlow format.
@@ -437,13 +437,13 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
 
         return total_loss
 
-    def compute_losses(self, x: np.ndarray, y: np.ndarray) -> Dict[str, np.ndarray]:
+    def compute_losses(self, x: np.ndarray, y: np.ndarray) -> dict[str, np.ndarray]:
         """
         Compute all loss components.
 
         :param x: Samples of shape (nb_samples, nb_features) or (nb_samples, nb_pixels_1, nb_pixels_2,
                   nb_channels) or (nb_samples, nb_channels, nb_pixels_1, nb_pixels_2).
-        :param y: Targets of format `List[Dict[str, np.ndarray]]`, one for each input image. The fields of the Dict are
+        :param y: Targets of format `list[dict[str, np.ndarray]]`, one for each input image. The fields of the dict are
                   as follows:
                     - boxes [N, 4]: the boxes in [y1, x1, y2, x2] format, with 0 <= x1 < x2 <= W and 0 <= y1 < y2 <= H.
                     - labels [N]: the labels for each image in TensorFlow format.

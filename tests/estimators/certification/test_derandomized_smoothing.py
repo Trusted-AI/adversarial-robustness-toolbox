@@ -156,7 +156,7 @@ def test_tf2_training(art_warning, fix_get_mnist_data, fix_get_cifar10_data):
         img_inputs = tf.keras.Input(shape=(input_shape[0], input_shape[1], input_shape[2] * 2))
         x = tf.keras.layers.Conv2D(filters=32, kernel_size=(4, 4), strides=(2, 2), activation="relu")(img_inputs)
         x = tf.keras.layers.MaxPool2D(pool_size=(2, 2), strides=2)(x)
-        # tensorflow uses channels last and we are loading weights from an originally trained pytorch model
+        # tensorflow uses channels last, and we are loading weights from an originally trained pytorch model
         x = tf.transpose(x, (0, 3, 1, 2))
         x = tf.keras.layers.Flatten()(x)
         x = tf.keras.layers.Dense(100, activation="relu")(x)
@@ -295,7 +295,7 @@ def test_tf2_mnist_certification(art_warning, fix_get_mnist_data):
         img_inputs = tf.keras.Input(shape=(input_shape[0], input_shape[1], input_shape[2] * 2))
         x = tf.keras.layers.Conv2D(filters=32, kernel_size=(4, 4), strides=(2, 2), activation="relu")(img_inputs)
         x = tf.keras.layers.MaxPool2D(pool_size=(2, 2), strides=2)(x)
-        # tensorflow uses channels last and we are loading weights from an originally trained pytorch model
+        # tensorflow uses channels last, and we are loading weights from an originally trained pytorch model
         x = tf.transpose(x, (0, 3, 1, 2))
         x = tf.keras.layers.Flatten()(x)
         x = tf.keras.layers.Dense(100, activation="relu")(x)

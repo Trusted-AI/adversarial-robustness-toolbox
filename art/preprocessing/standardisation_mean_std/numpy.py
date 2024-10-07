@@ -18,8 +18,10 @@
 """
 This module implements the standardisation with mean and standard deviation.
 """
+from __future__ import annotations
+
 import logging
-from typing import Optional, Tuple, Union
+
 
 import numpy as np
 
@@ -39,8 +41,8 @@ class StandardisationMeanStd(Preprocessor):
 
     def __init__(
         self,
-        mean: Union[float, np.ndarray] = 0.0,
-        std: Union[float, np.ndarray] = 1.0,
+        mean: float | np.ndarray = 0.0,
+        std: float | np.ndarray = 1.0,
         apply_fit: bool = True,
         apply_predict: bool = True,
     ):
@@ -56,14 +58,14 @@ class StandardisationMeanStd(Preprocessor):
         self._check_params()
 
         # init broadcastable mean and std for lazy loading
-        self._broadcastable_mean: Optional[np.ndarray] = None
-        self._broadcastable_std: Optional[np.ndarray] = None
+        self._broadcastable_mean: np.ndarray | None = None
+        self._broadcastable_std: np.ndarray | None = None
 
     def __call__(
         self,
         x: np.ndarray,
-        y: Optional[np.ndarray] = None,
-    ) -> Tuple[np.ndarray, Optional[np.ndarray]]:
+        y: np.ndarray | None = None,
+    ) -> tuple[np.ndarray, np.ndarray | None]:
         """
         Apply StandardisationMeanStd inputs `x`.
 

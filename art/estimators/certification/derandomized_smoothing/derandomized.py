@@ -23,7 +23,7 @@ This module implements (De)Randomized Smoothing certifications against adversari
 | Paper link: https://arxiv.org/abs/2002.10733
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 from abc import ABC, abstractmethod
 import numpy as np
@@ -51,7 +51,7 @@ class DeRandomizedSmoothingMixin(ABC):
 
         :param x: Input samples.
         :param batch_size: Size of batches.
-        :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
+        :param training_mode: `True` for model set to training mode and `False` for model set to evaluation mode.
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         """
         raise NotImplementedError

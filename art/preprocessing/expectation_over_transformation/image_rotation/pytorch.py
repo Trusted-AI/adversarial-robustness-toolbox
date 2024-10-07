@@ -18,15 +18,17 @@
 """
 This module implements Expectation over Transformation preprocessing for image rotation in PyTorch.
 """
+from __future__ import annotations
+
 import logging
-from typing import Dict, List, Optional, TYPE_CHECKING, Tuple, Union
+from typing import TYPE_CHECKING
 
 import numpy as np
 
 from art.preprocessing.expectation_over_transformation.pytorch import EoTPyTorch
 
 if TYPE_CHECKING:
-    # pylint: disable=C0412
+
     import torch
 
 logger = logging.getLogger(__name__)
@@ -44,8 +46,8 @@ class EoTImageRotationPyTorch(EoTPyTorch):
     def __init__(
         self,
         nb_samples: int,
-        clip_values: Tuple[float, float],
-        angles: Union[float, Tuple[float, float], List[float]] = 45.0,
+        clip_values: tuple[float, float],
+        angles: float | tuple[float, float] | list[float] = 45.0,
         label_type: str = "classification",
         apply_fit: bool = False,
         apply_predict: bool = True,
@@ -75,8 +77,8 @@ class EoTImageRotationPyTorch(EoTPyTorch):
         self._check_params()
 
     def _transform(
-        self, x: "torch.Tensor", y: Optional[Union["torch.Tensor", List[Dict[str, "torch.Tensor"]]]], **kwargs
-    ) -> Tuple["torch.Tensor", Optional[Union["torch.Tensor", List[Dict[str, "torch.Tensor"]]]]]:
+        self, x: "torch.Tensor", y: "torch.Tensor" | list[dict[str, "torch.Tensor"]] | None, **kwargs
+    ) -> tuple["torch.Tensor", "torch.Tensor" | list[dict[str, "torch.Tensor"]] | None]:
         """
         Transformation of an input image and its label by randomly sampled rotation.
 
@@ -113,11 +115,11 @@ class EoTImageRotationPyTorch(EoTPyTorch):
             max=self.clip_values[1],
         )
 
-        y_preprocess: Optional[Union["torch.Tensor", List[Dict[str, "torch.Tensor"]]]]
+        y_preprocess: "torch.Tensor" | list[dict[str, "torch.Tensor"]] | None
 
         if self.label_type == "object_detection" and y is not None:
 
-            y_od: List[Dict[str, "torch.Tensor"]] = [{}]
+            y_od: list[dict[str, "torch.Tensor"]] = [{}]
 
             if isinstance(y, list):
                 if isinstance(y[0], dict):
@@ -183,7 +185,7 @@ class EoTImageRotationPyTorch(EoTPyTorch):
 
     def _check_params(self) -> None:
 
-        # pylint: disable=R0916
+        # pylint: disable=too-many-boolean-expressions
         if (
             self.label_type == "classification"
             and not isinstance(self.angles, (int, float, tuple, list))

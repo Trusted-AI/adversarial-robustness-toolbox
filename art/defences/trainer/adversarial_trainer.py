@@ -31,10 +31,10 @@ with their adversarial counterpart.
     principled approach to making classifiers more robust (see https://arxiv.org/abs/1802.00420), very careful
     evaluations are required to assess its effectiveness case by case (see https://arxiv.org/abs/1902.06705).
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
-from typing import List, Optional, Union, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 from tqdm.auto import trange, tqdm
@@ -71,7 +71,7 @@ class AdversarialTrainer(Trainer):
     def __init__(
         self,
         classifier: "CLASSIFIER_LOSS_GRADIENTS_TYPE",
-        attacks: Union["EvasionAttack", List["EvasionAttack"]],
+        attacks: "EvasionAttack" | list["EvasionAttack"],
         ratio: float = 0.5,
     ) -> None:
         """
@@ -96,9 +96,9 @@ class AdversarialTrainer(Trainer):
             raise ValueError("The `ratio` of adversarial samples in each batch has to be between 0 and 1.")
         self.ratio = ratio
 
-        self._precomputed_adv_samples: List[Optional[np.ndarray]] = []
-        self.x_augmented: Optional[np.ndarray] = None
-        self.y_augmented: Optional[np.ndarray] = None
+        self._precomputed_adv_samples: list[np.ndarray | None] = []
+        self.x_augmented: np.ndarray | None = None
+        self.y_augmented: np.ndarray | None = None
 
     def fit_generator(self, generator: "DataGenerator", nb_epochs: int = 20, **kwargs) -> None:
         """
@@ -193,9 +193,7 @@ class AdversarialTrainer(Trainer):
                 )
                 attack_id = (attack_id + 1) % len(self.attacks)
 
-    def fit(  # pylint: disable=W0221
-        self, x: np.ndarray, y: np.ndarray, batch_size: int = 128, nb_epochs: int = 20, **kwargs
-    ) -> None:
+    def fit(self, x: np.ndarray, y: np.ndarray, batch_size: int = 128, nb_epochs: int = 20, **kwargs) -> None:
         """
         Train a model adversarially. See class documentation for more information on the exact procedure.
 

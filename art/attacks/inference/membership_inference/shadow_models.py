@@ -20,11 +20,12 @@
 This module implements membership inference attacks.
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
+from collections.abc import Callable, Sequence
 import math
 from functools import reduce
-from typing import Callable, Tuple, TYPE_CHECKING, List, Optional, Sequence
+from typing import TYPE_CHECKING
 
 import numpy as np
 
@@ -58,7 +59,7 @@ class ShadowModels:
         """
 
         self._shadow_models = [shadow_model_template.clone_for_refitting() for _ in range(num_shadow_models)]
-        self._shadow_models_train_sets: List[Optional[Tuple[np.ndarray, np.ndarray]]] = [None] * num_shadow_models
+        self._shadow_models_train_sets: list[tuple[np.ndarray, np.ndarray] | None] = [None] * num_shadow_models
         self._input_shape = shadow_model_template.input_shape
         self._rng = np.random.default_rng(seed=random_state)
         self._disjoint_datasets = disjoint_datasets
@@ -68,7 +69,7 @@ class ShadowModels:
         x: np.ndarray,
         y: np.ndarray,
         member_ratio: float = 0.5,
-    ) -> Tuple[Tuple[np.ndarray, np.ndarray, np.ndarray], Tuple[np.ndarray, np.ndarray, np.ndarray]]:
+    ) -> tuple[tuple[np.ndarray, np.ndarray, np.ndarray], tuple[np.ndarray, np.ndarray, np.ndarray]]:
         """
         Generates a shadow dataset (member and nonmember samples and their corresponding model predictions) by splitting
         the dataset into training and testing samples, and then training the shadow models on the result.
@@ -160,12 +161,12 @@ class ShadowModels:
         target_classifier: "CLASSIFIER_TYPE",
         target_class: int,
         min_confidence: float,
-        max_features_randomized: Optional[int],
+        max_features_randomized: int | None,
         max_iterations: int = 40,
         max_rejections: int = 3,
         min_features_randomized: int = 1,
-        random_record_fn: Optional[Callable[[], np.ndarray]] = None,
-        randomize_features_fn: Optional[Callable[[np.ndarray, int], np.ndarray]] = None,
+        random_record_fn: Callable[[], np.ndarray] | None = None,
+        randomize_features_fn: Callable[[np.ndarray, int], np.ndarray] | None = None,
     ) -> np.ndarray:
         """
         This method implements the hill climbing algorithm from R. Shokri et al. (2017)
@@ -243,13 +244,13 @@ class ShadowModels:
         self,
         target_classifier: "CLASSIFIER_TYPE",
         dataset_size: int,
-        max_features_randomized: Optional[int],
+        max_features_randomized: int | None,
         member_ratio: float = 0.5,
         min_confidence: float = 0.4,
         max_retries: int = 6,
-        random_record_fn: Optional[Callable[[], np.ndarray]] = None,
-        randomize_features_fn: Optional[Callable[[np.ndarray, int], np.ndarray]] = None,
-    ) -> Tuple[Tuple[np.ndarray, np.ndarray, np.ndarray], Tuple[np.ndarray, np.ndarray, np.ndarray]]:
+        random_record_fn: Callable[[], np.ndarray] | None = None,
+        randomize_features_fn: Callable[[np.ndarray, int], np.ndarray] | None = None,
+    ) -> tuple[tuple[np.ndarray, np.ndarray, np.ndarray], tuple[np.ndarray, np.ndarray, np.ndarray]]:
         """
         Generates a shadow dataset (member and nonmember samples and their corresponding model predictions) by training
         the shadow models on a synthetic dataset generated from the target classifier using the hill climbing algorithm
@@ -323,7 +324,7 @@ class ShadowModels:
         """
         return self._shadow_models
 
-    def get_shadow_models_train_sets(self) -> List[Optional[Tuple[np.ndarray, np.ndarray]]]:
+    def get_shadow_models_train_sets(self) -> list[tuple[np.ndarray, np.ndarray] | None]:
         """
         Returns a list of tuples the form (shadow_x_train, shadow_y_train) for each shadow model.
         `generate_shadow_dataset` or `generate_synthetic_shadow_dataset` must be called before, or a list of Nones will

@@ -35,7 +35,7 @@ jobs:
     name: Run ${{ matrix.name }} Tests
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
@@ -45,11 +45,12 @@ jobs:
           sudo apt-get update
           sudo apt-get -y -q install ffmpeg libavcodec-extra
           python -m pip install --upgrade pip setuptools wheel
-          pip3 install -q -r requirements_test.txt
+          pip install -q -r <(sed '/^ultralytics/d;/^ipython/d' requirements_test.txt)
           pip list
       - name: Run ${{ matrix.name }} ${{ matrix.module }} Tests
         run: ./run_tests.sh ${{ matrix.framework }} ${{ matrix.module }}
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
+          token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: true

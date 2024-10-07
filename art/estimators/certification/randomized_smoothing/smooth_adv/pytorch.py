@@ -20,10 +20,10 @@ This module implements SmoothAdv applied to classifier predictions.
 
 | Paper link: https://arxiv.org/abs/1906.04584
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
-from typing import List, Optional, Tuple, Union, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from tqdm.auto import trange
 import numpy as np
@@ -34,7 +34,7 @@ from art.estimators.classification.pytorch import PyTorchClassifier
 from art.utils import check_and_transform_label_format
 
 if TYPE_CHECKING:
-    # pylint: disable=C0412
+
     import torch
     from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
     from art.defences.preprocessor import Preprocessor
@@ -61,13 +61,13 @@ class PyTorchSmoothAdv(PyTorchRandomizedSmoothing):
         self,
         model: "torch.nn.Module",
         loss: "torch.nn.modules.loss._Loss",
-        input_shape: Tuple[int, ...],
+        input_shape: tuple[int, ...],
         nb_classes: int,
-        optimizer: Optional["torch.optim.Optimizer"] = None,
+        optimizer: "torch.optim.Optimizer" | None = None,
         channels_first: bool = True,
-        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
-        preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
-        postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
+        clip_values: "CLIP_VALUES_TYPE" | None = None,
+        preprocessing_defences: "Preprocessor" | list["Preprocessor"] | None = None,
+        postprocessing_defences: "Postprocessor" | list["Postprocessor"] | None = None,
         preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
         device_type: str = "gpu",
         sample_size: int = 32,
@@ -143,7 +143,7 @@ class PyTorchSmoothAdv(PyTorchRandomizedSmoothing):
         )
         self.attack = ProjectedGradientDescent(classifier, eps=self.epsilon, max_iter=1, verbose=False)
 
-    def fit(  # pylint: disable=W0221
+    def fit(
         self,
         x: np.ndarray,
         y: np.ndarray,
@@ -151,7 +151,7 @@ class PyTorchSmoothAdv(PyTorchRandomizedSmoothing):
         nb_epochs: int = 10,
         training_mode: bool = True,
         drop_last: bool = False,
-        scheduler: Optional["torch.optim.lr_scheduler._LRScheduler"] = None,
+        scheduler: "torch.optim.lr_scheduler._LRScheduler" | None = None,
         verbose: bool = False,
         **kwargs,
     ) -> None:
@@ -163,7 +163,7 @@ class PyTorchSmoothAdv(PyTorchRandomizedSmoothing):
                   shape (nb_samples,).
         :param batch_size: Size of batches.
         :param nb_epochs: Number of epochs to use for training.
-        :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
+        :param training_mode: `True` for model set to training mode and `False` for model set to evaluation mode.
         :param drop_last: Set to ``True`` to drop the last incomplete batch, if the dataset size is not divisible by
                           the batch size. If ``False`` and the size of dataset is not divisible by the batch size, then
                           the last batch will be smaller. (default: ``False``)

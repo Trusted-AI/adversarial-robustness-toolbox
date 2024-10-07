@@ -28,60 +28,40 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: TensorFlow+Lingvo 2.1.0v1 (Keras 2.3.1 Python 3.6)
-            framework: tensorflow2v1
-            python: 3.6
-            tensorflow: 2.1.0
+          - name: TensorFlow+Lingvo 0.13.1 (Python 3.10)
+            framework: tensorflow
+            python: '3.10'
+            lingvo: 0.13.1
+            tensorflow: 2.14.0
             tf_version: v2
-            keras: 2.3.1
-            lingvo: 0.6.4
+            keras: 2.14.0
+            tf_addons: 0.21.0
 
     name: Run ${{ matrix.name }} Tests
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python }}
       - name: Pre-install Lingvo ASR
-        # scipy beyond 1.6.0 is not available on Python 3.6, therefore we adapt the installation of requirements_test.txt
         run: |
           sudo apt-get update
           sudo apt-get -y -q install ffmpeg libavcodec-extra
           python -m pip install --upgrade pip setuptools wheel
-          pip install -q -r <(sed '/^scipy/d;/^matplotlib/d;/^pandas/d;/^statsmodels/d;/^numba/d;/^jax/d;/^h5py/d;/^Pillow/d;/^pytest/d;/^pytest-mock/d;/^torch/d;/^torchaudio/d;/^torchvision/d;/^xgboost/d;/^requests/d;/^tensorflow/d;/^keras/d;/^kornia/d;/^librosa/d;/^tqdm/d;/^timm/d;/^catboost/d;/^scikit-learn/d;/^GPy/d;/^lief/d' requirements_test.txt)
-          pip install scipy==1.5.4
-          pip install matplotlib==3.3.4
-          pip install pandas==1.1.5
-          pip install statsmodels==0.12.2
-          pip install numba==0.53.1
+          pip install -q -r requirements_test.txt
+          pip install -q -r <(sed '/^tensorflow/d;/^keras/d;/^tensorflow-addons/d;/^lingvo/d;/^Pillow/d' requirements_test.txt)
           pip install tensorflow==${{ matrix.tensorflow }}
           pip install keras==${{ matrix.keras }}
-          pip install lingvo==${{ matrix.lingvo }}
-          pip install tensorflow-addons==0.9.1
-          pip install model-pruning-google-research==0.0.3
-          pip install h5py==2.10.0
-          pip install pytest~=7.0.1
-          pip install pytest-flake8~=1.1.0
-          pip install pytest-mock
-          pip install pytest-cov~=3.0.0
-          pip install torch==1.10.2+cpu --find-links https://download.pytorch.org/whl/cpu/torch_stable.html
-          pip install torchaudio==0.10.2+cpu --find-links https://download.pytorch.org/whl/cpu/torch_stable.html
-          pip install torchvision==0.11.3+cpu --find-links https://download.pytorch.org/whl/cpu/torch_stable.html
-          pip install xgboost==1.5.2
-          pip install requests==2.27.1
-          pip install kornia==0.6.8
-          pip install librosa==0.9.2
-          pip install tqdm==4.64.1
-          pip install catboost==1.1.1
-          pip install scikit-learn==0.24.2
-          pip install GPy==1.10.0
-          pip install lief==0.12.3
+          pip install tensorflow-addons==${{ matrix.tf_addons }}
+          pip install lingvo==0.13.1
+          pip install Pillow==10.0.0
           pip list
       - name: Run ${{ matrix.name }} Tests
         run: pytest --cov-report=xml --cov=art --cov-append -q -vv tests/estimators/speech_recognition/test_tensorflow_lingvo.py --framework=${{ matrix.framework }} --durations=0
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
+          token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: true

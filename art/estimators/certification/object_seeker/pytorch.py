@@ -20,11 +20,11 @@ This module implements the ObjectSeeker certifiably robust defense.
 
 | Paper link: https://arxiv.org/abs/2202.01811
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
 import sys
-from typing import List, Dict, Optional, Tuple, Union, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 
@@ -43,7 +43,7 @@ else:
     from typing_extensions import Literal
 
 if TYPE_CHECKING:
-    # pylint: disable=C0412
+
     import torch
 
     from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
@@ -73,14 +73,14 @@ class PyTorchObjectSeeker(ObjectSeekerMixin, PyTorchObjectDetector):
     def __init__(
         self,
         model: "torch.nn.Module",
-        input_shape: Tuple[int, ...] = (3, 416, 416),
-        optimizer: Optional["torch.optim.Optimizer"] = None,
-        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
+        input_shape: tuple[int, ...] = (3, 416, 416),
+        optimizer: "torch.optim.Optimizer" | None = None,
+        clip_values: "CLIP_VALUES_TYPE" | None = None,
         channels_first: bool = True,
-        preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
-        postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
+        preprocessing_defences: "Preprocessor" | list["Preprocessor"] | None = None,
+        postprocessing_defences: "Postprocessor" | list["Postprocessor"] | None = None,
         preprocessing: "PREPROCESSING_TYPE" = None,
-        attack_losses: Tuple[str, ...] = (
+        attack_losses: tuple[str, ...] = (
             "loss_classifier",
             "loss_box_reg",
             "loss_objectness",
@@ -98,8 +98,8 @@ class PyTorchObjectSeeker(ObjectSeekerMixin, PyTorchObjectDetector):
         """
         Create an ObjectSeeker classifier.
 
-        :param model: Object detection model. The output of the model is `List[Dict[str, torch.Tensor]]`,
-                      one for each input image. The fields of the Dict are as follows:
+        :param model: Object detection model. The output of the model is `list[dict[str, torch.Tensor]]`,
+                      one for each input image. The fields of the dict are as follows:
 
                       - boxes [N, 4]: the boxes in [x1, y1, x2, y2] format, with 0 <= x1 < x2 <= W and
                         0 <= y1 < y2 <= H.
@@ -174,7 +174,7 @@ class PyTorchObjectSeeker(ObjectSeekerMixin, PyTorchObjectDetector):
             device_type=device_type,
         )
 
-    def _image_dimensions(self) -> Tuple[int, int]:
+    def _image_dimensions(self) -> tuple[int, int]:
         """
         Return the height and width of a sample input image.
 
@@ -189,13 +189,13 @@ class PyTorchObjectSeeker(ObjectSeekerMixin, PyTorchObjectDetector):
 
     def _masked_predictions(
         self, x_i: np.ndarray, batch_size: int = 128, **kwargs
-    ) -> Tuple[Dict[str, np.ndarray], Dict[str, np.ndarray]]:
+    ) -> tuple[dict[str, np.ndarray], dict[str, np.ndarray]]:
         """
         Create masked copies of the image for each of lines following the ObjectSeeker algorithm. Then creates
         predictions on the base unmasked image and each of the masked image.
 
         :param x_i: A single image of shape CHW or HWC.
-        :batch_size: Batch size.
+        :param batch_size: Batch size.
         :return: Predictions for the base unmasked image and merged predictions for the masked image.
         """
         x_mask = np.repeat(x_i[np.newaxis], self.num_lines * 4 + 1, axis=0)
@@ -263,13 +263,13 @@ class PyTorchObjectSeeker(ObjectSeekerMixin, PyTorchObjectDetector):
 
         return base_predictions, masked_predictions
 
-    def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> List[Dict[str, np.ndarray]]:
+    def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> list[dict[str, np.ndarray]]:
         """
         Perform prediction for a batch of inputs.
 
         :param x: Samples of shape NCHW or NHWC.
         :param batch_size: Batch size.
-        :return: Predictions of format `List[Dict[str, np.ndarray]]`, one for each input image. The fields of the Dict
+        :return: Predictions of format `list[dict[str, np.ndarray]]`, one for each input image. The fields of the dict
                  are as follows:
 
                  - boxes [N, 4]: the boxes in [x1, y1, x2, y2] format, with 0 <= x1 < x2 <= W and 0 <= y1 < y2 <= H.
@@ -278,22 +278,22 @@ class PyTorchObjectSeeker(ObjectSeekerMixin, PyTorchObjectDetector):
         """
         return ObjectSeekerMixin.predict(self, x=x, batch_size=batch_size, **kwargs)
 
-    def fit(  # pylint: disable=W0221
+    def fit(
         self,
         x: np.ndarray,
-        y: List[Dict[str, Union[np.ndarray, "torch.Tensor"]]],
+        y: list[dict[str, np.ndarray | "torch.Tensor"]],
         batch_size: int = 128,
         nb_epochs: int = 10,
         drop_last: bool = False,
-        scheduler: Optional["torch.optim.lr_scheduler._LRScheduler"] = None,
+        scheduler: "torch.optim.lr_scheduler._LRScheduler" | None = None,
         **kwargs,
     ) -> None:
         """
         Fit the classifier on the training set `(x, y)`.
 
         :param x: Samples of shape NCHW or NHWC.
-        :param y: Target values of format `List[Dict[str, Union[np.ndarray, torch.Tensor]]]`, one for each input image.
-                  The fields of the Dict are as follows:
+        :param y: Target values of format `list[dict[str, np.ndarray | torch.Tensor]]`, one for each input image.
+                  The fields of the dict are as follows:
 
                   - boxes [N, 4]: the boxes in [x1, y1, x2, y2] format, with 0 <= x1 < x2 <= W and 0 <= y1 < y2 <= H.
                   - labels [N]: the labels for each image.
@@ -316,9 +316,7 @@ class PyTorchObjectSeeker(ObjectSeekerMixin, PyTorchObjectDetector):
             **kwargs,
         )
 
-    def get_activations(
-        self, x: np.ndarray, layer: Union[int, str], batch_size: int, framework: bool = False
-    ) -> np.ndarray:
+    def get_activations(self, x: np.ndarray, layer: int | str, batch_size: int, framework: bool = False) -> np.ndarray:
         """
         Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
         `nb_layers - 1`) or by name. The number of layers can be determined by counting the results returned by
@@ -337,15 +335,15 @@ class PyTorchObjectSeeker(ObjectSeekerMixin, PyTorchObjectDetector):
             framework=framework,
         )
 
-    def loss_gradient(  # pylint: disable=W0613
-        self, x: Union[np.ndarray, "torch.Tensor"], y: List[Dict[str, Union[np.ndarray, "torch.Tensor"]]], **kwargs
+    def loss_gradient(
+        self, x: np.ndarray | "torch.Tensor", y: list[dict[str, np.ndarray | "torch.Tensor"]], **kwargs
     ) -> np.ndarray:
         """
         Compute the gradient of the loss function w.r.t. `x`.
 
         :param x: Samples of shape NCHW or NHWC.
-        :param y: Target values of format `List[Dict[str, Union[np.ndarray, torch.Tensor]]]`, one for each input image.
-                  The fields of the Dict are as follows:
+        :param y: Target values of format `list[dict[str, np.ndarray | torch.Tensor]]`, one for each input image.
+                  The fields of the dict are as follows:
 
                   - boxes [N, 4]: the boxes in [x1, y1, x2, y2] format, with 0 <= x1 < x2 <= W and 0 <= y1 < y2 <= H.
                   - labels [N]: the labels for each image.
@@ -358,14 +356,14 @@ class PyTorchObjectSeeker(ObjectSeekerMixin, PyTorchObjectDetector):
         )
 
     def compute_losses(
-        self, x: Union[np.ndarray, "torch.Tensor"], y: List[Dict[str, Union[np.ndarray, "torch.Tensor"]]]
-    ) -> Dict[str, np.ndarray]:
+        self, x: np.ndarray | "torch.Tensor", y: list[dict[str, np.ndarray | "torch.Tensor"]]
+    ) -> dict[str, np.ndarray]:
         """
         Compute all loss components.
 
         :param x: Samples of shape NCHW or NHWC.
-        :param y: Target values of format `List[Dict[str, Union[np.ndarray, torch.Tensor]]]`, one for each input image.
-                  The fields of the Dict are as follows:
+        :param y: Target values of format `list[dict[str, np.ndarray | torch.Tensor]]`, one for each input image.
+                  The fields of the dict are as follows:
 
                   - boxes [N, 4]: the boxes in [x1, y1, x2, y2] format, with 0 <= x1 < x2 <= W and 0 <= y1 < y2 <= H.
                   - labels [N]: the labels for each image.
@@ -377,14 +375,14 @@ class PyTorchObjectSeeker(ObjectSeekerMixin, PyTorchObjectDetector):
         )
 
     def compute_loss(  # type: ignore
-        self, x: Union[np.ndarray, "torch.Tensor"], y: List[Dict[str, Union[np.ndarray, "torch.Tensor"]]], **kwargs
-    ) -> Union[np.ndarray, "torch.Tensor"]:
+        self, x: np.ndarray | "torch.Tensor", y: list[dict[str, np.ndarray | "torch.Tensor"]], **kwargs
+    ) -> np.ndarray | "torch.Tensor":
         """
         Compute the loss of the neural network for samples `x`.
 
         :param x: Samples of shape NCHW or NHWC.
-        :param y: Target values of format `List[Dict[str, Union[np.ndarray, torch.Tensor]]]`, one for each input image.
-                  The fields of the Dict are as follows:
+        :param y: Target values of format `list[dict[str, Union[np.ndarray, torch.Tensor]]]`, one for each input image.
+                  The fields of the dict are as follows:
 
                   - boxes [N, 4]: the boxes in [x1, y1, x2, y2] format, with 0 <= x1 < x2 <= W and 0 <= y1 < y2 <= H.
                   - labels [N]: the labels for each image.

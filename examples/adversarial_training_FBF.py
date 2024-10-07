@@ -1,6 +1,7 @@
 """
 This is an example of how to use ART for adversarial training of a model with Fast is better than free protocol
 """
+
 import math
 from PIL import Image
 

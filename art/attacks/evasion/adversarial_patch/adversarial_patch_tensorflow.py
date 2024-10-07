@@ -21,11 +21,11 @@ can be printed into the physical world with a common printer. The patch can be u
 
 | Paper link: https://arxiv.org/abs/1712.09665
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
 import math
-from typing import Optional, Tuple, Union, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 from tqdm.auto import trange
@@ -38,7 +38,7 @@ from art.utils import check_and_transform_label_format, is_probability, to_categ
 from art.summary_writer import SummaryWriter
 
 if TYPE_CHECKING:
-    # pylint: disable=C0412
+
     import tensorflow as tf
 
     from art.utils import CLASSIFIER_NEURALNETWORK_TYPE
@@ -78,10 +78,10 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         learning_rate: float = 5.0,
         max_iter: int = 500,
         batch_size: int = 16,
-        patch_shape: Optional[Tuple[int, int, int]] = None,
+        patch_shape: tuple[int, int, int] | None = None,
         optimizer: str = "Adam",
         targeted: bool = True,
-        summary_writer: Union[str, bool, SummaryWriter] = False,
+        summary_writer: str | bool | SummaryWriter = False,
         verbose: bool = True,
     ):
         """
@@ -132,7 +132,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         if self.estimator.channels_first:  # pragma: no cover
             raise ValueError("Color channel needs to be in last dimension.")
 
-        self.use_logits: Optional[bool] = None
+        self.use_logits: bool | None = None
 
         self.i_h_patch = 0
         self.i_w_patch = 1
@@ -174,7 +174,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
             )
 
     def _train_step(
-        self, images: "tf.Tensor", target: Optional["tf.Tensor"] = None, mask: Optional["tf.Tensor"] = None
+        self, images: "tf.Tensor", target: "tf.Tensor" | None = None, mask: "tf.Tensor" | None = None
     ) -> "tf.Tensor":
         import tensorflow as tf
 
@@ -201,7 +201,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
 
         return loss
 
-    def _predictions(self, images: "tf.Tensor", mask: Optional["tf.Tensor"]) -> "tf.Tensor":
+    def _predictions(self, images: "tf.Tensor", mask: "tf.Tensor" | None) -> "tf.Tensor":
         import tensorflow as tf
 
         patched_input = self._random_overlay(images, self._patch, mask=mask)
@@ -212,11 +212,11 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
             clip_value_max=self.estimator.clip_values[1],
         )
 
-        predictions = self.estimator._predict_framework(patched_input)  # pylint: disable=W0212
+        predictions = self.estimator._predict_framework(patched_input)
 
         return predictions
 
-    def _loss(self, images: "tf.Tensor", target: "tf.Tensor", mask: Optional["tf.Tensor"]) -> "tf.Tensor":
+    def _loss(self, images: "tf.Tensor", target: "tf.Tensor", mask: "tf.Tensor" | None) -> "tf.Tensor":
         import tensorflow as tf
 
         predictions = self._predictions(images, mask)
@@ -240,7 +240,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         x = np.linspace(-1, 1, diameter)
         y = np.linspace(-1, 1, diameter)
         x_grid, y_grid = np.meshgrid(x, y, sparse=True)
-        z_grid = (x_grid ** 2 + y_grid ** 2) ** sharpness
+        z_grid = (x_grid**2 + y_grid**2) ** sharpness
 
         image_mask = 1 - np.clip(z_grid, -1, 1)
         image_mask = np.expand_dims(image_mask, axis=2)
@@ -250,10 +250,10 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
 
     def _random_overlay(
         self,
-        images: Union[np.ndarray, "tf.Tensor"],
-        patch: Union[np.ndarray, "tf.Variable"],
-        scale: Optional[float] = None,
-        mask: Optional[Union[np.ndarray, "tf.Tensor"]] = None,
+        images: np.ndarray | "tf.Tensor",
+        patch: np.ndarray | "tf.Variable",
+        scale: float | None = None,
+        mask: np.ndarray | "tf.Tensor" | None = None,
     ) -> "tf.Tensor":
         import tensorflow as tf
         import tensorflow_addons as tfa
@@ -280,7 +280,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         pad_w_before = int((self.image_shape[self.i_w] - image_mask.shape.as_list()[self.i_w_patch + 1]) / 2)
         pad_w_after = int(self.image_shape[self.i_w] - pad_w_before - image_mask.shape[self.i_w_patch + 1])
 
-        image_mask = tf.pad(  # pylint: disable=E1123
+        image_mask = tf.pad(
             image_mask,
             paddings=tf.constant([[0, 0], [pad_h_before, pad_h_after], [pad_w_before, pad_w_after], [0, 0]]),
             mode="CONSTANT",
@@ -302,7 +302,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
             name=None,
         )
 
-        padded_patch = tf.pad(  # pylint: disable=E1123
+        padded_patch = tf.pad(
             padded_patch,
             paddings=tf.constant([[0, 0], [pad_h_before, pad_h_after], [pad_w_before, pad_w_after], [0, 0]]),
             mode="CONSTANT",
@@ -374,7 +374,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
             x_origin_delta = x_origin - x_origin_shifted
             y_origin_delta = y_origin - y_origin_shifted
 
-            # Run translation in a second step to position patch exactly inside of the mask
+            # Run translation in a second step to position patch exactly inside the mask
             transform_vectors.append([a_0, a_1, x_origin_delta, b_0, b_1, y_origin_delta, 0, 0])
             translation_vectors.append([1, 0, -x_shift, 0, 1, -y_shift, 0, 0])
 
@@ -412,8 +412,8 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         return images * inverted_mask + padded_patch * image_mask
 
     def generate(  # type: ignore
-        self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs
-    ) -> Tuple[np.ndarray, np.ndarray]:
+        self, x: np.ndarray, y: np.ndarray | None = None, **kwargs
+    ) -> tuple[np.ndarray, np.ndarray]:
         """
         Generate an adversarial patch and return the patch and its mask in arrays.
 
@@ -498,7 +498,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
             self._get_circular_patch_mask(nb_samples=1).numpy()[0],
         )
 
-    def _check_mask(self, mask: Optional[np.ndarray], x: np.ndarray) -> Optional[np.ndarray]:
+    def _check_mask(self, mask: np.ndarray | None, x: np.ndarray) -> np.ndarray | None:
         if mask is not None and (  # pragma: no cover
             (mask.dtype != bool)
             or not (mask.shape[0] == 1 or mask.shape[0] == x.shape[0])
@@ -518,8 +518,8 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         self,
         x: np.ndarray,
         scale: float,
-        patch_external: Optional[np.ndarray] = None,
-        mask: Optional[np.ndarray] = None,
+        patch_external: np.ndarray | None = None,
+        mask: np.ndarray | None = None,
     ) -> np.ndarray:
         """
         A function to apply the learned adversarial patch to images or videos.
@@ -527,7 +527,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         :param x: Instances to apply randomly transformed patch.
         :param scale: Scale of the applied patch in relation to the classifier input shape.
         :param patch_external: External patch to apply to images `x`.
-        :param mask: An boolean array of shape equal to the shape of a single samples (1, H, W) or the shape of `x`
+        :param mask: A boolean array of shape equal to the shape of a single samples (1, H, W) or the shape of `x`
                      (N, H, W) without their channel dimensions. Any features for which the mask is True can be the
                      center location of the patch during sampling.
         :return: The patched samples.
@@ -538,7 +538,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         patch = patch_external if patch_external is not None else self._patch
         return self._random_overlay(images=x, patch=patch, scale=scale, mask=mask).numpy()
 
-    def reset_patch(self, initial_patch_value: Optional[Union[float, np.ndarray]] = None) -> None:
+    def reset_patch(self, initial_patch_value: float | np.ndarray | None = None) -> None:
         """
         Reset the adversarial patch.
 

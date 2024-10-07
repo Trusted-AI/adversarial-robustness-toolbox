@@ -27,7 +27,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
@@ -39,28 +39,23 @@ jobs:
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip setuptools wheel
-          pip install -q pylint==2.12.2 mypy==1.7.1 pycodestyle==2.8.0 black==21.12b0
-          pip install -q -r <(sed '/^numpy/d;/^pluggy/d;/^tensorflow/d;/^keras/d' requirements_test.txt)
+          pip install -q pylint==3.2.6 mypy==1.11.1 pycodestyle==2.12.0 black==24.4.2 ruff==0.5.5
+          pip install -q -r <(sed '/^numpy/d;/^tensorflow/d;/^keras/d' requirements_test.txt)
           pip install numpy==1.22.4
-          pip install pluggy==0.13.1
           pip install tensorflow==2.13.1
           pip install keras==2.13.1
-          pip install types-six
-          pip install types-PyYAML
-          pip install types-setuptools
-          pip install click==8.0.2
           pip list
       - name: pycodestyle
         run: pycodestyle --ignore=C0330,C0415,E203,E231,W503 --max-line-length=120 art
       - name: pylint
         if: ${{ always() }}
-        run: pylint --disable=C0330,C0415,E203,E1136,E0401,E1102 -rn art
+        run: pylint --fail-under=9.67 art/
       - name: mypy
         if: ${{ always() }}
         run: mypy art
-      - name: pytest-flake8
+      - name: ruff
         if: ${{ always() }}
-        run: pytest --flake8 -v -m flake8 --ignore=contrib
+        run: ruff check art/ tests/ examples/
       - name: black
         if: ${{ always() }}
         run: |

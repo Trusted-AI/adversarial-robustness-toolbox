@@ -97,7 +97,7 @@ class TestAdversarialPatch(TestBase):
         x_out = attack_ap.insert_transformed_patch(
             self.x_train_mnist[0], np.ones((14, 14, 1)), np.asarray([[2, 13], [2, 18], [12, 22], [8, 13]])
         )
-        x_out_expexted = np.array(
+        x_out_expected = np.array(
             [
                 0.0,
                 0.0,
@@ -130,7 +130,7 @@ class TestAdversarialPatch(TestBase):
             ],
             dtype=np.float32,
         )
-        np.testing.assert_almost_equal(x_out[15, :, 0], x_out_expexted, decimal=3)
+        np.testing.assert_almost_equal(x_out[15, :, 0], x_out_expected, decimal=3)
 
         if sess is not None:
             sess.close()
@@ -166,7 +166,7 @@ class TestAdversarialPatch(TestBase):
         x_out = attack_ap.insert_transformed_patch(
             self.x_train_mnist[0], np.ones((14, 14, 1)), np.asarray([[2, 13], [2, 18], [12, 22], [8, 13]])
         )
-        x_out_expexted = np.array(
+        x_out_expected = np.array(
             [
                 0.0,
                 0.0,
@@ -199,7 +199,7 @@ class TestAdversarialPatch(TestBase):
             ],
             dtype=np.float32,
         )
-        np.testing.assert_almost_equal(x_out[15, :, 0], x_out_expexted, decimal=3)
+        np.testing.assert_almost_equal(x_out[15, :, 0], x_out_expected, decimal=3)
 
         mask = np.ones((1, 28, 28)).astype(bool)
         attack_ap.apply_patch(x=self.x_train_mnist, scale=0.1, mask=mask)
@@ -240,7 +240,7 @@ class TestAdversarialPatch(TestBase):
         x_out = attack_ap.insert_transformed_patch(
             self.x_train_mnist[0], np.ones((14, 14, 1)), np.asarray([[2, 13], [2, 18], [12, 22], [8, 13]])
         )
-        x_out_expexted = np.array(
+        x_out_expected = np.array(
             [
                 0.0,
                 0.0,
@@ -273,7 +273,7 @@ class TestAdversarialPatch(TestBase):
             ],
             dtype=np.float32,
         )
-        np.testing.assert_almost_equal(x_out[15, :, 0], x_out_expexted, decimal=3)
+        np.testing.assert_almost_equal(x_out[15, :, 0], x_out_expected, decimal=3)
 
     def test_4_pytorch(self):
         """

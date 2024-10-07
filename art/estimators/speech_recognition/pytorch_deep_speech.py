@@ -21,9 +21,10 @@ Mandarin in PyTorch.
 
 | Paper link: https://arxiv.org/abs/1512.02595
 """
+from __future__ import annotations
+
 import logging
-from typing import TYPE_CHECKING, List, Optional, Tuple, Union
-from pkg_resources import packaging  # type: ignore[attr-defined]
+from typing import TYPE_CHECKING
 
 import numpy as np
 
@@ -33,7 +34,6 @@ from art.estimators.speech_recognition.speech_recognizer import SpeechRecognizer
 from art.utils import get_file
 
 if TYPE_CHECKING:
-    # pylint: disable=C0412
     import torch
     from deepspeech_pytorch.model import DeepSpeech
 
@@ -57,12 +57,12 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
 
     def __init__(
         self,
-        model: Optional["DeepSpeech"] = None,
-        pretrained_model: Optional[str] = None,
-        filename: Optional[str] = None,
-        url: Optional[str] = None,
+        model: "DeepSpeech" | None = None,
+        pretrained_model: str | None = None,
+        filename: str | None = None,
+        url: str | None = None,
         use_half: bool = False,
-        optimizer: Optional["torch.optim.Optimizer"] = None,  # type: ignore
+        optimizer: "torch.optim.Optimizer" | None = None,  # type: ignore
         use_amp: bool = False,
         opt_level: str = "O1",
         decoder_type: str = "greedy",
@@ -74,9 +74,9 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
         cutoff_prob: float = 1.0,
         beam_width: int = 10,
         lm_workers: int = 4,
-        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
-        preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
-        postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
+        clip_values: "CLIP_VALUES_TYPE" | None = None,
+        preprocessing_defences: "Preprocessor" | list["Preprocessor"] | None = None,
+        postprocessing_defences: "Postprocessor" | list["Postprocessor"] | None = None,
         preprocessing: "PREPROCESSING_TYPE" = None,
         device_type: str = "gpu",
         verbose: bool = True,
@@ -85,7 +85,7 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
         Initialization of an instance PyTorchDeepSpeech.
 
         :param model: DeepSpeech model.
-        :param pretrained_model: The choice of pretrained model if a pretrained model is required. Currently this
+        :param pretrained_model: The choice of pretrained model if a pretrained model is required. Currently, this
                                  estimator supports 3 different pretrained models consisting of `an4`, `librispeech`
                                  and `tedlium`.
         :param filename: Name of the file.
@@ -107,8 +107,8 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
                       outputs.
         :param beta: Language model word bonus (all words). This parameter is only used when users want transcription
                      outputs.
-        :param cutoff_top_n: Cutoff_top_n characters with highest probs in vocabulary will be used in beam search. This
-                             parameter is only used when users want transcription outputs.
+        :param cutoff_top_n: Cutoff_top_n characters with the highest probs in vocabulary will be used in beam search.
+                             This parameter is only used when users want transcription outputs.
         :param cutoff_prob: Cutoff probability in pruning. This parameter is only used when users want transcription
                             outputs.
         :param beam_width: The width of beam to be used. This parameter is only used when users want transcription
@@ -284,7 +284,7 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
         # Create the language model config first
         lm_config = LMConfig()
 
-        # Then setup the config
+        # Then set up the config
         if decoder_type == "greedy":
             lm_config.decoder_type = DecoderType.greedy
         elif decoder_type == "beam":
@@ -307,7 +307,7 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
 
         # Setup for AMP use
         if self.use_amp:  # pragma: no cover
-            from apex import amp  # pylint: disable=E0611
+            from apex import amp
 
             if self.optimizer is None:
                 logger.warning(
@@ -332,9 +332,7 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
                 loss_scale=1.0,
             )
 
-    def predict(
-        self, x: np.ndarray, batch_size: int = 128, **kwargs
-    ) -> Union[Tuple[np.ndarray, np.ndarray], np.ndarray]:
+    def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> tuple[np.ndarray, np.ndarray] | np.ndarray:
         """
         Perform prediction for a batch of inputs.
 
@@ -436,7 +434,7 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
         :param x: Samples of shape (nb_samples, seq_length). Note that, it is allowable that sequences in the batch
                   could have different lengths. A possible example of `x` could be:
                   `x = np.array([np.array([0.1, 0.2, 0.1, 0.4]), np.array([0.3, 0.1])])`.
-        :param y: Target values of shape (nb_samples). Each sample in `y` is a string and it may possess different
+        :param y: Target values of shape (nb_samples). Each sample in `y` is a string, and it may possess different
                   lengths. A possible example of `y` could be: `y = np.array(['SIXTY ONE', 'HELLO'])`.
         :return: Loss gradients of the same shape as `x`.
         """
@@ -475,7 +473,7 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
 
         # Compute gradients
         if self.use_amp:  # pragma: no cover
-            from apex import amp  # pylint: disable=E0611
+            from apex import amp
 
             with amp.scale_loss(loss, self.optimizer) as scaled_loss:
                 scaled_loss.backward()
@@ -498,7 +496,7 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
         results = self._apply_preprocessing_gradient(x, results)
 
         if x.dtype != object:
-            results = np.array([i for i in results], dtype=x.dtype)  # pylint: disable=R1721
+            results = np.array([i for i in results], dtype=x.dtype)  # pylint: disable=unnecessary-comprehension
             assert results.shape == x.shape and results.dtype == x.dtype
 
         # Unfreeze batch norm layers again
@@ -513,7 +511,7 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
         :param x: Samples of shape (nb_samples, seq_length). Note that, it is allowable that sequences in the batch
                   could have different lengths. A possible example of `x` could be:
                   `x = np.array([np.array([0.1, 0.2, 0.1, 0.4]), np.array([0.3, 0.1])])`.
-        :param y: Target values of shape (nb_samples). Each sample in `y` is a string and it may possess different
+        :param y: Target values of shape (nb_samples). Each sample in `y` is a string, and it may possess different
                   lengths. A possible example of `y` could be: `y = np.array(['SIXTY ONE', 'HELLO'])`.
         :param batch_size: Size of batches.
         :param nb_epochs: Number of epochs to use for training.
@@ -586,7 +584,7 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
 
                 # Actual training
                 if self.use_amp:  # pragma: no cover
-                    from apex import amp  # pylint: disable=E0611
+                    from apex import amp
 
                     with amp.scale_loss(loss, self.optimizer) as scaled_loss:
                         scaled_loss.backward()
@@ -598,12 +596,12 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
 
     def compute_loss_and_decoded_output(
         self, masked_adv_input: "torch.Tensor", original_output: np.ndarray, **kwargs
-    ) -> Tuple["torch.Tensor", np.ndarray]:
+    ) -> tuple["torch.Tensor", np.ndarray]:
         """
         Compute loss function and decoded output.
 
         :param masked_adv_input: The perturbed inputs.
-        :param original_output: Target values of shape (nb_samples). Each sample in `original_output` is a string and
+        :param original_output: Target values of shape (nb_samples). Each sample in `original_output` is a string, and
                                 it may possess different lengths. A possible example of `original_output` could be:
                                 `original_output = np.array(['SIXTY ONE', 'HELLO'])`.
         :param real_lengths: Real lengths of original sequences.
@@ -659,14 +657,14 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
         x: "torch.Tensor",
         y: np.ndarray,
         real_lengths: np.ndarray,
-    ) -> Tuple["torch.Tensor", "torch.Tensor", "torch.Tensor", "torch.Tensor", List]:
+    ) -> tuple["torch.Tensor", "torch.Tensor", "torch.Tensor", "torch.Tensor", list]:
         """
         Apply preprocessing and then transform the user input space into the model input space. This function is used
         by the ASR attack to attack into the PyTorchDeepSpeech estimator whose defences are called with the
         `_apply_preprocessing` function.
 
         :param x: Samples of shape (nb_samples, seq_length).
-        :param y: Target values of shape (nb_samples). Each sample in `y` is a string and it may possess different
+        :param y: Target values of shape (nb_samples). Each sample in `y` is a string, and it may possess different
                   lengths. A possible example of `y` could be: `y = np.array(['SIXTY ONE', 'HELLO'])`.
         :param real_lengths: Real lengths of original sequences.
         :return: A tuple of inputs and targets in the model space with the original index
@@ -700,19 +698,19 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
 
     def _transform_model_input(
         self,
-        x: Union[np.ndarray, "torch.Tensor"],
-        y: Optional[np.ndarray] = None,
+        x: np.ndarray | "torch.Tensor",
+        y: np.ndarray | None = None,
         compute_gradient: bool = False,
         tensor_input: bool = False,
-        real_lengths: Optional[np.ndarray] = None,
-    ) -> Tuple["torch.Tensor", "torch.Tensor", "torch.Tensor", "torch.Tensor", List]:
+        real_lengths: np.ndarray | None = None,
+    ) -> tuple["torch.Tensor", "torch.Tensor", "torch.Tensor", "torch.Tensor", list]:
         """
         Transform the user input space into the model input space.
 
         :param x: Samples of shape (nb_samples, seq_length). Note that, it is allowable that sequences in the batch
                   could have different lengths. A possible example of `x` could be:
                   `x = np.ndarray([[0.1, 0.2, 0.1, 0.4], [0.3, 0.1]])`.
-        :param y: Target values of shape (nb_samples). Each sample in `y` is a string and it may possess different
+        :param y: Target values of shape (nb_samples). Each sample in `y` is a string, and it may possess different
                   lengths. A possible example of `y` could be: `y = np.array(['SIXTY ONE', 'HELLO'])`.
         :param compute_gradient: Indicate whether to compute gradients for the input `x`.
         :param tensor_input: Indicate whether input is tensor.
@@ -791,7 +789,7 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
             else:
                 transformed_input = transformer(x[i])
 
-            if self._version == 3 and packaging.version.parse(torch.__version__) >= packaging.version.parse("1.10.0"):
+            if self._version == 3:
                 spectrogram = torch.abs(transformed_input)
             else:
                 spectrogram, _ = torchaudio.functional.magphase(transformed_input)
@@ -835,7 +833,7 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
         return sample_rate
 
     @property
-    def input_shape(self) -> Tuple[int, ...]:
+    def input_shape(self) -> tuple[int, ...]:
         """
         Return the shape of one input sample.
 
@@ -889,9 +887,7 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
         """
         return self._opt_level  # type: ignore
 
-    def get_activations(
-        self, x: np.ndarray, layer: Union[int, str], batch_size: int, framework: bool = False
-    ) -> np.ndarray:
+    def get_activations(self, x: np.ndarray, layer: int | str, batch_size: int, framework: bool = False) -> np.ndarray:
         raise NotImplementedError
 
     def compute_loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:

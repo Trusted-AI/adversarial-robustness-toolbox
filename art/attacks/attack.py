@@ -18,11 +18,11 @@
 """
 This module implements the abstract base classes for all attacks.
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import abc
 import logging
-from typing import Any, Dict, List, Optional, Tuple, Union, TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
 
 import numpy as np
 
@@ -38,16 +38,17 @@ logger = logging.getLogger(__name__)
 
 class InputFilter(abc.ABCMeta):  # pragma: no cover
     """
-    Metaclass to ensure that inputs are ndarray for all of the subclass generate and extract calls
+    Metaclass to ensure that inputs are ndarray for all the subclass generate and extract calls
     """
 
-    # pylint: disable=W0613
-    def __init__(cls, name, bases, clsdict):  # pylint: disable=W0231
+    def __init__(cls, name, bases, clsdict):
         """
         This function overrides any existing generate or extract methods with a new method that
         ensures the input is an `np.ndarray`. There is an assumption that the input object has implemented
         __array__ with np.array calls.
         """
+
+        super().__init__()
 
         def make_replacement(fdict, func_name):
             """
@@ -94,17 +95,17 @@ class Attack(abc.ABC):
     Abstract base class for all attack abstract base classes.
     """
 
-    attack_params: List[str] = []
+    attack_params: list[str] = []
     # The _estimator_requirements define the requirements an estimator must satisfy to be used as a target for an
     # attack. They should be a tuple of requirements, where each requirement is either a class the estimator must
     # inherit from, or a tuple of classes which define a union, i.e. the estimator must inherit from at least one class
     # in the requirement tuple.
-    _estimator_requirements: Optional[Union[Tuple[Any, ...], Tuple[()]]] = None
+    _estimator_requirements: tuple[Any, ...] | tuple[()] | None = None
 
     def __init__(
         self,
         estimator,
-        summary_writer: Union[str, bool, SummaryWriter] = False,
+        summary_writer: str | bool | SummaryWriter = False,
     ):
         """
         :param estimator: An estimator.
@@ -126,7 +127,7 @@ class Attack(abc.ABC):
 
         self._estimator = estimator
         self._summary_writer_arg = summary_writer
-        self._summary_writer: Optional[SummaryWriter] = None
+        self._summary_writer: SummaryWriter | None = None
 
         if isinstance(summary_writer, SummaryWriter):  # pragma: no cover
             self._summary_writer = summary_writer
@@ -212,13 +213,13 @@ class EvasionAttack(Attack):
         super().__init__(**kwargs)
 
     @abc.abstractmethod
-    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
+    def generate(self, x: np.ndarray, y: np.ndarray | None = None, **kwargs) -> np.ndarray:
         """
         Generate adversarial examples and return them as an array. This method should be overridden by all concrete
         evasion attack implementations.
 
         :param x: An array with the original inputs to be attacked.
-        :param y: Correct labels or target labels for `x`, depending if the attack is targeted
+        :param y: Correct labels or target labels for `x`, depending on if the attack is targeted
                   or not. This parameter is only used by some of the attacks.
         :return: An array holding the adversarial examples.
         """
@@ -241,21 +242,21 @@ class PoisoningAttack(Attack):
     Abstract base class for poisoning attack classes
     """
 
-    def __init__(self, classifier: Optional["CLASSIFIER_TYPE"]) -> None:
+    def __init__(self, classifier: "CLASSIFIER_TYPE" | None) -> None:
         """
         :param classifier: A trained classifier (or none if no classifier is needed)
         """
         super().__init__(classifier)
 
     @abc.abstractmethod
-    def poison(self, x: np.ndarray, y=Optional[np.ndarray], **kwargs) -> Tuple[np.ndarray, np.ndarray]:
+    def poison(self, x: np.ndarray, y: np.ndarray | None = None, **kwargs) -> tuple[np.ndarray, np.ndarray]:
         """
         Generate poisoning examples and return them as an array. This method should be overridden by all concrete
         poisoning attack implementations.
 
         :param x: An array with the original inputs to be attacked.
         :param y:  Target labels for `x`. Untargeted attacks set this value to None.
-        :return: An tuple holding the (poisoning examples, poisoning labels).
+        :return: A tuple holding the (poisoning examples, poisoning labels).
         """
         raise NotImplementedError
 
@@ -310,21 +311,15 @@ class PoisoningAttackTransformer(PoisoningAttack):
     These attacks have an additional method, `poison_estimator`, that returns the poisoned classifier.
     """
 
-    def __init__(self, classifier: Optional["CLASSIFIER_TYPE"]) -> None:
-        """
-        :param classifier: A trained classifier (or none if no classifier is needed)
-        """
-        super().__init__(classifier)
-
     @abc.abstractmethod
-    def poison(self, x: np.ndarray, y=Optional[np.ndarray], **kwargs) -> Tuple[np.ndarray, np.ndarray]:
+    def poison(self, x: np.ndarray, y: np.ndarray | None = None, **kwargs) -> tuple[np.ndarray, np.ndarray]:
         """
         Generate poisoning examples and return them as an array. This method should be overridden by all concrete
         poisoning attack implementations.
 
         :param x: An array with the original inputs to be attacked.
         :param y:  Target labels for `x`. Untargeted attacks set this value to None.
-        :return: An tuple holding the (poisoning examples, poisoning labels).
+        :return: A tuple holding the (poisoning examples, poisoning labels).
         :rtype: `(np.ndarray, np.ndarray)`
         """
         raise NotImplementedError
@@ -354,21 +349,21 @@ class PoisoningAttackObjectDetector(Attack):
     @abc.abstractmethod
     def poison(
         self,
-        x: Union[np.ndarray, List[np.ndarray]],
-        y: List[Dict[str, np.ndarray]],
+        x: np.ndarray | list[np.ndarray],
+        y: list[dict[str, np.ndarray]],
         **kwargs,
-    ) -> Tuple[Union[np.ndarray, List[np.ndarray]], List[Dict[str, np.ndarray]]]:
+    ) -> tuple[np.ndarray | list[np.ndarray], list[dict[str, np.ndarray]]]:
         """
         Generate poisoning examples and return them as an array. This method should be overridden by all concrete
         poisoning attack implementations.
 
         :param x: An array with the original inputs to be attacked.
-        :param y: True labels of type `List[Dict[np.ndarray]]`, one dictionary per input image.
+        :param y: True labels of type `list[dict[np.ndarray]]`, one dictionary per input image.
                   The keys and values of the dictionary are:
                   - boxes [N, 4]: the boxes in [x1, y1, x2, y2] format, with 0 <= x1 < x2 <= W and 0 <= y1 < y2 <= H.
                   - labels [N]: the labels for each image
                   - scores [N]: the scores or each prediction.
-        :return: An tuple holding the `(poisoning_examples, poisoning_labels)`.
+        :return: A tuple holding the `(poisoning_examples, poisoning_labels)`.
         """
         raise NotImplementedError
 
@@ -385,14 +380,14 @@ class PoisoningAttackBlackBox(PoisoningAttack):
         super().__init__(None)  # type: ignore
 
     @abc.abstractmethod
-    def poison(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> Tuple[np.ndarray, np.ndarray]:
+    def poison(self, x: np.ndarray, y: np.ndarray | None = None, **kwargs) -> tuple[np.ndarray, np.ndarray]:
         """
         Generate poisoning examples and return them as an array. This method should be overridden by all concrete
         poisoning attack implementations.
 
         :param x: An array with the original inputs to be attacked.
         :param y:  Target labels for `x`. Untargeted attacks set this value to None.
-        :return: An tuple holding the `(poisoning_examples, poisoning_labels)`.
+        :return: A tuple holding the `(poisoning_examples, poisoning_labels)`.
         """
         raise NotImplementedError
 
@@ -403,15 +398,15 @@ class PoisoningAttackWhiteBox(PoisoningAttack):
     """
 
     @abc.abstractmethod
-    def poison(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> Tuple[np.ndarray, np.ndarray]:
+    def poison(self, x: np.ndarray, y: np.ndarray | None = None, **kwargs) -> tuple[np.ndarray, np.ndarray]:
         """
         Generate poisoning examples and return them as an array. This method should be overridden by all concrete
         poisoning attack implementations.
 
         :param x: An array with the original inputs to be attacked.
-        :param y: Correct labels or target labels for `x`, depending if the attack is targeted
+        :param y: Correct labels or target labels for `x`, depending on if the attack is targeted
                or not. This parameter is only used by some of the attacks.
-        :return: An tuple holding the `(poisoning_examples, poisoning_labels)`.
+        :return: A tuple holding the `(poisoning_examples, poisoning_labels)`.
         """
         raise NotImplementedError
 
@@ -422,13 +417,13 @@ class ExtractionAttack(Attack):
     """
 
     @abc.abstractmethod
-    def extract(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> "CLASSIFIER_TYPE":
+    def extract(self, x: np.ndarray, y: np.ndarray | None = None, **kwargs) -> "CLASSIFIER_TYPE":
         """
         Extract models and return them as an ART classifier. This method should be overridden by all concrete extraction
         attack implementations.
 
         :param x: An array with the original inputs to be attacked.
-        :param y: Correct labels or target labels for `x`, depending if the attack is targeted
+        :param y: Correct labels or target labels for `x`, depending on if the attack is targeted
                or not. This parameter is only used by some of the attacks.
         :return: ART classifier of the extracted model.
         """
@@ -448,7 +443,7 @@ class InferenceAttack(Attack):
         super().__init__(estimator)
 
     @abc.abstractmethod
-    def infer(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
+    def infer(self, x: np.ndarray, y: np.ndarray | None = None, **kwargs) -> np.ndarray:
         """
         Infer sensitive attributes from the targeted estimator. This method
         should be overridden by all concrete inference attack implementations.
@@ -467,7 +462,7 @@ class AttributeInferenceAttack(InferenceAttack):
 
     attack_params = InferenceAttack.attack_params + ["attack_feature"]
 
-    def __init__(self, estimator, attack_feature: Union[int, slice] = 0):
+    def __init__(self, estimator, attack_feature: int | slice = 0):
         """
         :param estimator: A trained estimator targeted for inference attack.
         :type estimator: :class:`.art.estimators.estimator.BaseEstimator`
@@ -478,7 +473,7 @@ class AttributeInferenceAttack(InferenceAttack):
         self.attack_feature = get_feature_index(attack_feature)
 
     @abc.abstractmethod
-    def infer(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
+    def infer(self, x: np.ndarray, y: np.ndarray | None = None, **kwargs) -> np.ndarray:
         """
         Infer sensitive attributes from the targeted estimator. This method
         should be overridden by all concrete inference attack implementations.
@@ -490,7 +485,7 @@ class AttributeInferenceAttack(InferenceAttack):
         raise NotImplementedError
 
     @staticmethod
-    def _check_attack_feature(attack_feature: Union[int, slice]) -> None:
+    def _check_attack_feature(attack_feature: int | slice) -> None:
         if not isinstance(attack_feature, int) and not isinstance(attack_feature, slice):
             raise ValueError("Attack feature must be either an integer or a slice object.")
 
@@ -506,16 +501,8 @@ class MembershipInferenceAttack(InferenceAttack):
     Abstract base class for membership inference attack classes.
     """
 
-    def __init__(self, estimator):
-        """
-        :param estimator: A trained estimator targeted for inference attack.
-        :type estimator: :class:`.art.estimators.estimator.BaseEstimator`
-        :param attack_feature: The index of the feature to be attacked.
-        """
-        super().__init__(estimator)
-
     @abc.abstractmethod
-    def infer(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
+    def infer(self, x: np.ndarray, y: np.ndarray | None = None, **kwargs) -> np.ndarray:
         """
         Infer membership status of samples from the target estimator. This method
         should be overridden by all concrete inference attack implementations.
@@ -552,7 +539,7 @@ class ReconstructionAttack(Attack):
         super().__init__(estimator)
 
     @abc.abstractmethod
-    def reconstruct(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> Tuple[np.ndarray, np.ndarray]:
+    def reconstruct(self, x: np.ndarray, y: np.ndarray | None = None, **kwargs) -> tuple[np.ndarray, np.ndarray]:
         """
         Reconstruct the training dataset of and from the targeted estimator. This method
         should be overridden by all concrete inference attack implementations.

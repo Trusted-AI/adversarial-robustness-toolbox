@@ -18,10 +18,10 @@
 """
 This module implements the abstract base class for defences that pre-process input data.
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import abc
-from typing import List, Optional, Tuple, Any, TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
 
 import numpy as np
 
@@ -40,7 +40,7 @@ class Preprocessor(abc.ABC):
         To modify, override `estimate_gradient`
     """
 
-    params: List[str] = []
+    params: list[str] = []
 
     def __init__(self, is_fitted: bool = False, apply_fit: bool = True, apply_predict: bool = True) -> None:
         """
@@ -80,7 +80,7 @@ class Preprocessor(abc.ABC):
         return self._apply_predict
 
     @abc.abstractmethod
-    def __call__(self, x: np.ndarray, y: Optional[Any] = None) -> Tuple[np.ndarray, Optional[Any]]:
+    def __call__(self, x: np.ndarray, y: Any | None = None) -> tuple[np.ndarray, Any | None]:
         """
         Perform data preprocessing and return preprocessed data as tuple.
 
@@ -90,7 +90,7 @@ class Preprocessor(abc.ABC):
         """
         raise NotImplementedError
 
-    def fit(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> None:
+    def fit(self, x: np.ndarray, y: np.ndarray | None = None, **kwargs) -> None:
         """
         Fit the parameters of the data preprocessor if it has any.
 
@@ -100,7 +100,7 @@ class Preprocessor(abc.ABC):
         """
         pass
 
-    def estimate_gradient(self, x: np.ndarray, grad: np.ndarray) -> np.ndarray:  # pylint: disable=W0613,R0201
+    def estimate_gradient(self, x: np.ndarray, grad: np.ndarray) -> np.ndarray:
         """
         Provide an estimate of the gradients of the defence for the backward pass. If the defence is not differentiable,
         this is an estimate of the gradient, most often replacing the computation performed by the defence with the
@@ -124,7 +124,7 @@ class Preprocessor(abc.ABC):
     def _check_params(self) -> None:  # pragma: no cover
         pass
 
-    def forward(self, x: Any, y: Any = None) -> Tuple[Any, Any]:
+    def forward(self, x: Any, y: Any = None) -> tuple[Any, Any]:
         """
         Perform data preprocessing and return preprocessed data.
 
@@ -153,7 +153,7 @@ class PreprocessorPyTorch(Preprocessor):
             self._device = torch.device(f"cuda:{cuda_idx}")
 
     @abc.abstractmethod
-    def forward(self, x: "torch.Tensor", y: Optional[Any] = None) -> Tuple["torch.Tensor", Optional[Any]]:
+    def forward(self, x: "torch.Tensor", y: Any | None = None) -> tuple["torch.Tensor", Any | None]:
         """
         Perform data preprocessing in PyTorch and return preprocessed data as tuple.
 
@@ -163,7 +163,7 @@ class PreprocessorPyTorch(Preprocessor):
         """
         raise NotImplementedError
 
-    def estimate_forward(self, x: "torch.Tensor", y: Optional["torch.Tensor"] = None) -> "torch.Tensor":
+    def estimate_forward(self, x: "torch.Tensor", y: "torch.Tensor" | None = None) -> "torch.Tensor":
         """
         Provide a differentiable estimate of the forward function, so that autograd can calculate gradients
         of the defence for the backward pass. If the defence is differentiable, just call `self.forward()`.
@@ -183,7 +183,7 @@ class PreprocessorPyTorch(Preprocessor):
         """
         return self._device
 
-    def __call__(self, x: np.ndarray, y: Optional[np.ndarray] = None) -> Tuple[np.ndarray, Optional[np.ndarray]]:
+    def __call__(self, x: np.ndarray, y: np.ndarray | None = None) -> tuple[np.ndarray, np.ndarray | None]:
         """
         Apply preprocessing to input `x` and labels `y`.
 
@@ -195,7 +195,7 @@ class PreprocessorPyTorch(Preprocessor):
 
         x_tensor = torch.tensor(x, device=self.device)
         if y is not None:
-            y_tensor: Optional[torch.Tensor] = torch.tensor(y, device=self.device)
+            y_tensor: torch.Tensor | None = torch.tensor(y, device=self.device)
         else:
             y_tensor = None
 
@@ -204,7 +204,7 @@ class PreprocessorPyTorch(Preprocessor):
 
         x_result = x_tensor.cpu().numpy()
         if y_tensor is not None:
-            y_result: Optional[np.ndarray] = y_tensor.cpu().numpy()
+            y_result: np.ndarray | None = y_tensor.cpu().numpy()
         else:
             y_result = None
         return x_result, y_result
@@ -250,7 +250,7 @@ class PreprocessorTensorFlowV2(Preprocessor):
     """
 
     @abc.abstractmethod
-    def forward(self, x: "tf.Tensor", y: Optional[Any] = None) -> Tuple["tf.Tensor", Optional[Any]]:
+    def forward(self, x: "tf.Tensor", y: Any | None = None) -> tuple["tf.Tensor", Any | None]:
         """
         Perform data preprocessing in TensorFlow v2 and return preprocessed data as tuple.
 
@@ -260,7 +260,7 @@ class PreprocessorTensorFlowV2(Preprocessor):
         """
         raise NotImplementedError
 
-    def estimate_forward(self, x: "tf.Tensor", y: Optional["tf.Tensor"] = None) -> "tf.Tensor":
+    def estimate_forward(self, x: "tf.Tensor", y: "tf.Tensor" | None = None) -> "tf.Tensor":
         """
         Provide a differentiable estimate of the forward function, so that autograd can calculate gradients
         of the defence for the backward pass. If the defence is differentiable, just call `self.forward()`.
@@ -273,7 +273,7 @@ class PreprocessorTensorFlowV2(Preprocessor):
         """
         return self.forward(x, y=y)[0]
 
-    def __call__(self, x: np.ndarray, y: Optional[np.ndarray] = None) -> Tuple[np.ndarray, Optional[np.ndarray]]:
+    def __call__(self, x: np.ndarray, y: np.ndarray | None = None) -> tuple[np.ndarray, np.ndarray | None]:
         """
         Apply preprocessing to input `x` and labels `y`.
 

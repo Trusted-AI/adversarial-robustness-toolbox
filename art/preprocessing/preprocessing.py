@@ -18,7 +18,7 @@
 """
 This module contains the Preprocessor API.
 """
-# pylint: disable=W0611
+# pylint: disable=unused-import
 from art.defences.preprocessor.preprocessor import Preprocessor
 from art.defences.preprocessor.preprocessor import PreprocessorPyTorch
 from art.defences.preprocessor.preprocessor import PreprocessorTensorFlowV2

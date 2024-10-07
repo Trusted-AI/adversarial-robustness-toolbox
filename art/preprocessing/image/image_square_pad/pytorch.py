@@ -18,8 +18,10 @@
 """
 This module implements square padding for images and object detection bounding boxes in PyTorch.
 """
+from __future__ import annotations
+
 import logging
-from typing import Dict, List, Any, Optional, TYPE_CHECKING, Tuple, Union
+from typing import Any, TYPE_CHECKING
 
 import numpy as np
 from tqdm.auto import tqdm
@@ -27,7 +29,7 @@ from tqdm.auto import tqdm
 from art.preprocessing.preprocessing import PreprocessorPyTorch
 
 if TYPE_CHECKING:
-    # pylint: disable=C0412
+
     import torch
     from art.utils import CLIP_VALUES_TYPE
 
@@ -48,8 +50,8 @@ class ImageSquarePadPyTorch(PreprocessorPyTorch):
         channels_first: bool = True,
         label_type: str = "classification",
         pad_mode: str = "constant",
-        pad_kwargs: Optional[Dict[str, Any]] = None,
-        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
+        pad_kwargs: dict[str, Any] | None = None,
+        clip_values: "CLIP_VALUES_TYPE" | None = None,
         apply_fit: bool = True,
         apply_predict: bool = False,
         verbose: bool = False,
@@ -61,7 +63,7 @@ class ImageSquarePadPyTorch(PreprocessorPyTorch):
         :param width: The width of the resized image.
         :param channels_first: Set channels first or last.
         :param label_type: String defining the label type. Currently supported: `classification`, `object_detection`
-        :param pad_mode: String defining the padding method. Currently supported: `constant`, `reflect`, 'replicate`,
+        :param pad_mode: String defining the padding method. Currently supported: `constant`, `reflect`, `replicate`,
                          `circular`
         :param pad_kwargs: A dictionary of additional keyword arguments used by the `torch.nn.functional.pad` function.
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
@@ -82,8 +84,8 @@ class ImageSquarePadPyTorch(PreprocessorPyTorch):
     def forward(
         self,
         x: "torch.Tensor",
-        y: Optional[Union["torch.Tensor", List[Dict[str, "torch.Tensor"]]]] = None,
-    ) -> Tuple["torch.Tensor", Optional[Union["torch.Tensor", List[Dict[str, "torch.Tensor"]]]]]:
+        y: "torch.Tensor" | list[dict[str, "torch.Tensor"]] | None = None,
+    ) -> tuple["torch.Tensor", "torch.Tensor" | list[dict[str, "torch.Tensor"]] | None]:
         """
         Square pad `x` and adjust bounding boxes for labels `y` accordingly.
 
@@ -94,7 +96,7 @@ class ImageSquarePadPyTorch(PreprocessorPyTorch):
         import torch
 
         x_preprocess = []
-        y_preprocess: Optional[Union[torch.Tensor, List[Dict[str, torch.Tensor]]]]
+        y_preprocess: torch.Tensor | list[dict[str, torch.Tensor]] | None
         if y is not None and self.label_type == "object_detection":
             y_preprocess = []
         else:
@@ -130,7 +132,7 @@ class ImageSquarePadPyTorch(PreprocessorPyTorch):
             x_preprocess.append(x_pad)
 
             if self.label_type == "object_detection" and y is not None:
-                y_pad: Dict[str, torch.Tensor] = {}
+                y_pad: dict[str, torch.Tensor] = {}
 
                 # Copy labels and ensure types
                 if isinstance(y, list) and isinstance(y_preprocess, list):

@@ -1,6 +1,7 @@
 """
 Module providing poisoning attacks under a common interface.
 """
+
 from art.attacks.poisoning.backdoor_attack_dgm.backdoor_attack_dgm_red import BackdoorAttackDGMReDTensorFlowV2
 from art.attacks.poisoning.backdoor_attack_dgm.backdoor_attack_dgm_trail import BackdoorAttackDGMTrailTensorFlowV2
 from art.attacks.poisoning.backdoor_attack import PoisoningAttackBackdoor

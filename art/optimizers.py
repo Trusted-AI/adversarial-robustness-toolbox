@@ -47,11 +47,11 @@ class Adam:
         self.m_dx = self.beta_1 * self.m_dx + (1 - self.beta_1) * delta_x
 
         # rms
-        self.v_dx = self.beta_2 * self.v_dx + (1 - self.beta_2) * (delta_x ** 2)
+        self.v_dx = self.beta_2 * self.v_dx + (1 - self.beta_2) * (delta_x**2)
 
         # bias
-        m_dw_corr = self.m_dx / (1 - self.beta_1 ** niter)
-        v_dw_corr = self.v_dx / (1 - self.beta_2 ** niter)
+        m_dw_corr = self.m_dx / (1 - self.beta_1**niter)
+        v_dw_corr = self.v_dx / (1 - self.beta_2**niter)
 
         # update
         x = x - self.alpha * (m_dw_corr / (np.sqrt(v_dw_corr) + self.epsilon))

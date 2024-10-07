@@ -20,10 +20,10 @@ This module implements the filter function for audio signals in PyTorch. It prov
 (IIR) or finite impulse response (FIR) filter. This implementation is a wrapper around the
 `torchaudio.functional.lfilter` function in the `torchaudio` package.
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
-from typing import Optional, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 from tqdm.auto import tqdm
@@ -31,7 +31,7 @@ from tqdm.auto import tqdm
 from art.preprocessing.preprocessing import PreprocessorPyTorch
 
 if TYPE_CHECKING:
-    # pylint: disable=C0412
+
     import torch
     from art.utils import CLIP_VALUES_TYPE
 
@@ -51,7 +51,7 @@ class LFilterPyTorch(PreprocessorPyTorch):
         self,
         numerator_coef: np.ndarray = np.array([1.0]),
         denominator_coef: np.ndarray = np.array([1.0]),
-        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
+        clip_values: "CLIP_VALUES_TYPE" | None = None,
         apply_fit: bool = False,
         apply_predict: bool = True,
         verbose: bool = False,
@@ -86,8 +86,8 @@ class LFilterPyTorch(PreprocessorPyTorch):
         self._check_params()
 
     def forward(
-        self, x: "torch.Tensor", y: Optional["torch.Tensor"] = None
-    ) -> Tuple["torch.Tensor", Optional["torch.Tensor"]]:
+        self, x: "torch.Tensor", y: "torch.Tensor" | None = None
+    ) -> tuple["torch.Tensor", "torch.Tensor" | None]:
         """
         Apply filter to a single sample `x`.
 
@@ -117,7 +117,7 @@ class LFilterPyTorch(PreprocessorPyTorch):
 
         return x_preprocess, y
 
-    def __call__(self, x: np.ndarray, y: Optional[np.ndarray] = None) -> Tuple[np.ndarray, Optional[np.ndarray]]:
+    def __call__(self, x: np.ndarray, y: np.ndarray | None = None) -> tuple[np.ndarray, np.ndarray | None]:
         """
         Apply filter to sample `x`.
 

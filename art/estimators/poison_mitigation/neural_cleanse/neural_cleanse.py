@@ -20,10 +20,10 @@ This module implements Neural Cleanse on a classifier.
 
 | Paper link: https://people.cs.uchicago.edu/~ravenben/publications/pdf/backdoor-sp19.pdf
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
-from typing import Union, Tuple, List
+
 
 import numpy as np
 
@@ -46,7 +46,7 @@ class NeuralCleanseMixin(AbstainPredictorMixin):
         steps: int,
         *args,
         init_cost: float = 1e-3,
-        norm: Union[int, float] = 2,
+        norm: int | float = 2,
         learning_rate: float = 0.1,
         attack_success_threshold: float = 0.99,
         patience: int = 5,
@@ -55,7 +55,7 @@ class NeuralCleanseMixin(AbstainPredictorMixin):
         early_stop_patience: int = 10,
         cost_multiplier: float = 1.5,
         batch_size: int = 32,
-        **kwargs
+        **kwargs,
     ) -> None:
         """
         Create a neural cleanse wrapper.
@@ -67,7 +67,7 @@ class NeuralCleanseMixin(AbstainPredictorMixin):
         :param attack_success_threshold: The threshold at which the generated backdoor is successful enough to stop the
                                          Neural Cleanse optimization
         :param patience: How long to wait for changing the cost multiplier in the Neural Cleanse optimization
-        :param early_stop: Whether or not to allow early stopping in the Neural Cleanse optimization
+        :param early_stop: Whether to allow early stopping in the Neural Cleanse optimization
         :param early_stop_threshold: How close values need to come to max value to start counting early stop
         :param early_stop_patience: How long to wait to determine early stopping in the Neural Cleanse optimization
         :param cost_multiplier: How much to change the cost in the Neural Cleanse optimization
@@ -84,9 +84,9 @@ class NeuralCleanseMixin(AbstainPredictorMixin):
         self.early_stop_threshold = early_stop_threshold
         self.early_stop_patience = early_stop_patience
         self.cost_multiplier_up = cost_multiplier
-        self.cost_multiplier_down = cost_multiplier ** 1.5
+        self.cost_multiplier_down = cost_multiplier**1.5
         self.batch_size = batch_size
-        self.top_indices: List[int] = []
+        self.top_indices: list[int] = []
         self.activation_threshold = 0
 
     def _predict_classifier(
@@ -97,7 +97,7 @@ class NeuralCleanseMixin(AbstainPredictorMixin):
 
         :param x: Input samples.
         :param batch_size: Size of batches.
-        :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
+        :param training_mode: `True` for model set to training mode and `False` for model set to evaluation mode.
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         """
         raise NotImplementedError
@@ -142,7 +142,7 @@ class NeuralCleanseMixin(AbstainPredictorMixin):
 
         return predictions
 
-    def mitigate(self, x_val: np.ndarray, y_val: np.ndarray, mitigation_types: List[str]) -> None:
+    def mitigate(self, x_val: np.ndarray, y_val: np.ndarray, mitigation_types: list[str]) -> None:
         """
         Mitigates the effect of poison on a classifier
 
@@ -226,9 +226,10 @@ class NeuralCleanseMixin(AbstainPredictorMixin):
         backdoor_effective = np.logical_not(np.all(backdoor_predictions == backdoor_labels, axis=1))
         return np.any(backdoor_effective)  # type: ignore
 
-    def backdoor_examples(self, x_val: np.ndarray, y_val: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    def backdoor_examples(self, x_val: np.ndarray, y_val: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """
         Generate reverse-engineered backdoored examples using validation data
+
         :param x_val: validation data
         :param y_val: validation labels
         :return: a tuple containing (clean data, backdoored data, labels)
@@ -263,17 +264,19 @@ class NeuralCleanseMixin(AbstainPredictorMixin):
 
     def generate_backdoor(
         self, x_val: np.ndarray, y_val: np.ndarray, y_target: np.ndarray
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    ) -> tuple[np.ndarray, np.ndarray]:
         """
         Generates a possible backdoor for the model. Returns the pattern and the mask
+
         :return: A tuple of the pattern and mask for the model.
         """
         raise NotImplementedError
 
-    def outlier_detection(self, x_val: np.ndarray, y_val: np.ndarray) -> List[Tuple[int, np.ndarray, np.ndarray]]:
+    def outlier_detection(self, x_val: np.ndarray, y_val: np.ndarray) -> list[tuple[int, np.ndarray, np.ndarray]]:
         """
-        Returns a tuple of suspected of suspected poison labels and their mask and pattern
-        :return: A list of tuples containing the the class index, mask, and pattern for suspected labels
+        Returns a tuple of suspected poison labels and their mask and pattern
+
+        :return: A list of tuples containing the class index, mask, and pattern for suspected labels
         """
         l1_norms = []
         masks = []

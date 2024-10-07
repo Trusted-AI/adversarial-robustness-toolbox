@@ -24,10 +24,10 @@ This module implements the thermometer encoding defence `ThermometerEncoding`.
     see https://arxiv.org/abs/1802.00420 . For details on how to evaluate classifier security in general, see
     https://arxiv.org/abs/1902.06705
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
-from typing import Optional, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 
@@ -78,7 +78,7 @@ class ThermometerEncoding(Preprocessor):
         self.channels_first = channels_first
         self._check_params()
 
-    def __call__(self, x: np.ndarray, y: Optional[np.ndarray] = None) -> Tuple[np.ndarray, Optional[np.ndarray]]:
+    def __call__(self, x: np.ndarray, y: np.ndarray | None = None) -> tuple[np.ndarray, np.ndarray | None]:
         """
         Apply thermometer encoding to sample `x`. The new axis with the encoding is added as last dimension.
 

@@ -1,7 +1,6 @@
 # This workflow uses actions that are not certified by GitHub.
 # They are provided by a third-party and are governed by
-# separate terms of service, privacy policy, and support
-# documentation.
+# separate terms of service, privacy policy, and support documentation.
 
 # GitHub recommends pinning actions to a commit SHA.
 # To get a newer version, you will need to update the SHA.
@@ -21,10 +20,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out the repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Log in to Docker Hub
-        uses: docker/login-action@e92390c5fb421da1463c202d546fed0ec5c39f20
+        uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567
         with:
           username: ${{ secrets.DOCKER_HUB_USERNAME }}
           password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
@@ -35,11 +34,11 @@ jobs:
         with:
           images: adversarialrobustnesstoolbox/releases
           tags: |
-            type=raw,value={{branch}}-1.17.1-{{sha}}
+            type=raw,value={{branch}}-1.18.1-{{sha}}
             type=semver,pattern={{version}}
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@2cdde995de11925a030ce8070c3d77a52ffcf1c0
+        uses: docker/build-push-action@15560696de535e4014efeff63c48f16952e52dd1
         with:
           context: .
           push: true

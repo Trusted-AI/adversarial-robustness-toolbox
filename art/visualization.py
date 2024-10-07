@@ -18,11 +18,11 @@
 """
 Module providing visualization functions.
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
 import os.path
-from typing import List, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
 
@@ -56,7 +56,7 @@ def create_sprite(images: np.ndarray) -> np.ndarray:
         images = convert_to_rgb(images)
 
     n = int(np.ceil(np.sqrt(images.shape[0])))
-    padding = ((0, n ** 2 - images.shape[0]), (0, 0), (0, 0)) + ((0, 0),) * (images.ndim - 3)
+    padding = ((0, n**2 - images.shape[0]), (0, 0), (0, 0)) + ((0, 0),) * (images.ndim - 3)
     images = np.pad(images, padding, mode="constant", constant_values=0)
 
     # Tile the individual thumbnails into an image
@@ -111,7 +111,7 @@ def save_image(image_array: np.ndarray, f_name: str) -> None:
 def plot_3d(
     points: np.ndarray,
     labels: np.ndarray,
-    colors: Optional[List[str]] = None,
+    colors: list[str] | None = None,
     save: bool = True,
     f_name: str = "",
 ) -> "matplotlib.figure.Figure":  # pragma: no cover
@@ -130,7 +130,7 @@ def plot_3d(
     :return: A figure object.
     """
     # Disable warnings of unused import because all imports in this block are required
-    # pylint: disable=W0611
+    # pylint: disable=unused-import
     # import matplotlib
     import matplotlib.pyplot as plt
 

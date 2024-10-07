@@ -18,15 +18,17 @@
 """
 This module implements resizing for images and object detection bounding boxes in PyTorch.
 """
+from __future__ import annotations
+
 import logging
-from typing import Dict, List, Optional, TYPE_CHECKING, Tuple, Union
+from typing import TYPE_CHECKING
 
 from tqdm.auto import tqdm
 
 from art.preprocessing.preprocessing import PreprocessorPyTorch
 
 if TYPE_CHECKING:
-    # pylint: disable=C0412
+
     import torch
     from art.utils import CLIP_VALUES_TYPE
 
@@ -49,7 +51,7 @@ class ImageResizePyTorch(PreprocessorPyTorch):
         channels_first: bool = True,
         label_type: str = "classification",
         interpolation: str = "bilinear",
-        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
+        clip_values: "CLIP_VALUES_TYPE" | None = None,
         apply_fit: bool = True,
         apply_predict: bool = False,
         verbose: bool = False,
@@ -82,8 +84,8 @@ class ImageResizePyTorch(PreprocessorPyTorch):
     def forward(
         self,
         x: "torch.Tensor",
-        y: Optional[Union["torch.Tensor", List[Dict[str, "torch.Tensor"]]]] = None,
-    ) -> Tuple["torch.Tensor", Optional[Union["torch.Tensor", List[Dict[str, "torch.Tensor"]]]]]:
+        y: "torch.Tensor" | list[dict[str, "torch.Tensor"]] | None = None,
+    ) -> tuple["torch.Tensor", "torch.Tensor" | list[dict[str, "torch.Tensor"]] | None]:
         """
         Resize `x` and adjust bounding boxes for labels `y` accordingly.
 
@@ -94,7 +96,7 @@ class ImageResizePyTorch(PreprocessorPyTorch):
         import torch
 
         x_preprocess_list = []
-        y_preprocess: Optional[Union[torch.Tensor, List[Dict[str, torch.Tensor]]]]
+        y_preprocess: torch.Tensor | list[dict[str, torch.Tensor]] | None
         if y is not None and self.label_type == "object_detection":
             y_preprocess = []
         else:
@@ -115,7 +117,7 @@ class ImageResizePyTorch(PreprocessorPyTorch):
             x_preprocess_list.append(x_resized)
 
             if self.label_type == "object_detection" and y is not None:
-                y_resized: Dict[str, torch.Tensor] = {}
+                y_resized: dict[str, torch.Tensor] = {}
 
                 # Copy labels and ensure types
                 if isinstance(y, list) and isinstance(y_preprocess, list):
