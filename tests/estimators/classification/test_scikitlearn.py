@@ -98,8 +98,8 @@ class TestScikitlearnDecisionTreeClassifier(TestBase):
         model = ScikitlearnDecisionTreeClassifier(model=underlying_model)
 
         pred = model.predict(x_test)
-        assert (pred[0].shape[0] == x_test.shape[0])
-        assert (isinstance(model.nb_classes, np.ndarray))
+        assert pred[0].shape[0] == x_test.shape[0]
+        assert isinstance(model.nb_classes, np.ndarray)
         with self.assertRaises(TypeError):
             check_and_transform_label_format(y_train, nb_classes=model.nb_classes)
 
