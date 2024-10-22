@@ -38,7 +38,7 @@ jobs:
             framework: pytorch
             python: '3.10'
             torch: 2.5.0
-            torchvision: 0.19.1+cpu
+            torchvision: 0.20.0
             torchaudio: 2.5.0
 
     name: ${{ matrix.name }}
