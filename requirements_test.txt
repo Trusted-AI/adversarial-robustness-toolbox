@@ -64,7 +64,7 @@ types-PyYAML==6.0.12.20240917
 types-setuptools==71.1.0.20240726
 
 # other
-requests~=2.31.0
+requests~=2.32.3
 ultralytics==8.0.217
 ipython==8.25.0
 
