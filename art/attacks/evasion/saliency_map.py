@@ -88,7 +88,7 @@ class SaliencyMapMethod(EvasionAttack):
 
         # Initialize variables
         dims = list(x.shape[1:])
-        self._nb_features = np.product(dims)
+        self._nb_features = np.prod(dims)
         x_adv = np.reshape(x.astype(ART_NUMPY_DTYPE), (-1, self._nb_features))
         preds = np.argmax(self.estimator.predict(x, batch_size=self.batch_size), axis=1)
 
