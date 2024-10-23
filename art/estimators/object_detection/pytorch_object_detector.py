@@ -327,7 +327,7 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
 
     def loss_gradient(
         self, x: np.ndarray | "torch.Tensor", y: list[dict[str, np.ndarray | "torch.Tensor"]], **kwargs
-    ) -> np.ndarray:
+    ) -> np.ndarray | "torch.Tensor":
         """
         Compute the gradient of the loss function w.r.t. `x`.
 
@@ -359,6 +359,8 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
         # Compute gradients
         loss.backward(retain_graph=True)  # type: ignore
 
+        grads: torch.Tensor | np.ndarray
+
         if x_grad.grad is not None:
             if isinstance(x, np.ndarray):
                 grads = x_grad.grad.cpu().numpy()
@@ -376,7 +378,8 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
         if not self.channels_first:
             if isinstance(x, np.ndarray):
                 grads = np.transpose(grads, (0, 2, 3, 1))
-            else:
+            elif isinstance(grads, torch.Tensor):
+                # grads_tensor: torch.Tensor = grads
                 grads = torch.permute(grads, (0, 2, 3, 1))
 
         assert grads.shape == x.shape

@@ -567,7 +567,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
                 if decoded_output[local_batch_size_idx] == y[local_batch_size_idx]:
                     if loss_2nd_stage[local_batch_size_idx] < best_loss_2nd_stage[local_batch_size_idx]:
                         # Update the best loss at 2nd stage
-                        best_loss_2nd_stage[local_batch_size_idx] = (
+                        best_loss_2nd_stage[local_batch_size_idx] = (  # type: ignore
                             loss_2nd_stage[local_batch_size_idx].detach().cpu().numpy()
                         )
 
@@ -734,7 +734,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
 
         theta_array = np.array(theta)
 
-        return theta_array, original_max_psd
+        return theta_array, original_max_psd  # type: ignore
 
     def _psd_transform(self, delta: "torch.Tensor", original_max_psd: np.ndarray) -> "torch.Tensor":
         """
