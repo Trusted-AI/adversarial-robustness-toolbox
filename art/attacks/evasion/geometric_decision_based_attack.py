@@ -94,6 +94,13 @@ class GeoDA(EvasionAttack):
         """
         super().__init__(estimator=estimator)
 
+        # **Compatibility Checks**
+        if not hasattr(estimator, "input_shape") or not hasattr(estimator, "channels_first"):
+            raise ValueError(
+                f"GeoDA is incompatible with {type(estimator)}. "
+                "Please use a neural network-based classifier."
+            )
+
         self.batch_size = batch_size
         self.norm = norm
         self.sub_dim = sub_dim
@@ -102,16 +109,18 @@ class GeoDA(EvasionAttack):
         self.lambda_param = lambda_param
         self.sigma = sigma
         self._targeted = False
-
         self.verbose = verbose
+
         self._check_params()
 
         self.sub_basis: np.ndarray
         self.nb_calls = 0
         self.clip_min = 0.0
         self.clip_max = 0.0
+
         if self.estimator.input_shape is None:  # pragma: no cover
-            raise ValueError("The `input_shape` of the is required but None.")
+            raise ValueError("The `input_shape` of the estimator is required but None.")
+
         self.nb_channels = (
             self.estimator.input_shape[0] if self.estimator.channels_first else self.estimator.input_shape[2]
         )
