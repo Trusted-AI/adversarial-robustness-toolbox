@@ -1,0 +1,116 @@
+# MIT License
+#
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2022
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+# documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
+# rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit
+# persons to whom the Software is furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all copies or substantial portions of the
+# Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
+# WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+# TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
+"""
+This module implements Clean Label Backdoor Attacks to poison data used in ML models ( Audios )
+"""
+
+import logging
+from typing import Callable, List, Optional, Tuple, Union
+
+
+import numpy as np
+
+
+from art.attacks.attack import PoisoningAttackBlackBox
+
+
+logger = logging.getLogger(__name__)
+
+
+class PoisoningAttackCleanLabelBackdoor(PoisoningAttackBlackBox):
+   # Define the attack parameters, including the trigger function
+   attack_params = PoisoningAttackBlackBox.attack_params + ["trigger_func"]
+   _estimator_requirements = ()
+
+
+   def __init__(self, trigger_func: Callable, backdoor_label: int, trigger_alpha: float = 0.01) -> None:
+       """
+       Initialize the Clean Label Backdoor Poisoning Attack.
+
+
+       Parameters:
+       - trigger_func (Callable): A function that generates the trigger pattern to insert into poisoned data.
+       - backdoor_label (int): The label to assign to poisoned samples.
+       - trigger_alpha (float, optional): An alpha blending parameter for trigger imperceptibility.
+         It controls how much the trigger is blended with the original data (0.0 for no blending, 1.0 for full blending).
+
+
+       Returns:
+       - None
+       """
+       super().__init__()  # Call the constructor of the base class
+       self.trigger_func = trigger_func  # Store the trigger generation function
+       self.backdoor_label = backdoor_label  # Store the label for poisoned samples
+       self.trigger_alpha = trigger_alpha  # Store the blending parameter for trigger imperceptibility
+       self._check_params()  # Validate the parameters to ensure they meet the required criteria
+
+
+   def poison(self, x: np.ndarray, y: Optional[np.ndarray] = None, broadcast=False, **kwargs) -> Tuple[np.ndarray, np.ndarray]:
+       """
+       Generate poisoned data with a clean label backdoor attack.
+
+
+       Parameters:
+       - x (numpy.ndarray): Input data to be poisoned.
+       - y (numpy.ndarray, optional): Target labels for the input data.
+       - broadcast (bool): If True, broadcast labels to match the shape of x.
+
+
+       Returns:
+       - Tuple of poisoned data (numpy.ndarray) and poisoned labels (numpy.ndarray).
+       """
+       if y is None:
+           raise ValueError("Target labels `y` need to be provided for a targeted attack.")
+
+
+       if broadcast:
+           y_attack = np.broadcast_to(y, (x.shape[0], y.shape[0]))
+       else:
+           y_attack = np.copy(y)
+
+
+       num_poison = len(x)
+       if num_poison == 0:
+           raise ValueError("Must input at least one poison point.")
+       poisoned = np.copy(x)
+
+
+       if callable(self.trigger_func):
+           for i in range(num_poison):
+               # Randomly insert the trigger pattern in half of the samples
+               if np.random.rand() < 0.5:
+                   # Generate the trigger pattern using the trigger function
+                   trigger_pattern = self.trigger_func(x[i])
+                   # Blend the trigger imperceptibly with the original data
+                   poisoned[i] = (1 - self.trigger_alpha) * x[i] + self.trigger_alpha * trigger_pattern
+
+
+       # Labels for poisoned samples are set to the backdoor label
+       poisoned_labels = np.full((num_poison,), self.backdoor_label)
+
+
+       return poisoned, poisoned_labels  # Return the poisoned data with the backdoor label
+
+
+   def _check_params(self) -> None:
+       """
+       Validate the parameters of the attack.
+       """
+       if not callable(self.trigger_func):
+           raise ValueError("Trigger function must be callable.")
