@@ -381,23 +381,23 @@ class AdversarialPatchPyTorch(EvasionAttack):
             else:
                 mask_2d = mask[i_sample, :, :]
 
-                edge_x_0 = int(im_scale * padded_patch.shape[self.i_w + 1]) // 2
-                edge_x_1 = int(im_scale * padded_patch.shape[self.i_w + 1]) - edge_x_0
-                edge_y_0 = int(im_scale * padded_patch.shape[self.i_h + 1]) // 2
-                edge_y_1 = int(im_scale * padded_patch.shape[self.i_h + 1]) - edge_y_0
+                edge_h_0 = int(im_scale * padded_patch.shape[self.i_h + 1]) // 2
+                edge_h_1 = int(im_scale * padded_patch.shape[self.i_h + 1]) - edge_h_0
+                edge_w_0 = int(im_scale * padded_patch.shape[self.i_w + 1]) // 2
+                edge_w_1 = int(im_scale * padded_patch.shape[self.i_w + 1]) - edge_w_0
 
-                mask_2d[0:edge_x_0, :] = False
-                if edge_x_1 > 0:
-                    mask_2d[-edge_x_1:, :] = False
-                mask_2d[:, 0:edge_y_0] = False
-                if edge_y_1 > 0:
-                    mask_2d[:, -edge_y_1:] = False
+                mask_2d[0:edge_h_0, :] = False
+                if edge_h_1 > 0:
+                    mask_2d[-edge_h_1:, :] = False
+                mask_2d[:, 0:edge_w_0] = False
+                if edge_w_1 > 0:
+                    mask_2d[:, -edge_w_1:] = False
 
-                num_pos = np.argwhere(mask_2d).shape[0]
-                pos_id = np.random.choice(num_pos, size=1)
-                pos = np.argwhere(mask_2d)[pos_id[0]]
-                x_shift = pos[1] - self.image_shape[self.i_w] // 2
+                num_pos = np.nonzero(mask_2d.int())
+                pos_id = np.random.choice(num_pos.shape[0], size=1, replace=False)
+                pos = num_pos[pos_id[0]]
                 y_shift = pos[0] - self.image_shape[self.i_h] // 2
+                x_shift = pos[1] - self.image_shape[self.i_w] // 2
 
             phi_rotate = float(np.random.uniform(-self.rotation_max, self.rotation_max))
 
