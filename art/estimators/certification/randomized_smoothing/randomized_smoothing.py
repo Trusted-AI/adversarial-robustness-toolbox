@@ -100,13 +100,13 @@ class RandomizedSmoothingMixin(ABC):
             # get class counts
             counts_pred = self._prediction_counts(x_i, batch_size=batch_size)
             top = counts_pred.argsort()[::-1]
-            # Conersion to int 
+            # conversion to int 
             count1 = int(np.max(counts_pred))
             count2 = int(counts_pred[top[1]])
 
             # predict or abstain
             smooth_prediction = np.zeros(counts_pred.shape)
-            #Get p value from BinomTestResult object
+            # get p value from BinomTestResult object
             p_value = binomtest(count1, count1 + count2, p=0.5).pvalue
             if (not is_abstain) or (p_value <= self.alpha):
                 smooth_prediction[np.argmax(counts_pred)] = 1
