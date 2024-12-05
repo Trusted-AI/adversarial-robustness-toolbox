@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2023
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2024
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -16,21 +16,19 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements the abstract base class for all evasion detectors.
+This module implements the BEYOND detector for adversarial examples detection.
+| Paper link: https://openreview.net/pdf?id=S4LqI6CcJ3
 """
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
-
-import abc
-from typing import Any
-
 import numpy as np
 
 from art.defences.detector.evasion.evasion_detector import EvasionDetector
 
 class BeyondDetector(EvasionDetector):
     """
-    BEYOND detector for adversarial samples detection.
-    This detector uses a combination of SSL and target model predictions to detect adversarial samples.
+      BEYOND detector for adversarial samples detection.
+    This detector uses a combination of SSL and target model predictions to detect adversarial examples.
+    
+    | Paper link: https://openreview.net/pdf?id=S4LqI6CcJ3
     """
     
     defence_params = ["target_model", "ssl_model", "augmentations", "aug_num", "alpha", "K", "percentile"]
@@ -133,9 +131,6 @@ class BeyondDetector(EvasionDetector):
         :param batch_size: Batch size for processing
         :param nb_epochs: Number of training epochs (not used in this method)
         """
-        clean_similarities = self._get_metrics(x, batch_size)
-        
-        # 使用第K-1列的值来确定阈值
         k_minus_one_metrics = clean_metrics[:, self.K-1]
         
         # 计算95%分位数作为阈值
