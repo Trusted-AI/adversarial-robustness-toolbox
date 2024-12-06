@@ -27,6 +27,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 from itertools import product
+from packaging.version import parse
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -42,7 +43,7 @@ from six import string_types
 import scipy
 from scipy._lib._util import check_random_state
 
-scipy_version = list(map(int, scipy.__version__.lower().split(".")))
+scipy_version = list(parse(scipy.__version__.lower()).release)
 if scipy_version[1] >= 8:
     from scipy.optimize._optimize import _status_message
 else:

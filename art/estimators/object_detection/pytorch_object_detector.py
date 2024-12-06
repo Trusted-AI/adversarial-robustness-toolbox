@@ -21,6 +21,7 @@ This module implements the task specific estimator for PyTorch object detectors.
 from __future__ import annotations
 
 import logging
+from packaging.version import parse
 from typing import Any, TYPE_CHECKING
 
 import numpy as np
@@ -65,6 +66,7 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
             "loss_rpn_box_reg",
         ),
         device_type: str = "gpu",
+        is_yolov8: bool = False,
     ):
         """
         Initialization.
@@ -92,12 +94,13 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
                               'loss_objectness', and 'loss_rpn_box_reg'.
         :param device_type: Type of device to be used for model and tensors, if `cpu` run on CPU, if `gpu` run on GPU
                             if available otherwise run on CPU.
+        :param is_yolov8: The flag to be used for marking the YOLOv8 model.
         """
         import torch
         import torchvision
 
-        torch_version = list(map(int, torch.__version__.lower().split("+", maxsplit=1)[0].split(".")))
-        torchvision_version = list(map(int, torchvision.__version__.lower().split("+", maxsplit=1)[0].split(".")))
+        torch_version = list(parse(torch.__version__.lower()).release)
+        torchvision_version = list(parse(torchvision.__version__.lower()).release)
         assert not (torch_version[0] == 1 and (torch_version[1] == 8 or torch_version[1] == 9)), (
             "PyTorchObjectDetector does not support torch==1.8 and torch==1.9 because of "
             "https://github.com/pytorch/vision/issues/4153. Support will return for torch==1.10."
@@ -136,7 +139,11 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
 
         self._model: torch.nn.Module
         self._model.to(self._device)
-        self._model.eval()
+        self.is_yolov8 = is_yolov8
+        if self.is_yolov8:
+            self._model.model.eval()
+        else:
+            self._model.eval()
 
     @property
     def native_label_is_pytorch_format(self) -> bool:
@@ -399,7 +406,10 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
         from torch.utils.data import TensorDataset, DataLoader
 
         # Set model to evaluation mode
-        self._model.eval()
+        if self.is_yolov8:
+            self._model.model.eval()
+        else:
+            self._model.eval()
 
         # Apply preprocessing and convert to tensors
         x_preprocessed, _ = self._preprocess_and_convert_inputs(x=x, y=None, fit=False, no_grad=True)
