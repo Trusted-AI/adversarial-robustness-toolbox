@@ -21,16 +21,16 @@ import logging
 import pytest
 import numpy as np
 
+import torch.nn as nn
+
 from art.attacks.evasion.fast_gradient import FastGradientMethod
 from art.defences.detector.evasion import BeyondDetector
-from art.utils import load_dataset, get_file
 
 
 from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)
 
-import torch.nn as nn
 from torchvision import models, transforms
 
 class SimSiamWithCls(nn.Module):
