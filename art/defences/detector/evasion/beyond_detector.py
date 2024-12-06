@@ -84,6 +84,7 @@ class BeyondDetector(EvasionDetector):
     def _get_metrics(self, x: np.ndarray, batch_size: int = 128) -> tuple[dict, np.ndarray]:
         """
         Calculate similarities that combining label consistency and representation similarity for given samples
+
         :param x: Input samples
         :param batch_size: Batch size for processing
         :return: A report similarities
@@ -132,6 +133,7 @@ class BeyondDetector(EvasionDetector):
     def fit(self, x: np.ndarray, y: np.ndarray, batch_size: int = 128, nb_epochs: int = 20, **kwargs) -> None:
         """
         Determine a threshold that covers 95% of clean samples.
+
         :param x: Clean sample data
         :param y: Clean sample labels (not used in this method)
         :param batch_size: Batch size for processing
@@ -144,6 +146,7 @@ class BeyondDetector(EvasionDetector):
     def detect(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> tuple[dict, np.ndarray]:
         """
         Detect whether given samples are adversarial
+        
         :param x: Input samples
         :param batch_size: Batch size for processing
         :return: (report, is_adversarial):
