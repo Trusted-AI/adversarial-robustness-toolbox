@@ -20,6 +20,12 @@ This module implements the BEYOND detector for adversarial examples detection.
 | Paper link: https://openreview.net/pdf?id=S4LqI6CcJ3
 """
 import numpy as np
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from art.utils import CLASSIFIER_NEURALNETWORK_TYPE
+
+
+logger = logging.getLogger(__name__)
 
 from art.defences.detector.evasion.evasion_detector import EvasionDetector
 
@@ -34,13 +40,13 @@ class BeyondDetector(EvasionDetector):
     defence_params = ["target_model", "ssl_model", "augmentations", "aug_num", "alpha", "K", "percentile"]
 
     def __init__(self,
-        target_model,
-        ssl_model,
-        augmentations=None,
-        aug_num=50,
-        alpha=0.8,
-        K=20,
-        percentile=5) -> None:
+        target_model: "CLASSIFIER_NEURALNETWORK_TYPE",
+        ssl_model: "CLASSIFIER_NEURALNETWORK_TYPE",
+        augmentations: Optional[Callable] = None,
+        aug_num: int=50,
+        alpha: float=0.8,
+        K:int=20,
+        percentile:int=5) -> None:
         """
         Initialize the BEYOND detector.
 
@@ -72,7 +78,7 @@ class BeyondDetector(EvasionDetector):
 
     
     
-    def _multi_transform(self, img):
+    def _multi_transform(self, img: torch.Tensor) -> torch.Tensor:
         return torch.stack([self.img_augmentations(img) for _ in range(self.aug_num)], dim=1)
 
     def _get_metrics(self, x: np.ndarray, batch_size: int = 128) -> tuple[dict, np.ndarray]:
