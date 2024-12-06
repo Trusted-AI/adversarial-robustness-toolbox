@@ -134,8 +134,6 @@ class BeyondDetector(EvasionDetector):
         k_minus_one_metrics = clean_metrics[:, self.K-1]
         
         self.threshold = np.percentile(k_minus_one_metrics, self.threshold)
-        
-        print(f"Threshold set to: {self.threshold}")
 
     def detect(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> tuple[dict, np.ndarray]:
         """
