@@ -29,8 +29,6 @@ from art.defences.detector.evasion import BeyondDetector
 
 from tests.utils import ARTTestException
 
-logger = logging.getLogger(__name__)
-
 from torchvision import models, transforms
 
 class SimSiamWithCls(nn.Module):

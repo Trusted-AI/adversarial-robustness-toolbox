@@ -17,6 +17,7 @@
 # SOFTWARE.
 """
 This module implements the BEYOND detector for adversarial examples detection.
+
 | Paper link: https://openreview.net/pdf?id=S4LqI6CcJ3
 """
 import numpy as np
@@ -24,8 +25,6 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_NEURALNETWORK_TYPE
 
-
-logger = logging.getLogger(__name__)
 
 from art.defences.detector.evasion.evasion_detector import EvasionDetector
 
