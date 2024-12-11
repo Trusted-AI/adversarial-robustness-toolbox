@@ -41,7 +41,7 @@ class BeyondDetector(EvasionDetector):
     def __init__(self,
         target_model: "CLASSIFIER_NEURALNETWORK_TYPE",
         ssl_model: "CLASSIFIER_NEURALNETWORK_TYPE",
-        augmentations: Optional[Callable] = None,
+        augmentations: Callable | None,
         aug_num: int=50,
         alpha: float=0.8,
         K:int=20,
