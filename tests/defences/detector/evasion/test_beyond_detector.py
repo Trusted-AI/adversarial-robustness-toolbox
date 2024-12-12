@@ -114,8 +114,8 @@ def test_beyond_detector(art_warning, get_default_cifar10_subset):
         # Download pretrained weights from
         # https://drive.google.com/drive/folders/1ieEdd7hOj2CIl1FQfu4-3RGZmEj-mesi?usp=sharing
         target_model = models.resnet18()
-        # target_model.load_state_dict(torch.load("../../../../utils/resources/models/resnet_c10.pth", map_location=torch.device('cpu')))
-        ssl_model = get_ssl_model(weights_path="../../../../utils/resources/models/simsiam_c10.pth")
+        # target_model.load_state_dict(torch.load("./utils/resources/models/resnet_c10.pth", map_location=torch.device('cpu')))
+        ssl_model = get_ssl_model(weights_path="./utils/resources/models/simsiam_c10.pth")
 
         target_classifier = PyTorchClassifier(
             model=target_model, nb_classes=10, input_shape=(3, 32, 32), loss=torch.nn.CrossEntropyLoss()

@@ -43,16 +43,16 @@ class BeyondDetectorPyTorch(EvasionDetector):
     | Paper link: https://openreview.net/pdf?id=S4LqI6CcJ3
     """
 
-    defence_params = ["target_model", "ssl_model", "augmentations", "aug_num", "alpha", "K", "percentile"]
+    defence_params = ["target_model", "ssl_model", "augmentations", "aug_num", "alpha", "var_K", "percentile"]
 
     def __init__(
         self,
         target_classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
         ssl_classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
-        augmentations: Callable | None,
+        augmentations: Callable,
         aug_num: int = 50,
         alpha: float = 0.8,
-        K: int = 20,
+        var_K: int = 20,
         percentile: int = 5,
     ) -> None:
         """
@@ -63,7 +63,7 @@ class BeyondDetectorPyTorch(EvasionDetector):
         :param augmentations: data augmentations for generating neighborhoods
         :param aug_num: Number of augmentations to apply to each sample (default: 50)
         :param alpha: Weight factor for combining label and representation similarities (default: 0.8)
-        :param K: Number of top similarities to consider (default: 20)
+        :param var_K: Number of top similarities to consider (default: 20)
         :param percentile: using to calculate the threshold
         """
         import torch
@@ -75,7 +75,7 @@ class BeyondDetectorPyTorch(EvasionDetector):
         self.ssl_model = ssl_classifier.model.to(self.device)
         self.aug_num = aug_num
         self.alpha = alpha
-        self.K = K
+        self.var_K = var_K
 
         self.backbone = self.ssl_model.backbone
         self.model_classifier = self.ssl_model.classifier
@@ -111,7 +111,7 @@ class BeyondDetectorPyTorch(EvasionDetector):
 
         number_batch = int(math.ceil(len(samples) / batch_size))
 
-        similarities = []
+        similarities_list = []
 
         with torch.no_grad():
             for index in range(number_batch):
@@ -143,11 +143,11 @@ class BeyondDetectorPyTorch(EvasionDetector):
                     dim=2,
                 )
 
-                similarities.append(
+                similarities_list.append(
                     (self.alpha * sim_preds + (1 - self.alpha) * sim_repre).sort(descending=True)[0].cpu().numpy()
                 )
 
-        similarities = np.concatenate(similarities, axis=0)
+        similarities = np.concatenate(similarities_list, axis=0)
 
         return similarities
 
@@ -161,10 +161,10 @@ class BeyondDetectorPyTorch(EvasionDetector):
         :param nb_epochs: Number of training epochs (not used in this method)
         """
         clean_metrics = self._get_metrics(x=x, batch_size=batch_size)
-        k_minus_one_metrics = clean_metrics[:, self.K - 1]
+        k_minus_one_metrics = clean_metrics[:, self.var_K - 1]
         self.threshold = np.percentile(k_minus_one_metrics, q=self.percentile)
 
-    def detect(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> tuple[dict, np.ndarray]:
+    def detect(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> tuple[np.ndarray, np.ndarray]:
         """
         Detect whether given samples are adversarial
 
@@ -179,7 +179,7 @@ class BeyondDetectorPyTorch(EvasionDetector):
 
         similarities = self._get_metrics(x, batch_size)
 
-        report = similarities[:, self.K - 1]
+        report = similarities[:, self.var_K - 1]
         is_adversarial = report < self.threshold
 
         return report, is_adversarial
