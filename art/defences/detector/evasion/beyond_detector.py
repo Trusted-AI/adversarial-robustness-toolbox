@@ -20,13 +20,17 @@ This module implements the BEYOND detector for adversarial examples detection.
 
 | Paper link: https://openreview.net/pdf?id=S4LqI6CcJ3
 """
-import numpy as np
+from __future__ import annotations
+
 from typing import TYPE_CHECKING
+
+import numpy as np
+
+from art.defences.detector.evasion.evasion_detector import EvasionDetector
+
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_NEURALNETWORK_TYPE
 
-
-from art.defences.detector.evasion.evasion_detector import EvasionDetector
 
 class BeyondDetector(EvasionDetector):
     """
@@ -41,7 +45,7 @@ class BeyondDetector(EvasionDetector):
     def __init__(self,
         target_model: "CLASSIFIER_NEURALNETWORK_TYPE",
         ssl_model: "CLASSIFIER_NEURALNETWORK_TYPE",
-        augmentations: Optional[Callable] = None,
+        augmentations: Callable | None,
         aug_num: int=50,
         alpha: float=0.8,
         K:int=20,

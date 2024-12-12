@@ -17,19 +17,17 @@
 # SOFTWARE.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import logging
 import pytest
 import numpy as np
 
 import torch.nn as nn
+from torchvision import models, transforms
 
 from art.attacks.evasion.fast_gradient import FastGradientMethod
 from art.defences.detector.evasion import BeyondDetector
 
-
 from tests.utils import ARTTestException
 
-from torchvision import models, transforms
 
 class SimSiamWithCls(nn.Module):
     '''
