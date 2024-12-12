@@ -22,10 +22,6 @@ This module implements the BEYOND detector for adversarial examples detection.
 """
 from __future__ import annotations
 
-<<<<<<< HEAD
-=======
-import numpy as np
->>>>>>> 94c6cedef491f55d6033fb73162d622ff9ece870
 from typing import TYPE_CHECKING
 
 import numpy as np
