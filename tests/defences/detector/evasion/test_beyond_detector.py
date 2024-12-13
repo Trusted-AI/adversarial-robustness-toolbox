@@ -145,7 +145,7 @@ def test_beyond_detector(art_warning, get_default_cifar10_subset):
             augmentations=img_augmentations,
             aug_num=50,
             alpha=0.8,
-            K=20,
+            var_K=20,
             percentile=5,
         )
 

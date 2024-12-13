@@ -164,7 +164,7 @@ class BeyondDetectorPyTorch(EvasionDetector):
         k_minus_one_metrics = clean_metrics[:, self.var_K - 1]
         self.threshold = np.percentile(k_minus_one_metrics, q=self.percentile)
 
-    def detect(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> tuple[np.ndarray, np.ndarray]:
+    def detect(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> tuple[np.ndarray, np.ndarray]:  # type: ignore
         """
         Detect whether given samples are adversarial
 
