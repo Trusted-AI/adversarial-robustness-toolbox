@@ -100,7 +100,7 @@ class RandomizedSmoothingMixin(ABC):
             # get class counts
             counts_pred = self._prediction_counts(x_i, batch_size=batch_size)
             top = counts_pred.argsort()[::-1]
-            # conversion to int 
+            # conversion to int
             count1 = int(np.max(counts_pred))
             count2 = int(counts_pred[top[1]])
 
