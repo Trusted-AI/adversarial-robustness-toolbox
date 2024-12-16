@@ -146,6 +146,10 @@ else
                          "tests/defences/test_rounded.py" \
                          "tests/defences/test_thermometer_encoding.py" \
                          "tests/defences/test_variance_minimization.py" \
+                         "tests/defences/detector/evasion/test_beyond_detector.py" \
+                         "tests/defences/detector/evasion/test_binary_activation_detector.py" \
+                         "tests/defences/detector/evasion/test_binary_input_detector.py" \
+                         "tests/defences/detector/evasion/test_subsetscanning_detector.py" \
                          "tests/defences/detector/poison/test_activation_defence.py" \
                          "tests/defences/detector/poison/test_clustering_analyzer.py" \
                          "tests/defences/detector/poison/test_ground_truth_evaluator.py" \

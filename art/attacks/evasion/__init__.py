@@ -14,6 +14,7 @@ from art.attacks.evasion.adversarial_asr import CarliniWagnerASR
 from art.attacks.evasion.auto_attack import AutoAttack
 from art.attacks.evasion.auto_projected_gradient_descent import AutoProjectedGradientDescent
 from art.attacks.evasion.auto_conjugate_gradient import AutoConjugateGradient
+from art.attacks.evasion.rescaling_auto_conjugate_gradient import RescalingAutoConjugateGradient
 
 if importlib.util.find_spec("numba") is not None:
     from art.attacks.evasion.brendel_bethge import BrendelBethgeAttack
@@ -62,6 +63,7 @@ from art.attacks.evasion.shadow_attack import ShadowAttack
 from art.attacks.evasion.shapeshifter import ShapeShifter
 from art.attacks.evasion.simba import SimBA
 from art.attacks.evasion.spatial_transformation import SpatialTransformation
+from art.attacks.evasion.steal_now_attack_later.steal_now_attack_later import SNAL
 from art.attacks.evasion.square_attack import SquareAttack
 from art.attacks.evasion.pixel_threshold import ThresholdAttack
 from art.attacks.evasion.universal_perturbation import UniversalPerturbation

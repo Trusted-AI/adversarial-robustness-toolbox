@@ -85,7 +85,7 @@ class RandomizedSmoothingMixin(ABC):
         :type is_abstain: `boolean`
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         """
-        from scipy.stats import binom_test
+        from scipy.stats import binomtest
 
         is_abstain = kwargs.get("is_abstain")
         if is_abstain is not None and not isinstance(is_abstain, bool):  # pragma: no cover
@@ -100,12 +100,15 @@ class RandomizedSmoothingMixin(ABC):
             # get class counts
             counts_pred = self._prediction_counts(x_i, batch_size=batch_size)
             top = counts_pred.argsort()[::-1]
-            count1 = np.max(counts_pred)
-            count2 = counts_pred[top[1]]
+            # conversion to int 
+            count1 = int(np.max(counts_pred))
+            count2 = int(counts_pred[top[1]])
 
             # predict or abstain
             smooth_prediction = np.zeros(counts_pred.shape)
-            if (not is_abstain) or (binom_test(count1, count1 + count2, p=0.5) <= self.alpha):
+            # get p value from BinomTestResult object
+            p_value = binomtest(count1, count1 + count2, p=0.5).pvalue
+            if (not is_abstain) or (p_value <= self.alpha):
                 smooth_prediction[np.argmax(counts_pred)] = 1
             elif is_abstain:
                 n_abstained += 1
