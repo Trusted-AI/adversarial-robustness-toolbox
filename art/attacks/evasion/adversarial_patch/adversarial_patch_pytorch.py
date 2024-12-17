@@ -394,7 +394,7 @@ class AdversarialPatchPyTorch(EvasionAttack):
                     mask_2d[:, -edge_w_1:] = False
 
                 num_pos = np.nonzero(mask_2d.int())
-                pos_id = np.random.choice(num_pos.shape[0], size=1, replace=False)
+                pos_id = np.random.choice(num_pos.shape[0], size=1, replace=False)  # type: ignore
                 pos = num_pos[pos_id[0]]
                 y_shift = pos[0] - self.image_shape[self.i_h] // 2
                 x_shift = pos[1] - self.image_shape[self.i_w] // 2
