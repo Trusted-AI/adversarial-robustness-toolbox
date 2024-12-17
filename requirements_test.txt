@@ -6,7 +6,7 @@ matplotlib==3.7.1
 scikit-learn==1.4.1.post1
 six==1.16.0
 Pillow==10.3.0
-tqdm==4.66.4
+tqdm==4.67.1
 statsmodels==0.14.2
 pydub==0.25.1
 resampy==0.4.3
@@ -64,7 +64,7 @@ types-PyYAML==6.0.12.20240917
 types-setuptools==71.1.0.20240726
 
 # other
-requests~=2.31.0
+requests~=2.32.3
 ultralytics==8.0.217
 ipython==8.25.0
 
