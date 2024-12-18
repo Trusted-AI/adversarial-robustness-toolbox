@@ -41,11 +41,6 @@ jobs:
           python -m pip install --upgrade pip setuptools wheel
           pip3 install -q -r requirements_test.txt
           pip list
-      - name: Pre-install torch
-        run: |
-          pip install torch==1.12.1+cpu -f https://download.pytorch.org/whl/cpu/torch_stable.html
-          pip install torchvision==0.13.1+cpu -f https://download.pytorch.org/whl/cpu/torch_stable.html
-          pip install torchaudio==0.12.1+cpu -f https://download.pytorch.org/whl/cpu/torch_stable.html
       - name: Run Test Action - test_pytorch_object_detector
         run: pytest --cov-report=xml --cov=art --cov-append -q -vv tests/estimators/object_detection/test_pytorch_object_detector.py --framework=pytorch --durations=0
       - name: Run Test Action - test_pytorch_faster_rcnn
@@ -55,7 +50,7 @@ jobs:
       - name: Run Test Action - test_pytorch_object_seeker_faster_rcnn
         run: pytest --cov-report=xml --cov=art --cov-append -q -vv tests/estimators/object_detection/test_object_seeker_faster_rcnn.py --framework=pytorch --durations=0
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: true
