@@ -314,6 +314,12 @@ Spatial Transformations Attack
    :members:
    :special-members:
 
+Steal Now Attack Later Attack
+-----------------------------
+.. autoclass:: SNAL
+   :members:
+   :special-members:
+
 Square Attack
 -------------
 .. autoclass:: SquareAttack
