@@ -116,7 +116,7 @@ class ClassifierMixin(ABC, metaclass=InputFilter):
         """
         Set the number of output classes.
         """
-        if nb_classes is None or nb_classes < 2:
+        if nb_classes is None or (isinstance(nb_classes, (int, np.integer)) and nb_classes < 2):
             raise ValueError("nb_classes must be greater than or equal to 2.")
 
         self._nb_classes = nb_classes
