@@ -330,7 +330,7 @@ class AutoAttack(EvasionAttack):
             )
             auto_attack_meta = (
                 f"AutoAttack(targeted={self.targeted}, parallel_pool_size={self.parallel_pool_size}, "
-                + "num_attacks={len(self.args)})"
+                + f"num_attacks={len(self.args)})"
             )
             return f"{auto_attack_meta}\nBestAttacks:\n{best_attack_meta}"
 
@@ -342,7 +342,7 @@ class AutoAttack(EvasionAttack):
         )
         auto_attack_meta = (
             f"AutoAttack(targeted={self.targeted}, parallel_pool_size={self.parallel_pool_size}, "
-            + "num_attacks={len(self.attacks)})"
+            + f"num_attacks={len(self.attacks)})"
         )
         return f"{auto_attack_meta}\nBestAttacks:\n{best_attack_meta}"
 
