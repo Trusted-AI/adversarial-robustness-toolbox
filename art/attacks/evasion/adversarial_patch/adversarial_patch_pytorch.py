@@ -513,7 +513,9 @@ class AdversarialPatchPyTorch(EvasionAttack):
                 logger.info("Setting labels to estimator classification predictions.")
                 y = to_categorical(np.argmax(self.estimator.predict(x=x), axis=1), nb_classes=self.estimator.nb_classes)
 
-            y = check_and_transform_label_format(labels=y, nb_classes=self.estimator.nb_classes)
+                y_array: np.ndarray = y
+
+                y = check_and_transform_label_format(labels=y_array, nb_classes=self.estimator.nb_classes)
 
             # check if logits or probabilities
             y_pred = self.estimator.predict(x=x[[0]])
