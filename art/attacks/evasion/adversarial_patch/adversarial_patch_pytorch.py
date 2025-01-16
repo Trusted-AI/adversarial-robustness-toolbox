@@ -183,7 +183,10 @@ class AdversarialPatchPyTorch(EvasionAttack):
             self._optimizer = torch.optim.Adam([self._patch], lr=self.learning_rate)
 
     def _train_step(
-        self, images: "torch.Tensor", target: "torch.Tensor", mask: "torch.Tensor" | None = None
+        self,
+        images: "torch.Tensor",
+        target: "torch.Tensor" | list[dict[str, "torch.Tensor"]],
+        mask: "torch.Tensor" | None = None,
     ) -> "torch.Tensor":
         import torch
 
@@ -227,7 +230,12 @@ class AdversarialPatchPyTorch(EvasionAttack):
 
         return predictions, target
 
-    def _loss(self, images: "torch.Tensor", target: "torch.Tensor", mask: "torch.Tensor" | None) -> "torch.Tensor":
+    def _loss(
+        self,
+        images: "torch.Tensor",
+        target: "torch.Tensor" | list[dict[str, "torch.Tensor"]],
+        mask: "torch.Tensor" | None,
+    ) -> "torch.Tensor":
         import torch
 
         if isinstance(target, torch.Tensor):
@@ -475,13 +483,13 @@ class AdversarialPatchPyTorch(EvasionAttack):
         return patched_images
 
     def generate(  # type: ignore
-        self, x: np.ndarray, y: np.ndarray | None = None, **kwargs
+        self, x: np.ndarray, y: np.ndarray | list[dict[str, np.ndarray | "torch.Tensor"]] | None = None, **kwargs
     ) -> tuple[np.ndarray, np.ndarray]:
         """
         Generate an adversarial patch and return the patch and its mask in arrays.
 
         :param x: An array with the original input images of shape NCHW or input videos of shape NFCHW.
-        :param y: An array with the original true labels.
+        :param y: The true or target labels.
         :param mask: A boolean array of shape equal to the shape of a single samples (1, H, W) or the shape of `x`
                      (N, H, W) without their channel dimensions. Any features for which the mask is True can be the
                      center location of the patch during sampling.
@@ -499,11 +507,12 @@ class AdversarialPatchPyTorch(EvasionAttack):
         if self.patch_location is not None and mask is not None:
             raise ValueError("Masks can only be used if the `patch_location` is `None`.")
 
-        if y is None:  # pragma: no cover
-            logger.info("Setting labels to estimator predictions and running untargeted attack because `y=None`.")
-            y = to_categorical(np.argmax(self.estimator.predict(x=x), axis=1), nb_classes=self.estimator.nb_classes)
-
         if hasattr(self.estimator, "nb_classes"):
+
+            if y is None:  # pragma: no cover
+                logger.info("Setting labels to estimator classification predictions.")
+                y = to_categorical(np.argmax(self.estimator.predict(x=x), axis=1), nb_classes=self.estimator.nb_classes)
+
             y = check_and_transform_label_format(labels=y, nb_classes=self.estimator.nb_classes)
 
             # check if logits or probabilities
@@ -513,6 +522,10 @@ class AdversarialPatchPyTorch(EvasionAttack):
                 self.use_logits = False
             else:
                 self.use_logits = True
+        else:
+            if y is None:  # pragma: no cover
+                logger.info("Setting labels to estimator object detection predictions.")
+                y = self.estimator.predict(x=x)
 
         if isinstance(y, np.ndarray):
             x_tensor = torch.Tensor(x)
