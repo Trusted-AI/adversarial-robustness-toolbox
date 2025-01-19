@@ -66,6 +66,7 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
             "loss_rpn_box_reg",
         ),
         device_type: str = "gpu",
+        is_yolov8: bool = False,
     ):
         """
         Initialization.
@@ -93,6 +94,7 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
                               'loss_objectness', and 'loss_rpn_box_reg'.
         :param device_type: Type of device to be used for model and tensors, if `cpu` run on CPU, if `gpu` run on GPU
                             if available otherwise run on CPU.
+        :param is_yolov8: The flag to be used for marking the YOLOv8 model.
         """
         import torch
         import torchvision
@@ -137,7 +139,11 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
 
         self._model: torch.nn.Module
         self._model.to(self._device)
-        self._model.eval()
+        self.is_yolov8 = is_yolov8
+        if self.is_yolov8:
+            self._model.model.eval()
+        else:
+            self._model.eval()
 
     @property
     def native_label_is_pytorch_format(self) -> bool:
@@ -327,7 +333,7 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
 
     def loss_gradient(
         self, x: np.ndarray | "torch.Tensor", y: list[dict[str, np.ndarray | "torch.Tensor"]], **kwargs
-    ) -> np.ndarray:
+    ) -> np.ndarray | "torch.Tensor":
         """
         Compute the gradient of the loss function w.r.t. `x`.
 
@@ -359,6 +365,8 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
         # Compute gradients
         loss.backward(retain_graph=True)  # type: ignore
 
+        grads: torch.Tensor | np.ndarray
+
         if x_grad.grad is not None:
             if isinstance(x, np.ndarray):
                 grads = x_grad.grad.cpu().numpy()
@@ -376,7 +384,8 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
         if not self.channels_first:
             if isinstance(x, np.ndarray):
                 grads = np.transpose(grads, (0, 2, 3, 1))
-            else:
+            elif isinstance(grads, torch.Tensor):
+                # grads_tensor: torch.Tensor = grads
                 grads = torch.permute(grads, (0, 2, 3, 1))
 
         assert grads.shape == x.shape
@@ -400,7 +409,10 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
         from torch.utils.data import TensorDataset, DataLoader
 
         # Set model to evaluation mode
-        self._model.eval()
+        if self.is_yolov8:
+            self._model.model.eval()
+        else:
+            self._model.eval()
 
         # Apply preprocessing and convert to tensors
         x_preprocessed, _ = self._preprocess_and_convert_inputs(x=x, y=None, fit=False, no_grad=True)
