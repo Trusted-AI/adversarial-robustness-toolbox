@@ -489,7 +489,11 @@ class AdversarialPatchPyTorch(EvasionAttack):
         Generate an adversarial patch and return the patch and its mask in arrays.
 
         :param x: An array with the original input images of shape NCHW or input videos of shape NFCHW.
-        :param y: The true or target labels.
+        :param y: True or target labels of format `list[dict[str, Union[np.ndarray, torch.Tensor]]]`, one for each
+                  input image. The fields of the dict are as follows:
+
+                  - boxes [N, 4]: the boxes in [x1, y1, x2, y2] format, with 0 <= x1 < x2 <= W and 0 <= y1 < y2 <= H.
+                  - labels [N]: the labels for each image.
         :param mask: A boolean array of shape equal to the shape of a single samples (1, H, W) or the shape of `x`
                      (N, H, W) without their channel dimensions. Any features for which the mask is True can be the
                      center location of the patch during sampling.
@@ -511,11 +515,13 @@ class AdversarialPatchPyTorch(EvasionAttack):
 
             if y is None:  # pragma: no cover
                 logger.info("Setting labels to estimator classification predictions.")
-                y = to_categorical(np.argmax(self.estimator.predict(x=x), axis=1), nb_classes=self.estimator.nb_classes)
-
+                y_array: np.ndarray = to_categorical(
+                    np.argmax(self.estimator.predict(x=x), axis=1), nb_classes=self.estimator.nb_classes
+                )
+            else:
                 y_array: np.ndarray = y
 
-                y = check_and_transform_label_format(labels=y_array, nb_classes=self.estimator.nb_classes)
+            y = check_and_transform_label_format(labels=y_array, nb_classes=self.estimator.nb_classes)
 
             # check if logits or probabilities
             y_pred = self.estimator.predict(x=x[[0]])
