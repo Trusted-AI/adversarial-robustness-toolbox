@@ -36,7 +36,7 @@ torchaudio==2.5.0
 torchvision==0.20.0
 
 # PyTorch image transformers
-timm==0.9.2
+timm==1.0.14
 
 catboost==1.2.7
 GPy==1.13.2
