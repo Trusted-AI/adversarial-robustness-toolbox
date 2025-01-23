@@ -140,9 +140,8 @@ def plot_3d(
         colors = []
         for i in range(len(np.unique(labels))):
             colors.append("C" + str(i))
-    else:
-        if len(colors) != len(np.unique(labels)):
-            raise ValueError("The amount of provided colors should match the number of labels in the 3pd plot.")
+    elif len(colors) != len(np.unique(labels)):
+        raise ValueError("The amount of provided colors should match the number of labels in the 3pd plot.")
 
     fig = plt.figure()
     axis = plt.axes(projection="3d")

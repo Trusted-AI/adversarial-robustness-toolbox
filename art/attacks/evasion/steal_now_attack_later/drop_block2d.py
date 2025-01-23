@@ -1,4 +1,4 @@
-# pylint: disable=C0114
+# pylint: disable=missing-module-docstring
 # BSD 3-Clause License
 #
 # Copyright (c) Soumith Chintala 2016,
@@ -55,7 +55,7 @@ def drop_block2d(x: "torch.Tensor", prob: float, block_size: int):
     if x.ndim != 4:
         raise ValueError(f"input should be 4 dimensional. Got {x.ndim} dimensions.")
 
-    N, _, H, W = x.size()  # pylint: disable=C0103
+    N, _, H, W = x.size()  # pylint: disable=invalid-name
     block_size = min(block_size, W, H)
     # compute the gamma of Bernoulli distribution
     gamma = (prob * H * W) / ((block_size**2) * ((H - block_size + 1) * (W - block_size + 1)))

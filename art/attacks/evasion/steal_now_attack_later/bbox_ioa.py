@@ -1,4 +1,4 @@
-# pylint: disable=C0114
+# pylint: disable=missing-module-docstring
 #                    GNU AFFERO GENERAL PUBLIC LICENSE
 #                       Version 3, 19 November 2007
 #

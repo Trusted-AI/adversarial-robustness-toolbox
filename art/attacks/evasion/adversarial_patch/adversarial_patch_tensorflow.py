@@ -460,7 +460,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
             else:
                 dataset = tf.data.Dataset.from_tensor_slices((x, y)).batch(self.batch_size)
         else:
-            if shuffle:
+            if shuffle:  # pylint: disable=else-if-used
                 dataset = tf.data.Dataset.from_tensor_slices((x, y, mask)).shuffle(10000).batch(self.batch_size)
             else:
                 dataset = tf.data.Dataset.from_tensor_slices((x, y, mask)).batch(self.batch_size)

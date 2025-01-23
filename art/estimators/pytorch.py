@@ -181,7 +181,7 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
                         if preprocess.apply_fit:
                             x, y = preprocess.forward(x, y)
                     else:
-                        if preprocess.apply_predict:
+                        if preprocess.apply_predict:  # pylint: disable=else-if-used
                             x, y = preprocess.forward(x, y)
                 return x, y
 
@@ -207,7 +207,7 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
                     if preprocess.apply_fit:
                         x, y = preprocess(x, y)
                 else:
-                    if preprocess.apply_predict:
+                    if preprocess.apply_predict:  # pylint: disable=else-if-used
                         x, y = preprocess(x, y)
 
         else:
@@ -256,7 +256,7 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
                     if preprocess.apply_fit:
                         x = preprocess.estimate_forward(x)
                 else:
-                    if preprocess.apply_predict:
+                    if preprocess.apply_predict:  # pylint: disable=else-if-used
                         x = preprocess.estimate_forward(x)
 
             x.backward(gradients)
@@ -276,7 +276,7 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
                     if preprocess.apply_fit:
                         gradients = preprocess.estimate_gradient(x, gradients)
                 else:
-                    if preprocess.apply_predict:
+                    if preprocess.apply_predict:  # pylint: disable=else-if-used
                         gradients = preprocess.estimate_gradient(x, gradients)
 
         else:

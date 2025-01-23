@@ -414,7 +414,7 @@ class AdversarialPatchNumpy(EvasionAttack):
                 elif self.nb_dims == 4:
                     x_out[:, :, top : top + scale_h, left : left + scale_w] = zoom(x, zoom=zooms, order=1)
             else:
-                if self.nb_dims == 3:
+                if self.nb_dims == 3:  # pylint: disable=else-if-used
                     x_out[top : top + scale_h, left : left + scale_w, :] = zoom(x, zoom=zooms, order=1)
                 elif self.nb_dims == 4:
                     x_out[:, top : top + scale_h, left : left + scale_w, :] = zoom(x, zoom=zooms, order=1)
@@ -433,7 +433,7 @@ class AdversarialPatchNumpy(EvasionAttack):
                     elif self.nb_dims == 4:
                         x_out = zoom(x[:, :, top : top + scale_h, left : left + scale_w], zoom=zooms, order=1)
                 else:
-                    if self.nb_dims == 3:
+                    if self.nb_dims == 3:  # pylint: disable=else-if-used
                         x_out = zoom(x[top : top + scale_h, left : left + scale_w, :], zoom=zooms, order=1)
                     elif self.nb_dims == 4:
                         x_out = zoom(x[:, top : top + scale_h, left : left + scale_w, :], zoom=zooms, order=1)
@@ -450,7 +450,7 @@ class AdversarialPatchNumpy(EvasionAttack):
                 elif self.nb_dims == 4:
                     x_out = x_out[:, :, cut_top : cut_top + height, cut_left : cut_left + width]
             else:
-                if self.nb_dims == 3:
+                if self.nb_dims == 3:  # pylint: disable=else-if-used
                     x_out = x_out[cut_top : cut_top + height, cut_left : cut_left + width, :]
                 elif self.nb_dims == 4:
                     x_out = x_out[:, cut_top : cut_top + height, cut_left : cut_left + width, :]
@@ -469,7 +469,7 @@ class AdversarialPatchNumpy(EvasionAttack):
             elif self.nb_dims == 4:
                 shift_hw = (0, 0, shift_h, shift_w)
         else:
-            if self.nb_dims == 3:
+            if self.nb_dims == 3:  # pylint: disable=else-if-used
                 shift_hw = (shift_h, shift_w, 0)
             elif self.nb_dims == 4:
                 shift_hw = (0, shift_h, shift_w, 0)
@@ -509,7 +509,7 @@ class AdversarialPatchNumpy(EvasionAttack):
             elif self.nb_dims == 4:
                 pad_width = ((0, 0), (0, 0), (pad_h_before, pad_h_after), (pad_w_before, pad_w_after))  # type: ignore
         else:
-            if self.nb_dims == 3:
+            if self.nb_dims == 3:  # pylint: disable=else-if-used
                 pad_width = ((pad_h_before, pad_h_after), (pad_w_before, pad_w_after), (0, 0))  # type: ignore
             elif self.nb_dims == 4:
                 pad_width = ((0, 0), (pad_h_before, pad_h_after), (pad_w_before, pad_w_after), (0, 0))  # type: ignore
@@ -591,7 +591,7 @@ class AdversarialPatchNumpy(EvasionAttack):
             elif self.nb_dims == 4:
                 gradients = gradients[:, :, pad_h_before : pad_h_before + height, pad_w_before : pad_w_before + width]
         else:
-            if self.nb_dims == 3:
+            if self.nb_dims == 3:  # pylint: disable=else-if-used
                 gradients = gradients[pad_h_before : pad_h_before + height, pad_w_before : pad_w_before + width, :]
             elif self.nb_dims == 4:
                 gradients = gradients[:, pad_h_before : pad_h_before + height, pad_w_before : pad_w_before + width, :]

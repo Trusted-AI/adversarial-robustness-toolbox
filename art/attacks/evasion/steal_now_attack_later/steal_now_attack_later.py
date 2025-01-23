@@ -22,7 +22,7 @@ Black-box Adversarial Attacks
 | Paper link: https://arxiv.org/abs/2304.05370
 """
 
-# pylint: disable=C0302
+# pylint: disable=too-many-lines
 
 import logging
 import random
@@ -35,7 +35,6 @@ from art.attacks.evasion.steal_now_attack_later.bbox_ioa import bbox_ioa
 from art.attacks.evasion.steal_now_attack_later.drop_block2d import drop_block2d
 
 if TYPE_CHECKING:
-    # pylint: disable=C0412
     import torch
     from art.utils import PYTORCH_OBJECT_DETECTOR_TYPE
 
@@ -45,12 +44,12 @@ logger = logging.getLogger(__name__)
 # tiling
 def _generate_tile_kernel(patch: list, mask: list, tile_size: int) -> Tuple["torch.Tensor", "torch.Tensor"]:
     """
-    Generate specific size of pertuerbed tiles from randomly selected patches.
+    Generate specific size of perturbed tiles from randomly selected patches.
 
-    :param patch: Candiate patches.
+    :param patch: Candidate patches.
     :param mask: Masks for each patch.
     :param tile_size: The size of each tile.
-    :return: Pertuerbed tiles and corresponding maskes.
+    :return: Perturbed tiles and corresponding masks.
     """
     import torch
     import torchvision
@@ -67,14 +66,14 @@ def _generate_tile_kernel(patch: list, mask: list, tile_size: int) -> Tuple["tor
 
     if height > width:
         flip = True
-        FlipOp = torchvision.transforms.RandomVerticalFlip(0.2)  # pylint: disable=C0103
+        FlipOp = torchvision.transforms.RandomVerticalFlip(0.2)  # pylint: disable=invalid-name
         max_len = height
         min_len = width
         t_patch = torch.permute(t_patch, (0, 2, 1))
         t_mask = torch.permute(t_mask, (0, 2, 1))
     else:
         flip = False
-        FlipOp = torchvision.transforms.RandomHorizontalFlip(0.2)  # pylint: disable=C0103
+        FlipOp = torchvision.transforms.RandomHorizontalFlip(0.2)  # pylint: disable=invalid-name
         max_len = width
         min_len = height
 
@@ -150,13 +149,13 @@ def _generate_tile_kernel(patch: list, mask: list, tile_size: int) -> Tuple["tor
 
 def generate_tile(patches: list, masks: list, tile_size: int, scale: list) -> Tuple["torch.Tensor", "torch.Tensor"]:
     """
-    Generate different size of pertuerbed tiles from randomly selected patches.
+    Generate different size of perturbed tiles from randomly selected patches.
 
-    :param patch: Candiate patches.
+    :param patch: Candidate patches.
     :param mask: Masks for each patch.
     :param tile_size: The size of each tile.
-    :param scale: Scale factor for various tileing size.
-    :return: Pertuerbed tiles and corresponding maskes.
+    :param scale: Scale factor for various tiling size.
+    :return: Perturbed tiles and corresponding masks.
     """
     import torch
 
@@ -316,8 +315,8 @@ class SNAL(EvasionAttack):
         Create a SNAL attack instance.
 
         :param estimator: A trained YOLOv8 model or other models with the same output format
-        :param candidates: The collected pateches to generate perturbations.
-        :param collector: A callbel uses to generate patches.
+        :param candidates: The collected patches to generate perturbations.
+        :param collector: A callable uses to generate patches.
         :param eps: Maximum perturbation that the attacker can introduce.
         :param max_iter: The maximum number of iterations.
         :param num_grid: The number of grids for width and high dimension.
@@ -352,7 +351,7 @@ class SNAL(EvasionAttack):
         return x_adv
 
     def _generate_batch(
-        self, x_batch: np.ndarray, y_batch: Optional[np.ndarray] = None  # pylint: disable=W0613
+        self, x_batch: np.ndarray, y_batch: Optional[np.ndarray] = None  # pylint: disable=unused-argument
     ) -> np.ndarray:
         """
         Run the attack on a batch of images.
@@ -391,7 +390,7 @@ class SNAL(EvasionAttack):
             raise ValueError("The size of the image must be divided by the number of grids")
         tile_size = x.shape[-1] // self.num_grid
 
-        # Prapare a 2D array to store the results of each grid
+        # Prepare a 2D array to store the results of each grid
         buffer_depth = 5
         tile_mat = {}
         for idx_i in range(self.num_grid):
@@ -503,10 +502,10 @@ class SNAL(EvasionAttack):
 
     def _get_loss(self, pert: "torch.Tensor", epsilon: float) -> "torch.Tensor":  # pylint: disable=R0201
         """
-        Calculate accumulated distance of the perturbations outside the epslion ball.
+        Calculate accumulated distance of the perturbations outside the epsilon ball.
 
         :param pert: Perturbations in the pixel space.
-        :param epsilon: The radius of the eplion bass.
+        :param epsilon: The radius of the epsilon bass.
         :return: loss.
         """
         import torch
@@ -526,7 +525,7 @@ class SNAL(EvasionAttack):
 
         :param tile: The target to convert.
         :param x_ref: The source data.
-        :param epsilon: The radius of the eplion bass.
+        :param epsilon: The radius of the epsilon bass.
         :return: The converted tile.
         """
         import torch
@@ -594,7 +593,7 @@ class SNAL(EvasionAttack):
         """
         import torch
 
-        TRIAL = 10  # pylint: disable=C0103
+        TRIAL = 10  # pylint: disable=invalid-name
         patches = self.candidates
         masks = [None] * len(self.candidates)
         for _ in range(TRIAL):

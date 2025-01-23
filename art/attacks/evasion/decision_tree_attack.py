@@ -83,7 +83,7 @@ class DecisionTreeAttack(EvasionAttack):
                 else:
                     path = [-1]
             else:  # targeted case
-                if self.estimator.get_classes_at_node(position) == target:
+                if self.estimator.get_classes_at_node(position) == target:  # pylint: disable=else-if-used
                     path = [position]
                 else:
                     path = [-1]
@@ -138,7 +138,7 @@ class DecisionTreeAttack(EvasionAttack):
                             y[index],
                         )
                 else:  # search in left subtree
-                    if y is None:
+                    if y is None:  # pylint: disable=else-if-used
                         adv_path = self._df_subtree(self.estimator.get_left_child(ancestor), legitimate_class)
                     else:
                         adv_path = self._df_subtree(

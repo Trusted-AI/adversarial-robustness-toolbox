@@ -192,7 +192,7 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
                 if fit:
                     if preprocess.apply_fit:
                         x, y = preprocess.forward(x, y)
-                else:
+                else:  # pylint: disable=else-if-used
                     if preprocess.apply_predict:
                         x, y = preprocess.forward(x, y)
 

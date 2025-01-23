@@ -502,17 +502,14 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
                     torch.ones(1).to(values_tmp.device), torch.tensor(eps).to(values_tmp.device) / values_norm
                 ),
             )
-        else:  # Optimal
-            if norm == np.inf:  # Easy exact case
-                values_tmp = values_tmp.sign() * torch.minimum(
-                    values_tmp.abs(), torch.tensor(eps).to(values_tmp.device)
-                )
-            elif norm >= 1:  # Convex optim
-                raise NotImplementedError(
-                    "Finite values of `norm_p >= 1` are currently not supported with `suboptimal=False`."
-                )
-            else:  # Non-convex optim
-                raise NotImplementedError("Values of `norm_p < 1` are currently not supported with `suboptimal=False`")
+        elif norm == np.inf:  # Optimal - Easy exact case
+            values_tmp = values_tmp.sign() * torch.minimum(values_tmp.abs(), torch.tensor(eps).to(values_tmp.device))
+        elif norm >= 1:  # Optimal - Convex optim
+            raise NotImplementedError(
+                "Finite values of `norm_p >= 1` are currently not supported with `suboptimal=False`."
+            )
+        else:  # Non-convex optim
+            raise NotImplementedError("Values of `norm_p < 1` are currently not supported with `suboptimal=False`")
 
         values = values_tmp.reshape(values.shape).to(values.dtype)
 

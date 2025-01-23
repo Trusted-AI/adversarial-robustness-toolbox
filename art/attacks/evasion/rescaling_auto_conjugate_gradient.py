@@ -246,7 +246,7 @@ class RescalingAutoConjugateGradient(EvasionAttack):
                             "the estimator has to to predict logits."
                         )
 
-                    class CrossEntropyLossTorch(torch.nn.modules.loss._Loss):  # pylint: disable=W0212
+                    class CrossEntropyLossTorch(torch.nn.modules.loss._Loss):  # pylint: disable=protected-access
                         """Class defining cross entropy loss with reduction options."""
 
                         def __init__(self, reduction="sum"):
@@ -264,7 +264,7 @@ class RescalingAutoConjugateGradient(EvasionAttack):
                             raise NotImplementedError()
 
                         def forward(
-                            self, input: torch.Tensor, target: torch.Tensor  # pylint: disable=W0622
+                            self, input: torch.Tensor, target: torch.Tensor  # pylint: disable=redefined-builtin
                         ) -> torch.Tensor:
                             """
                             Forward method.
@@ -285,7 +285,7 @@ class RescalingAutoConjugateGradient(EvasionAttack):
                             "If loss_type='difference_logits_ratio' the estimator has to to predict logits."
                         )
 
-                    class DifferenceLogitsRatioPyTorch(torch.nn.modules.loss._Loss):  # pylint: disable=W0212
+                    class DifferenceLogitsRatioPyTorch(torch.nn.modules.loss._Loss):  # pylint: disable=protected-access
                         """
                         Callable class for Difference Logits Ratio loss in PyTorch.
                         """
@@ -334,7 +334,7 @@ class RescalingAutoConjugateGradient(EvasionAttack):
                             raise NotImplementedError()
 
                         def forward(
-                            self, input: torch.Tensor, target: torch.Tensor  # pylint: disable=W0622
+                            self, input: torch.Tensor, target: torch.Tensor  # pylint: disable=redefined-builtin
                         ) -> torch.Tensor:
                             """
                             Forward method.

@@ -200,14 +200,14 @@ class ProjectedGradientDescentCommon(FastGradientMethod):
             if self.eps < 0:
                 raise ValueError("The perturbation size `eps` has to be non-negative.")
         else:
-            if (self.eps < 0).any():
+            if (self.eps < 0).any():  # pylint: disable=else-if-used
                 raise ValueError("The perturbation size `eps` has to be non-negative.")
 
         if isinstance(self.eps_step, (int, float)):
             if self.eps_step <= 0:
                 raise ValueError("The perturbation step-size `eps_step` has to be positive.")
         else:
-            if (self.eps_step <= 0).any():
+            if (self.eps_step <= 0).any():  # pylint: disable=else-if-used
                 raise ValueError("The perturbation step-size `eps_step` has to be positive.")
 
         if isinstance(self.eps, np.ndarray) and isinstance(self.eps_step, np.ndarray):

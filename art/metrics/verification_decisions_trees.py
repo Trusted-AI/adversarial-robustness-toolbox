@@ -265,14 +265,13 @@ class RobustnessVerificationTreeModelsCliqueMethod:
 
                 if i_robust is None:
                     eps /= 2.0
+                elif i_not_robust is None:
+                    if eps >= 1.0:  # pragma: no cover
+                        logger.info("Abort binary search because eps increased above 1.0")
+                        break
+                    eps = min(eps * 2.0, 1.0)
                 else:
-                    if i_not_robust is None:
-                        if eps >= 1.0:  # pragma: no cover
-                            logger.info("Abort binary search because eps increased above 1.0")
-                            break
-                        eps = min(eps * 2.0, 1.0)
-                    else:
-                        eps = (eps_robust + eps_not_robust) / 2.0
+                    eps = (eps_robust + eps_not_robust) / 2.0
 
             if i_robust is not None:
                 clique_bound = eps_robust
@@ -370,11 +369,10 @@ class RobustnessVerificationTreeModelsCliqueMethod:
 
                 if i == 0:
                     best_score = clique["value"]  # type: ignore
+                elif label < 0.5 and self._classifier.nb_classes <= 2:
+                    best_score = max(best_score, clique["value"])  # type: ignore
                 else:
-                    if label < 0.5 and self._classifier.nb_classes <= 2:
-                        best_score = max(best_score, clique["value"])  # type: ignore
-                    else:
-                        best_score = min(best_score, clique["value"])  # type: ignore
+                    best_score = min(best_score, clique["value"])  # type: ignore
 
             new_nodes_list.append(new_nodes)
             best_scores_sum += best_score

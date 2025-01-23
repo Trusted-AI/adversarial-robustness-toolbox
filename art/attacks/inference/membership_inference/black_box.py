@@ -329,12 +329,11 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
                 if self.input_type == "prediction":
                     num_classes = self.estimator.nb_classes  # type: ignore
                     self.attack_model = MembershipInferenceAttackModel(num_classes)
-                else:  # loss
-                    if self._regressor_model:
-                        self.attack_model = MembershipInferenceAttackModel(1, num_features=1)
-                    else:
-                        num_classes = self.estimator.nb_classes  # type: ignore
-                        self.attack_model = MembershipInferenceAttackModel(num_classes, num_features=1)
+                elif self._regressor_model:
+                    self.attack_model = MembershipInferenceAttackModel(1, num_features=1)
+                else:
+                    num_classes = self.estimator.nb_classes  # type: ignore
+                    self.attack_model = MembershipInferenceAttackModel(num_classes, num_features=1)
 
                 loss_fn = nn.BCELoss()
                 optimizer = optim.Adam(self.attack_model.parameters(), lr=self.learning_rate)  # type: ignore

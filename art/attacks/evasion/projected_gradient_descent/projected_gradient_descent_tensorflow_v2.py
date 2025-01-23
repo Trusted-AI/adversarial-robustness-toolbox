@@ -504,15 +504,14 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         if (suboptimal or norm == 2) and norm != np.inf:  # Simple rescaling
             values_norm = tf.norm(values_tmp, ord=norm, axis=1, keepdims=True)  # (n_samples, 1)
             values_tmp = values_tmp * tf.where(values_norm == 0, 0, tf.minimum(1, eps / values_norm))
-        else:  # Optimal
-            if norm == np.inf:  # Easy exact case
-                values_tmp = tf.sign(values_tmp) * tf.minimum(tf.abs(values_tmp), eps)
-            elif norm >= 1:  # Convex optim
-                raise NotImplementedError(
-                    "Finite values of `norm_p >= 1` are currently not supported with `suboptimal=False`."
-                )
-            else:  # Non-convex optim
-                raise NotImplementedError("Values of `norm_p < 1` are currently not supported with `suboptimal=False`")
+        elif norm == np.inf:  # Optimal - Easy exact case
+            values_tmp = tf.sign(values_tmp) * tf.minimum(tf.abs(values_tmp), eps)
+        elif norm >= 1:  # Convex optim
+            raise NotImplementedError(
+                "Finite values of `norm_p >= 1` are currently not supported with `suboptimal=False`."
+            )
+        else:  # Optimal - Non-convex optim
+            raise NotImplementedError("Values of `norm_p < 1` are currently not supported with `suboptimal=False`")
 
         values = tf.cast(tf.reshape(values_tmp, values.shape), values.dtype)
 

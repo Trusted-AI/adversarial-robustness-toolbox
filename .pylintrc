@@ -118,6 +118,9 @@ disable=
     too-many-arguments,
     too-many-locals,
     unsupported-binary-operation,
+    too-many-branches,
+    too-many-statements,
+
 
 [REPORTS]
 

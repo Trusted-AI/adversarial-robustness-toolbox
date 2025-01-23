@@ -561,19 +561,18 @@ def projection(
         values_norm = np.linalg.norm(values_tmp, ord=norm, axis=1, keepdims=True)  # (n_samples, 1)
         with np.errstate(divide="ignore"):
             values_tmp = values_tmp * np.where(values_norm, np.minimum(1, eps / values_norm), 0)
-    else:  # Optimal
-        if norm == np.inf:  # Easy exact case
-            values_tmp = np.sign(values_tmp) * np.minimum(np.abs(values_tmp), eps)
-        elif norm == 1:  # Harder exact case
-            projection_l1 = projection_l1_1 if values_tmp.shape[1] > 29 else projection_l1_2  # From empirical tests
-            values_tmp = projection_l1(values_tmp, eps[:, 0])
-        elif norm > 1:  # Convex optim
-            raise NotImplementedError(
-                'Values of `norm_p > 1` different from 2, `np.inf` and "inf" are currently not supported with '
-                "`suboptimal=False`."
-            )
-        else:  # Non-convex optim
-            raise NotImplementedError("Values of `norm_p < 1` are currently not supported with `suboptimal=False`.")
+    elif norm == np.inf:  # Optimal - Easy exact case
+        values_tmp = np.sign(values_tmp) * np.minimum(np.abs(values_tmp), eps)
+    elif norm == 1:  # Optimal - Harder exact case
+        projection_l1 = projection_l1_1 if values_tmp.shape[1] > 29 else projection_l1_2  # From empirical tests
+        values_tmp = projection_l1(values_tmp, eps[:, 0])
+    elif norm > 1:  # Optimal - Convex optim
+        raise NotImplementedError(
+            'Values of `norm_p > 1` different from 2, `np.inf` and "inf" are currently not supported with '
+            "`suboptimal=False`."
+        )
+    else:  # Non-convex optim
+        raise NotImplementedError("Values of `norm_p < 1` are currently not supported with `suboptimal=False`.")
 
     values = values_tmp.reshape(values.shape).astype(values.dtype)
     return values
