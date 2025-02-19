@@ -60,7 +60,7 @@ jobs:
       - name: Run Tests
         run: ./run_tests.sh ${{ matrix.framework }}
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: true

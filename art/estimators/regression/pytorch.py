@@ -682,6 +682,8 @@ class PyTorchRegressor(RegressorMixin, PyTorchEstimator):
         else:
             loss.backward()
 
+        grads: torch.Tensor | np.ndarray
+
         if x_grad.grad is not None:
             if isinstance(x, torch.Tensor):
                 grads = x_grad.grad

@@ -78,7 +78,7 @@ class AutoAttack(EvasionAttack):
         batch_size: int = 32,
         estimator_orig: "CLASSIFIER_TYPE" | None = None,
         targeted: bool = False,
-        parallel: bool = False,
+        parallel_pool_size: int = 0,
     ):
         """
         Create a :class:`.AutoAttack` instance.
@@ -93,7 +93,8 @@ class AutoAttack(EvasionAttack):
         :param estimator_orig: Original estimator to be attacked by adversarial examples.
         :param targeted: If False run only untargeted attacks, if True also run targeted attacks against each possible
                          target.
-        :param parallel: If True run attacks in parallel.
+        :param parallel_pool_size: Number of parallel threads / pool size in multiprocessing. If parallel_pool_size=0
+                                   computation runs without multiprocessing.
         """
         super().__init__(estimator=estimator)
 
@@ -151,7 +152,7 @@ class AutoAttack(EvasionAttack):
             self.estimator_orig = estimator
 
         self._targeted = targeted
-        self.parallel = parallel
+        self.parallel_pool_size = parallel_pool_size
         self.best_attacks: np.ndarray = np.array([])
         self._check_params()
 
@@ -199,7 +200,7 @@ class AutoAttack(EvasionAttack):
             if attack.targeted:
                 attack.set_params(targeted=False)
 
-            if self.parallel:
+            if self.parallel_pool_size > 0:
                 args.append(
                     (
                         deepcopy(x_adv),
@@ -253,7 +254,7 @@ class AutoAttack(EvasionAttack):
                             targeted_labels[:, i], nb_classes=self.estimator.nb_classes
                         )
 
-                        if self.parallel:
+                        if self.parallel_pool_size > 0:
                             args.append(
                                 (
                                     deepcopy(x_adv),
@@ -287,8 +288,8 @@ class AutoAttack(EvasionAttack):
                 except ValueError as error:
                     logger.warning("Error completing attack: %s}", str(error))
 
-        if self.parallel:
-            with multiprocess.get_context("spawn").Pool() as pool:
+        if self.parallel_pool_size > 0:
+            with multiprocess.get_context("spawn").Pool(processes=self.parallel_pool_size) as pool:
                 # Results come back in the order that they were issued
                 results = pool.starmap(run_attack, args)
             perturbations = []
@@ -320,7 +321,7 @@ class AutoAttack(EvasionAttack):
         This method returns a summary of the best performing (lowest perturbation in the parallel case) attacks
         per image passed to the AutoAttack class.
         """
-        if self.parallel:
+        if self.parallel_pool_size > 0:
             best_attack_meta = "\n".join(
                 [
                     f"image {i+1}: {str(self.args[idx][3])}" if idx != 0 else f"image {i+1}: n/a"
@@ -328,7 +329,8 @@ class AutoAttack(EvasionAttack):
                 ]
             )
             auto_attack_meta = (
-                f"AutoAttack(targeted={self.targeted}, parallel={self.parallel}, num_attacks={len(self.args)})"
+                f"AutoAttack(targeted={self.targeted}, parallel_pool_size={self.parallel_pool_size}, "
+                + f"num_attacks={len(self.args)})"
             )
             return f"{auto_attack_meta}\nBestAttacks:\n{best_attack_meta}"
 
@@ -339,7 +341,8 @@ class AutoAttack(EvasionAttack):
             ]
         )
         auto_attack_meta = (
-            f"AutoAttack(targeted={self.targeted}, parallel={self.parallel}, num_attacks={len(self.attacks)})"
+            f"AutoAttack(targeted={self.targeted}, parallel_pool_size={self.parallel_pool_size}, "
+            + f"num_attacks={len(self.attacks)})"
         )
         return f"{auto_attack_meta}\nBestAttacks:\n{best_attack_meta}"
 
