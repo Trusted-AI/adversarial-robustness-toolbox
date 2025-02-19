@@ -7,7 +7,7 @@ Base Class
 .. autoclass:: EvasionDetector
    :members:
 
-Be Your Own Neighborhood (BEYOND) Detector - PyTorch
+Be Your Own Neighbourhood Detector (BEYOND)- PyTorch
 ----------------------------------------------------
 .. autoclass:: BeyondDetectorPyTorch
    :members:
