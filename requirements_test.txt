@@ -61,7 +61,7 @@ black==24.8.0
 ruff==0.9.3
 types-six==1.16.21.9
 types-PyYAML==6.0.12.20240917
-types-setuptools==71.1.0.20240726
+types-setuptools==75.8.2.20250301
 
 # other
 requests~=2.32.3
