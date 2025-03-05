@@ -23,7 +23,7 @@ multiprocess>=0.70.12
 # frameworks
 
 tensorflow==2.14.0
-keras==2.14.0
+keras==3.9.0
 tensorflow-addons>=0.13.0
 
 # using mxnet-native for reproducible test results on CI machines without Intel Architecture Processors, but mxnet is fully supported by ART
