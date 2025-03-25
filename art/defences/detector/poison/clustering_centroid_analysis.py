@@ -28,6 +28,7 @@ import numpy as np
 import pandas as pd
 from sklearn.cluster import DBSCAN
 from sklearn.decomposition import FastICA, PCA
+from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
 from tensorflow.python.keras import Model, Input
 from umap import UMAP
@@ -112,7 +113,7 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
     def _calculate_centroid_deviations(self, benign_centroid, centroids):
         return { label: centroid - benign_centroid for label, centroid in centroids.items() }
 
-    def _get_benign_sample(self, size) -> tuple[pd.DataFrame | np.ndarray, pd.DataFrame | np.ndarray]:
+    def _get_benign_split(self, size) -> tuple[pd.DataFrame | np.ndarray, pd.DataFrame | np.ndarray]:
         """
         Retrieves a random sample of the benign dataset
         :param size: number of benign samples to retrieve
@@ -136,6 +137,30 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
 
         return x_benign_sample, y_benign_sample
 
+    def _split_benign_data(
+            self,
+            test_size: float = 0.2,
+            random_state: int = 42
+    ) -> tuple[
+        tuple[pd.DataFrame | np.ndarray, pd.DataFrame | np.ndarray],
+        tuple[pd.DataFrame | np.ndarray, pd.DataFrame | np.ndarray]
+    ]:
+        """
+        Splits all benign data into validation and misclassification sets.
+        :param test_size: Proportion of benign data to reserve for misclassification checks (default 20%).
+        :param random_state: Seed for reproducibility.
+        :return: ((x_validation, y_validation), (x_misclassification, y_misclassification))
+        """
+
+        # Split the data into validation and misclassification sets
+        x_validation, x_misclassification, y_validation, y_misclassification = train_test_split(
+            self.x_benign,
+            self.y_benign,
+            test_size=test_size,
+            random_state=random_state
+        )
+
+        return (x_validation, y_validation), (x_misclassification, y_misclassification)
 
 
     def detect_poison(self, **kwargs) -> tuple[dict, list[int]]:
@@ -162,7 +187,7 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
 
         # Find centroid deviation from benign centroid
         # TODO: this could be precalculated and cached
-        x_benign_validation, y_benign_validation = self._get_benign_sample(self._BENIGN_SAMPLING_SIZE)
+        (x_benign_validation, y_benign_validation), (x_benign_other, y_benign_other) = self._split_benign_data()
 
         benign_features = intermediate_layer.predict(x_benign_validation)
         benign_features_scaled = self.scaler.transform(benign_features) # TODO: fit_transform or transform?
@@ -171,7 +196,6 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
         deviations = self._calculate_centroid_deviations(benign_centroid, centroids)
 
         # Missclassification check
-        x_benign_other, y_benign_other = self._get_benign_sample(self._BENIGN_SAMPLING_SIZE) # FIXME: if the dataset is too small, I could be repeating
 
         # Extract features from benign center
         other_features = intermediate_layer.predict(x_benign_other)
