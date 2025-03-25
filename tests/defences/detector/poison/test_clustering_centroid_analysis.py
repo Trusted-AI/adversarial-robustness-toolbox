@@ -20,19 +20,16 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import unittest
 
-from keras.preprocessing.image import ImageDataGenerator
-import numpy as np
+from sklearn.cluster import DBSCAN
+from sklearn.decomposition import FastICA, PCA
+from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
+from umap import UMAP
 
-from art.data_generators import KerasDataGenerator
-from art.defences.detector.poison import ActivationDefence
-from art.utils import load_mnist
-from art.visualization import convert_to_rgb
-
-from tests.utils import master_seed
+from art.defences.detector.poison.clustering_centroid_analysis import get_reducer, get_scaler, get_clusterer
+from art.defences.detector.poison.utils import ReducerType, ScalerType, ClustererType
 
 logger = logging.getLogger(__name__)
 
-NB_TRAIN, NB_TEST, BATCH_SIZE = 300, 10, 128
 
 class TestClusteringCentroidAnalysis(unittest.TestCase):
     @classmethod
@@ -42,6 +39,61 @@ class TestClusteringCentroidAnalysis(unittest.TestCase):
     def setUp(self):
         pass
 
-    @unittest.expectedFailure
-    def test_wrong_parameters_1(self):
-        pass
+
+class TestReducersScalersClusterers(unittest.TestCase):
+    """
+    Suite of tests for the valid and invalid utils used in :class: ``ClusteringCentroidAnalysis``
+    """
+
+    def test_get_reducer_valid(self):
+        reducer_cases = [
+            (ReducerType.FASTICA, FastICA),
+            (ReducerType.PCA, PCA),
+            (ReducerType.UMAP, UMAP),
+        ]
+        for reducer_type, expected in reducer_cases:
+            with self.subTest(reducer=reducer_type):
+                reducer = get_reducer(reducer_type, nb_dims=5)
+                self.assertIsInstance(reducer, expected)
+
+    def test_get_reducer_invalid(self):
+        for invalid in ["INVALID", None]:
+            with self.subTest(invalid=invalid):
+                with self.assertRaises(ValueError):
+                    get_reducer(invalid, nb_dims=5)
+
+    def test_get_scaler_valid(self):
+        scaler_cases = [
+            (ScalerType.STANDARD, StandardScaler),
+            (ScalerType.MINMAX, MinMaxScaler),
+            (ScalerType.ROBUST, RobustScaler),
+        ]
+        for scaler_type, expected in scaler_cases:
+            with self.subTest(scaler=scaler_type):
+                scaler = get_scaler(scaler_type)
+                self.assertIsInstance(scaler, expected)
+
+    def test_get_scaler_invalid(self):
+        for invalid in ["INVALID", None]:
+            with self.subTest(invalid=invalid):
+                with self.assertRaises(ValueError):
+                    get_scaler(invalid)
+
+    def test_get_clusterer_valid(self):
+        clusterer_cases = [
+            (ClustererType.DBSCAN, DBSCAN),
+        ]
+        for clusterer_type, expected in clusterer_cases:
+            with self.subTest(clusterer=clusterer_type):
+                clusterer = get_clusterer(clusterer_type)
+                self.assertIsInstance(clusterer, expected)
+
+    def test_get_clusterer_invalid(self):
+        for invalid in ["INVALID", None]:
+            with self.subTest(invalid=invalid):
+                with self.assertRaises(ValueError):
+                    get_clusterer(invalid)
+
+
+if __name__ == "__main__":
+    unittest.main()
