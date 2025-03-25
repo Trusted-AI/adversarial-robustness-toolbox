@@ -25,6 +25,7 @@ import logging
 from typing import TYPE_CHECKING
 
 import numpy as np
+import pandas as pd
 from sklearn.cluster import DBSCAN
 from sklearn.decomposition import FastICA, PCA
 from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
@@ -111,6 +112,31 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
     def _calculate_centroid_deviations(self, benign_centroid, centroids):
         return { label: centroid - benign_centroid for label, centroid in centroids.items() }
 
+    def _get_benign_sample(self, size) -> tuple[pd.DataFrame | np.ndarray, pd.DataFrame | np.ndarray]:
+        """
+        Retrieves a random sample of the benign dataset
+        :param size: number of benign samples to retrieve
+        :return: ``x_sample``, ``y_sample``
+        :exception: raises ``ValueError`` if the size of the sample is bigger than the benign dataset
+        """
+        if size > self.x_benign.shape[0]:
+            raise ValueError(f"Requested size ({size}) exceeds available benign samples ({self.x_benign.shape[0]})")
+
+        indices = np.random.choice(self.x_benign.shape[0], size, replace=False)
+
+        if isinstance(self.x_benign, pd.DataFrame):
+            x_benign_sample = self.x_benign.iloc[indices]
+        else:
+            x_benign_sample = self.x_benign[indices]
+
+        if isinstance(self.y_benign, pd.DataFrame):
+            y_benign_sample = self.y_benign.iloc[indices]
+        else:
+            y_benign_sample = self.y_benign[indices]
+
+        return x_benign_sample, y_benign_sample
+
+
 
     def detect_poison(self, **kwargs) -> tuple[dict, list[int]]:
 
@@ -136,20 +162,16 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
 
         # Find centroid deviation from benign centroid
         # TODO: this could be precalculated and cached
-        benign_indices = np.random.choice(self.x_benign.shape[0], self._BENIGN_SAMPLING_SIZE, replace=False)
-        x_benign_validation = self.x_benign.iloc[benign_indices]
-        y_benign_validation = self.y_benign.iloc[benign_indices] # FIXME: is iloc ok here?
+        x_benign_validation, y_benign_validation = self._get_benign_sample(self._BENIGN_SAMPLING_SIZE)
 
         benign_features = intermediate_layer.predict(x_benign_validation)
-        benign_features_scaled = self.scaler.fit_transform(benign_features)
+        benign_features_scaled = self.scaler.transform(benign_features) # TODO: fit_transform or transform?
         benign_centroid = np.mean(benign_features_scaled, axis=0)
 
         deviations = self._calculate_centroid_deviations(benign_centroid, centroids)
 
         # Missclassification check
-        other_benign_indices = np.random.choice(self.x_benign.shape[0], 100, replace=False) # FIXME: split ?
-        x_benign_other = self.x_benign.iloc[other_benign_indices]
-        y_benign_other = self.y_benign.iloc[other_benign_indices]  # FIXME: is iloc ok here?
+        x_benign_other, y_benign_other = self._get_benign_sample(self._BENIGN_SAMPLING_SIZE) # FIXME: if the dataset is too small, I could be repeating
 
         # Extract features from benign center
         other_features = intermediate_layer.predict(x_benign_other)
@@ -183,8 +205,10 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
         outlier_indices = np.where(dbscan_labels == -1)[0]
         detected_poisoned_indices.extend(outlier_indices)
 
-        report = None
-        return report, self._is_clean_lst
+
+        #report = None
+        #return report, self._is_clean_lst
+        return detected_poisoned_indices
 
 
 def get_reducer(reduce: ReducerType, nb_dims: int):
