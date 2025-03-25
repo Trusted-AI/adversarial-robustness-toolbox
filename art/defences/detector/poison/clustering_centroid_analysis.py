@@ -57,14 +57,25 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
     _VALID_ANALYSIS = []
     _MISSCLASSIFICATION_THRESHOLD = 0.95  # Umbral para considerar un cluster como envenenado
 
+    _BENIGN_SAMPLING_SIZE = 100
+
     def __init__(
             self,
-            classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
+            classifier,
             x_train: np.ndarray,
             y_train: np.ndarray,
             x_benign: np.ndarray,
             y_benign: np.ndarray
     ):
+        """
+        Creates a :class: `ClusteringCentroidAnalysis` object for the given classifier
+
+        :param classifier: model evaluated for poison
+        :param x_train: dataset used to train the classifier (might be poisoned)
+        :param y_train: labels used to train the classifier (might be poisoned)
+        :param x_benign: subset of the training data known to be benign
+        :param y_benign: subset of the labels known to be benign
+        """
         super().__init__(classifier, x_train, y_train)
         self.x_benign = x_benign
         self.y_benign = y_benign
@@ -118,14 +129,14 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
         # Apply clustering
         dbscan_labels = self.clusterer.fit_predict(features_reduced)
 
-
         # 2. Poisoned Cluster Detection
 
         # Compute cluster centroids
         centroids = self._find_centroids(features_scaled, dbscan_labels)
 
         # Find centroid deviation from benign centroid
-        benign_indices = np.random.choice(self.x_benign.shape[0], 100, replace=False)
+        # TODO: this could be precalculated and cached
+        benign_indices = np.random.choice(self.x_benign.shape[0], self._BENIGN_SAMPLING_SIZE, replace=False)
         x_benign_validation = self.x_benign.iloc[benign_indices]
         y_benign_validation = self.y_benign.iloc[benign_indices] # FIXME: is iloc ok here?
 
@@ -172,9 +183,8 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
         outlier_indices = np.where(dbscan_labels == -1)[0]
         detected_poisoned_indices.extend(outlier_indices)
 
-        # Paso 12: Evaluar el rendimiento de detección
-        detected_poisoned_set = set(detected_poisoned_indices)
-        actual_poisoned_set = set(poisoned_indices)
+        report = None
+        return report, self._is_clean_lst
 
 
 def get_reducer(reduce: ReducerType, nb_dims: int):
