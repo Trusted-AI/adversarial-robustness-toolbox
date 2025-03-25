@@ -23,9 +23,12 @@ import unittest
 from sklearn.cluster import DBSCAN
 from sklearn.decomposition import FastICA, PCA
 from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
+from tensorflow.python.keras import Model, Sequential
+from tensorflow.python.keras.layers import Dense
 from umap import UMAP
 
-from art.defences.detector.poison.clustering_centroid_analysis import get_reducer, get_scaler, get_clusterer
+from art.defences.detector.poison.clustering_centroid_analysis import get_reducer, get_scaler, get_clusterer, \
+    ClusteringCentroidAnalysis
 from art.defences.detector.poison.utils import ReducerType, ScalerType, ClustererType
 
 logger = logging.getLogger(__name__)
@@ -33,11 +36,37 @@ logger = logging.getLogger(__name__)
 
 class TestClusteringCentroidAnalysis(unittest.TestCase):
     @classmethod
-    def setUp(cls):
-        pass
+    def setUpClass(cls):
 
-    def setUp(self):
-        pass
+        model = Sequential([
+            Dense(10, input_shape=(5,), name="input_layer"),
+            Dense(5, activation="relu", name="hidden_layer"),
+            Dense(1, activation="sigmoid", name="output_layer")
+        ])
+
+        cls.clustering_centroid_analysis = ClusteringCentroidAnalysis(
+            classifier=model,
+            x_train=None,
+            y_train=None,
+            x_benign=None,
+            y_benign=None
+        )
+
+    def test_extract_classifier_layer_valid(self):
+        """
+        Tests that the ``_extract_classifier_layer`` method extracts the desired layer correctly
+        """
+
+        extractor = self.clustering_centroid_analysis._extract_classifier_layer("hidden_layer")
+        self.assertIsInstance(extractor, Model)
+
+    def test_extract_classifier_layer_invalid(self):
+        """
+        Tests that the ``_extract_classifier_layer`` throws a ``ValueError`` if an invalid layer is attempted to be extracted
+        """
+
+        with self.assertRaises(ValueError):
+            self.clustering_centroid_analysis._extract_classifier_layer("invalid_layer")
 
 
 class TestReducersScalersClusterers(unittest.TestCase):
