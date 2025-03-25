@@ -21,22 +21,25 @@ Module providing convenience functions.
 
 from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
-from collections.abc import Callable
 import logging
 import math
 import os
+import re
 import shutil
 import sys
 import tarfile
 import warnings
 import zipfile
+from collections.abc import Callable
 from functools import wraps
 from inspect import signature
 from typing import TYPE_CHECKING, Optional, Tuple, Union
 
 import numpy as np
+import pandas as pd
 import six
 from scipy.special import gammainc
+from sklearn.model_selection import train_test_split
 from tqdm.auto import tqdm
 
 from art import config
@@ -1513,6 +1516,45 @@ def load_nursery(
         x_test = x_test.astype(np.float64)
 
     return (x_train, y_train), (x_test, y_test), min_, max_
+
+
+def load_unsw_nb15(test_size: float = 0.2) -> DATASET_TYPE:
+    """
+    Loads the UNSW-NB15 dataset from `config.ART_DATA_PATH` or downloads it if necessary.
+
+    :param raw: `True` if no preprocessing should be applied to the data. Otherwise, data is normalized to 1.
+    :param test_size: percentage of set to use for testing. Remaining percentage is for training
+    :return: `(x_train, y_train), (x_test, y_test), min, max`
+    """
+
+    dataset_path = get_file(
+        "unsw-nb15",
+        path=config.ART_DATA_PATH,
+        extract=True,
+        url="https://www.kaggle.com/api/v1/datasets/download/mrwellsdavid/unsw-nb15"
+    )
+
+    # Finds all numerical dataset parts
+    csv_files = [
+        os.path.join(dataset_path, file)
+        for file in os.listdir(dataset_path)
+        if re.match(r"UNSW-NB15_\d+\.csv$", file)
+    ]
+
+    # Network data order is important to understand timelines of attacks
+    csv_files = sorted(csv_files, key=lambda x: int(re.search(r"(\d+)", x).group()))
+
+    # Load and combine them into one DataFrame
+    unsw_df = pd.concat((pd.read_csv(file, header=0, low_memory=False) for file in csv_files), ignore_index=True)
+    y_full = unsw_df["attack_cat"]
+    x_full = unsw_df.drop("attack_cat", axis=1)
+
+    min_val = np.min(x_full, axis=0)  # TODO: is this correct?
+    max_val = np.max(x_full, axis=0)
+
+    x_train, x_test, y_train, y_test = train_test_split(x_full, y_full, test_size=test_size)
+
+    return (x_train, y_train), (x_test, y_test), min_val, max_val
 
 
 def load_dataset(
