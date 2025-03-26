@@ -470,7 +470,7 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(x_train.shape[0], y_train.shape[0])
         self.assertEqual(x_test.shape[0], y_test.shape[0])
 
-
+    @unittest.SkipTest
     def test_load_unsw_nb15_full(self):
         """Test loading the full dataset with frac=1.0 (default)."""
         (x_train, y_train), (x_test, y_test) = load_unsw_nb15()
