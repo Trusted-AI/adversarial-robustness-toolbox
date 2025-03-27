@@ -470,13 +470,12 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(x_train.shape[0], y_train.shape[0])
         self.assertEqual(x_test.shape[0], y_test.shape[0])
 
-    @unittest.SkipTest
     def test_load_unsw_nb15_full(self):
         """Test loading the full dataset with frac=1.0 (default)."""
         (x_train, y_train), (x_test, y_test) = load_unsw_nb15()
 
         # size validation
-        total_samples = 2_540_044
+        total_samples = 2_540_047       # some sources say there are 2_540_044, but I counted in Excel
         self.assertEqual(x_train.shape[0] + x_test.shape[0], total_samples)
         self.assertEqual(len(y_train) + len(y_test), total_samples)
         self.assertEqual(x_train.shape[0], len(y_train))
@@ -489,21 +488,27 @@ class TestUtils(unittest.TestCase):
                       "Column 'attack_cat' is missing from y_test")
 
         # x doesn't have the column 'attack_cat'
-        self.assertEqual(41, len(x_train.columns),
-                         "x_train doesn't have the 41 corresponding features")
-        self.assertEqual(41, len(x_test.columns),
-                         "x_test doesn't have the 41 corresponding features")
         self.assertNotIn("attack_cat", x_train.columns,
                          "Column 'attack_cat' should not be in x_train")
         self.assertNotIn("attack_cat", x_test.columns,
                          "Column 'attack_cat' should not be in y_train")
 
+        # feature count is correct (total 49)
+        self.assertEqual(49 - 1, len(x_train.columns),
+                         "x_train doesn't have the 48 corresponding features")
+        self.assertEqual(49 - 1, len(x_test.columns),
+                         "x_test doesn't have the 48 corresponding features")
+        self.assertEqual(49 - 48, len(y_train.columns),
+                         "x_train doesn't have the single corresponding features")
+        self.assertEqual(49 - 48, len(y_test.columns),
+                         "x_test doesn't have the single corresponding features")
+
     def test_load_unsw_nb15_frac(self):
-        """Test loading the full dataset with frac=0.1 (default)."""
-        (x_train, y_train), (x_test, y_test) = load_unsw_nb15()
+        """Test loading the full dataset with frac=0.1"""
+        (x_train, y_train), (x_test, y_test) = load_unsw_nb15(frac=0.1)
 
         # size validation
-        total_samples = 254_004
+        total_samples = 254_005
         self.assertEqual(x_train.shape[0] + x_test.shape[0], total_samples)
         self.assertEqual(len(y_train) + len(y_test), total_samples)
         self.assertEqual(x_train.shape[0], len(y_train))
