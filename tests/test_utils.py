@@ -470,12 +470,13 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(x_train.shape[0], y_train.shape[0])
         self.assertEqual(x_test.shape[0], y_test.shape[0])
 
+    # FIXME: 52 secs to run. Its too long. Mock the web result with a subsample of the data
     def test_load_unsw_nb15_full(self):
         """Test loading the full dataset with frac=1.0 (default)."""
         (x_train, y_train), (x_test, y_test) = load_unsw_nb15()
 
         # size validation
-        total_samples = 2_540_047       # some sources say there are 2_540_044, but I counted in Excel
+        total_samples = 2_540_047       # FIXME: official sources say there are 2_540_044, but I counted in Excel
         self.assertEqual(x_train.shape[0] + x_test.shape[0], total_samples)
         self.assertEqual(len(y_train) + len(y_test), total_samples)
         self.assertEqual(x_train.shape[0], len(y_train))

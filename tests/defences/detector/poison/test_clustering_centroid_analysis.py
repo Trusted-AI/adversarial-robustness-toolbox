@@ -20,11 +20,16 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import unittest
 
+import pandas as pd
+
+from art.attacks.poisoning import PoisoningAttackBackdoor
+from art.estimators.classification import KerasClassifier
+from art.utils import load_mnist, load_unsw_nb15
 from sklearn.cluster import DBSCAN
 from sklearn.decomposition import FastICA, PCA
 from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
 from tensorflow.python.keras import Model, Sequential
-from tensorflow.python.keras.layers import Dense
+from tensorflow.python.keras.layers import Dense, Flatten
 from umap import UMAP
 
 from art.defences.detector.poison.clustering_centroid_analysis import get_reducer, get_scaler, get_clusterer, \
@@ -35,22 +40,62 @@ logger = logging.getLogger(__name__)
 
 
 class TestClusteringCentroidAnalysis(unittest.TestCase):
+
+    @classmethod
+    def _preprocess(cls, x_data: pd.DataFrame, y_data: pd.DataFrame) -> (pd.DataFrame, pd.DataFrame):
+        """
+        Preprocesses x_train and y_train in order to be used in the test model
+        :param x_data: information used by the model
+        :param y_data: target label for the model
+        :return: (x_data, y_data)
+        """
+        # Features filtering
+        # Scaling
+        # One-hot encoding
+        x_features = ["dur", "proto", "service", "state", "spkts", "dpkts", "sbytes", "dbytes", "rate",
+            "sttl", "dttl", "sload", "dload", "sloss", "dloss", "sinpkt", "dinpkt", "sjit", "djit",
+            "swin", "stcpb", "dtcpb", "dwin", "tcprtt", "synack", "ackdat", "smean", "dmean",
+            "trans_depth", "response_body_len", "ct_srv_src", "ct_state_ttl", "ct_dst_ltm",
+            "ct_src_dport_ltm", "ct_dst_sport_ltm", "ct_dst_src_ltm", "is_ftp_login", "ct_ftp_cmd",
+            "ct_flw_http_mthd", "ct_src_ltm", "ct_srv_dst", "is_sm_ips_ports", "attack_cat"
+        ]
+
+        x_filtered = x_data[x_features]
+
+
+
     @classmethod
     def setUpClass(cls):
-
-        model = Sequential([
-            Dense(10, input_shape=(5,), name="input_layer"),
-            Dense(5, activation="relu", name="hidden_layer"),
-            Dense(1, activation="sigmoid", name="output_layer")
+        """
+        Sets up a shared model, a poisoned dataset, and a ClusteringCentroidAnalysis instance for all tests.
+        """
+        # Define a small DNN with one hidden layer
+        base_model = Sequential([
+            Flatten(input_shape=(28, 28, 1)),
+            Dense(64, activation="relu", name="hidden_layer"),
+            Dense(10, activation="softmax", name="output_layer")
         ])
+        base_model.compile(optimizer="adam", loss="categorical_crossentropy", metrics=["accuracy"])
 
-        cls.clustering_centroid_analysis = ClusteringCentroidAnalysis(
-            classifier=model,
-            x_train=None,
-            y_train=None,
-            x_benign=None,
-            y_benign=None
-        )
+        # Model conversion to use KerasClassifier later
+        cls.model = Model(inputs=base_model.inputs, outputs=base_model.outputs)
+
+        (x_train, y_train), (x_test, y_test) = load_unsw_nb15(frac=0.01, )
+
+        x_train, y_train = cls._preprocess(x_train, y_train)
+
+        x_train = x_train[:500]
+        y_train = y_train[:500]
+
+
+
+        # Define and apply a backdoor poisoning attack
+        backdoor = PoisoningAttackBackdoor()
+        cls.x_poisoned, cls.y_poisoned = backdoor.poison(x_train, y_train)
+
+        # Wrap the model in an ART classifier and train on poisoned data
+        cls.classifier = KerasClassifier(model=cls.model, clip_values=(min_val, max_val))
+        cls.classifier.fit(cls.x_poisoned, cls.y_poisoned, batch_size=32, nb_epochs=5)
 
     def test_extract_classifier_layer_valid(self):
         """
