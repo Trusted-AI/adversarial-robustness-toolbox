@@ -483,26 +483,26 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(x_test.shape[0], len(x_test))
 
         # y has column 'attack_cat'
-        self.assertIn("attack_cat", y_train.columns,
-                      "Column 'attack_cat' is missing from y_train")
-        self.assertIn("attack_cat", y_test.columns,
-                      "Column 'attack_cat' is missing from y_test")
+        self.assertIn("label", y_train.columns,
+                      "Column 'label' is missing from y_train")
+        self.assertIn("label", y_test.columns,
+                      "Column 'label' is missing from y_test")
 
         # x doesn't have the column 'attack_cat'
-        self.assertNotIn("attack_cat", x_train.columns,
-                         "Column 'attack_cat' should not be in x_train")
-        self.assertNotIn("attack_cat", x_test.columns,
-                         "Column 'attack_cat' should not be in y_train")
+        self.assertNotIn("label", x_train.columns,
+                         "Column 'label' should not be in x_train")
+        self.assertNotIn("label", x_test.columns,
+                         "Column 'label' should not be in y_train")
 
         # feature count is correct (total 49)
-        self.assertEqual(49 - 1, len(x_train.columns),
-                         "x_train doesn't have the 48 corresponding features")
-        self.assertEqual(49 - 1, len(x_test.columns),
-                         "x_test doesn't have the 48 corresponding features")
+        self.assertEqual(49 - 2, len(x_train.columns),
+                         "x_train doesn't have the 47 corresponding features")
+        self.assertEqual(49 - 2, len(x_test.columns),
+                         "x_test doesn't have the 47 corresponding features")
         self.assertEqual(49 - 48, len(y_train.columns),
-                         "x_train doesn't have the single corresponding features")
+                         "y_train doesn't have the single corresponding features")
         self.assertEqual(49 - 48, len(y_test.columns),
-                         "x_test doesn't have the single corresponding features")
+                         "y_test doesn't have the single corresponding features")
 
     def test_load_unsw_nb15_frac(self):
         """Test loading the full dataset with frac=0.1"""

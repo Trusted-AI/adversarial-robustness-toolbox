@@ -52,12 +52,14 @@ class TestClusteringCentroidAnalysis(unittest.TestCase):
         # Features filtering
         # Scaling
         # One-hot encoding
-        x_features = ["dur", "proto", "service", "state", "spkts", "dpkts", "sbytes", "dbytes", "rate",
-            "sttl", "dttl", "sload", "dload", "sloss", "dloss", "sinpkt", "dinpkt", "sjit", "djit",
-            "swin", "stcpb", "dtcpb", "dwin", "tcprtt", "synack", "ackdat", "smean", "dmean",
-            "trans_depth", "response_body_len", "ct_srv_src", "ct_state_ttl", "ct_dst_ltm",
-            "ct_src_dport_ltm", "ct_dst_sport_ltm", "ct_dst_src_ltm", "is_ftp_login", "ct_ftp_cmd",
-            "ct_flw_http_mthd", "ct_src_ltm", "ct_srv_dst", "is_sm_ips_ports", "attack_cat"
+        x_features = ["dur", "proto", "service", "state", "spkts", "dpkts", "sbytes", "dbytes",
+                      "sttl", "dttl", "sload", "dload", "sloss", "dloss" , "sjit", "djit",
+                      "swin", "stcpb", "dtcpb", "dwin", "tcprtt", "synack", "ackdat",
+                      "trans_depth", "ct_srv_src", "ct_state_ttl", "ct_dst_ltm",
+                      "ct_src_dport_ltm", "ct_dst_sport_ltm", "ct_dst_src_ltm", "is_ftp_login", "ct_ftp_cmd",
+                      "ct_flw_http_mthd", "ct_src_ltm", "ct_srv_dst", "is_sm_ips_ports",
+                      "smeansz", "dmeansz", "sintpkt", "dintpkt", "res_bdy_len" # These were changed from original implementation
+                      # "rate" FIXME: this one is missing? Is the dataset wrong?
         ]
 
         x_filtered = x_data[x_features]
