@@ -518,14 +518,18 @@ class TestUtils(unittest.TestCase):
                          "y_test doesn't have the single corresponding features")
 
         # test column types
-        for col in x_train.columns:
-            self.assertNotEqual(x_train[col].dtype, object, f"Column {col} in x_train is of type object")
-        for col in x_test.columns:
-            self.assertNotEqual(x_test[col].dtype, object, f"Column {col} in x_test is of type object")
-        for col in y_train.columns:
-            self.assertNotEqual(y_train[col].dtype, object, f"Column {col} in y_train is of type object")
-        for col in y_test.columns:
-            self.assertNotEqual(y_test[col].dtype, object, f"Column {col} in y_test is of type object")
+        actual_dtypes = x_train.dtypes.astype(str).value_counts().to_dict()
+
+        expected_dtypes = {
+            'float64': 10,
+            'int64': 30, # -1 porque es el label
+            'object': 7, # -1 porque ID es removido
+        }
+
+        for dtype, count in expected_dtypes.items():
+            self.assertEqual(count,
+                             actual_dtypes.get(dtype, 0),
+                             f"Expected {count} columns of type {dtype}, but found {actual_dtypes.get(dtype, 0)}")
 
 
     def test_segment_by_class(self):
