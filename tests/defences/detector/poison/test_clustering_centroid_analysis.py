@@ -20,6 +20,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import unittest
 
+import numpy as np
 import pandas as pd
 
 from art.attacks.poisoning import PoisoningAttackBackdoor
@@ -39,6 +40,12 @@ from art.defences.detector.poison.utils import ReducerType, ScalerType, Clustere
 logger = logging.getLogger(__name__)
 
 
+def _standarization(df, col):
+    arr = df[col]
+    arr = np.array(arr)
+    df[col] = scaler.fit_transform()
+
+
 class TestClusteringCentroidAnalysis(unittest.TestCase):
 
     @classmethod
@@ -50,8 +57,6 @@ class TestClusteringCentroidAnalysis(unittest.TestCase):
         :return: (x_data, y_data)
         """
         # Features filtering
-        # Scaling
-        # One-hot encoding
         x_features = ["dur", "proto", "service", "state", "spkts", "dpkts", "sbytes", "dbytes",
                       "sttl", "dttl", "sload", "dload", "sloss", "dloss" , "sjit", "djit",
                       "swin", "stcpb", "dtcpb", "dwin", "tcprtt", "synack", "ackdat",
@@ -61,9 +66,23 @@ class TestClusteringCentroidAnalysis(unittest.TestCase):
                       "smeansz", "dmeansz", "sintpkt", "dintpkt", "res_bdy_len" # These were changed from original implementation
                       # "rate" FIXME: this one is missing? Is the dataset wrong?
         ]
-
         x_filtered = x_data[x_features]
 
+        # Scaling
+        x_copy = x_filtered.copy()
+        y_copy = y_data.copy()
+        x_numeric_cols = x_copy.select_dtypes(include='number')
+        scaler = StandardScaler()
+
+        for c in x_numeric_cols:
+            arr = np.array(x_copy[c])
+            x_copy[c] = scaler.fit_transform(arr.reshape(len(arr), 1))
+
+        # One-hot encoding
+        x_copy = pd.get_dummies(x_copy, columns=["proto", "service", "state"], prefix="", prefix_sep="")
+        y_copy.rename(columns={"label": "intrusion"}, inplace=True)
+
+        return x_copy, y_copy
 
 
     @classmethod

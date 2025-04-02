@@ -482,6 +482,19 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(x_train.shape[0], len(y_train))
         self.assertEqual(x_test.shape[0], len(x_test))
 
+
+    def test_load_unsw_nb15_frac(self):
+        """Test loading the full dataset with frac=0.1"""
+        (x_train, y_train), (x_test, y_test) = load_unsw_nb15(frac=0.1)
+
+        # size validation
+        total_samples = 254_005
+        self.assertEqual(x_train.shape[0] + x_test.shape[0], total_samples)
+        self.assertEqual(len(y_train) + len(y_test), total_samples)
+        self.assertEqual(x_train.shape[0], len(y_train))
+        self.assertEqual(x_test.shape[0], len(x_test))
+
+
         # y has column 'attack_cat'
         self.assertIn("label", y_train.columns,
                       "Column 'label' is missing from y_train")
@@ -504,16 +517,15 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(49 - 48, len(y_test.columns),
                          "y_test doesn't have the single corresponding features")
 
-    def test_load_unsw_nb15_frac(self):
-        """Test loading the full dataset with frac=0.1"""
-        (x_train, y_train), (x_test, y_test) = load_unsw_nb15(frac=0.1)
-
-        # size validation
-        total_samples = 254_005
-        self.assertEqual(x_train.shape[0] + x_test.shape[0], total_samples)
-        self.assertEqual(len(y_train) + len(y_test), total_samples)
-        self.assertEqual(x_train.shape[0], len(y_train))
-        self.assertEqual(x_test.shape[0], len(x_test))
+        # test column types
+        for col in x_train.columns:
+            self.assertNotEqual(x_train[col].dtype, object, f"Column {col} in x_train is of type object")
+        for col in x_test.columns:
+            self.assertNotEqual(x_test[col].dtype, object, f"Column {col} in x_test is of type object")
+        for col in y_train.columns:
+            self.assertNotEqual(y_train[col].dtype, object, f"Column {col} in y_train is of type object")
+        for col in y_test.columns:
+            self.assertNotEqual(y_test[col].dtype, object, f"Column {col} in y_test is of type object")
 
 
     def test_segment_by_class(self):
