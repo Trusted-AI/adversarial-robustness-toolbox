@@ -18,6 +18,7 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import tensorflow as tf
+
 tf.compat.v1.disable_eager_execution()
 
 import logging
@@ -30,27 +31,22 @@ import pandas as pd
 from art.attacks.poisoning import PoisoningAttackBackdoor
 from art.attacks.poisoning.perturbations import create_flip_perturbation
 from art.estimators.classification import KerasClassifier
-from art.utils import load_mnist, load_unsw_nb15
+from art.utils import load_unsw_nb15
 from sklearn.cluster import DBSCAN
 from sklearn.decomposition import FastICA, PCA
 from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
 from tensorflow.python.keras import Model, Sequential
-from tensorflow.python.keras.layers import Dense, Flatten
+from tensorflow.python.keras.layers import Dense
 from umap import UMAP
 
 from art.defences.detector.poison.clustering_centroid_analysis import get_reducer, get_scaler, get_clusterer, \
     ClusteringCentroidAnalysis
 from art.defences.detector.poison.utils import ReducerType, ScalerType, ClustererType
-from tests.estimators.classification.test_jax import classifier
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
-
-def _standarization(df, col):
-    arr = df[col]
-    arr = np.array(arr)
-    df[col] = scaler.fit_transform()
-
+# TODO: add a better formatter for the logger. Eliminate date
 
 def _create_mlp_model(input_dim: int) -> Model:
 
@@ -62,6 +58,7 @@ def _create_mlp_model(input_dim: int) -> Model:
     ])
     base_model.compile(optimizer="adam", loss="binary_crossentropy", metrics=["accuracy"])
 
+    base_model.summary(print_fn=logger.info)
     return base_model
 
 
@@ -145,9 +142,11 @@ class TestClusteringCentroidAnalysis(unittest.TestCase):
         cls.y_poisoned, _ = backdoor.poison(y_train["intrusion"].values, np.ndarray([1]))
         cls.x_poisoned = x_train.copy()
 
+        logger.info(f"x_poisoned: {cls.x_poisoned.shape}")
+        logger.info(f"y_poisoned: {cls.y_poisoned.shape}")
+
         # Wrap the model in an ART classifier and train on poisoned data
         cls.classifier = train_art_keras_classifier(cls.x_poisoned, cls.y_poisoned)
-        cls.classifier.fit(cls.x_poisoned, cls.y_poisoned, batch_size=32, nb_epochs=5)
 
         cls.clustering_centroid_analysis = ClusteringCentroidAnalysis(
             classifier=cls.classifier,
