@@ -9,5 +9,5 @@ from .image_perturbations import (
 )
 
 from .network_perturbations import (
-    flip_target_label
+    create_flip_perturbation
 )

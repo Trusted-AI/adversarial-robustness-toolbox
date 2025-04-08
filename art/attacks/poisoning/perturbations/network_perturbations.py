@@ -23,9 +23,9 @@ from typing import Union
 
 import numpy as np
 
-def flip_target_label(poison_target: np.ndarray,
+def _flip_target_label(poison_target: np.ndarray,
                       flip_target: np.int64 | np.bool8,
-                      poison_percentage: float = 0.05,
+                      poison_percentage: float,
                       ) -> np.ndarray:
     """
     Flips a random sample of the poison target values. Poison target is expected to be of type bool
@@ -36,6 +36,8 @@ def flip_target_label(poison_target: np.ndarray,
         is applied on the possible targets, not the total number of poison targets.
     :return: backdoored ndarray
     """
+
+    # FIXME: should I enforce type checks here?
     x = poison_target.copy()
 
     possible_poison_targets = np.where(poison_target == flip_target)[0]
@@ -46,7 +48,25 @@ def flip_target_label(poison_target: np.ndarray,
     return x
 
 
+def create_flip_perturbation(flip_target, poison_percentage):
+    """
+    Creates a perturbation function that flips target labels with specified parameters.
+    """
+    def flip_perturbation(poison_target):
+        return _flip_target_label(poison_target, flip_target, poison_percentage)
+    return flip_perturbation
+
+
+# TODO: guide implementation has this commented out. Was it used? Unsure. Will skip for now
 def unbalance_features(poison_target: np.ndarray, poison_percentage: float = 0.05) -> np.ndarray:
+    """
+
+    :param poison_target:
+    :param poison_percentage:
+    :return:
+    """
+
+    # FIXME: should I enforce type checks here
     x = poison_target.copy()
 
     return x

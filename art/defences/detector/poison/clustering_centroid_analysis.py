@@ -91,7 +91,7 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
         :param layer_name: layer to be extracted
         :return: Model that receives the base inputs and outputs up to the selected layer
         """
-        return Model(inputs=self.classifier.layers[0].input, outputs=self.classifier.get_layer(layer_name).output)
+        return Model(inputs=self.classifier.model.layers[0].input, outputs=self.classifier.model.get_layer(layer_name).output)
 
 
     # FIXME: optimize this
