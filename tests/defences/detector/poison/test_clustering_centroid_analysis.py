@@ -153,7 +153,7 @@ class TestClusteringCentroidAnalysis(unittest.TestCase):
             x_train=cls.x_poisoned,
             y_train=cls.y_poisoned,
             x_benign=cls.x_benign,
-            y_benign=cls.y_test,
+            y_benign=cls.y_benign,
         )
 
     def test_extract_classifier_layer_valid(self):
@@ -172,6 +172,67 @@ class TestClusteringCentroidAnalysis(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.clustering_centroid_analysis._extract_classifier_layer("invalid_layer")
 
+    def test_find_centroids_basic(self):
+        """
+        Tests that the ``_find_centroids`` method finds the desired centroids
+        :return:
+        """
+        dbscan_labels = np.array([0, 0, 1, 1, 2, 2])
+        features_scaled = np.array([
+            [1, 2],
+            [1.5, 2.5],
+            [5, 6],
+            [5.5, 6.5],
+            [9, 10],
+            [9.5, 10.5]
+        ])
+        expected_centroids = {
+            0: np.array([1.25, 2.25]),
+            1: np.array([5.25, 6.25]),
+            2: np.array([9.25, 10.25])
+        }
+        centroids = self.clustering_centroid_analysis._find_centroids(features_scaled, dbscan_labels)
+        self.assertEqual(len(centroids), len(expected_centroids))
+        for label, expected_centroid in expected_centroids.items():
+            np.testing.assert_allclose(centroids[label], expected_centroid)
+
+    def test_find_centroids_with_noise(self):
+        dbscan_labels = np.array([0, 0, -1, 1, 1, -1, 2, 2])
+        features_scaled = np.array([
+            [1, 2],
+            [1.5, 2.5],
+            [0, 0],  # Noise
+            [5, 6],
+            [5.5, 6.5],
+            [10, 10], # Noise
+            [9, 10],
+            [9.5, 10.5]
+        ])
+        expected_centroids = {
+            0: np.array([1.25, 2.25]),
+            1: np.array([5.25, 6.25]),
+            2: np.array([9.25, 10.25])
+        }
+        centroids = self.clustering_centroid_analysis._find_centroids(features_scaled, dbscan_labels)
+        self.assertEqual(len(centroids), len(expected_centroids))
+        for label, expected_centroid in expected_centroids.items():
+            np.testing.assert_allclose(centroids[label], expected_centroid)
+
+    def test_empty_input_dict_output(self):
+        dbscan_labels = np.array([])
+        features_scaled = np.array([])
+        expected_centroids = {}
+        centroids = self.clustering_centroid_analysis._find_centroids(features_scaled, dbscan_labels)
+        self.assertEqual(centroids, expected_centroids)
+
+    def test_data_type_and_shape_dict_output(self):
+        dbscan_labels = np.array([0, 0, 1, 1])
+        features_scaled = np.array([[1.0, 2.0], [1.5, 2.5], [5.0, 6.0], [5.5, 6.5]], dtype=np.float32)
+        centroids = self.clustering_centroid_analysis._find_centroids(features_scaled, dbscan_labels)
+        self.assertEqual(len(centroids), 2)
+        for label, centroid in centroids.items():
+            self.assertEqual(centroid.dtype, np.float32)
+            self.assertEqual(centroid.shape, (2,)) # Assuming 2 features
 
 class TestReducersScalersClusterers(unittest.TestCase):
     """
