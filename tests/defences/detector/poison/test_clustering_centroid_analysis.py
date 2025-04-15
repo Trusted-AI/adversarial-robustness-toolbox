@@ -18,6 +18,7 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import tensorflow as tf
+from tensorflow.python.keras.engine.base_layer import Layer
 
 tf.compat.v1.disable_eager_execution()
 
@@ -126,12 +127,13 @@ class TestClusteringCentroidAnalysis(unittest.TestCase):
         """
         (x_train, y_train), (x_test, y_test) = load_unsw_nb15(frac=0.01, )
 
-        x_train, y_train = cls._preprocess(x_train, y_train)
+        cls.x_train, cls.y_train = cls._preprocess(x_train, y_train)
+        cls.x_test, cls.y_test = cls._preprocess(x_test, y_test)
 
-        cls.x_benign = x_train[:500]
-        cls.y_benign = y_train[:500]
-        cls.x_test = x_test[:100]
-        cls.y_test = y_test[:100]
+        cls.x_benign = cls.x_train[:500]
+        cls.y_benign = cls.y_train[:500]
+        cls.x_test = cls.x_test[:100]
+        cls.y_test = cls.y_test[:100]
 
         # Define and apply a backdoor poisoning attack
         backdoor = PoisoningAttackBackdoor([
@@ -139,19 +141,29 @@ class TestClusteringCentroidAnalysis(unittest.TestCase):
         ])
 
         # Poisons the "label" column
-        cls.y_poisoned, _ = backdoor.poison(y_train["intrusion"].values, np.ndarray([1]))
-        cls.x_poisoned = x_train.copy()
+        cls.y_poisoned, _ = backdoor.poison(cls.y_train["intrusion"].values, np.ndarray([1]))
+        cls.x_poisoned = cls.x_train.copy()
 
         logger.info(f"x_poisoned: {cls.x_poisoned.shape}")
         logger.info(f"y_poisoned: {cls.y_poisoned.shape}")
 
         # Wrap the model in an ART classifier and train on poisoned data
-        cls.classifier = train_art_keras_classifier(cls.x_poisoned, cls.y_poisoned)
+        cls.poisoned_classifier = train_art_keras_classifier(cls.x_poisoned, cls.y_poisoned)
 
-        cls.clustering_centroid_analysis = ClusteringCentroidAnalysis(
-            classifier=cls.classifier,
+        # Represents a poisoned scenario
+        cls.clustering_centroid_analysis_poisoned = ClusteringCentroidAnalysis(
+            classifier=cls.poisoned_classifier,
             x_train=cls.x_poisoned, # FIXME: should be an ndarray?
             y_train=cls.y_poisoned,
+            x_benign=cls.x_benign, # FIXME: should be an ndarray?
+            y_benign=cls.y_benign, # FIXME: should be an ndarray?
+        )
+
+        # Represents a non-poisoned (clean) scenario
+        cls.clustering_centroid_analysis_clean = ClusteringCentroidAnalysis(
+            classifier=cls.poisoned_classifier,
+            x_train=x_train, # FIXME: should be an ndarray?
+            y_train=y_train,
             x_benign=cls.x_benign, # FIXME: should be an ndarray?
             y_benign=cls.y_benign, # FIXME: should be an ndarray?
         )
@@ -161,8 +173,8 @@ class TestClusteringCentroidAnalysis(unittest.TestCase):
         Tests that the ``_extract_classifier_layer`` method extracts the desired layer correctly
         """
 
-        extractor = self.clustering_centroid_analysis._extract_classifier_layer("hidden_layer")
-        self.assertIsInstance(extractor, Model)
+        extractor = self.clustering_centroid_analysis_poisoned._extract_classifier_layer("hidden_layer")
+        self.assertIsInstance(extractor, Layer)
 
     def test_extract_classifier_layer_invalid(self):
         """
@@ -170,7 +182,7 @@ class TestClusteringCentroidAnalysis(unittest.TestCase):
         """
 
         with self.assertRaises(ValueError):
-            self.clustering_centroid_analysis._extract_classifier_layer("invalid_layer")
+            self.clustering_centroid_analysis_poisoned._extract_classifier_layer("invalid_layer")
 
     def test_find_centroids_basic(self):
         """
@@ -191,7 +203,7 @@ class TestClusteringCentroidAnalysis(unittest.TestCase):
             1: np.array([5.25, 6.25]),
             2: np.array([9.25, 10.25])
         }
-        centroids = self.clustering_centroid_analysis._find_centroids(features_scaled, dbscan_labels)
+        centroids = self.clustering_centroid_analysis_poisoned._find_centroids(features_scaled, dbscan_labels)
         self.assertEqual(len(centroids), len(expected_centroids))
         for label, expected_centroid in expected_centroids.items():
             np.testing.assert_allclose(centroids[label], expected_centroid)
@@ -213,7 +225,7 @@ class TestClusteringCentroidAnalysis(unittest.TestCase):
             1: np.array([5.25, 6.25]),
             2: np.array([9.25, 10.25])
         }
-        centroids = self.clustering_centroid_analysis._find_centroids(features_scaled, dbscan_labels)
+        centroids = self.clustering_centroid_analysis_poisoned._find_centroids(features_scaled, dbscan_labels)
         self.assertEqual(len(centroids), len(expected_centroids))
         for label, expected_centroid in expected_centroids.items():
             np.testing.assert_allclose(centroids[label], expected_centroid)
@@ -222,13 +234,13 @@ class TestClusteringCentroidAnalysis(unittest.TestCase):
         dbscan_labels = np.array([])
         features_scaled = np.array([])
         expected_centroids = {}
-        centroids = self.clustering_centroid_analysis._find_centroids(features_scaled, dbscan_labels)
+        centroids = self.clustering_centroid_analysis_poisoned._find_centroids(features_scaled, dbscan_labels)
         self.assertEqual(centroids, expected_centroids)
 
     def test_data_type_and_shape_dict_output(self):
         dbscan_labels = np.array([0, 0, 1, 1])
         features_scaled = np.array([[1.0, 2.0], [1.5, 2.5], [5.0, 6.0], [5.5, 6.5]], dtype=np.float32)
-        centroids = self.clustering_centroid_analysis._find_centroids(features_scaled, dbscan_labels)
+        centroids = self.clustering_centroid_analysis_poisoned._find_centroids(features_scaled, dbscan_labels)
         self.assertEqual(len(centroids), 2)
         for label, centroid in centroids.items():
             self.assertEqual(centroid.dtype, np.float32)
@@ -236,7 +248,7 @@ class TestClusteringCentroidAnalysis(unittest.TestCase):
 
 
     def test_split_benign_data_basic_split(self):
-        (x_val, y_val), (x_mis, y_mis) = self.clustering_centroid_analysis._split_benign_data()
+        (x_val, y_val), (x_mis, y_mis) = self.clustering_centroid_analysis_poisoned._split_benign_data()
         self.assertIsInstance(x_val, np.ndarray | pd.DataFrame)
         self.assertIsInstance(y_val, np.ndarray | pd.DataFrame)
         self.assertIsInstance(x_mis, np.ndarray | pd.DataFrame)
@@ -244,8 +256,8 @@ class TestClusteringCentroidAnalysis(unittest.TestCase):
 
     def test_split_benign_data_randomness(self):
         # FIXME: should I do more robust checking for randomness? Although I set random seeds and it's another library's responsibility...
-        (x_val_1, y_val_1), (x_mis_1, y_mis_1) = self.clustering_centroid_analysis._split_benign_data(random_state=1)
-        (x_val_2, y_val_2), (x_mis_2, y_mis_2) = self.clustering_centroid_analysis._split_benign_data(random_state=2)
+        (x_val_1, y_val_1), (x_mis_1, y_mis_1) = self.clustering_centroid_analysis_poisoned._split_benign_data(random_state=1)
+        (x_val_2, y_val_2), (x_mis_2, y_mis_2) = self.clustering_centroid_analysis_poisoned._split_benign_data(random_state=2)
 
         with self.assertRaises(AssertionError, msg="x_validation should be different with different random states"):
             pd.testing.assert_index_equal(x_val_1.index, x_val_2.index),
@@ -255,6 +267,24 @@ class TestClusteringCentroidAnalysis(unittest.TestCase):
             pd.testing.assert_index_equal(x_mis_1.index, x_mis_2.index),
         with self.assertRaises(AssertionError, msg="y_validation should be different with different random states"):
             pd.testing.assert_index_equal(y_mis_1.index, y_mis_2.index)
+
+    def test_detect_poison_poisoned(self):
+        report, poisoned_indices = self.clustering_centroid_analysis_poisoned.detect_poison()
+
+        self.assertIsInstance(report, dict)
+
+        # all poisoned elements are detected
+
+        # all poisoned clusters are detected
+
+
+    def test_detect_poison_clean(self):
+        report, poisoned_indices = self.clustering_centroid_analysis_poisoned.detect_poison()
+
+        self.assertIsInstance(report, dict)
+
+        # no poisoned elements are detected
+        self.assertEqual(0, len(poisoned_indices))
 
 
 class TestReducersScalersClusterers(unittest.TestCase):

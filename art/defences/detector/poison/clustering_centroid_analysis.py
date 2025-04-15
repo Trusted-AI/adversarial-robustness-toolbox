@@ -27,6 +27,7 @@ from sklearn.decomposition import FastICA, PCA
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
 from tensorflow.python.keras import Model, Input
+from tensorflow.python.keras.engine.base_layer import Layer
 from umap import UMAP
 
 from art.defences.detector.poison.poison_filtering_defence import PoisonFilteringDefence
@@ -85,13 +86,13 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
         pass
 
 
-    def _extract_classifier_layer(self, layer_name: str) -> Model:
+    def _extract_classifier_layer(self, layer_name: str) -> Layer:
         """
         Extracts the selected layer of the model. Can be used to create an intermediate model
         :param layer_name: layer to be extracted
         :return: Model that receives the base inputs and outputs up to the selected layer
         """
-        return Model(inputs=self.classifier.model.layers[0].input, outputs=self.classifier.model.get_layer(layer_name).output)
+        return self.classifier.model.get_layer(layer_name)
 
 
     # FIXME: optimize this
@@ -165,8 +166,12 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
         # 1. Dimensionality reduction and feature clustering
 
         # Extract features from a middle layer
-        intermediate_layer = self._extract_classifier_layer("dense_2")
-        features = intermediate_layer.predict(self.x_train)
+        # TODO: find critical layer using https://arxiv.org/pdf/2302.12758
+        intermediate_layer_model = Model(
+            inputs=self._extract_classifier_layer("input_layer").input,
+            outputs=self._extract_classifier_layer("hidden_layer").output
+        )
+        features = intermediate_layer_model.predict(self.x_train)
 
         # Scale characteristics (?)
         features_scaled = self.scaler.fit_transform(features)
@@ -186,7 +191,7 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
         # TODO: this could be precalculated and cached
         (x_benign_validation, y_benign_validation), (x_benign_other, y_benign_other) = self._split_benign_data()
 
-        benign_features = intermediate_layer.predict(x_benign_validation)
+        benign_features = intermediate_layer_model.predict(x_benign_validation)
         benign_features_scaled = self.scaler.transform(benign_features) # TODO: fit_transform or transform?
         benign_centroid = np.mean(benign_features_scaled, axis=0)
 
@@ -195,13 +200,13 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
         # Missclassification check
 
         # Extract features from benign center
-        other_features = intermediate_layer.predict(x_benign_other)
+        other_features = intermediate_layer_model.predict(x_benign_other)
         other_features_scaled = self.scaler.transform(other_features)
 
         poisoned_clusters = []
 
-        modified_input = Input(shape=(64,)) # FIXME: why 64?
-        modified_output = self._extract_classifier_layer("dense_output")(modified_input)
+        modified_input = Input(shape=(other_features_scaled.shape[1],)) # FIXME: 64 changed to number of features. That is the input.
+        modified_output = self._extract_classifier_layer("output_layer")(modified_input)
         modified_model = Model(inputs=modified_input, outputs=modified_output)
 
         for cluster_label, deviation in deviations.items():
@@ -229,7 +234,7 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
 
         #report = None
         #return report, self._is_clean_lst
-        return detected_poisoned_indices
+        return dict(), detected_poisoned_indices
 
 
 def get_reducer(reduce: ReducerType, nb_dims: int):
