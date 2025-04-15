@@ -150,10 +150,10 @@ class TestClusteringCentroidAnalysis(unittest.TestCase):
 
         cls.clustering_centroid_analysis = ClusteringCentroidAnalysis(
             classifier=cls.classifier,
-            x_train=cls.x_poisoned,
+            x_train=cls.x_poisoned, # FIXME: should be an ndarray?
             y_train=cls.y_poisoned,
-            x_benign=cls.x_benign,
-            y_benign=cls.y_benign,
+            x_benign=cls.x_benign, # FIXME: should be an ndarray?
+            y_benign=cls.y_benign, # FIXME: should be an ndarray?
         )
 
     def test_extract_classifier_layer_valid(self):
@@ -233,6 +233,29 @@ class TestClusteringCentroidAnalysis(unittest.TestCase):
         for label, centroid in centroids.items():
             self.assertEqual(centroid.dtype, np.float32)
             self.assertEqual(centroid.shape, (2,)) # Assuming 2 features
+
+
+    def test_split_benign_data_basic_split(self):
+        (x_val, y_val), (x_mis, y_mis) = self.clustering_centroid_analysis._split_benign_data()
+        self.assertIsInstance(x_val, np.ndarray | pd.DataFrame)
+        self.assertIsInstance(y_val, np.ndarray | pd.DataFrame)
+        self.assertIsInstance(x_mis, np.ndarray | pd.DataFrame)
+        self.assertIsInstance(y_mis, np.ndarray | pd.DataFrame)
+
+    def test_split_benign_data_randomness(self):
+        # FIXME: should I do more robust checking for randomness? Although I set random seeds and it's another library's responsibility...
+        (x_val_1, y_val_1), (x_mis_1, y_mis_1) = self.clustering_centroid_analysis._split_benign_data(random_state=1)
+        (x_val_2, y_val_2), (x_mis_2, y_mis_2) = self.clustering_centroid_analysis._split_benign_data(random_state=2)
+
+        with self.assertRaises(AssertionError, msg="x_validation should be different with different random states"):
+            pd.testing.assert_index_equal(x_val_1.index, x_val_2.index),
+        with self.assertRaises(AssertionError, msg="y_validation should be different with different random states"):
+            pd.testing.assert_index_equal(y_val_1.index, y_val_2.index),
+        with self.assertRaises(AssertionError, msg="x_validation should be different with different random states"):
+            pd.testing.assert_index_equal(x_mis_1.index, x_mis_2.index),
+        with self.assertRaises(AssertionError, msg="y_validation should be different with different random states"):
+            pd.testing.assert_index_equal(y_mis_1.index, y_mis_2.index)
+
 
 class TestReducersScalersClusterers(unittest.TestCase):
     """

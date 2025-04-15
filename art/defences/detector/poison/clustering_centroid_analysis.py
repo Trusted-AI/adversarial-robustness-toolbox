@@ -60,10 +60,10 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
     def __init__(
             self,
             classifier,
-            x_train: np.ndarray,
-            y_train: np.ndarray,
-            x_benign: np.ndarray,
-            y_benign: np.ndarray
+            x_train: np.ndarray, # FIXME: could be a dataframe?
+            y_train: np.ndarray, # FIXME: could be a dataframe?
+            x_benign: np.ndarray, # FIXME: could be a dataframe?
+            y_benign: np.ndarray # FIXME: could be a dataframe?
     ):
         """
         Creates a :class: `ClusteringCentroidAnalysis` object for the given classifier
@@ -133,8 +133,9 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
 
         return x_benign_sample, y_benign_sample
 
+    # FIXME: should I keep it? Abstraction-wise says yes, simplicity-wise says no
     def _split_benign_data(
-            self,
+            self, # FIXME: injecting the data makes it easier for testing, but not ART-orthodox. Think about it.
             test_size: float = 0.2,
             random_state: int = 42
     ) -> tuple[
