@@ -20,6 +20,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import tensorflow as tf
 from sklearn.compose import ColumnTransformer
 from tensorflow.python.keras.engine.base_layer import Layer
+from tensorflow.python.keras.metrics import Precision, Recall, Accuracy, AUC
 
 tf.compat.v1.disable_eager_execution()
 
@@ -58,7 +59,12 @@ def _create_mlp_model(input_dim: int, model_name: str) -> Model:
         Dense(64, activation="relu", name="hidden_layer"),
         Dense(1, activation="sigmoid", name="output_layer")
     ])
-    base_model.compile(optimizer="adam", loss="binary_crossentropy", metrics=["accuracy"])
+    base_model.compile(optimizer="adam",
+                       loss="binary_crossentropy",
+                       metrics=["accuracy",
+                                Precision(name="precision"),
+                                Recall(name="recall"),
+                                AUC(name="auc")])
 
     base_model.summary(print_fn=logger.info)
     return base_model
@@ -78,6 +84,7 @@ def train_art_keras_classifier(x_train: Union[pd.DataFrame, np.ndarray] , y_trai
     y_values = np.squeeze(y_train.values) if type(y_train) == pd.DataFrame else y_train
 
     # Train the model
+    mlp_classifier.fit(x_values, y_values, batch_size=512, nb_epochs=100, verbose=True)
 
     return mlp_classifier
 
@@ -180,13 +187,23 @@ class TestClusteringCentroidAnalysis(unittest.TestCase):
         logger.info(f"y_test:\t{y_test.shape}")
         logger.info(f"x_poisoned:\t{cls.x_poisoned.shape}")
         logger.info(f"y_poisoned:\t{cls.y_poisoned.shape}")
+        logger.info(f"x_clean:\t{cls.x_clean.shape}")
+        logger.info(f"y_clean:\t{cls.y_clean.shape}")
 
         # Wrap the model in an ART classifier and train on poisoned data
         cls.poisoned_classifier = train_art_keras_classifier(cls.x_poisoned, cls.y_poisoned, "mlp_poisoned")
-        cls.poisoned_classifier.model.evaluate(x_test, y_test, verbose=1)
+        results = cls.poisoned_classifier.model.evaluate(x_test, y_test, verbose=1)
+        metrics = cls.poisoned_classifier.model.metrics_names
+
+        for name, value in zip(metrics, results):
+            logger.info(f"{name.capitalize():<10}: {value:.4f}")
 
         cls.clean_classifier = train_art_keras_classifier(cls.x_clean, cls.y_clean, "mlp_clean")
-        cls.clean_classifier.model.evaluate(x_test, y_test, verbose=1)
+        results = cls.clean_classifier.model.evaluate(x_test, y_test, verbose=1)
+        metrics = cls.clean_classifier.model.metrics_names
+
+        for name, value in zip(metrics, results):
+            logger.info(f"{name.capitalize():<10}: {value:.4f}")
 
         # Represents a poisoned scenario
         cls.clustering_centroid_analysis_poisoned = ClusteringCentroidAnalysis(
@@ -319,7 +336,6 @@ class TestClusteringCentroidAnalysis(unittest.TestCase):
 
     def test_detect_poison_clean(self):
         report, poisoned_indices = self.clustering_centroid_analysis_clean.detect_poison()
-
 
         self.assertIsInstance(report, dict)
 
