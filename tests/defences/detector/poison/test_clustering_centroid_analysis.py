@@ -18,6 +18,7 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import tensorflow as tf
+from sklearn.compose import ColumnTransformer
 from tensorflow.python.keras.engine.base_layer import Layer
 
 tf.compat.v1.disable_eager_execution()
@@ -35,7 +36,7 @@ from art.estimators.classification import KerasClassifier
 from art.utils import load_unsw_nb15
 from sklearn.cluster import DBSCAN
 from sklearn.decomposition import FastICA, PCA
-from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
+from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler, OneHotEncoder
 from tensorflow.python.keras import Model, Sequential
 from tensorflow.python.keras.layers import Dense
 from umap import UMAP
@@ -49,10 +50,10 @@ logger.setLevel(logging.INFO)
 
 # TODO: add a better formatter for the logger. Eliminate date
 
-def _create_mlp_model(input_dim: int) -> Model:
+def _create_mlp_model(input_dim: int, model_name: str) -> Model:
 
     # Define a small DNN with one hidden layer
-    base_model = Sequential(name="mlp_poisoned", layers=[
+    base_model = Sequential(name=model_name, layers=[
         Dense(64, activation="relu", name="input_layer", input_shape=(input_dim,)), # FIXME: 28, 1, 1 to input_dim,
         Dense(64, activation="relu", name="hidden_layer"),
         Dense(1, activation="sigmoid", name="output_layer")
@@ -63,29 +64,39 @@ def _create_mlp_model(input_dim: int) -> Model:
     return base_model
 
 
-def train_art_keras_classifier(x_train: Union[pd.DataFrame, np.ndarray] , y_train: Union[pd.DataFrame, np.ndarray]) -> KerasClassifier:
+def train_art_keras_classifier(x_train: Union[pd.DataFrame, np.ndarray] , y_train: Union[pd.DataFrame, np.ndarray], model_name: str) -> KerasClassifier:
     """Trains a KerasClassifier using the ART wrapper."""
 
     # Create the Keras model
-    mlp_model = _create_mlp_model(x_train.shape[1])
+    mlp_model = _create_mlp_model(x_train.shape[1], model_name)
 
     # Create the ART KerasClassifier wrapper
     mlp_classifier = KerasClassifier(model=mlp_model, use_logits=False)
 
     # Requires ndarrays, so the dataframes are transformed
     x_values = x_train.values if type(x_train) == pd.DataFrame else x_train
-    y_values = y_train.values if type(y_train) == pd.DataFrame else y_train
+    y_values = np.squeeze(y_train.values) if type(y_train) == pd.DataFrame else y_train
 
     # Train the model
-    mlp_classifier.fit(x_values, y_values, batch_size=5000, verbose=True)
 
     return mlp_classifier
 
 
 class TestClusteringCentroidAnalysis(unittest.TestCase):
 
+    _FEATURES = ["dur", "proto", "service", "state", "spkts", "dpkts", "sbytes", "dbytes",
+                 "sttl", "dttl", "sload", "dload", "sloss", "dloss" , "sjit", "djit",
+                 "swin", "stcpb", "dtcpb", "dwin", "tcprtt", "synack", "ackdat",
+                 "trans_depth", "ct_srv_src", "ct_state_ttl", "ct_dst_ltm",
+                 "ct_src_dport_ltm", "ct_dst_sport_ltm", "ct_dst_src_ltm", "is_ftp_login", "ct_ftp_cmd",
+                 "ct_flw_http_mthd", "ct_src_ltm", "ct_srv_dst", "is_sm_ips_ports",
+                 "smeansz", "dmeansz", "sintpkt", "dintpkt", "res_bdy_len" # These were changed from original implementation
+                 # "rate" FIXME: this one is missing? Is the dataset wrong?
+                 ]
+    _CATEGORICAL_COLS = ["proto", "state", "service"]
+
     @classmethod
-    def _preprocess(cls, x_data: pd.DataFrame, y_data: pd.DataFrame) -> (pd.DataFrame, pd.DataFrame):
+    def _preprocess_train(cls, x_data: pd.DataFrame, y_data: pd.DataFrame) -> (pd.DataFrame, pd.DataFrame):
         """
         Preprocesses x_train and y_train in order to be used in the test model
         :param x_data: information used by the model
@@ -93,62 +104,89 @@ class TestClusteringCentroidAnalysis(unittest.TestCase):
         :return: (x_data, y_data)
         """
         # Features filtering
-        x_features = ["dur", "proto", "service", "state", "spkts", "dpkts", "sbytes", "dbytes",
-                      "sttl", "dttl", "sload", "dload", "sloss", "dloss" , "sjit", "djit",
-                      "swin", "stcpb", "dtcpb", "dwin", "tcprtt", "synack", "ackdat",
-                      "trans_depth", "ct_srv_src", "ct_state_ttl", "ct_dst_ltm",
-                      "ct_src_dport_ltm", "ct_dst_sport_ltm", "ct_dst_src_ltm", "is_ftp_login", "ct_ftp_cmd",
-                      "ct_flw_http_mthd", "ct_src_ltm", "ct_srv_dst", "is_sm_ips_ports",
-                      "smeansz", "dmeansz", "sintpkt", "dintpkt", "res_bdy_len" # These were changed from original implementation
-                      # "rate" FIXME: this one is missing? Is the dataset wrong?
-        ]
-        x_filtered = x_data[x_features]
+        x_filtered = x_data[cls._FEATURES].copy()
+        y_filtered = y_data.copy()
+        y_filtered.rename(columns={"label": "intrusion"}, inplace=True)
 
-        # Scaling
-        x_copy = x_filtered.copy()
-        y_copy = y_data.copy()
-        x_numeric_cols = x_copy.select_dtypes(include='number')
-        scaler = StandardScaler()
+        numeric_cols = x_filtered.select_dtypes(include='number').columns
 
-        for c in x_numeric_cols:
-            arr = np.array(x_copy[c])
-            x_copy[c] = scaler.fit_transform(arr.reshape(len(arr), 1))
+        preprocessor = ColumnTransformer(
+            transformers=[
+                ("num", StandardScaler(), numeric_cols),
+                ("cat", OneHotEncoder(handle_unknown="ignore", sparse_output=False), cls._CATEGORICAL_COLS),
+            ],
+            remainder="passthrough"
+        )
 
-        # One-hot encoding
-        x_copy = pd.get_dummies(x_copy, columns=["proto", "service", "state"], prefix="", prefix_sep="")
-        y_copy.rename(columns={"label": "intrusion"}, inplace=True)
+        preprocessor.fit(x_filtered)
+        x_processed = preprocessor.transform(x_filtered)
 
-        return x_copy, y_copy
+        feature_names = list(numeric_cols) + list(preprocessor.named_transformers_['cat'].get_feature_names_out(cls._CATEGORICAL_COLS))
+        x_processed_df = pd.DataFrame(x_processed, columns=feature_names, index=x_filtered.index)
+
+        return x_processed_df, y_filtered, preprocessor
+
+    @classmethod
+    def _preprocess_test(cls, x_data: pd.DataFrame, y_data: pd.DataFrame, fitted_preprocessor: ColumnTransformer) -> (pd.DataFrame, pd.DataFrame):
+        """
+        Preprocesses x_train and y_train in order to be used in the test model
+        :param x_data: information used by the model
+        :param y_data: target label for the model
+        :param fitted_preprocessor: ColumnTransformer used to fit the preprocessor in the train data preprocessing
+        :return: (x_data, y_data)
+        """
+        # Features filtering
+        x_filtered = x_data[cls._FEATURES].copy()
+        y_filtered = y_data.copy()
+        y_filtered.rename(columns={"label": "intrusion"}, inplace=True)
+
+        x_processed = fitted_preprocessor.transform(x_filtered)
+        numeric_cols = x_filtered.select_dtypes(include='number').columns
+        feature_names = list(numeric_cols) + list(fitted_preprocessor.named_transformers_['cat'].get_feature_names_out(cls._CATEGORICAL_COLS))
+
+        x_processed_df = pd.DataFrame(x_processed, columns=feature_names, index=x_filtered.index)
+
+        return x_processed_df, y_filtered
 
     @classmethod
     def setUpClass(cls):
         """
         Sets up a shared model, a poisoned dataset, and a ClusteringCentroidAnalysis instance for all tests.
         """
-        (x_train, y_train), (x_test, y_test) = load_unsw_nb15(frac=0.01, )
-
-        cls.x_train, cls.y_train = cls._preprocess(x_train, y_train)
-        cls.x_test, cls.y_test = cls._preprocess(x_test, y_test)
-
-        cls.x_benign = cls.x_train[:500]
-        cls.y_benign = cls.y_train[:500]
-        cls.x_test = cls.x_test[:100]
-        cls.y_test = cls.y_test[:100]
-
         # Define and apply a backdoor poisoning attack
         backdoor = PoisoningAttackBackdoor([
             create_flip_perturbation([1], poison_percentage=0.3)
         ])
 
-        # Poisons the "label" column
-        cls.y_poisoned, _ = backdoor.poison(cls.y_train["intrusion"].values, np.ndarray([1]))
-        cls.x_poisoned = cls.x_train.copy()
+        (x_train, y_train), (x_test, y_test) = load_unsw_nb15(frac=0.01, )
 
-        logger.info(f"x_poisoned: {cls.x_poisoned.shape}")
-        logger.info(f"y_poisoned: {cls.y_poisoned.shape}")
+        x_train, y_train, fitted_preprocessor = cls._preprocess_train(x_train, y_train)
+        x_test, y_test = cls._preprocess_test(x_test, y_test, fitted_preprocessor)
+
+        cls.x_benign = x_train[:500].copy()
+        cls.y_benign = y_train[:500].copy()
+
+        # Poisons the "label" column
+        cls.x_poisoned = x_train[500:].copy()
+        cls.y_poisoned, _ = backdoor.poison(y_train[500:]["intrusion"].values, np.ndarray([1]))
+
+        # Clean samples, used for negative test results
+        cls.x_clean = x_train[500:].copy()
+        cls.y_clean = y_train[500:].copy()
+
+        logger.info(f"x_train:\t{x_train.shape}")
+        logger.info(f"y_train:\t{y_train.shape}")
+        logger.info(f"x_test:\t{x_test.shape}")
+        logger.info(f"y_test:\t{y_test.shape}")
+        logger.info(f"x_poisoned:\t{cls.x_poisoned.shape}")
+        logger.info(f"y_poisoned:\t{cls.y_poisoned.shape}")
 
         # Wrap the model in an ART classifier and train on poisoned data
-        cls.poisoned_classifier = train_art_keras_classifier(cls.x_poisoned, cls.y_poisoned)
+        cls.poisoned_classifier = train_art_keras_classifier(cls.x_poisoned, cls.y_poisoned, "mlp_poisoned")
+        cls.poisoned_classifier.model.evaluate(x_test, y_test, verbose=1)
+
+        cls.clean_classifier = train_art_keras_classifier(cls.x_clean, cls.y_clean, "mlp_clean")
+        cls.clean_classifier.model.evaluate(x_test, y_test, verbose=1)
 
         # Represents a poisoned scenario
         cls.clustering_centroid_analysis_poisoned = ClusteringCentroidAnalysis(
@@ -161,9 +199,9 @@ class TestClusteringCentroidAnalysis(unittest.TestCase):
 
         # Represents a non-poisoned (clean) scenario
         cls.clustering_centroid_analysis_clean = ClusteringCentroidAnalysis(
-            classifier=cls.poisoned_classifier,
-            x_train=x_train, # FIXME: should be an ndarray?
-            y_train=y_train,
+            classifier=cls.clean_classifier,
+            x_train=cls.x_clean, # FIXME: should be an ndarray?
+            y_train=cls.y_clean,
             x_benign=cls.x_benign, # FIXME: should be an ndarray?
             y_benign=cls.y_benign, # FIXME: should be an ndarray?
         )
@@ -274,12 +312,14 @@ class TestClusteringCentroidAnalysis(unittest.TestCase):
         self.assertIsInstance(report, dict)
 
         # all poisoned elements are detected
+        self.assertEqual(0, len(poisoned_indices))
 
         # all poisoned clusters are detected
 
 
     def test_detect_poison_clean(self):
-        report, poisoned_indices = self.clustering_centroid_analysis_poisoned.detect_poison()
+        report, poisoned_indices = self.clustering_centroid_analysis_clean.detect_poison()
+
 
         self.assertIsInstance(report, dict)
 
