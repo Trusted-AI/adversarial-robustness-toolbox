@@ -21,6 +21,7 @@ import logging
 from typing import TYPE_CHECKING
 
 import numpy as np
+from sklearn.base import ClusterMixin
 from sklearn.cluster import DBSCAN
 from sklearn.decomposition import FastICA, PCA
 from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
@@ -34,6 +35,32 @@ if TYPE_CHECKING:
     from art.utils import CLASSIFIER_NEURALNETWORK_TYPE
 
 logger = logging.getLogger(__name__)
+
+
+def _calculate_centroid(selected_indices: np.ndarray, features: np.array) -> np.ndarray:
+    """
+    Returns the centroid of all data within a specific cluster that is classified as a specific class label
+
+    :param selected_indices: a numpy array of selected indices on which to calculate the centroid
+    :param features: numpy array d-dimensional features for all given data
+    :return: d-dimensional numpy array
+    """
+    selected_features = features[selected_indices]
+    return np.mean(selected_features, axis=0)
+
+def _class_clustering(y: np.array, features: np.array, label: any, clusterer: ClusterMixin) -> [np.array, np.array]:
+    """
+    Given a class label, it clusters all the feature representations that map to that class
+
+    :param y: array of n class labels
+    :param label: class label in the classification task
+    :param features: numpy array d-dimensional features for n data entries
+    :return: (cluster_labels, selected_indices) ndarrays of equal size with cluster labels and corresponding original indices.
+    """
+    selected_indices = np.where(y == label)[0]
+    selected_features = features[selected_indices]
+    cluster_labels = clusterer.fit_predict(selected_features)
+    return cluster_labels, selected_indices
 
 
 class ClusteringCentroidAnalysis(PoisonFilteringDefence):
@@ -112,20 +139,6 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
     def evaluate_defence(self, is_clean: np.ndarray, **kwargs) -> str:
         pass
 
-
-    @classmethod
-    def _calculate_centroid(cls, selected_indices: np.ndarray, features: np.array) -> np.ndarray:
-        """
-        Returns the centroid of all data within a specific cluster that is classified as a specific class label
-
-        :param selected_indices: a numpy array of selected indices on which to calculate the centroid
-        :param features: numpy array d-dimensional features for all given data
-        :return: d-dimensional numpy array
-        """
-        selected_features = features[selected_indices]
-        return np.mean(selected_features, axis=0)
-
-
     def _feature_extraction(self) -> np.ndarray:
         """
         Extracts the feature representations of the training data
@@ -141,19 +154,6 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
         return self.reducer.fit_transform(features)
 
 
-    def _class_clustering(self, label: any, features: np.array) -> [np.array, np.array]:
-        """
-        Given a class label, it clusters all the feature representations that map to that class
-
-        :param label: class label in the classification task
-        :return: (cluster_labels, selected_indices) ndarrays of equal size with cluster labels and corresponding original indices.
-        """
-        selected_indices = np.where(self.y_train == label)[0]
-        selected_features = features[selected_indices]
-        cluster_labels = self.clusterer.fit_predict(selected_features)
-        return cluster_labels, selected_indices
-
-
     def detect_poison(self, **kwargs) -> tuple[dict, list[int]]:
 
         is_poisoned = np.zeros(len(self.benign_indices))
@@ -167,7 +167,7 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
         class_cluster_labels = np.empty(len(self.benign_indices))
 
         for class_label in self.unique_classes:
-            cluster_labels, selected_indices = self._class_clustering(class_label, features)
+            cluster_labels, selected_indices = _class_clustering(self.y_train, features, class_label, self.clusterer)
             # label values are adjusted to account for labels of previous clustering tasks
             cluster_labels[cluster_labels != -1] += used_cluster_labels
             used_cluster_labels += len(np.unique(cluster_labels[cluster_labels != -1]))
@@ -186,14 +186,14 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
 
         # for each cluster found for each target class
         for label in np.unique(class_cluster_labels[class_cluster_labels != -1]):
-            real_centroids[label] = self._calculate_centroid(np.where(class_cluster_labels == label)[0],
+            real_centroids[label] = _calculate_centroid(np.where(class_cluster_labels == label)[0],
                                                              features)
 
         benign_centroids = dict()
 
         # for each target class
         for class_label in self.unique_classes:
-            benign_centroids[class_label] = self._calculate_centroid(class_cluster_labels[self.benign_indices == class_label],
+            benign_centroids[class_label] = _calculate_centroid(class_cluster_labels[self.benign_indices == class_label],
                                                                      features)
 
         misclassification_rates = dict()
@@ -312,7 +312,7 @@ def get_scaler(scaler_type: ScalerType):
     raise ValueError(f"{scaler_type} scaling method not supported.")
 
 
-def get_clusterer(clusterer_type: ClustererType):
+def get_clusterer(clusterer_type: ClustererType) -> ClusterMixin:
     """Initialize the right cluster algorithm (a.k.a., clusterer) based on the selected type. """
     if clusterer_type == ClustererType.DBSCAN:
         return DBSCAN(eps=0.5, min_samples=5)

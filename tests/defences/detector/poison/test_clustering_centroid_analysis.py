@@ -18,6 +18,7 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import tensorflow as tf
+from sklearn.base import ClusterMixin
 from sklearn.compose import ColumnTransformer
 from tensorflow.python.keras.engine.base_layer import Layer
 from tensorflow.python.keras.metrics import Precision, Recall, Accuracy, AUC
@@ -43,7 +44,7 @@ from tensorflow.python.keras.layers import Dense
 from umap import UMAP
 
 from art.defences.detector.poison.clustering_centroid_analysis import get_reducer, get_scaler, get_clusterer, \
-    ClusteringCentroidAnalysis
+    ClusteringCentroidAnalysis, _calculate_centroid, _class_clustering
 from art.defences.detector.poison.utils import ReducerType, ScalerType, ClustererType
 
 logger = logging.getLogger(__name__)
@@ -87,6 +88,18 @@ def train_art_keras_classifier(x_train: Union[pd.DataFrame, np.ndarray] , y_trai
     mlp_classifier.fit(x_values, y_values, batch_size=512, nb_epochs=100, verbose=True)
 
     return mlp_classifier
+
+class MockClusterer(ClusterMixin):
+    """
+    A mock ClusterMixin for testing purposes.  This avoids using a real clustering
+    algorithm and allows us to control the output for our tests.
+    """
+    def __init__(self, cluster_labels_to_return):
+        self.cluster_labels_to_return = cluster_labels_to_return
+
+    def fit_predict(self, X):
+        return self.cluster_labels_to_return
+
 
 @unittest.skip("Changes were made")
 class TestClusteringCentroidAnalysis(unittest.TestCase):
@@ -364,34 +377,34 @@ class TestCalculateCentroid(unittest.TestCase):
     def test_empty_indices(self):
         """Test with an empty array of selected indices."""
         selected_indices = np.array([], dtype=int)
-        centroid = ClusteringCentroidAnalysis._calculate_centroid(selected_indices, self.features)
+        centroid = _calculate_centroid(selected_indices, self.features)
         self.assertTrue(np.all(np.isnan(centroid)), "Centroid of empty selection should be NaN")
 
     def test_single_index(self):
         """Test with a single selected index."""
         selected_indices = np.array([0])
-        centroid = ClusteringCentroidAnalysis._calculate_centroid(selected_indices, self.features)
+        centroid = _calculate_centroid(selected_indices, self.features)
         self.assertTrue(np.array_equal(centroid, self.features[0]), "Centroid should be the feature itself")
 
     def test_multiple_indices(self):
         """Test with multiple selected indices."""
         selected_indices = np.array([0, 2, 4])
         expected_centroid = np.array([7, 8, 9])
-        centroid = ClusteringCentroidAnalysis._calculate_centroid(selected_indices, self.features)
+        centroid = _calculate_centroid(selected_indices, self.features)
         self.assertTrue(np.array_equal(centroid, expected_centroid), "Centroid calculation incorrect")
 
     def test_all_indices(self):
         """Test with all indices selected."""
         selected_indices = np.array([0, 1, 2, 3, 4])
         expected_centroid = np.array([7, 8, 9])
-        centroid = ClusteringCentroidAnalysis._calculate_centroid(selected_indices, self.features)
+        centroid = _calculate_centroid(selected_indices, self.features)
         self.assertTrue(np.allclose(centroid, expected_centroid), "Centroid should be the mean of all features")
 
     def test_non_contiguous_indices(self):
         """Test with non-contiguous selected indices."""
         selected_indices = np.array([1, 3])
         expected_centroid = np.array([7, 8, 9])
-        centroid = ClusteringCentroidAnalysis._calculate_centroid(selected_indices, self.features)
+        centroid = _calculate_centroid(selected_indices, self.features)
         self.assertTrue(np.array_equal(centroid, expected_centroid), "Centroid calculation incorrect for non-contiguous indices")
 
     def test_float_features(self):
@@ -399,8 +412,71 @@ class TestCalculateCentroid(unittest.TestCase):
         float_features = self.features.astype(float)
         selected_indices = np.array([0, 2, 4])
         expected_centroid = np.array([7., 8., 9.])
-        centroid = ClusteringCentroidAnalysis._calculate_centroid(selected_indices, float_features)
+        centroid = _calculate_centroid(selected_indices, float_features)
         self.assertTrue(np.allclose(centroid, expected_centroid), "Centroid calculation incorrect for float features")
+
+
+class TestClassClustering(unittest.TestCase):
+
+    def test_class_clustering_basic(self):
+        """Test with a simple scenario with one class present."""
+        y = np.array([0, 0, 0, 0])
+        features = np.array([[1, 2], [3, 4], [5, 6], [7, 8]])
+        label = 0
+        clusterer = MockClusterer(np.array([0, 0, 1, 1]))  # Mock cluster labels
+
+        cluster_labels, selected_indices = _class_clustering(y, features, label, clusterer)
+
+        self.assertTrue(np.array_equal(cluster_labels, np.array([0, 0, 1, 1])))
+        self.assertTrue(np.array_equal(selected_indices, np.array([0, 1, 2, 3])))
+
+    def test_class_clustering_multiple_classes(self):
+        """Test with multiple classes, checking label selection."""
+        y = np.array([0, 1, 0, 1, 0])
+        features = np.array([[1, 2], [3, 4], [5, 6], [7, 8], [9, 10]])
+        label = 1
+        clusterer = MockClusterer(np.array([0, 1]))  # Mock cluster labels for class 1
+
+        cluster_labels, selected_indices = _class_clustering(y, features, label, clusterer)
+
+        self.assertTrue(np.array_equal(cluster_labels, np.array([0, 1])))
+        self.assertTrue(np.array_equal(selected_indices, np.array([1, 3])))
+
+    def test_class_clustering_no_matching_label(self):
+        """Test when the label is not present in y."""
+        y = np.array([0, 0, 0])
+        features = np.array([[1, 2], [3, 4], [5, 6]])
+        label = 1  # Label not in y
+        clusterer = MockClusterer(np.array([]))
+
+        cluster_labels, selected_indices = _class_clustering(y, features, label, clusterer)
+
+        self.assertTrue(np.array_equal(cluster_labels, np.array([])))
+        self.assertTrue(np.array_equal(selected_indices, np.array([])))
+
+    def test_class_clustering_different_clusterer(self):
+        """Test with a different (but still mocking) clusterer."""
+        y = np.array([0, 0, 0])
+        features = np.array([[1, 2], [3, 4], [5, 6]])
+        label = 0
+        clusterer = MockClusterer(np.array([2, 2, 2]))  # All in one cluster
+
+        cluster_labels, selected_indices = _class_clustering(y, features, label, clusterer)
+
+        self.assertTrue(np.array_equal(cluster_labels, np.array([2, 2, 2])))
+        self.assertTrue(np.array_equal(selected_indices, np.array([0, 1, 2])))
+
+    def test_class_clustering_complex_labels(self):
+        """Test with non-integer labels."""
+        y = np.array(["a", "b", "a", "b"])
+        features = np.array([[1, 2], [3, 4], [5, 6], [7, 8]])
+        label = "b"
+        clusterer = MockClusterer(np.array([0, 1]))
+
+        cluster_labels, selected_indices = _class_clustering(y, features, label, clusterer)
+
+        self.assertTrue(np.array_equal(cluster_labels, np.array([0, 1])))
+        self.assertTrue(np.array_equal(selected_indices, np.array([1, 3])))
 
 
 class TestReducersScalersClusterers(unittest.TestCase):
