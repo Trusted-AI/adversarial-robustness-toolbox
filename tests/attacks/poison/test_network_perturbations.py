@@ -6,14 +6,26 @@ from art.attacks.poisoning.perturbations.network_perturbations import _flip_targ
 # Initialize the array once for all tests
 @pytest.fixture(scope="module")
 def sample_array():
-    return np.array([1, 0, 1, 0, 1, 0, 1, 0], dtype=np.int64)
+    return np.array([1, 0, 1, 0, 1, 0, 1, 0, 0, 1], dtype=np.int64)
 
 @pytest.mark.framework_agnostic
 @pytest.mark.flip_target_tests
 def test_100_percent(sample_array):
     result = _flip_target_label(sample_array, flip_target=1, poison_percentage=1.0)
-    expected = np.array([0, 0, 0, 0, 0, 0, 0, 0], dtype=np.int64)
+    expected = np.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0], dtype=np.int64)
     np.testing.assert_array_equal(result, expected)
+
+@pytest.mark.framework_agnostic
+@pytest.mark.flip_target_tests
+def test_40_percent(sample_array):
+    result = _flip_target_label(sample_array, flip_target=1, poison_percentage=0.4) # 40% of 5 = 2
+    assert (sum(result) == 3)
+
+@pytest.mark.framework_agnostic
+@pytest.mark.flip_target_tests
+def test_30_percent(sample_array):
+    result = _flip_target_label(sample_array, flip_target=1, poison_percentage=0.3) # 30% of 5 = 1.5 -> 1
+    assert (sum(result) == 4)
 
 @pytest.mark.framework_agnostic
 @pytest.mark.flip_target_tests

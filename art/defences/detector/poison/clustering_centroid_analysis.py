@@ -21,13 +21,10 @@ import logging
 from typing import TYPE_CHECKING
 
 import numpy as np
-import pandas as pd
 from sklearn.cluster import DBSCAN
 from sklearn.decomposition import FastICA, PCA
-from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
 from tensorflow.python.keras import Model, Input
-from tensorflow.python.keras.engine.base_layer import Layer
 from umap import UMAP
 
 from art.defences.detector.poison.poison_filtering_defence import PoisonFilteringDefence
@@ -116,92 +113,17 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
         pass
 
 
-    def _extract_classifier_layer(self, layer_name: str) -> Layer:
-        """
-        Extracts the selected layer of the model. Can be used to create an intermediate model
-        :param layer_name: layer to be extracted
-        :return: Model that receives the base inputs and outputs up to the selected layer
-        """
-        return self.classifier.model.get_layer(layer_name)
-
-
-    def _calculate_centroid(self, selected_indices, features):
+    @classmethod
+    def _calculate_centroid(cls, selected_indices: np.ndarray, features: np.array) -> np.ndarray:
         """
         Returns the centroid of all data within a specific cluster that is classified as a specific class label
 
         :param selected_indices: a numpy array of selected indices on which to calculate the centroid
         :param features: numpy array d-dimensional features for all given data
-        :param label:  a unique cluster label given to a specific cluster within a specific class
         :return: d-dimensional numpy array
         """
         selected_features = features[selected_indices]
         return np.mean(selected_features, axis=0)
-
-
-    # FIXME: optimize this
-    def _find_centroids(self, features, dbscan_labels):
-        unique_clusters = set(dbscan_labels) - {-1}
-        centroids = dict()
-        for cluster_label in unique_clusters:
-            cluster_indices = np.where(dbscan_labels == cluster_label)[0]
-            cluster_features = features[cluster_indices]
-            centroid = np.mean(cluster_features, axis=0)
-            centroids[cluster_label] = centroid
-
-        return centroids
-
-    def _calculate_centroid_deviations(self, benign_centroid, centroids):
-        return { label: centroid - benign_centroid for label, centroid in centroids.items() }
-
-    def _get_benign_split(self, size) -> tuple[pd.DataFrame | np.ndarray, pd.DataFrame | np.ndarray]:
-        """
-        Retrieves a random sample
-        :param size: number of samples to retrieve
-        :return: ``x_sample``, ``y_sample``
-        :exception: raises ``ValueError`` if the size of the sample is bigger than the benign dataset
-        """
-        if size > self.x_benign.shape[0]:
-            raise ValueError(f"Requested size ({size}) exceeds available benign samples ({self.x_benign.shape[0]})")
-
-        indices = np.random.choice(self.x_benign.shape[0], size, replace=False)
-
-        if isinstance(self.x_benign, pd.DataFrame):
-            x_benign_sample = self.x_benign.iloc[indices]
-        else:
-            x_benign_sample = self.x_benign[indices]
-
-        if isinstance(self.y_benign, pd.DataFrame):
-            y_benign_sample = self.y_benign.iloc[indices]
-        else:
-            y_benign_sample = self.y_benign[indices]
-
-        return x_benign_sample, y_benign_sample
-
-    # FIXME: should I keep it? Abstraction-wise says yes, simplicity-wise says no
-    def _split_benign_data(
-            self, # FIXME: injecting the data makes it easier for testing, but not ART-orthodox. Think about it.
-            test_size: float = 0.2,
-            random_state: int = 42
-    ) -> tuple[
-        tuple[pd.DataFrame | np.ndarray, pd.DataFrame | np.ndarray],
-        tuple[pd.DataFrame | np.ndarray, pd.DataFrame | np.ndarray]
-    ]:
-        """
-        Splits all benign data into validation and misclassification sets.
-        :param test_size: Proportion of benign data to reserve for misclassification checks (default 20%).
-        :param random_state: Seed for reproducibility.
-        :return: ((x_validation, y_validation), (x_misclassification, y_misclassification))
-        """
-
-        # Split the data into validation and misclassification sets
-        x_validation, x_misclassification, y_validation, y_misclassification = train_test_split(
-            self.x_benign,
-            self.y_benign,
-            test_size=test_size,
-            random_state=random_state
-        )
-
-        return (x_validation, y_validation), (x_misclassification, y_misclassification)
 
 
     def _feature_extraction(self) -> np.ndarray:
@@ -219,7 +141,7 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
         return self.reducer.fit_transform(features)
 
 
-    def _class_clustering(self, label, features):
+    def _class_clustering(self, label: any, features: np.array) -> [np.array, np.array]:
         """
         Given a class label, it clusters all the feature representations that map to that class
 
@@ -230,30 +152,6 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
         selected_features = features[selected_indices]
         cluster_labels = self.clusterer.fit_predict(selected_features)
         return cluster_labels, selected_indices
-
-
-    def poioned_cluster_detection(self, features, clusters_and_classes: pd.DataFrame, **kwargs):
-        """
-
-        :return:
-        """
-        unique_cluster_labels = clusters_and_classes["cluster_label"].unique()
-        unique_class_labels = clusters_and_classes["class"].unique()
-
-        centroids = dict()
-
-        for i, k in zip(unique_class_labels, unique_cluster_labels):
-            centroids[(i, k)] = self._find_centroid(clusters_and_classes, features, i, k)
-
-
-        centroids = [
-            self._find_centroid(features, clusters_and_classes["cluster_labels"])
-        ]
-
-        # iterate over C_i^k
-        for i, k in zip(unique_class_labels, unique_cluster_labels):
-
-
 
 
     def detect_poison(self, **kwargs) -> tuple[dict, list[int]]:
