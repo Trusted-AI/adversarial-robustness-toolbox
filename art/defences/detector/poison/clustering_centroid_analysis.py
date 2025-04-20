@@ -54,33 +54,63 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
     _VALID_CLUSTERING = ["DBSCAN"]
     _VALID_REDUCE = ["UMAP", "PCA"]
     _VALID_ANALYSIS = []
-    _MISSCLASSIFICATION_THRESHOLD = 0.95  # Umbral para considerar un cluster como envenenado
-
-    _BENIGN_SAMPLING_SIZE = 100
 
     def __init__(
             self,
             classifier,
             x_train: np.ndarray, # FIXME: could be a dataframe?
             y_train: np.ndarray, # FIXME: could be a dataframe?
-            x_benign: np.ndarray, # FIXME: could be a dataframe?
-            y_benign: np.ndarray # FIXME: could be a dataframe?
+            benign_indices: np.array,
+            final_feature_layer_name: str,
+            misclassification_threshold: float,
     ):
         """
-        Creates a :class: `ClusteringCentroidAnalysis` object for the given classifier
+        creates a :class: `ClusteringCentroidAnalysis` object for the given classifier
 
         :param classifier: model evaluated for poison
         :param x_train: dataset used to train the classifier (might be poisoned)
         :param y_train: labels used to train the classifier (might be poisoned)
-        :param x_benign: subset of the training data known to be benign
-        :param y_benign: subset of the labels known to be benign
+        :param benign_indices: array data points' indices known to be benign
+        :param final_feature_layer_name: the name of the final layer that builds feature representation. Must
+            be a ReLu layer
         """
         super().__init__(classifier, x_train, y_train)
-        self.x_benign = x_benign
-        self.y_benign = y_benign
         self.reducer = get_reducer(ReducerType.UMAP, nb_dims=2)
         self.scaler = get_scaler(ScalerType.STANDARD)
         self.clusterer = get_clusterer(ClustererType.DBSCAN)
+        self.benign_indices = benign_indices
+
+        layer_names = [l.name for l in self.classifier.model.layers]
+        classifying_submodel_input_layer_index = layer_names.index(final_feature_layer_name)+1
+
+        # I didn't use ART's Keras wrapper as I had to do a couple of workarounds to get it working here
+        # chose to just use the basic Keras library
+
+        # f_1^alpha : feature representation submodel
+        self.feature_representation_model = Model(
+            inputs=self.classifier.model.input,
+            outputs=self.classifier.model.get_layer(final_feature_layer_name).output
+        )
+
+        # Keras requires the reconstruction of the layers to build the output from a specific layer
+        classifying_submodel_inputs = Input(shape=self.feature_representation_model.output_shape[1:])
+        classifying_submodel_sequence = classifying_submodel_inputs
+
+        for layer in self.classifier.model.layers[classifying_submodel_input_layer_index:]:
+            classifying_submodel_sequence = layer(classifying_submodel_sequence)
+
+        # f_2^alpha : classifying submodel
+        self.classifying_submodel = Model(
+            inputs=classifying_submodel_inputs,
+            outputs=classifying_submodel_sequence
+        )
+
+        self.unique_classes = set(np.unique(y_train))
+
+        self.x_benign = self.x_train[self.benign_indices]
+        self.y_benign = self.y_train[self.benign_indices]
+
+        self.misclassification_threshold = np.float64(misclassification_threshold)
 
     def evaluate_defence(self, is_clean: np.ndarray, **kwargs) -> str:
         pass
@@ -95,13 +125,26 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
         return self.classifier.model.get_layer(layer_name)
 
 
+    def _calculate_centroid(self, selected_indices, features):
+        """
+        Returns the centroid of all data within a specific cluster that is classified as a specific class label
+
+        :param selected_indices: a numpy array of selected indices on which to calculate the centroid
+        :param features: numpy array d-dimensional features for all given data
+        :param label:  a unique cluster label given to a specific cluster within a specific class
+        :return: d-dimensional numpy array
+        """
+        selected_features = features[selected_indices]
+        return np.mean(selected_features, axis=0)
+
+
     # FIXME: optimize this
-    def _find_centroids(self, features_scaled, dbscan_labels):
+    def _find_centroids(self, features, dbscan_labels):
         unique_clusters = set(dbscan_labels) - {-1}
         centroids = dict()
         for cluster_label in unique_clusters:
             cluster_indices = np.where(dbscan_labels == cluster_label)[0]
-            cluster_features = features_scaled[cluster_indices]
+            cluster_features = features[cluster_indices]
             centroid = np.mean(cluster_features, axis=0)
             centroids[cluster_label] = centroid
 
@@ -112,8 +155,8 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
 
     def _get_benign_split(self, size) -> tuple[pd.DataFrame | np.ndarray, pd.DataFrame | np.ndarray]:
         """
-        Retrieves a random sample of the benign dataset
-        :param size: number of benign samples to retrieve
+        Retrieves a random sample
+        :param size: number of samples to retrieve
         :return: ``x_sample``, ``y_sample``
         :exception: raises ``ValueError`` if the size of the sample is bigger than the benign dataset
         """
@@ -161,80 +204,190 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
         return (x_validation, y_validation), (x_misclassification, y_misclassification)
 
 
+    def _feature_extraction(self) -> np.ndarray:
+        """
+        Extracts the feature representations of the training data
+
+        :return: Ordered dataframe with a "class" column for the true label and "cluster_labels" column
+        for the cluster labels for each data point from the training data.
+        """
+
+        # TODO: find critical layer using https://arxiv.org/pdf/2302.12758
+        features = self.feature_representation_model.predict(self.x_train)
+
+        # Reduces clustering time and mitigates dimensionality clustering problems
+        return self.reducer.fit_transform(features)
+
+
+    def _class_clustering(self, label, features):
+        """
+        Given a class label, it clusters all the feature representations that map to that class
+
+        :param label: class label in the classification task
+        :return: (cluster_labels, selected_indices) ndarrays of equal size with cluster labels and corresponding original indices.
+        """
+        selected_indices = np.where(self.y_train == label)[0]
+        selected_features = features[selected_indices]
+        cluster_labels = self.clusterer.fit_predict(selected_features)
+        return cluster_labels, selected_indices
+
+
+    def poioned_cluster_detection(self, features, clusters_and_classes: pd.DataFrame, **kwargs):
+        """
+
+        :return:
+        """
+        unique_cluster_labels = clusters_and_classes["cluster_label"].unique()
+        unique_class_labels = clusters_and_classes["class"].unique()
+
+        centroids = dict()
+
+        for i, k in zip(unique_class_labels, unique_cluster_labels):
+            centroids[(i, k)] = self._find_centroid(clusters_and_classes, features, i, k)
+
+
+        centroids = [
+            self._find_centroid(features, clusters_and_classes["cluster_labels"])
+        ]
+
+        # iterate over C_i^k
+        for i, k in zip(unique_class_labels, unique_cluster_labels):
+
+
+
+
     def detect_poison(self, **kwargs) -> tuple[dict, list[int]]:
 
-        # 1. Dimensionality reduction and feature clustering
+        is_poisoned = np.zeros(len(self.benign_indices))
 
-        # Extract features from a middle layer
-        # TODO: find critical layer using https://arxiv.org/pdf/2302.12758
-        intermediate_layer_model = Model(
-            inputs=self._extract_classifier_layer("input_layer").input,
-            outputs=self._extract_classifier_layer("hidden_layer").output
-        )
-        features = intermediate_layer_model.predict(self.x_train)
+        features = self._feature_extraction()
 
-        # Scale characteristics (?)
-        features_scaled = self.scaler.fit_transform(features)
+        # represents the number of clusters used up until now to differentiate clusters obtained in different
+        # clustering runs by classes
+        used_cluster_labels = 0
+        cluster_class_mapping  = dict()
+        class_cluster_labels = np.empty(len(self.benign_indices))
 
-        # Reduce dimensionality
-        features_reduced = self.reducer.fit_transform(features_scaled)
+        for class_label in self.unique_classes:
+            cluster_labels, selected_indices = self._class_clustering(class_label, features)
+            # label values are adjusted to account for labels of previous clustering tasks
+            cluster_labels[cluster_labels != -1] += used_cluster_labels
+            used_cluster_labels += len(np.unique(cluster_labels[cluster_labels != -1]))
 
-        # Apply clustering
-        dbscan_labels = self.clusterer.fit_predict(features_reduced)
+            class_cluster_labels[selected_indices] = cluster_labels
 
-        # 2. Poisoned Cluster Detection
+            # the class (label) corresponding to the cluster is saved for centroid deviation calculation
+            for l in np.unique(cluster_labels[cluster_labels != -1]):
+                cluster_class_mapping[l] = class_label
 
-        # Compute cluster centroids
-        centroids = self._find_centroids(features_scaled, dbscan_labels)
+        # outliers are poisoned
+        outlier_indices = np.where(class_cluster_labels == -1)[0]
+        is_poisoned[outlier_indices] = 1
 
-        # Find centroid deviation from benign centroid
-        # TODO: this could be precalculated and cached
-        (x_benign_validation, y_benign_validation), (x_benign_other, y_benign_other) = self._split_benign_data()
+        real_centroids = dict()
 
-        benign_features = intermediate_layer_model.predict(x_benign_validation)
-        benign_features_scaled = self.scaler.transform(benign_features) # TODO: fit_transform or transform?
-        benign_centroid = np.mean(benign_features_scaled, axis=0)
+        # for each cluster found for each target class
+        for label in np.unique(class_cluster_labels[class_cluster_labels != -1]):
+            real_centroids[label] = self._calculate_centroid(np.where(class_cluster_labels == label)[0],
+                                                             features)
 
-        deviations = self._calculate_centroid_deviations(benign_centroid, centroids)
+        benign_centroids = dict()
 
-        # Missclassification check
+        # for each target class
+        for class_label in self.unique_classes:
+            benign_centroids[class_label] = self._calculate_centroid(class_cluster_labels[self.benign_indices == class_label],
+                                                                     features)
 
-        # Extract features from benign center
-        other_features = intermediate_layer_model.predict(x_benign_other)
-        other_features_scaled = self.scaler.transform(other_features)
+        misclassification_rates = dict()
 
-        poisoned_clusters = []
+        for cluster_label, centroid in real_centroids.items():
+            class_label = cluster_class_mapping[cluster_label]
+            # B^k_i
+            deviation = centroid - benign_centroids[class_label]
 
-        modified_input = Input(shape=(other_features_scaled.shape[1],)) # FIXME: 64 changed to number of features. That is the input.
-        modified_output = self._extract_classifier_layer("output_layer")(modified_input)
-        modified_model = Model(inputs=modified_input, outputs=modified_output)
+            total_elements = 0
+            misclassified_elements = 0
 
-        for cluster_label, deviation in deviations.items():
-            # Añadir la desviación a las características de las otras muestras benignas
-            modified_features = other_features_scaled + deviation
-            # Obtener predicciones utilizando el modelo modificado
-            predictions = modified_model.predict(modified_features)
-            predicted_classes = (predictions > 0.5).astype(int).flatten()
-            misclassification_ratio = np.mean(predicted_classes == 1)  # 1 es la clase objetivo (ataque)
-            print(
-                f"Cluster {cluster_label} tiene una tasa de misclasificación hacia la clase objetivo 1: {misclassification_ratio:.2f}")
-            if misclassification_ratio >= self._MISSCLASSIFICATION_THRESHOLD:
-                poisoned_clusters.append(cluster_label)
+            for other_class_label in self.unique_classes - {class_label}:
+                other_class_data = self.x_benign[self.x_benign == other_class_label]
+                total_elements += len(other_class_data)
 
-        # Paso 11: Identificar los índices de las muestras envenenadas detectadas
-        detected_poisoned_indices = []
-        for cluster_label in poisoned_clusters:
-            cluster_indices = np.where(dbscan_labels == cluster_label)[0]
-            detected_poisoned_indices.extend(cluster_indices)
+                deviated_features = self.feature_representation_model.predict(other_class_data) + deviation
+                deviated_predictions = self.classifying_submodel.predict(deviated_features)
 
-        # Incluir los outliers detectados por DBSCAN
-        outlier_indices = np.where(dbscan_labels == -1)[0]
-        detected_poisoned_indices.extend(outlier_indices)
+                # how many elements of other_class_label are misclassified towards class label if its deviation is applied?
+                misclassified_elements += len(deviated_predictions[deviated_predictions == class_label])
+
+            # MR^k_i
+            # with unique cluster labels for each cluster in each clustering run, the label already maps to a target class
+            misclassification_rates[cluster_label] = np.float64(misclassified_elements) / np.float64(total_elements)
+
+
+        for cluster_label, mr in misclassification_rates.items():
+            if mr >= 1 - self.misclassification_threshold:
+                cluster_indices = np.where(class_cluster_labels == cluster_label)[0]
+                is_poisoned[cluster_indices] = 1
+
+        # # 2. Poisoned Cluster Detection
+        #
+        # # Compute cluster centroids
+        # feature_representation_model = Model(
+        #     inputs=self._extract_classifier_layer("input_layer").input,
+        #     outputs=self._extract_classifier_layer("hidden_layer").output
+        # )
+        # features = feature_representation_model.predict(self.x_train) # FIXME: should use reduced features?
+        # intermediate_layer_model = Model(inputs=self.classifier.model.input, outputs=self._extract_classifier_layer("hidden_layer").output)
+        # centroids = self._find_centroids(features, dbscan_labels)
+        #
+        #
+        # # Find centroid deviation from benign centroid
+        # # TODO: this could be precalculated and cached
+        # (x_benign_validation, y_benign_validation), (x_benign_other, y_benign_other) = self._split_benign_data(test_size=0.5)
+        #
+        # benign_features = intermediate_layer_model.predict(x_benign_validation)
+        # benign_features_scaled = self.scaler.transform(benign_features) # TODO: fit_transform or transform?
+        # benign_centroid = np.mean(benign_features_scaled, axis=0)
+        #
+        # deviations = self._calculate_centroid_deviations(benign_centroid, centroids)
+        #
+        # # Missclassification check
+        # for d in
+        #
+        # # Extract features from benign center
+        # other_features = intermediate_layer_model.predict(x_benign_other)
+        # other_features_scaled = self.scaler.transform(other_features)
+        #
+        # poisoned_clusters = []
+        #
+        # modified_input = Input(shape=(other_features_scaled.shape[1],)) # FIXME: 64 changed to number of features. That is the input.
+        # modified_output = self._extract_classifier_layer("output_layer")(modified_input)
+        # modified_model = Model(inputs=modified_input, outputs=modified_output)
+        #
+        # for cluster_label, deviation in deviations.items():
+        #     # Añadir la desviación a las características de las otras muestras benignas
+        #     modified_features = other_features_scaled + deviation
+        #     # Obtener predicciones utilizando el modelo modificado
+        #     predictions = modified_model.predict(modified_features)
+        #     predicted_classes = (predictions > 0.5).astype(int).flatten()
+        #     misclassification_ratio = np.mean(predicted_classes == 1)  # 1 es la clase objetivo (ataque)
+        #     print(f"Cluster {cluster_label} tiene una tasa de misclasificación hacia la clase objetivo 1: {misclassification_ratio:.2f}")
+        #     if misclassification_ratio >= self._MISSCLASSIFICATION_THRESHOLD:
+        #         poisoned_clusters.append(cluster_label)
+        #
+        # # Paso 11: Identificar los índices de las muestras envenenadas detectadas
+        # detected_poisoned_indices = []
+        # for cluster_label in poisoned_clusters:
+        #     cluster_indices = np.where(dbscan_labels == cluster_label)[0]
+        #     detected_poisoned_indices.extend(cluster_indices)
+        #
+        # # Incluir los outliers detectados por DBSCAN
+        # outlier_indices = np.where(dbscan_labels == -1)[0]
+        # detected_poisoned_indices.extend(outlier_indices)
 
 
         #report = None
         #return report, self._is_clean_lst
-        return dict(), detected_poisoned_indices
+        return dict(), is_poisoned
 
 
 def get_reducer(reduce: ReducerType, nb_dims: int):
