@@ -65,6 +65,20 @@ def _class_clustering(y: np.array, features: np.array, label: any, clusterer: Cl
     cluster_labels = clusterer.fit_predict(selected_features)
     return cluster_labels, selected_indices
 
+def _feature_extraction(x_train: np.array, feature_representation_model: Model, reducer: any) -> np.ndarray:
+    """
+    Extracts the feature representations of the training data
+
+    :return: Ordered dataframe with a "class" column for the true label and "cluster_labels" column
+    for the cluster labels for each data point from the training data.
+    """
+
+    # TODO: find critical layer using https://arxiv.org/pdf/2302.12758
+    features = feature_representation_model.predict(x_train)
+
+    # Reduces clustering time and mitigates dimensionality clustering problems
+    return reducer.fit_transform(features)
+
 
 class ClusteringCentroidAnalysis(PoisonFilteringDefence):
     """
@@ -103,40 +117,50 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
             as suggested in the paper.
         :return: (feature_representation_submodel, classifying_submodel)
         """
-        layer_names = [l.name for l in self.classifier.model.layers]
 
-        final_feature_layer = self.classifier.model.get_layer(name=final_feature_layer_name)
+        keras_model = self.classifier.model
 
-        if final_feature_layer.activation != tf.keras.activations.relu:
-            raise ValueError(f"Final feature layer's ({final_feature_layer_name}) activation must be ReLU")
+        try:
+            final_feature_layer = keras_model.get_layer(name=final_feature_layer_name)
+        except ValueError:
+            raise ValueError(f"Layer with name '{final_feature_layer_name}' not found in the model.")
 
-        classifying_submodel_input_layer_index = layer_names.index(final_feature_layer_name)+1
+        if not hasattr(final_feature_layer, 'activation') or final_feature_layer.activation != tf.keras.activations.relu:
+            raise ValueError(f"Final feature layer '{final_feature_layer_name}' must have a ReLU activation.")
 
-        # I didn't use ART's Keras wrapper as I had to do a couple of workarounds to get it working here
-        # chose to just use the basic Keras library
+        # Get the current TensorFlow session
+        if hasattr(tf.keras.backend, 'get_session'):
+            sess = tf.keras.backend.get_session()
+        else:
+            sess = tf.compat.v1.keras.backend.get_session()
 
-        # f_1^alpha : feature representation submodel
+        # Create feature representation submodel with weight sharing
         feature_representation_model = Model(
-            inputs=self.classifier.model.input,
-            outputs=self.classifier.model.get_layer(final_feature_layer_name).output,
+            inputs=keras_model.inputs,
+            outputs=keras_model.get_layer(final_feature_layer_name).output,
             name="feature_representation_model"
         )
 
-        # Keras requires the reconstruction of the layers to build the output from a specific layer
-        classifying_submodel_inputs = Input(shape=feature_representation_model.output_shape[1:])
-        classifying_submodel_sequence = classifying_submodel_inputs
+        # Get the shape of the feature layer output (excluding batch dimension)
+        intermediate_shape = feature_representation_model.output_shape[1:]
 
-        for layer in self.classifier.model.layers[classifying_submodel_input_layer_index:]:
-            classifying_submodel_sequence = layer(classifying_submodel_sequence)
+        # Create input for the classifier submodel
+        classifier_input = Input(shape=intermediate_shape, name="classifier_input")
 
-        # f_2^alpha : classifying submodel
-        classifying_submodel = Model(
-            inputs=classifying_submodel_inputs,
-            outputs=classifying_submodel_sequence,
-            name="classifying_submodel"
-        )
+        # Copy the architecture of remaining layers
+        x = classifier_input
+        for layer in keras_model.layers[keras_model.layers.index(final_feature_layer) + 1:]:
+            x = layer(x)
+
+        # Create the classifier submodel
+        classifying_submodel = Model(inputs=classifier_input, outputs=x, name="classifying_submodel")
+
+        # Initialize variables for the new models
+        with sess.as_default():
+            sess.run(tf.compat.v1.global_variables_initializer())
 
         return feature_representation_model, classifying_submodel
+
 
     def __init__(
             self,
@@ -173,26 +197,11 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
     def evaluate_defence(self, is_clean: np.ndarray, **kwargs) -> str:
         pass
 
-    def _feature_extraction(self) -> np.ndarray:
-        """
-        Extracts the feature representations of the training data
-
-        :return: Ordered dataframe with a "class" column for the true label and "cluster_labels" column
-        for the cluster labels for each data point from the training data.
-        """
-
-        # TODO: find critical layer using https://arxiv.org/pdf/2302.12758
-        features = self.feature_representation_model.predict(self.x_train)
-
-        # Reduces clustering time and mitigates dimensionality clustering problems
-        return self.reducer.fit_transform(features)
-
-
     def detect_poison(self, **kwargs) -> (dict, list[int]):
 
         is_poisoned = np.zeros(len(self.benign_indices))
 
-        features = self._feature_extraction()
+        features = _feature_extraction(self.x_train, self.feature_representation_model, self.reducer)
 
         # represents the number of clusters used up until now to differentiate clusters obtained in different
         # clustering runs by classes

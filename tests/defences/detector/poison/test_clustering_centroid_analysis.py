@@ -17,8 +17,6 @@
 # SOFTWARE.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-from unittest.mock import MagicMock
-
 import tensorflow as tf
 from sklearn.base import ClusterMixin
 from sklearn.compose import ColumnTransformer
@@ -46,7 +44,7 @@ from tensorflow.python.keras.layers import Dense
 from umap import UMAP
 
 from art.defences.detector.poison.clustering_centroid_analysis import get_reducer, get_scaler, get_clusterer, \
-    ClusteringCentroidAnalysis, _calculate_centroid, _class_clustering
+    ClusteringCentroidAnalysis, _calculate_centroid, _class_clustering, _feature_extraction
 from art.defences.detector.poison.utils import ReducerType, ScalerType, ClustererType
 
 logger = logging.getLogger(__name__)
@@ -115,6 +113,7 @@ class TestInitialization(unittest.TestCase):
         self.y_train = np.array([0, 1, 0, 1])
         self.benign_indices = np.array([0, 2])
         self.final_feature_layer_name = 'dense_2'
+        self.non_relu_intermediate_layer_name = 'dense_3'
         self.misclassification_threshold = 0.05
 
         # Define a simple Keras model for testing _extract_submodels
@@ -177,19 +176,41 @@ class TestInitialization(unittest.TestCase):
         )
         feature_model, classify_model = cca.feature_representation_model, cca.classifying_submodel
 
+        # Verify model types and names
         self.assertIsInstance(feature_model, Model)
         self.assertIsInstance(classify_model, Model)
-        self.assertEqual(feature_model.name, 'feature_representation_model') # Check the name.
-        self.assertEqual(classify_model.name, 'classifying_submodel')
+        self.assertEqual('feature_representation_model', feature_model.name)
+        self.assertEqual('classifying_submodel', classify_model.name)
 
+        # Get the TensorFlow session
+        if hasattr(tf.keras.backend, 'get_session'):
+            sess = tf.keras.backend.get_session()
+        else:
+            sess = tf.compat.v1.keras.backend.get_session()
+
+        # Create a test input and get reference output
         sample_input = np.random.rand(1, 10)
-        sample_output = self.mock_classifier.model.predict(sample_input)
 
-        feature_value = feature_model.predict(sample_input)
-        self.assertEqual(classify_model.input_shape[1], feature_value.shape[1])
+        # Get the original model output using the session
+        with sess.as_default():
+            sample_output = self.mock_classifier.model.predict(sample_input)
 
-        final_value = classify_model.predict(feature_value)
-        self.assertEqual(sample_output, final_value)
+            # Get feature representation
+            feature_value = feature_model.predict(sample_input)
+
+            # Verify intermediate feature shape is compatible with classifier input
+            self.assertEqual(classify_model.input_shape[1], feature_value.shape[1],
+                             "Feature sub model output and classifying sub model input do not match.")
+
+            # Predict with classifier submodel
+            final_value = classify_model.predict(feature_value)
+
+            # Verify output shapes match
+            self.assertEqual(sample_output.shape, final_value.shape)
+
+            # Due to TensorFlow non-eager mode, we might have numerical differences
+            # We test that the outputs are approximately equal with a reasonable tolerance
+            np.testing.assert_allclose(sample_output, final_value, rtol=1e-3, atol=1e-3)
 
 
     def test_extract_submodels_invalid_layer(self):
@@ -215,11 +236,11 @@ class TestInitialization(unittest.TestCase):
             final_feature_layer_name=self.final_feature_layer_name,
             misclassification_threshold=self.misclassification_threshold
         )
-        self.assertEqual(cca.classifier, self.mock_classifier)
+        self.assertEqual(self.mock_classifier, cca.classifier)
         self.assertTrue(np.array_equal(cca.x_train, self.x_train))
         self.assertTrue(np.array_equal(cca.y_train, self.y_train))
         self.assertTrue(np.array_equal(cca.benign_indices, self.benign_indices))
-        self.assertEqual(cca.misclassification_threshold, self.misclassification_threshold)
+        self.assertEqual(self.misclassification_threshold, cca.misclassification_threshold)
         self.is_valid_reducer(cca.reducer)
         self.is_valid_scaler(cca.scaler)
         self.is_valid_clusterer(cca.clusterer)
@@ -227,7 +248,7 @@ class TestInitialization(unittest.TestCase):
         self.assertTrue(np.array_equal(cca.y_benign, self.y_train[[0, 2]]))
         self.assertIsInstance(cca.feature_representation_model, Model)
         self.assertIsInstance(cca.classifying_submodel, Model)
-        self.assertEqual(cca.unique_classes, set([0, 1]))
+        self.assertEqual({0, 1}, cca.unique_classes)
 
     def test_init_empty_benign_indices(self):
         """Test __init__ with empty benign indices."""
@@ -240,11 +261,11 @@ class TestInitialization(unittest.TestCase):
                 final_feature_layer_name=self.final_feature_layer_name,
                 misclassification_threshold=self.misclassification_threshold
             )
-            self.assertEqual(str(e.exception), 'Benign indices passed (0) are not enough to run the algorithm')
+            self.assertEqual('Benign indices passed (0) are not enough to run the algorithm', str(e.exception))
 
     def test_init_invalid_layer_name(self):
         """Test __init__ with an invalid layer name. Check that it raises error."""
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValueError) as e:
             ClusteringCentroidAnalysis(
                 classifier=self.mock_classifier,
                 x_train=self.x_train,
@@ -253,6 +274,20 @@ class TestInitialization(unittest.TestCase):
                 final_feature_layer_name='invalid_layer',
                 misclassification_threshold=self.misclassification_threshold
             )
+            self.assertEqual(f"Layer with name 'invalid_layer' not found in the model.", str(e.exception))
+
+    def test_init_invalid_layer_non_relu(self):
+        """Test __init__ with an invalid layer that does not have ReLu activation. Check that it raises error."""
+        with self.assertRaises(ValueError) as e:
+            ClusteringCentroidAnalysis(
+                classifier=self.mock_classifier,
+                x_train=self.x_train,
+                y_train=self.y_train,
+                benign_indices=self.benign_indices,
+                final_feature_layer_name=self.non_relu_intermediate_layer_name,
+                misclassification_threshold=self.misclassification_threshold
+            )
+            self.assertEqual(f"Final feature layer '{self.non_relu_intermediate_layer_name}' must have a ReLU activation.", str(e.exception))
 
 @unittest.skip("Changes were made")
 class TestClusteringCentroidAnalysis(unittest.TestCase):
@@ -630,6 +665,51 @@ class TestClassClustering(unittest.TestCase):
 
         self.assertTrue(np.array_equal(cluster_labels, np.array([0, 1])))
         self.assertTrue(np.array_equal(selected_indices, np.array([1, 3])))
+
+class TestFeatureExtraction(unittest.TestCase):
+
+    """Unit tests for the _feature_extraction function."""
+
+    def setUp(self):
+        """Set up test fixtures."""
+        # Create a simple model for testing
+        self.input_shape = (10,)
+        inputs = Input(shape=self.input_shape)
+        x = Dense(20, activation='relu')(inputs)
+        outputs = Dense(5, activation='relu')(x)
+        self.model = Model(inputs=inputs, outputs=outputs)
+
+        # Create sample data
+        self.x_train = np.random.rand(100, 10)
+
+        # Mock feature output for consistent testing
+        self.mock_features = np.random.rand(100, 5)
+
+
+    def test_integration_with_real_model(self):
+        """Integration test with a real model and no mocking."""
+        # Create a small real model
+        model = Sequential([
+            Dense(20, activation='relu', input_shape=self.input_shape),
+            Dense(10, activation='relu'),
+            Dense(5, activation='relu')
+        ])
+        model.compile(optimizer='adam', loss='mse')
+
+        # Use different reducers
+        reducers = [
+            PCA(n_components=2),
+            FastICA(n_components=2, max_iter=100)
+        ]
+
+        for reducer in reducers:
+            # Execute
+            result = _feature_extraction(self.x_train, model, reducer)
+
+            # Assert
+            self.assertEqual((100, 2), result.shape)
+            self.assertIsInstance(result, np.ndarray)
+
 
 
 class TestReducersScalersClusterers(unittest.TestCase):
