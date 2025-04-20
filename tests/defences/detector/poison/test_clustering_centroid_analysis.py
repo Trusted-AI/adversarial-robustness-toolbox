@@ -17,6 +17,8 @@
 # SOFTWARE.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+from unittest.mock import MagicMock
+
 import tensorflow as tf
 from sklearn.base import ClusterMixin
 from sklearn.compose import ColumnTransformer
@@ -39,7 +41,7 @@ from art.utils import load_unsw_nb15
 from sklearn.cluster import DBSCAN
 from sklearn.decomposition import FastICA, PCA
 from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler, OneHotEncoder
-from tensorflow.python.keras import Model, Sequential
+from tensorflow.python.keras import Model, Sequential, Input
 from tensorflow.python.keras.layers import Dense
 from umap import UMAP
 
@@ -100,6 +102,157 @@ class MockClusterer(ClusterMixin):
     def fit_predict(self, X):
         return self.cluster_labels_to_return
 
+
+class TestInitialization(unittest.TestCase):
+    """
+    Unit tests for the ClusteringCentroidAnalysis class, focusing on
+    __init__, _get_benign_data, and _extract_submodels.
+    """
+
+    def setUp(self):
+        # Create mock data and objects for testing
+        self.x_train = np.array([[1, 2], [3, 4], [5, 6], [7, 8]])
+        self.y_train = np.array([0, 1, 0, 1])
+        self.benign_indices = np.array([0, 2])
+        self.final_feature_layer_name = 'dense_2'
+        self.misclassification_threshold = 0.05
+
+        # Define a simple Keras model for testing _extract_submodels
+        self.mock_model = tf.keras.Sequential([
+            tf.keras.layers.Dense(4, activation='relu', input_shape=(10,), name='input_layer'),
+            tf.keras.layers.Dense(8, activation='tanh', name='dense_1'),
+            tf.keras.layers.Dense(6, activation='relu', name='dense_2'),
+            tf.keras.layers.Dense(2, activation='sigmoid', name='dense_3'),
+            tf.keras.layers.Dense(1, activation='sigmoid', name="output_layer")
+        ])
+
+        # Generate some dummy training data
+        self.x_train = np.random.rand(100, 10)
+        self.y_train = np.random.randint(0, 2, size=(100, 1))  # For binary classification
+
+        # Compile and train the model
+        self.mock_model.compile(optimizer='adam', loss='binary_crossentropy')
+        self.mock_model.fit(self.x_train, self.y_train, epochs=1) # Train for a few steps
+
+        self.mock_classifier = KerasClassifier(model=self.mock_model, use_logits=False)
+
+    def is_valid_scaler(self, obj):
+        """Check if an object is a valid scaler."""
+        self.assertTrue(hasattr(obj, 'fit_transform'))
+        self.assertTrue(callable(getattr(obj, 'fit_transform')))
+
+    def is_valid_reducer(self, obj):
+        """Check if an object is a valid reducer."""
+        self.assertTrue(hasattr(obj, 'fit_transform'))
+        self.assertTrue(callable(getattr(obj, 'fit_transform')))
+
+    def is_valid_clusterer(self, obj):
+        """Check if an object is a valid clusterer."""
+        self.assertTrue(hasattr(obj, 'fit_predict'))
+        self.assertTrue(callable(getattr(obj, 'fit_predict')))
+
+    def test_get_benign_data_basic(self):
+        """Test _get_benign_data with a simple example."""
+        cca = ClusteringCentroidAnalysis(
+            classifier=self.mock_classifier,
+            x_train=self.x_train,
+            y_train=self.y_train,
+            benign_indices=self.benign_indices,
+            final_feature_layer_name=self.final_feature_layer_name,
+            misclassification_threshold=self.misclassification_threshold
+        )
+        x_benign, y_benign = cca._get_benign_data()
+        self.assertTrue(np.array_equal(x_benign, self.x_train[[0, 2]]))
+        self.assertTrue(np.array_equal(y_benign, self.y_train[[0, 2]]))
+
+    def test_extract_submodels_valid_layer(self):
+        """Test _extract_submodels with a valid layer name."""
+        cca = ClusteringCentroidAnalysis(
+            classifier=self.mock_classifier,
+            x_train=self.x_train,
+            y_train=self.y_train,
+            benign_indices=self.benign_indices,
+            final_feature_layer_name=self.final_feature_layer_name,
+            misclassification_threshold=self.misclassification_threshold
+        )
+        feature_model, classify_model = cca.feature_representation_model, cca.classifying_submodel
+
+        self.assertIsInstance(feature_model, Model)
+        self.assertIsInstance(classify_model, Model)
+        self.assertEqual(feature_model.name, 'feature_representation_model') # Check the name.
+        self.assertEqual(classify_model.name, 'classifying_submodel')
+
+        sample_input = np.random.rand(1, 10)
+        sample_output = self.mock_classifier.model.predict(sample_input)
+
+        feature_value = feature_model.predict(sample_input)
+        self.assertEqual(classify_model.input_shape[1], feature_value.shape[1])
+
+        final_value = classify_model.predict(feature_value)
+        self.assertEqual(sample_output, final_value)
+
+
+    def test_extract_submodels_invalid_layer(self):
+        """Test _extract_submodels with an invalid layer name.  Check for error"""
+        cca = ClusteringCentroidAnalysis(
+            classifier=self.mock_classifier,
+            x_train=self.x_train,
+            y_train=self.y_train,
+            benign_indices=self.benign_indices,
+            final_feature_layer_name=self.final_feature_layer_name,
+            misclassification_threshold=self.misclassification_threshold
+        )
+        with self.assertRaises(ValueError):  # Expect a ValueError
+            cca._extract_submodels('invalid_layer_name')
+
+    def test_init_basic(self):
+        """Test __init__ with valid inputs."""
+        cca = ClusteringCentroidAnalysis(
+            classifier=self.mock_classifier,
+            x_train=self.x_train,
+            y_train=self.y_train,
+            benign_indices=self.benign_indices,
+            final_feature_layer_name=self.final_feature_layer_name,
+            misclassification_threshold=self.misclassification_threshold
+        )
+        self.assertEqual(cca.classifier, self.mock_classifier)
+        self.assertTrue(np.array_equal(cca.x_train, self.x_train))
+        self.assertTrue(np.array_equal(cca.y_train, self.y_train))
+        self.assertTrue(np.array_equal(cca.benign_indices, self.benign_indices))
+        self.assertEqual(cca.misclassification_threshold, self.misclassification_threshold)
+        self.is_valid_reducer(cca.reducer)
+        self.is_valid_scaler(cca.scaler)
+        self.is_valid_clusterer(cca.clusterer)
+        self.assertTrue(np.array_equal(cca.x_benign, self.x_train[[0, 2]]))
+        self.assertTrue(np.array_equal(cca.y_benign, self.y_train[[0, 2]]))
+        self.assertIsInstance(cca.feature_representation_model, Model)
+        self.assertIsInstance(cca.classifying_submodel, Model)
+        self.assertEqual(cca.unique_classes, set([0, 1]))
+
+    def test_init_empty_benign_indices(self):
+        """Test __init__ with empty benign indices."""
+        with self.assertRaises(ValueError) as e:
+            cca = ClusteringCentroidAnalysis(
+                classifier=self.mock_classifier,
+                x_train=self.x_train,
+                y_train=self.y_train,
+                benign_indices=np.array([]),
+                final_feature_layer_name=self.final_feature_layer_name,
+                misclassification_threshold=self.misclassification_threshold
+            )
+            self.assertEqual(str(e.exception), 'Benign indices passed (0) are not enough to run the algorithm')
+
+    def test_init_invalid_layer_name(self):
+        """Test __init__ with an invalid layer name. Check that it raises error."""
+        with self.assertRaises(ValueError):
+            ClusteringCentroidAnalysis(
+                classifier=self.mock_classifier,
+                x_train=self.x_train,
+                y_train=self.y_train,
+                benign_indices=self.benign_indices,
+                final_feature_layer_name='invalid_layer',
+                misclassification_threshold=self.misclassification_threshold
+            )
 
 @unittest.skip("Changes were made")
 class TestClusteringCentroidAnalysis(unittest.TestCase):

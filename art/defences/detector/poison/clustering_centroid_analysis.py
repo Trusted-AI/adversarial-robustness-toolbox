@@ -20,6 +20,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 from typing import TYPE_CHECKING
 
+import tensorflow as tf
 import numpy as np
 from sklearn.base import ClusterMixin
 from sklearn.cluster import DBSCAN
@@ -31,8 +32,10 @@ from umap import UMAP
 from art.defences.detector.poison.poison_filtering_defence import PoisonFilteringDefence
 from art.defences.detector.poison.utils import ReducerType, ScalerType, ClustererType
 
+tf.compat.v1.disable_eager_execution()
+
 if TYPE_CHECKING:
-    from art.utils import CLASSIFIER_NEURALNETWORK_TYPE
+    from art.utils import CLASSIFIER_NEURALNETWORK_TYPE, CLASSIFIER_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +51,7 @@ def _calculate_centroid(selected_indices: np.ndarray, features: np.array) -> np.
     selected_features = features[selected_indices]
     return np.mean(selected_features, axis=0)
 
-def _class_clustering(y: np.array, features: np.array, label: any, clusterer: ClusterMixin) -> [np.array, np.array]:
+def _class_clustering(y: np.array, features: np.array, label: any, clusterer: ClusterMixin) -> (np.array, np.array):
     """
     Given a class label, it clusters all the feature representations that map to that class
 
@@ -79,9 +82,65 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
     _VALID_REDUCE = ["UMAP", "PCA"]
     _VALID_ANALYSIS = []
 
+    def _get_benign_data(self) -> (np.ndarray, np.ndarray):
+        """
+        Retrieves the benign data from the training data using benign indices
+
+        :return: (x_benign, y_benign) ndarrays with the benign data.
+        """
+        if len(self.benign_indices) == 0:
+            raise ValueError(f"Benign indices passed ({len(self.benign_indices)}) are not enough to run the algorithm")
+
+
+        return self.x_train[self.benign_indices], self.y_train[self.benign_indices]
+
+    def _extract_submodels(self, final_feature_layer_name: str) -> (Model, Model):
+        """
+        Extracts the feature representation and final classifier submodels from the original classifier.
+        Composition of both models should result in the original model
+
+        :param final_feature_layer_name: Name of the final layer in feature abstraction. Should be a ReLu-activated layer
+            as suggested in the paper.
+        :return: (feature_representation_submodel, classifying_submodel)
+        """
+        layer_names = [l.name for l in self.classifier.model.layers]
+
+        final_feature_layer = self.classifier.model.get_layer(name=final_feature_layer_name)
+
+        if final_feature_layer.activation != tf.keras.activations.relu:
+            raise ValueError(f"Final feature layer's ({final_feature_layer_name}) activation must be ReLU")
+
+        classifying_submodel_input_layer_index = layer_names.index(final_feature_layer_name)+1
+
+        # I didn't use ART's Keras wrapper as I had to do a couple of workarounds to get it working here
+        # chose to just use the basic Keras library
+
+        # f_1^alpha : feature representation submodel
+        feature_representation_model = Model(
+            inputs=self.classifier.model.input,
+            outputs=self.classifier.model.get_layer(final_feature_layer_name).output,
+            name="feature_representation_model"
+        )
+
+        # Keras requires the reconstruction of the layers to build the output from a specific layer
+        classifying_submodel_inputs = Input(shape=feature_representation_model.output_shape[1:])
+        classifying_submodel_sequence = classifying_submodel_inputs
+
+        for layer in self.classifier.model.layers[classifying_submodel_input_layer_index:]:
+            classifying_submodel_sequence = layer(classifying_submodel_sequence)
+
+        # f_2^alpha : classifying submodel
+        classifying_submodel = Model(
+            inputs=classifying_submodel_inputs,
+            outputs=classifying_submodel_sequence,
+            name="classifying_submodel"
+        )
+
+        return feature_representation_model, classifying_submodel
+
     def __init__(
             self,
-            classifier,
+            classifier: "CLASSIFIER_TYPE",
             x_train: np.ndarray, # FIXME: could be a dataframe?
             y_train: np.ndarray, # FIXME: could be a dataframe?
             benign_indices: np.array,
@@ -103,36 +162,11 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
         self.scaler = get_scaler(ScalerType.STANDARD)
         self.clusterer = get_clusterer(ClustererType.DBSCAN)
         self.benign_indices = benign_indices
-
-        layer_names = [l.name for l in self.classifier.model.layers]
-        classifying_submodel_input_layer_index = layer_names.index(final_feature_layer_name)+1
-
-        # I didn't use ART's Keras wrapper as I had to do a couple of workarounds to get it working here
-        # chose to just use the basic Keras library
-
-        # f_1^alpha : feature representation submodel
-        self.feature_representation_model = Model(
-            inputs=self.classifier.model.input,
-            outputs=self.classifier.model.get_layer(final_feature_layer_name).output
-        )
-
-        # Keras requires the reconstruction of the layers to build the output from a specific layer
-        classifying_submodel_inputs = Input(shape=self.feature_representation_model.output_shape[1:])
-        classifying_submodel_sequence = classifying_submodel_inputs
-
-        for layer in self.classifier.model.layers[classifying_submodel_input_layer_index:]:
-            classifying_submodel_sequence = layer(classifying_submodel_sequence)
-
-        # f_2^alpha : classifying submodel
-        self.classifying_submodel = Model(
-            inputs=classifying_submodel_inputs,
-            outputs=classifying_submodel_sequence
-        )
-
         self.unique_classes = set(np.unique(y_train))
 
-        self.x_benign = self.x_train[self.benign_indices]
-        self.y_benign = self.y_train[self.benign_indices]
+        self.x_benign, self.y_benign = self._get_benign_data()
+
+        self.feature_representation_model, self.classifying_submodel = self._extract_submodels(final_feature_layer_name)
 
         self.misclassification_threshold = np.float64(misclassification_threshold)
 
@@ -154,7 +188,7 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
         return self.reducer.fit_transform(features)
 
 
-    def detect_poison(self, **kwargs) -> tuple[dict, list[int]]:
+    def detect_poison(self, **kwargs) -> (dict, list[int]):
 
         is_poisoned = np.zeros(len(self.benign_indices))
 
@@ -286,7 +320,6 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
         #report = None
         #return report, self._is_clean_lst
         return dict(), is_poisoned
-
 
 def get_reducer(reduce: ReducerType, nb_dims: int):
     """Initialize the right reducer based on the selected type."""
