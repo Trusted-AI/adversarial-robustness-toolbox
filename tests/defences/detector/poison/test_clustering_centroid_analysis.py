@@ -17,6 +17,8 @@
 # SOFTWARE.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+from unittest.mock import MagicMock, patch
+
 import tensorflow as tf
 from sklearn.base import ClusterMixin
 from sklearn.compose import ColumnTransformer
@@ -952,6 +954,234 @@ class TestReducersScalersClusterers(unittest.TestCase):
             with self.subTest(invalid=invalid):
                 with self.assertRaises(ValueError):
                     get_clusterer(invalid)
+
+
+class TestDetectPoison(unittest.TestCase):
+    """
+    Unit tests for the detect_poison method in ClusteringCentroidAnalysis
+    """
+
+    def setUp(self):
+        """Set up test fixtures for each test case."""
+        # Create a mock classifier with a simple model architecture
+        self.input_shape = (10,)
+        inputs = tf.keras.Input(shape=self.input_shape)
+        x = tf.keras.layers.Dense(20, activation='relu', name='hidden_layer')(inputs)
+        outputs = tf.keras.layers.Dense(2, activation='softmax', name='output_layer')(x)
+        self.model = tf.keras.Model(inputs=inputs, outputs=outputs)
+        self.model.compile(optimizer='adam', loss='categorical_crossentropy')
+
+        # Mock the classifier
+        self.mock_classifier = MagicMock()
+        self.mock_classifier.model = self.model
+
+        # Create sample data - 100 samples, 10 features, 2 classes
+        np.random.seed(42)  # For reproducibility
+        self.x_train = np.random.randn(100, 10)
+        self.y_train = np.random.randint(0, 2, 100)
+
+        # Benign indices (assuming first 20 samples are definitely benign)
+        self.benign_indices = np.arange(20)
+
+        # Create mock feature representation and classifier models
+        self.mock_feature_model = MagicMock()
+        self.mock_classifier_model = MagicMock()
+
+        # Setup for mock feature extraction
+        self.mock_features = np.random.randn(100, 2)  # Reduced to 2D
+
+        # Common patches for all tests
+        self.patches = [
+            patch('art.defences.detector.poison.clustering_centroid_analysis._feature_extraction',
+                  return_value=self.mock_features),
+            patch('art.defences.detector.poison.clustering_centroid_analysis._calculate_centroid',
+                  side_effect=self._mock_calculate_centroid),
+            patch('art.defences.detector.poison.clustering_centroid_analysis._cluster_classes',
+                  side_effect=self._mock_cluster_classes)
+        ]
+
+        # Apply patches
+        for p in self.patches:
+            p.start()
+
+    def tearDown(self):
+        """Clean up after each test."""
+        # Stop all patches
+        for p in self.patches:
+            p.stop()
+
+    def _mock_calculate_centroid(self, indices, features):
+        """Mock implementation of _calculate_centroid."""
+        return np.mean(features[indices], axis=0)
+
+    def _mock_cluster_classes(self, y_train, unique_classes, features, clusterer, all_benign=True):
+        """
+        Mock implementation of _cluster_classes.
+
+        Parameters:
+        -----------
+        all_benign : bool
+            If True, return clusters with no outliers (all benign)
+            If False, return clusters with some outliers (some poisoned)
+        """
+        # Create mock cluster labels
+        n_samples = len(y_train)
+
+        if all_benign:
+            # No outliers - all samples belong to valid clusters (benign case)
+            class_cluster_labels = np.zeros(n_samples)
+            # Assign different cluster labels based on the class
+            for i, label in enumerate(unique_classes):
+                class_cluster_labels[y_train == label] = i
+        else:
+            # Some outliers (poisoned case) - outliers are marked with -1
+            class_cluster_labels = np.zeros(n_samples)
+            # Assign different cluster labels based on the class
+            for i, label in enumerate(unique_classes):
+                class_cluster_labels[y_train == label] = i
+
+            # Mark 10% of samples as outliers/poisoned
+            poison_indices = np.random.choice(n_samples, size=n_samples//10, replace=False)
+            class_cluster_labels[poison_indices] = -1
+
+        # Create cluster-to-class mapping
+        cluster_class_mapping = {}
+        for label in unique_classes:
+            unique_clusters = np.unique(class_cluster_labels[y_train == label])
+            unique_clusters = unique_clusters[unique_clusters != -1]  # Exclude outliers
+            for cluster in unique_clusters:
+                cluster_class_mapping[cluster] = label
+
+        return class_cluster_labels, cluster_class_mapping
+
+    def test_detect_poison_all_benign(self):
+        """
+        Test the detect_poison method when all data is benign (no poisoned samples).
+        This tests the true negative case.
+        """
+        # Create the defence with mocked methods
+        defence = ClusteringCentroidAnalysis(
+            classifier=self.mock_classifier,
+            x_train=self.x_train,
+            y_train=self.y_train,
+            benign_indices=self.benign_indices,
+            final_feature_layer_name='hidden_layer',
+            misclassification_threshold=0.1
+        )
+
+        # Mock the _calculate_misclassification_rate method to return low rates (all benign)
+        defence._calculate_misclassification_rate = MagicMock(return_value=0.05)
+
+        # Call detect_poison with our mocked _cluster_classes returning no outliers
+        with patch('art.defences.detector.poison.clustering_centroid_analysis._cluster_classes',
+                   side_effect=lambda y, u, f, c: self._mock_cluster_classes(y, u, f, c, all_benign=True)):
+            report, is_poisoned = defence.detect_poison()
+
+        self.assertIsInstance(report, dict)
+        self.assertEqual(len(self.y_train), len(is_poisoned[is_poisoned == 0]))
+        # In the all-benign case, no samples should be marked as poisoned
+        self.assertEqual(np.sum(is_poisoned), 0)
+
+    def test_detect_poison_with_poisoned_samples_as_outliers(self):
+        """
+        Test the detect_poison method when some data points are outliers (poisoned).
+        This tests detection of poisoned samples as outliers.
+        """
+        # Create the defence with mocked methods
+        defence = ClusteringCentroidAnalysis(
+            classifier=self.mock_classifier,
+            x_train=self.x_train,
+            y_train=self.y_train,
+            benign_indices=self.benign_indices,
+            final_feature_layer_name='hidden_layer',
+            misclassification_threshold=0.1
+        )
+
+        # Mock the _calculate_misclassification_rate method to return low rates (all benign)
+        defence._calculate_misclassification_rate = MagicMock(return_value=0.05)
+
+        # Call detect_poison with our mocked _cluster_classes returning some outliers
+        with patch('art.defences.detector.poison.clustering_centroid_analysis._cluster_classes',
+                   side_effect=lambda y, u, f, c: self._mock_cluster_classes(y, u, f, c, all_benign=False)):
+            report, is_poisoned = defence.detect_poison()
+
+        # Assertions
+        self.assertIsInstance(report, dict)
+
+        # Some samples should be marked as poisoned. FIXME: not robust enough
+        self.assertGreater(np.sum(is_poisoned), 0)
+
+    def test_detect_poison_with_high_misclassification_rate(self):
+        """
+        Test the detect_poison method when some clusters have high misclassification rates.
+        This tests detection of poisoned samples based on misclassification rates.
+        """
+        # Create the defence with mocked methods
+        defence = ClusteringCentroidAnalysis(
+            classifier=self.mock_classifier,
+            x_train=self.x_train,
+            y_train=self.y_train,
+            benign_indices=self.benign_indices,
+            final_feature_layer_name='hidden_layer',
+            misclassification_threshold=0.1
+        )
+
+        # Mock _calculate_misclassification_rate to return high rates for some clusters
+        # This simulates a backdoor attack where the deviation causes high misclassification
+        def mock_misclass_rate(class_label, deviation):
+            # Return a high misclassification rate for class 0, low for class 1
+            if class_label == 0:
+                return 0.95  # Above threshold (1 - 0.1 = 0.9)
+            else:
+                return 0.05  # Below threshold
+
+        defence._calculate_misclassification_rate = MagicMock(side_effect=mock_misclass_rate)
+
+        # Call detect_poison with _cluster_classes returning clean clusters
+        with patch('art.defences.detector.poison.clustering_centroid_analysis._cluster_classes',
+                   side_effect=lambda y, u, f, c: self._mock_cluster_classes(y, u, f, c, all_benign=True)):
+            report, is_poisoned = defence.detect_poison()
+
+        # all elements in class 0 are poisoned. No outliers --> all poisoned elements are class 0
+        np.testing.assert_equal(np.where(is_poisoned == 1), np.where(self.y_train == 0))
+
+    def test_detect_poison_both_mechanisms(self):
+        """
+        Test the detect_poison method when detection happens through both mechanisms:
+        1. Outliers detection
+        2. High misclassification rates
+        """
+        # Create the defence with mocked methods
+        defence = ClusteringCentroidAnalysis(
+            classifier=self.mock_classifier,
+            x_train=self.x_train,
+            y_train=self.y_train,
+            benign_indices=self.benign_indices,
+            final_feature_layer_name='hidden_layer',
+            misclassification_threshold=0.1
+        )
+
+        # Mock _calculate_misclassification_rate to return high rates for some clusters
+        def mock_misclass_rate(class_label, deviation):
+            # Only cluster 1 has high misclassification rate
+            if class_label == 1:
+                return 0.95  # Above threshold (1 - 0.1 = 0.9)
+            else:
+                return 0.05  # Below threshold
+
+        defence._calculate_misclassification_rate = MagicMock(side_effect=mock_misclass_rate)
+
+        # Call detect_poison with _cluster_classes returning some outliers
+        with patch('art.defences.detector.poison.clustering_centroid_analysis._cluster_classes',
+                   side_effect=lambda y, u, f, c: self._mock_cluster_classes(y, u, f, c, all_benign=False)):
+            report, is_poisoned = defence.detect_poison()
+
+        self.assertIsInstance(report, dict)
+        # all elements in class 1 are poisoned
+        self.assertGreater(len(is_poisoned[is_poisoned == 1]), len(self.y_train[self.y_train == 1]))
+        self.assertTrue(np.all(is_poisoned[np.where(self.y_train == 1)] == 1))
+        # most elements in class 0 are detected as clean. Poisoned ones are outliers. FIXME: can I make this more robust?
+        self.assertLess(np.mean(self.y_train[np.where(is_poisoned == 0)]), 0.2)
 
 
 if __name__ == "__main__":
