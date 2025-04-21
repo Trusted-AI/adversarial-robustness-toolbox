@@ -80,6 +80,34 @@ def _feature_extraction(x_train: np.array, feature_representation_model: Model, 
     return reducer.fit_transform(features)
 
 
+def _cluster_classes(y_train: np.array, unique_classes: set[int], features: np.array, clusterer: ClusterMixin) -> (np.array, dict):
+    """
+    Clusters all the classes in the given dataset into uniquely identifiable clusters.
+
+    :param features: feature representations' array of n rows
+    :return: (class_cluster_labels, cluster_class_mapping)
+    """
+    # represents the number of clusters used up until now to differentiate clusters obtained in different
+    # clustering runs by classes
+    used_cluster_labels = 0
+    cluster_class_mapping  = dict()
+    class_cluster_labels = np.full(len(y_train), -1)
+
+    for class_label in unique_classes:
+        cluster_labels, selected_indices = _class_clustering(y_train, features, class_label, clusterer)
+        # label values are adjusted to account for labels of previous clustering tasks
+        cluster_labels[cluster_labels != -1] += used_cluster_labels
+        used_cluster_labels += len(np.unique(cluster_labels[cluster_labels != -1]))
+
+        class_cluster_labels[selected_indices] = cluster_labels
+
+        # the class (label) corresponding to the cluster is saved for centroid deviation calculation
+        for l in np.unique(cluster_labels[cluster_labels != -1]):
+            cluster_class_mapping[l] = class_label
+
+    return class_cluster_labels, cluster_class_mapping
+
+
 class ClusteringCentroidAnalysis(PoisonFilteringDefence):
     """
     Method from Guo et al., 2021, to perform poisoning detection using density-based clustering and centroids analysis.
@@ -134,7 +162,7 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
         else:
             sess = tf.compat.v1.keras.backend.get_session()
 
-        # Create feature representation submodel with weight sharing
+        # Create a feature representation submodel with weight sharing
         feature_representation_model = Model(
             inputs=keras_model.inputs,
             outputs=keras_model.get_layer(final_feature_layer_name).output,
@@ -147,7 +175,7 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
         # Create input for the classifier submodel
         classifier_input = Input(shape=intermediate_shape, name="classifier_input")
 
-        # Copy the architecture of remaining layers
+        # Copy the architecture of the remaining layers
         x = classifier_input
         for layer in keras_model.layers[keras_model.layers.index(final_feature_layer) + 1:]:
             x = layer(x)
@@ -203,23 +231,10 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
 
         features = _feature_extraction(self.x_train, self.feature_representation_model, self.reducer)
 
-        # represents the number of clusters used up until now to differentiate clusters obtained in different
-        # clustering runs by classes
-        used_cluster_labels = 0
-        cluster_class_mapping  = dict()
-        class_cluster_labels = np.empty(len(self.benign_indices))
-
-        for class_label in self.unique_classes:
-            cluster_labels, selected_indices = _class_clustering(self.y_train, features, class_label, self.clusterer)
-            # label values are adjusted to account for labels of previous clustering tasks
-            cluster_labels[cluster_labels != -1] += used_cluster_labels
-            used_cluster_labels += len(np.unique(cluster_labels[cluster_labels != -1]))
-
-            class_cluster_labels[selected_indices] = cluster_labels
-
-            # the class (label) corresponding to the cluster is saved for centroid deviation calculation
-            for l in np.unique(cluster_labels[cluster_labels != -1]):
-                cluster_class_mapping[l] = class_label
+        class_cluster_labels, cluster_class_mapping = _cluster_classes(self.y_train,
+                                                                       self.unique_classes,
+                                                                       features,
+                                                                       self.clusterer)
 
         # outliers are poisoned
         outlier_indices = np.where(class_cluster_labels == -1)[0]

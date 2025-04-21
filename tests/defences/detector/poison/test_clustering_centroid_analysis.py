@@ -44,7 +44,7 @@ from tensorflow.python.keras.layers import Dense
 from umap import UMAP
 
 from art.defences.detector.poison.clustering_centroid_analysis import get_reducer, get_scaler, get_clusterer, \
-    ClusteringCentroidAnalysis, _calculate_centroid, _class_clustering, _feature_extraction
+    ClusteringCentroidAnalysis, _calculate_centroid, _class_clustering, _feature_extraction, _cluster_classes
 from art.defences.detector.poison.utils import ReducerType, ScalerType, ClustererType
 
 logger = logging.getLogger(__name__)
@@ -666,6 +666,194 @@ class TestClassClustering(unittest.TestCase):
         self.assertTrue(np.array_equal(cluster_labels, np.array([0, 1])))
         self.assertTrue(np.array_equal(selected_indices, np.array([1, 3])))
 
+class TestClusterClasses(unittest.TestCase):
+    """Unit tests for the _cluster_classes function."""
+
+    def setUp(self):
+        """Set up test fixtures for each test."""
+        # Create mock features for testing
+        self.features = np.array([
+            [1, 2],
+            [3, 4],
+            [5, 6],
+            [7, 8],
+            [9, 10],
+            [11, 12]
+        ])
+
+    def test_single_target_class(self):
+        """Test clustering with a single target class."""
+        # Setup
+        y_train = np.array([0, 0, 0, 0, 0, 0])  # All samples belong to class 0
+        unique_classes = {0}  # Only one class
+
+        # Mock clusterer that assigns samples to two clusters (0 and 1) with no outliers
+        clusterer = MockClusterer(np.array([0, 0, 0, 1, 1, 1]))
+
+        # Execute
+        class_cluster_labels, cluster_class_mapping = _cluster_classes(
+            y_train, unique_classes, self.features, clusterer)
+
+        # Assert
+        self.assertEqual(6, len(class_cluster_labels))
+        self.assertEqual(2, len(cluster_class_mapping))
+
+        # All cluster labels should be either 0 or 1
+        self.assertTrue(np.all(np.isin(class_cluster_labels, [0, 1])))
+
+        # Both clusters should be mapped to class 0
+        self.assertEqual(0, cluster_class_mapping[0])
+        self.assertEqual(0, cluster_class_mapping[1])
+
+        # Check cluster distribution
+        self.assertEqual(3, np.sum(class_cluster_labels == 0))  # First 3 samples in cluster 0
+        self.assertEqual(3, np.sum(class_cluster_labels == 1))  # Last 3 samples in cluster 1
+
+    def test_binary_target_classes(self):
+        """Test clustering with binary (two) target classes."""
+        # Setup
+        y_train = np.array([0, 0, 0, 1, 1, 1])  # Class 0 and 1
+        unique_classes = {0, 1}
+
+        # Mock clusterer that will return:
+        # - For class 0: [0, 0, 1]
+        # - For class 1: [0, 1, 1]
+        class CustomMockClusterer(MockClusterer):
+            def fit_predict(self, X):
+                return np.array([0, 0, 1])
+
+        clusterer = CustomMockClusterer(None)  # The parameter is ignored due to overridden fit_predict
+
+        # Execute
+        class_cluster_labels, cluster_class_mapping = _cluster_classes(
+            y_train, unique_classes, self.features, clusterer)
+
+        np.testing.assert_array_equal(np.array([0, 0, 1, 2, 2, 3]), class_cluster_labels)
+
+        # Check cluster-to-class mapping
+        self.assertEqual(4, len(cluster_class_mapping))  # 4 clusters total
+        self.assertEqual(0, cluster_class_mapping[0])  # Cluster 0 -> Class 0
+        self.assertEqual(0, cluster_class_mapping[1])  # Cluster 1 -> Class 0
+        self.assertEqual(1, cluster_class_mapping[2])  # Cluster 2 -> Class 1
+        self.assertEqual(1, cluster_class_mapping[3])  # Cluster 3 -> Class 1
+
+    def test_multiple_target_classes(self):
+        """Test clustering with multiple (more than two) target classes."""
+        # Setup
+        y_train = np.array([0, 0, 1, 1, 2, 2])  # Three classes: 0, 1, 2
+        unique_classes = {0, 1, 2}
+
+        # Mock clusterer that returns a single cluster for each class
+        class ThreeClassMockClusterer(MockClusterer):
+            def fit_predict(self, X):
+                # Always return [0, 0] for any input of size 2
+                return np.array([0, 0])
+
+        clusterer = ThreeClassMockClusterer(None)
+
+        # Execute
+        class_cluster_labels, cluster_class_mapping = _cluster_classes(
+            y_train, unique_classes, self.features, clusterer)
+
+        # Assert
+        self.assertEqual(len(class_cluster_labels), 6)
+
+        # We should have one cluster per class, with increasing IDs
+        expected_labels = np.array([0, 0, 1, 1, 2, 2])
+        self.assertTrue(np.array_equal(class_cluster_labels, expected_labels))
+
+        # Check cluster-to-class mapping
+        self.assertEqual(3, len(cluster_class_mapping))  # 3 clusters total
+        self.assertEqual(0, cluster_class_mapping[0])  # Cluster 0 -> Class 0
+        self.assertEqual(1, cluster_class_mapping[1])  # Cluster 1 -> Class 1
+        self.assertEqual(2, cluster_class_mapping[2])  # Cluster 2 -> Class 2
+
+    def test_with_outliers(self):
+        """Test clustering that detects outliers (marked as -1)."""
+        # Setup
+        y_train = np.array([0, 0, 0, 1, 1, 1])
+        unique_classes = {0, 1}
+
+        # Mock clusterer that returns outliers (-1) for some samples
+        class OutlierMockClusterer(MockClusterer):
+            def fit_predict(self, X):
+                return np.array([0, -1, -1])
+
+        clusterer = OutlierMockClusterer(None)
+
+        # Execute
+        class_cluster_labels, cluster_class_mapping = _cluster_classes(
+            y_train, unique_classes, self.features, clusterer)
+
+        np.testing.assert_array_equal(np.array([0, -1, -1, 1, -1, -1]), class_cluster_labels)
+
+        # Check cluster-to-class mapping (should only have non-outlier clusters)
+        self.assertEqual(len(cluster_class_mapping), 2)
+        self.assertEqual(cluster_class_mapping[0], 0)  # Cluster 0 -> Class 0
+        self.assertEqual(cluster_class_mapping[1], 1)  # Cluster 1 -> Class 1
+
+    def test_empty_target_classes(self):
+        """Test with an empty set of target classes."""
+        # Setup
+        y_train = np.array([0, 0, 1, 1])
+        unique_classes = set()  # Empty set
+
+        clusterer = MockClusterer(np.array([0, 0]))
+
+        # Execute
+        class_cluster_labels, cluster_class_mapping = _cluster_classes(
+            y_train, unique_classes, self.features, clusterer)
+
+        # Assert
+        self.assertEqual(len(class_cluster_labels), 4)
+
+        # With no classes to process, all elements should be "unassigned"
+        # The array was initialized with np.empty, so we can't easily test values
+        # but the cluster mapping should be empty
+        self.assertEqual(len(cluster_class_mapping), 0)
+
+    def test_all_samples_in_one_cluster(self):
+        """Test when all samples of a class are assigned to a single cluster."""
+        # Setup
+        y_train = np.array([0, 0, 0, 1, 1, 1])
+        unique_classes = {0, 1}
+
+        # All samples in one cluster per class
+        clusterer = MockClusterer(np.array([0, 0, 0]))
+
+        # Execute
+        class_cluster_labels, cluster_class_mapping = _cluster_classes(
+            y_train, unique_classes, self.features, clusterer)
+
+        np.testing.assert_array_equal(np.array([0, 0, 0, 1, 1, 1]), class_cluster_labels)
+
+        # Check cluster-to-class mapping
+        self.assertEqual(len(cluster_class_mapping), 2)
+        self.assertEqual(cluster_class_mapping[0], 0)  # Cluster 0 -> Class 0
+        self.assertEqual(cluster_class_mapping[1], 1)  # Cluster 1 -> Class 1
+
+    def test_all_outliers(self):
+        """Test when all samples are detected as outliers."""
+        # Setup
+        y_train = np.array([0, 0, 1, 1])
+        unique_classes = {0, 1}
+
+        # All samples are outliers (-1)
+        class AllOutliersMockClusterer(MockClusterer):
+            def fit_predict(self, X):
+                return np.full(X.shape[0], -1)
+
+        clusterer = AllOutliersMockClusterer(None)
+
+        # Execute
+        class_cluster_labels, cluster_class_mapping = _cluster_classes(
+            y_train, unique_classes, self.features, clusterer)
+
+        np.testing.assert_array_equal(np.array([-1, -1, -1, -1]), class_cluster_labels)
+
+        # No cluster should be mapped to any class
+        self.assertEqual(len(cluster_class_mapping), 0)
+
 class TestFeatureExtraction(unittest.TestCase):
 
     """Unit tests for the _feature_extraction function."""
@@ -709,7 +897,6 @@ class TestFeatureExtraction(unittest.TestCase):
             # Assert
             self.assertEqual((100, 2), result.shape)
             self.assertIsInstance(result, np.ndarray)
-
 
 
 class TestReducersScalersClusterers(unittest.TestCase):
