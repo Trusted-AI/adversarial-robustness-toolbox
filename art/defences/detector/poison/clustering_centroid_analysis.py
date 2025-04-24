@@ -90,7 +90,8 @@ def _feature_extraction(x_train: np.array, feature_representation_model: Model, 
     features = feature_representation_model.predict(x_train)
 
     # Reduces clustering time and mitigates dimensionality clustering problems
-    return reducer.fit_transform(features)
+    # TODO: what to do about the reducer? Idea: used reduced features for clustering, then return to normal features
+    return features
 
 
 def _cluster_classes(y_train: np.array, unique_classes: set[int], features: np.array, clusterer: ClusterMixin) -> (np.array, dict):
@@ -211,8 +212,8 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
     def __init__(
             self,
             classifier: "CLASSIFIER_TYPE",
-            x_train: np.ndarray, # FIXME: could be a dataframe?
-            y_train: np.ndarray, # FIXME: could be a dataframe?
+            x_train: np.ndarray,
+            y_train: np.ndarray,
             benign_indices: np.array,
             final_feature_layer_name: str,
             misclassification_threshold: float,
@@ -250,7 +251,7 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
         misclassified_elements = 0
 
         for other_class_label in self.unique_classes - {class_label}:
-            other_class_data = self.x_benign[self.x_benign == other_class_label]
+            other_class_data = self.x_benign[self.y_benign == other_class_label]
             total_elements += len(other_class_data)
 
             deviated_features = self.feature_representation_model.predict(other_class_data) + deviation
@@ -266,10 +267,11 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
         is_poisoned = np.zeros(len(self.y_train))
 
         features = _feature_extraction(self.x_train, self.feature_representation_model, self.reducer)
+        features_reduced = self.reducer.fit_transform(features)
 
         class_cluster_labels, cluster_class_mapping = _cluster_classes(self.y_train,
                                                                        self.unique_classes,
-                                                                       features,
+                                                                       features_reduced,
                                                                        self.clusterer)
 
         # outliers are poisoned
@@ -343,6 +345,6 @@ def get_scaler(scaler_type: ScalerType):
 def get_clusterer(clusterer_type: ClustererType) -> ClusterMixin:
     """Initialize the right cluster algorithm (a.k.a., clusterer) based on the selected type. """
     if clusterer_type == ClustererType.DBSCAN:
-        return DBSCAN(eps=0.5, min_samples=5)
+        return DBSCAN(eps=0.8, min_samples=20)
 
     raise ValueError(f"{clusterer_type} cluster method not supported.")
