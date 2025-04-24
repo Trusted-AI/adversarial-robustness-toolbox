@@ -46,7 +46,8 @@ from tensorflow.python.keras.layers import Dense
 from umap import UMAP
 
 from art.defences.detector.poison.clustering_centroid_analysis import get_reducer, get_scaler, get_clusterer, \
-    ClusteringCentroidAnalysis, _calculate_centroid, _class_clustering, _feature_extraction, _cluster_classes
+    ClusteringCentroidAnalysis, _calculate_centroid, _class_clustering, _feature_extraction, _cluster_classes, \
+    _encode_labels
 from art.defences.detector.poison.utils import ReducerType, ScalerType, ClustererType
 
 logger = logging.getLogger(__name__)
@@ -129,7 +130,7 @@ class TestInitialization(unittest.TestCase):
 
         # Generate some dummy training data
         self.x_train = np.random.rand(100, 10)
-        self.y_train = np.random.randint(0, 2, size=(100, 1))  # For binary classification
+        self.y_train = np.random.randint(0, 2, size=(100,)) # For M.E multi-class
 
         # Compile and train the model
         self.mock_model.compile(optimizer='adam', loss='binary_crossentropy')
@@ -550,6 +551,26 @@ class TestClusteringCentroidAnalysis(unittest.TestCase):
 
         # no poisoned elements are detected
         self.assertEqual(0, len(poisoned_indices))
+
+class TestEncodeLabels(unittest.TestCase):
+
+    def test_encode_binary_labels(self):
+        y = np.array([1, 0, 0, 1, 0, 1, 0, 1])
+        y_encoded, unique_classes, label_mapping, reverse_mapping = _encode_labels(y)
+
+        np.testing.assert_array_equal(y, y_encoded)
+        self.assertEqual({0, 1}, unique_classes)
+        np.testing.assert_array_equal(np.array([0, 1]), label_mapping)
+        self.assertEqual({0: 0, 1: 1}, reverse_mapping)
+
+    def test_encode_multi_labels(self):
+        y = np.array(['A', 'B', 'C', 'B', 'B', 'C', 'A', 'D'])
+        y_encoded, unique_classes, label_mapping, reverse_mapping = _encode_labels(y)
+
+        np.testing.assert_array_equal(np.array([0, 1, 2, 1, 1, 2, 0, 3]), y_encoded)
+        self.assertEqual({0, 1, 2, 3}, unique_classes)
+        np.testing.assert_array_equal(np.array(['A', 'B', 'C', 'D']), label_mapping)
+        self.assertEqual({'A': 0, 'B': 1, 'C': 2, 'D': 3}, reverse_mapping)
 
 
 class TestCalculateCentroid(unittest.TestCase):

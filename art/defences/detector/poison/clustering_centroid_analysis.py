@@ -32,12 +32,24 @@ from umap import UMAP
 from art.defences.detector.poison.poison_filtering_defence import PoisonFilteringDefence
 from art.defences.detector.poison.utils import ReducerType, ScalerType, ClustererType
 
-tf.compat.v1.disable_eager_execution()
-
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_NEURALNETWORK_TYPE, CLASSIFIER_TYPE
 
 logger = logging.getLogger(__name__)
+
+def _encode_labels(y: np.array) -> (np.array, set, np.array, dict):
+    """
+    Given the target column, it generates the label encoding and the reverse mapping to use in the classification process
+
+    :param y: 1D np.array with single values that represent the different classes
+    :return: (y_encoded, unique_classes, label_mapping, reverse_mapping) encoded column, set of unique classes,
+        mapping from class to numeric label, and mapping from numeric label to class
+    """
+    label_mapping = np.unique(y)
+    reverse_mapping = {k: v for v, k in enumerate(label_mapping)}
+    y_encoded = np.array([reverse_mapping[v] for v in y])
+    unique_classes = set(reverse_mapping.values())
+    return y_encoded, unique_classes, label_mapping, reverse_mapping
 
 
 def _calculate_centroid(selected_indices: np.ndarray, features: np.array) -> np.ndarray:
@@ -60,6 +72,7 @@ def _class_clustering(y: np.array, features: np.array, label: any, clusterer: Cl
     :param features: numpy array d-dimensional features for n data entries
     :return: (cluster_labels, selected_indices) ndarrays of equal size with cluster labels and corresponding original indices.
     """
+    logging.info(f"Clustering class {label}...")
     selected_indices = np.where(y == label)[0]
     selected_features = features[selected_indices]
     cluster_labels = clusterer.fit_predict(selected_features)
@@ -72,7 +85,7 @@ def _feature_extraction(x_train: np.array, feature_representation_model: Model, 
     :return: Ordered dataframe with a "class" column for the true label and "cluster_labels" column
     for the cluster labels for each data point from the training data.
     """
-
+    logging.info("Extracting feature representations...")
     # TODO: find critical layer using https://arxiv.org/pdf/2302.12758
     features = feature_representation_model.predict(x_train)
 
@@ -89,9 +102,12 @@ def _cluster_classes(y_train: np.array, unique_classes: set[int], features: np.a
     """
     # represents the number of clusters used up until now to differentiate clusters obtained in different
     # clustering runs by classes
+    logging.info("Clustering classes...")
     used_cluster_labels = 0
     cluster_class_mapping  = dict()
     class_cluster_labels = np.full(len(y_train), -1)
+
+    logging.info(f"Unique classes are: {unique_classes}")
 
     for class_label in unique_classes:
         cluster_labels, selected_indices = _class_clustering(y_train, features, class_label, clusterer)
@@ -145,7 +161,7 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
             as suggested in the paper.
         :return: (feature_representation_submodel, classifying_submodel)
         """
-
+        logging.info("Extracting submodels...")
         keras_model = self.classifier.model
 
         try:
@@ -190,6 +206,8 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
         return feature_representation_model, classifying_submodel
 
 
+    # TODO: MAP THE ENCODINGS
+    # NP ARGMAX IN THE LAST LAYER
     def __init__(
             self,
             classifier: "CLASSIFIER_TYPE",
@@ -209,18 +227,20 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
         :param final_feature_layer_name: the name of the final layer that builds feature representation. Must
             be a ReLu layer
         """
+        logger.info("Loading variables into CCA...")
         super().__init__(classifier, x_train, y_train)
         self.reducer = get_reducer(ReducerType.UMAP, nb_dims=2)
         self.scaler = get_scaler(ScalerType.STANDARD)
         self.clusterer = get_clusterer(ClustererType.DBSCAN)
         self.benign_indices = benign_indices
-        self.unique_classes = set(np.unique(y_train))
+        self.y_train, self.unique_classes, self.class_mapping, self.reverse_class_mapping = _encode_labels(y_train)
 
         self.x_benign, self.y_benign = self._get_benign_data()
 
         self.feature_representation_model, self.classifying_submodel = self._extract_submodels(final_feature_layer_name)
 
         self.misclassification_threshold = np.float64(misclassification_threshold)
+        logger.info("CCA object created successfully.")
 
     def evaluate_defence(self, is_clean: np.ndarray, **kwargs) -> str:
         pass
@@ -234,7 +254,7 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
             total_elements += len(other_class_data)
 
             deviated_features = self.feature_representation_model.predict(other_class_data) + deviation
-            deviated_predictions = self.classifying_submodel.predict(deviated_features)
+            deviated_predictions = np.argmax(self.classifying_submodel.predict(deviated_features), axis=1)
 
             # how many elements of other_class_label are misclassified towards class label if its deviation is applied?
             misclassified_elements += len(deviated_predictions[deviated_predictions == class_label])
@@ -256,6 +276,7 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
         outlier_indices = np.where(class_cluster_labels == -1)[0]
         is_poisoned[outlier_indices] = 1
 
+        logging.info("Calculating real centroids...")
         real_centroids = dict()
 
         # for each cluster found for each target class
@@ -263,7 +284,10 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
             real_centroids[label] = _calculate_centroid(np.where(class_cluster_labels == label)[0],
                                                         features)
 
+        logging.info("Calculating benign centroids...")
         benign_centroids = dict()
+
+        logger.info(f"Target classes are: {self.unique_classes}")
 
         # for each target class
         for class_label in self.unique_classes:
@@ -271,6 +295,7 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
             benign_centroids[class_label] = _calculate_centroid(benign_class_indices, #FIXME: this is wrong. y_benign has different dimensions and features extracted wont be the same
                                                                 features)
 
+        logging.info("Calculating misclassification rates...")
         misclassification_rates = dict()
 
         for cluster_label, centroid in real_centroids.items():
@@ -283,6 +308,7 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
             misclassification_rates[cluster_label] = self._calculate_misclassification_rate(class_label, deviation)
 
 
+        logging.info("Evaluating cluster misclassification...")
         for cluster_label, mr in misclassification_rates.items():
             if mr >= 1 - self.misclassification_threshold:
                 cluster_indices = np.where(class_cluster_labels == cluster_label)[0]
