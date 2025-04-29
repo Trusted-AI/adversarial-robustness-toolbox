@@ -36,11 +36,12 @@ import numpy as np
 from sklearn.cluster import KMeans, MiniBatchKMeans
 
 from art.data_generators import DataGenerator
-from art.defences.detector.poison.clustering_analyzer import ClusteringAnalyzer
 from art.defences.detector.poison.ground_truth_evaluator import GroundTruthEvaluator
 from art.defences.detector.poison.poison_filtering_defence import PoisonFilteringDefence
 from art.utils import segment_by_class
 from art.visualization import create_sprite, save_image, plot_3d
+
+import art.defences.detector.poison.clustering_analyzer as clustering_analyzer
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_NEURALNETWORK_TYPE
@@ -316,25 +317,24 @@ class ActivationDefence(PoisonFilteringDefence):
         if not self.clusters_by_class:
             self.cluster_activations()
 
-        analyzer = ClusteringAnalyzer()
         if self.cluster_analysis == "smaller":
             (
                 self.assigned_clean_by_class,
                 self.poisonous_clusters,
                 report,
-            ) = analyzer.analyze_by_size(self.clusters_by_class)
+            ) = clustering_analyzer.analyze_by_size(self.clusters_by_class)
         elif self.cluster_analysis == "relative-size":
             (
                 self.assigned_clean_by_class,
                 self.poisonous_clusters,
                 report,
-            ) = analyzer.analyze_by_relative_size(self.clusters_by_class)
+            ) = clustering_analyzer.analyze_by_relative_size(self.clusters_by_class)
         elif self.cluster_analysis == "distance":
             (
                 self.assigned_clean_by_class,
                 self.poisonous_clusters,
                 report,
-            ) = analyzer.analyze_by_distance(
+            ) = clustering_analyzer.analyze_by_distance(
                 self.clusters_by_class,
                 separated_activations=self.red_activations_by_class,
             )
@@ -343,7 +343,7 @@ class ActivationDefence(PoisonFilteringDefence):
                 self.assigned_clean_by_class,
                 self.poisonous_clusters,
                 report,
-            ) = analyzer.analyze_by_silhouette_score(
+            ) = clustering_analyzer.analyze_by_silhouette_score(
                 self.clusters_by_class,
                 reduced_activations_by_class=self.red_activations_by_class,
             )
