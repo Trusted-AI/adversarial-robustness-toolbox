@@ -21,6 +21,7 @@ This module implements methodologies to analyze clusters and determine whether t
 from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
+from enum import Enum, unique
 from typing import Any
 
 import numpy as np
@@ -30,6 +31,32 @@ logger = logging.getLogger(__name__)
 """
 Class for all methodologies implemented to analyze clusters and determine whether they are poisonous.
 """
+
+@unique
+class ClusterAnalysisType(Enum):
+    SMALLER = "smaller"
+    RELATIVE_SIZE = "relative-size"
+    DISTANCE = "distance"
+    SILHOUETTE_SCORES = "silhouette-scores"
+
+
+def get_cluster_analyzer(cluster_analysis_type: ClusterAnalysisType):
+    """
+    :param cluster_analysis_type:
+    :return:
+    """
+    analyzers = {
+        ClusterAnalysisType.SMALLER: analyze_by_size,
+        ClusterAnalysisType.RELATIVE_SIZE: analyze_by_relative_size,
+        ClusterAnalysisType.DISTANCE: analyze_by_distance,
+        ClusterAnalysisType.SILHOUETTE_SCORES: analyze_by_silhouette_score
+    }
+
+    if cluster_analysis_type not in analyzers:
+        raise ValueError(f"There is no analyzer function for the cluster analysis type {cluster_analysis_type.value}")
+
+    return analyzers[cluster_analysis_type]
+
 
 def assign_class(clusters: np.ndarray, clean_clusters: np.ndarray, poison_clusters: np.ndarray) -> np.ndarray:
     """

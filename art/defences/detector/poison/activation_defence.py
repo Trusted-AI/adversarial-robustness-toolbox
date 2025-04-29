@@ -41,7 +41,7 @@ from art.defences.detector.poison.poison_filtering_defence import PoisonFilterin
 from art.utils import segment_by_class
 from art.visualization import create_sprite, save_image, plot_3d
 
-import art.defences.detector.poison.clustering_analyzer as clustering_analyzer
+from art.defences.detector.poison.clustering_analyzer import ClusterAnalysisType, get_cluster_analyzer
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_NEURALNETWORK_TYPE
@@ -312,43 +312,27 @@ class ActivationDefence(PoisonFilteringDefence):
         :return: (report, assigned_clean_by_class), where the report is a dict object and assigned_clean_by_class
                  is a list of arrays that contains what data points where classified as clean.
         """
+        # default argument setting
         self.set_params(**kwargs)
 
         if not self.clusters_by_class:
             self.cluster_activations()
 
-        if self.cluster_analysis == "smaller":
-            (
-                self.assigned_clean_by_class,
-                self.poisonous_clusters,
-                report,
-            ) = clustering_analyzer.analyze_by_size(self.clusters_by_class)
-        elif self.cluster_analysis == "relative-size":
-            (
-                self.assigned_clean_by_class,
-                self.poisonous_clusters,
-                report,
-            ) = clustering_analyzer.analyze_by_relative_size(self.clusters_by_class)
-        elif self.cluster_analysis == "distance":
-            (
-                self.assigned_clean_by_class,
-                self.poisonous_clusters,
-                report,
-            ) = clustering_analyzer.analyze_by_distance(
+        analysis_type = ClusterAnalysisType(self.cluster_analysis)
+        analyzer = get_cluster_analyzer(analysis_type)
+
+        if analysis_type in [ClusterAnalysisType.SMALLER, ClusterAnalysisType.RELATIVE_SIZE]:
+            self.assigned_clean_by_class, self.poisonous_clusters, report = analyzer(self.clusters_by_class)
+        elif analysis_type == ClusterAnalysisType.DISTANCE:
+            self.assigned_clean_by_class, self.poisonous_clusters, report = analyzer(
                 self.clusters_by_class,
-                separated_activations=self.red_activations_by_class,
-            )
-        elif self.cluster_analysis == "silhouette-scores":
-            (
-                self.assigned_clean_by_class,
-                self.poisonous_clusters,
-                report,
-            ) = clustering_analyzer.analyze_by_silhouette_score(
+                separated_activations=self.red_activations_by_class)
+        elif analysis_type == ClusterAnalysisType.SILHOUETTE_SCORES:
+            self.assigned_clean_by_class, self.poisonous_clusters, report = analyzer(
                 self.clusters_by_class,
-                reduced_activations_by_class=self.red_activations_by_class,
-            )
+                reduced_activations_by_class=self.red_activations_by_class)
         else:
-            raise ValueError("Unsupported cluster analysis technique " + self.cluster_analysis)
+            raise ValueError("Unsupported cluster analysis technique " + analysis_type.value)
 
         # Add to the report current parameters used to run the defence and the analysis summary
         report = dict(list(report.items()) + list(self.get_params().items()))
