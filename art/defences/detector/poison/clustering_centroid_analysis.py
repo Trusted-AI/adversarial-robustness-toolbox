@@ -22,6 +22,7 @@ from typing import TYPE_CHECKING
 
 import tensorflow as tf
 import numpy as np
+from art.defences.detector.poison.ground_truth_evaluator import GroundTruthEvaluator
 from sklearn.base import ClusterMixin
 from sklearn.cluster import DBSCAN
 from sklearn.decomposition import FastICA, PCA
@@ -29,6 +30,7 @@ from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
 from tensorflow.python.keras import Model, Input
 from umap import UMAP
 
+from art.defences.detector.poison.clustering_analyzer import ClusterAnalysisType
 from art.defences.detector.poison.poison_filtering_defence import PoisonFilteringDefence
 from art.defences.detector.poison.utils import ReducerType, ScalerType, ClustererType
 
@@ -139,7 +141,12 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
     _DEFENCE_PARAMS = []
     _VALID_CLUSTERING = ["DBSCAN"]
     _VALID_REDUCE = ["UMAP", "PCA"]
-    _VALID_ANALYSIS = []
+    _VALID_ANALYSIS = [
+        ClusterAnalysisType.SMALLER,
+        ClusterAnalysisType.RELATIVE_SIZE,
+        ClusterAnalysisType.DISTANCE,
+        ClusterAnalysisType.SILHOUETTE_SCORES
+    ]
 
     def _get_benign_data(self) -> (np.ndarray, np.ndarray):
         """
@@ -244,7 +251,30 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
         logger.info("CCA object created successfully.")
 
     def evaluate_defence(self, is_clean: np.ndarray, **kwargs) -> str:
-        pass
+        evaluator = GroundTruthEvaluator()
+
+        # Segment predicted values by class
+        assigned_clean_by_class = []
+        for class_label in self.unique_classes:
+            # Get indices for this class
+            class_indices = np.where(self.y_train == class_label)[0]
+            # Get assigned_clean values for those indices
+            assigned_clean_by_class.append(self.is_clean[class_indices])
+
+        # Segment ground truth by class
+        is_clean_by_class = []
+        for class_label in self.unique_classes:
+            class_indices = np.where(self.y_train == class_label)[0]
+            is_clean_by_class.append(is_clean[class_indices])
+
+        # Create evaluator and analyze results
+        errors_by_class, confusion_matrix_json = evaluator.analyze_correctness(
+            assigned_clean_by_class=assigned_clean_by_class,
+            is_clean_by_class=is_clean_by_class
+        )
+
+        return confusion_matrix_json
+
 
     def _calculate_misclassification_rate(self, class_label: int, deviation: np.array) -> np.float64:
         total_elements = 0
@@ -264,26 +294,26 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
 
     def detect_poison(self, **kwargs) -> (dict, list[int]):
 
-        is_poisoned = np.zeros(len(self.y_train))
+        self.is_clean = np.ones(len(self.y_train))
 
         features = _feature_extraction(self.x_train, self.feature_representation_model, self.reducer)
         features_reduced = self.reducer.fit_transform(features)
 
-        class_cluster_labels, cluster_class_mapping = _cluster_classes(self.y_train,
+        self.class_cluster_labels, self.cluster_class_mapping = _cluster_classes(self.y_train,
                                                                        self.unique_classes,
                                                                        features_reduced,
                                                                        self.clusterer)
 
         # outliers are poisoned
-        outlier_indices = np.where(class_cluster_labels == -1)[0]
-        is_poisoned[outlier_indices] = 1
+        outlier_indices = np.where(self.class_cluster_labels == -1)[0]
+        self.is_clean[outlier_indices] = 0
 
         logging.info("Calculating real centroids...")
         real_centroids = dict()
 
         # for each cluster found for each target class
-        for label in np.unique(class_cluster_labels[class_cluster_labels != -1]):
-            real_centroids[label] = _calculate_centroid(np.where(class_cluster_labels == label)[0],
+        for label in np.unique(self.class_cluster_labels[self.class_cluster_labels != -1]):
+            real_centroids[label] = _calculate_centroid(np.where(self.class_cluster_labels == label)[0],
                                                         features)
 
         logging.info("Calculating benign centroids...")
@@ -301,7 +331,7 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
         misclassification_rates = dict()
 
         for cluster_label, centroid in real_centroids.items():
-            class_label = cluster_class_mapping[cluster_label]
+            class_label = self.cluster_class_mapping[cluster_label]
             # B^k_i
             deviation = centroid - benign_centroids[class_label]
 
@@ -313,10 +343,11 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
         logging.info("Evaluating cluster misclassification...")
         for cluster_label, mr in misclassification_rates.items():
             if mr >= 1 - self.misclassification_threshold:
-                cluster_indices = np.where(class_cluster_labels == cluster_label)[0]
-                is_poisoned[cluster_indices] = 1
+                cluster_indices = np.where(self.class_cluster_labels == cluster_label)[0]
+                self.is_clean[cluster_indices] = 0
 
-        return dict(), is_poisoned
+        return dict(), self.is_clean
+
 
 def get_reducer(reduce: ReducerType, nb_dims: int):
     """Initialize the right reducer based on the selected type."""

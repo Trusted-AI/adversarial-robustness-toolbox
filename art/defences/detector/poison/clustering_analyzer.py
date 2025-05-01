@@ -42,8 +42,11 @@ class ClusterAnalysisType(Enum):
 
 def get_cluster_analyzer(cluster_analysis_type: ClusterAnalysisType):
     """
-    :param cluster_analysis_type:
-    :return:
+    Returns the appropriate cluster analyzer function based on the analysis type.
+
+    :param cluster_analysis_type: The type of cluster analysis to perform
+    :return: A function that performs the specified type of cluster analysis
+    :raises ValueError: If there is no analyzer function for the provided cluster analysis type
     """
     analyzers = {
         ClusterAnalysisType.SMALLER: analyze_by_size,
