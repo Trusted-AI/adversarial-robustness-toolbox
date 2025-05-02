@@ -653,7 +653,7 @@ class TestFeatureExtraction(unittest.TestCase):
             result = _feature_extraction(self.x_train, model, reducer)
 
             # Assert
-            self.assertEqual((100, 2), result.shape)
+            self.assertEqual((100, 5), result.shape)
             self.assertIsInstance(result, np.ndarray)
 
 
@@ -744,7 +744,7 @@ class TestDetectPoison(unittest.TestCase):
         self.mock_classifier_model = MagicMock()
 
         # Setup for mock feature extraction
-        self.mock_features = np.random.randn(100, 2)  # Reduced to 2D
+        self.mock_features = np.random.randn(100, 5)
 
         # Common patches for all tests
         self.patches = [
