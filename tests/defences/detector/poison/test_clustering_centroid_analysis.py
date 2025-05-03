@@ -40,7 +40,7 @@ from tensorflow.python.keras import Model, Sequential, Input
 from tensorflow.python.keras.layers import Dense
 from umap import UMAP
 
-from art.defences.detector.poison.clustering_centroid_analysis import get_reducer, get_scaler, get_clusterer, \
+from art.defences.detector.poison.clustering_centroid_analysis import get_reducer, get_clusterer, \
     ClusteringCentroidAnalysis, _calculate_centroid, _class_clustering, _feature_extraction, _cluster_classes, \
     _encode_labels
 from art.defences.detector.poison.utils import ReducerType, ScalerType, ClustererType
@@ -240,7 +240,6 @@ class TestInitialization(unittest.TestCase):
         self.assertTrue(np.array_equal(cca.benign_indices, self.benign_indices))
         self.assertEqual(self.misclassification_threshold, cca.misclassification_threshold)
         self.is_valid_reducer(cca.reducer)
-        self.is_valid_scaler(cca.scaler)
         self.is_valid_clusterer(cca.clusterer)
         self.assertTrue(np.array_equal(cca.x_benign, self.x_train[[0, 2]]))
         self.assertTrue(np.array_equal(cca.y_benign, self.y_train[[0, 2]]))
@@ -657,7 +656,7 @@ class TestFeatureExtraction(unittest.TestCase):
             self.assertIsInstance(result, np.ndarray)
 
 
-class TestReducersScalersClusterers(unittest.TestCase):
+class TestReducersClusterers(unittest.TestCase):
     """
     Suite of tests for the valid and invalid utils used in :class: ``ClusteringCentroidAnalysis``
     """
@@ -678,23 +677,6 @@ class TestReducersScalersClusterers(unittest.TestCase):
             with self.subTest(invalid=invalid):
                 with self.assertRaises(ValueError):
                     get_reducer(invalid, nb_dims=5)
-
-    def test_get_scaler_valid(self):
-        scaler_cases = [
-            (ScalerType.STANDARD, StandardScaler),
-            (ScalerType.MINMAX, MinMaxScaler),
-            (ScalerType.ROBUST, RobustScaler),
-        ]
-        for scaler_type, expected in scaler_cases:
-            with self.subTest(scaler=scaler_type):
-                scaler = get_scaler(scaler_type)
-                self.assertIsInstance(scaler, expected)
-
-    def test_get_scaler_invalid(self):
-        for invalid in ["INVALID", None]:
-            with self.subTest(invalid=invalid):
-                with self.assertRaises(ValueError):
-                    get_scaler(invalid)
 
     def test_get_clusterer_valid(self):
         clusterer_cases = [

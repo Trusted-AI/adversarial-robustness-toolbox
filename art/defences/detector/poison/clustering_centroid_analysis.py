@@ -26,13 +26,12 @@ from art.defences.detector.poison.ground_truth_evaluator import GroundTruthEvalu
 from sklearn.base import ClusterMixin
 from sklearn.cluster import DBSCAN
 from sklearn.decomposition import FastICA, PCA
-from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
 from tensorflow.python.keras import Model, Input
 from umap import UMAP
 
 from art.defences.detector.poison.clustering_analyzer import ClusterAnalysisType
 from art.defences.detector.poison.poison_filtering_defence import PoisonFilteringDefence
-from art.defences.detector.poison.utils import ReducerType, ScalerType, ClustererType
+from art.defences.detector.poison.utils import ReducerType, ClustererType
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_NEURALNETWORK_TYPE, CLASSIFIER_TYPE
@@ -224,6 +223,8 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
             benign_indices: np.array,
             final_feature_layer_name: str,
             misclassification_threshold: float,
+            reducer = UMAP(n_components=2, random_state=42),
+            clusterer = DBSCAN(eps=0.8, min_samples=20)
     ):
         """
         creates a :class: `ClusteringCentroidAnalysis` object for the given classifier
@@ -237,9 +238,8 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
         """
         logger.info("Loading variables into CCA...")
         super().__init__(classifier, x_train, y_train)
-        self.reducer = get_reducer(ReducerType.UMAP, nb_dims=2)
-        self.scaler = get_scaler(ScalerType.STANDARD)
-        self.clusterer = get_clusterer(ClustererType.DBSCAN)
+        self.reducer = reducer
+        self.clusterer = clusterer
         self.benign_indices = benign_indices
         self.y_train, self.unique_classes, self.class_mapping, self.reverse_class_mapping = _encode_labels(y_train)
 
@@ -359,18 +359,6 @@ def get_reducer(reduce: ReducerType, nb_dims: int):
         return UMAP(n_components=nb_dims, random_state=42)  # TODO: should I remove the random state?
 
     raise ValueError(f"{reduce} dimensionality reduction method not supported.")
-
-
-def get_scaler(scaler_type: ScalerType):
-    """Initialize the right scaler based on the selected type."""
-    if scaler_type == ScalerType.STANDARD:
-        return StandardScaler()
-    if scaler_type == ScalerType.MINMAX:
-        return MinMaxScaler()
-    if scaler_type == ScalerType.ROBUST:
-        return RobustScaler()
-
-    raise ValueError(f"{scaler_type} scaling method not supported.")
 
 
 def get_clusterer(clusterer_type: ClustererType) -> ClusterMixin:
