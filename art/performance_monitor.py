@@ -33,6 +33,21 @@ try:
 except ImportError:
     HAS_TORCH = False
 
+# GPU monitoring using NVIDIA NVML
+try:
+    from pynvml import nvmlInit, nvmlDeviceGetCount, nvmlDeviceGetHandleByIndex, nvmlDeviceGetUtilizationRates, nvmlDeviceGetMemoryInfo
+    nvmlInit()
+    HAS_NVML = True
+    GPU_COUNT = nvmlDeviceGetCount()
+except ImportError as e:
+    HAS_NVML = False
+    GPU_COUNT = 0
+    print(f"Warning: pynvml not installed. GPU monitoring will be disabled. Error: {e}")
+except Exception as e:
+    HAS_NVML = False
+    GPU_COUNT = 0
+    print(f"Warning: Error initializing NVML. GPU monitoring might be unavailable. Error: {e}")
+
 
 class ResourceMonitor:
     """
@@ -55,13 +70,7 @@ class ResourceMonitor:
         self.process = psutil.Process(os.getpid())
 
         # Check for GPU availability
-        self.has_gpu = False
-        if HAS_GPUTIL:
-            self.has_gpu = len(gputil.getGPUs()) > 0
-        elif HAS_TENSORFLOW:
-            self.has_gpu = len(tf.config.list_physical_devices('GPU')) > 0
-        elif HAS_TORCH:
-            self.has_gpu = torch.cuda.is_available()
+        self.has_gpu = HAS_NVML and GPU_COUNT > 0
 
     def start(self) -> None:
         """Start monitoring resources in a background thread."""
@@ -91,42 +100,21 @@ class ResourceMonitor:
             # Timestamp
             self.timestamps.append(time.time())
 
-            # GPU usage if available
+            # GPUs
             if self.has_gpu:
-                try:
-                    gpu_usage, gpu_memory = self._get_gpu_stats()
-                    self.gpu_usages.append(gpu_usage)
-                    self.gpu_memories.append(gpu_memory)
-                except Exception:
-                    self.gpu_usages.append(0)
-                    self.gpu_memories.append(0)
+                usages = []
+                memories = []
+                for i in range(GPU_COUNT):
+                    handle = nvmlDeviceGetHandleByIndex(i)
+                    util = nvmlDeviceGetUtilizationRates(handle)
+                    mem_info = nvmlDeviceGetMemoryInfo(handle)
+                    usages.append(util.gpu)
+                    # use used memory in MB
+                    memories.append(mem_info.used / (1024**2))
+                self.gpu_usages.append(usages)
+                self.gpu_memories.append(memories)
 
             time.sleep(self.interval)
-
-    def _get_gpu_stats(self) -> Tuple[float, float]:
-        """
-        Get GPU utilization and memory usage.
-
-        :return: Tuple of (GPU utilization percentage, GPU memory usage in MB)
-        """
-        if HAS_GPUTIL:
-            gpus = gputil.getGPUs()
-            if gpus:
-                return gpus[0].load * 100, gpus[0].memoryUsed
-        elif HAS_TENSORFLOW:
-            try:
-                # TensorFlow doesn't directly expose GPU utilization
-                memory_info = tf.config.experimental.get_memory_info('GPU:0')
-                memory_mb = memory_info['current'] / (1024 * 1024)
-                return 0, memory_mb
-            except:
-                pass
-        elif HAS_TORCH and torch.cuda.is_available():
-            # PyTorch doesn't directly expose GPU utilization
-            memory_mb = torch.cuda.memory_allocated() / (1024 * 1024)
-            return 0, memory_mb
-
-        return 0, 0
 
     def get_data(self) -> Dict[str, List[float]]:
         """
@@ -164,12 +152,16 @@ class ResourceMonitor:
             'memory_mb_max': np.max(data['memory_mb']) if data['memory_mb'] else 0,
         }
 
-        if self.has_gpu and 'gpu_percent' in data:
-            summary['gpu_percent_mean'] = np.mean(data['gpu_percent']) if data['gpu_percent'] else 0
-            summary['gpu_percent_max'] = np.max(data['gpu_percent']) if data['gpu_percent'] else 0
-            summary['gpu_memory_mb_mean'] = np.mean(data['gpu_memory_mb']) if data['gpu_memory_mb'] else 0
-            summary['gpu_memory_mb_max'] = np.max(data['gpu_memory_mb']) if data['gpu_memory_mb'] else 0
-
+        if self.has_gpu:
+            # flatten across samples and GPUs
+            all_gpu = np.array(self.gpu_usages)
+            all_mem = np.array(self.gpu_memories)
+            summary.update({
+                'gpu_percent_mean': float(np.mean(all_gpu)),
+                'gpu_percent_max': float(np.max(all_gpu)),
+                'gpu_memory_mb_mean': float(np.mean(all_mem)),
+                'gpu_memory_mb_max': float(np.max(all_mem)),
+            })
         return summary
 
     def plot_results(self, title: Optional[str] = None) -> Optional[Any]:
