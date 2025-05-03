@@ -212,6 +212,23 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
 
         return feature_representation_model, classifying_submodel
 
+    def get_clusters(self) -> np.array:
+        """
+        :return: np.array with m+1 columns, where m is dimensionality of the dimensionality reducer's output.
+            m columns are used for feature representations and the last column is used for cluster label.
+        """
+        # Ensure features have been reduced and clustering has been performed
+        if not hasattr(self, "features_reduced") or self.features_reduced is None:
+            raise ValueError("Features have not been reduced yet. Run detect_poison first.")
+
+        if not hasattr(self, "class_cluster_labels") or self.class_cluster_labels is None:
+            raise ValueError("Clustering has not been performed yet. Run detect_poison first.")
+
+        # Create the output array with features and cluster labels
+        # The cluster labels should be added as the last column
+        result = np.column_stack((self.features_reduced, self.class_cluster_labels))
+
+        return result
 
     # TODO: MAP THE ENCODINGS
     # NP ARGMAX IN THE LAST LAYER
@@ -296,12 +313,12 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
 
         self.is_clean = np.ones(len(self.y_train))
 
-        features = _feature_extraction(self.x_train, self.feature_representation_model, self.reducer)
-        features_reduced = self.reducer.fit_transform(features)
+        self.features = _feature_extraction(self.x_train, self.feature_representation_model, self.reducer)
+        self.features_reduced = self.reducer.fit_transform(self.features)
 
         self.class_cluster_labels, self.cluster_class_mapping = _cluster_classes(self.y_train,
                                                                        self.unique_classes,
-                                                                       features_reduced,
+                                                                       self.features_reduced,
                                                                        self.clusterer)
 
         # outliers are poisoned
@@ -314,7 +331,7 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
         # for each cluster found for each target class
         for label in np.unique(self.class_cluster_labels[self.class_cluster_labels != -1]):
             real_centroids[label] = _calculate_centroid(np.where(self.class_cluster_labels == label)[0],
-                                                        features)
+                                                        self.features)
 
         logging.info("Calculating benign centroids...")
         benign_centroids = dict()
@@ -325,7 +342,7 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
         for class_label in self.unique_classes:
             benign_class_indices = np.intersect1d(self.benign_indices, np.where(self.y_train == class_label)[0])
             benign_centroids[class_label] = _calculate_centroid(benign_class_indices, #FIXME: this is wrong. y_benign has different dimensions and features extracted wont be the same
-                                                                features)
+                                                                self.features)
 
         logging.info("Calculating misclassification rates...")
         misclassification_rates = dict()
@@ -346,7 +363,7 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
                 cluster_indices = np.where(self.class_cluster_labels == cluster_label)[0]
                 self.is_clean[cluster_indices] = 0
 
-        return dict(), self.is_clean
+        return dict(), self.is_clean.copy()
 
 
 def get_reducer(reduce: ReducerType, nb_dims: int):
