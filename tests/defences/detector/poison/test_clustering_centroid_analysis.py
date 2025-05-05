@@ -21,9 +21,7 @@ from unittest.mock import MagicMock, patch
 
 import tensorflow as tf
 from sklearn.base import ClusterMixin
-from tensorflow.python.keras.metrics import Precision, Recall, AUC
-
-tf.compat.v1.disable_eager_execution()
+from tensorflow.keras.metrics import Precision, Recall, AUC
 
 import logging
 import unittest
@@ -32,18 +30,17 @@ from typing import Union
 import numpy as np
 import pandas as pd
 
-from art.estimators.classification import KerasClassifier
+from art.estimators.classification import KerasClassifier, TensorFlowV2Classifier
 from sklearn.cluster import DBSCAN
 from sklearn.decomposition import FastICA, PCA
-from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
-from tensorflow.python.keras import Model, Sequential, Input
-from tensorflow.python.keras.layers import Dense
+from tensorflow.keras import Model, Sequential, Input
+from tensorflow.keras.layers import Dense
 from umap import UMAP
 
 from art.defences.detector.poison.clustering_centroid_analysis import get_reducer, get_clusterer, \
     ClusteringCentroidAnalysis, _calculate_centroid, _class_clustering, _feature_extraction, _cluster_classes, \
     _encode_labels
-from art.defences.detector.poison.utils import ReducerType, ScalerType, ClustererType
+from art.defences.detector.poison.utils import ReducerType, ClustererType
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -76,7 +73,14 @@ def train_art_keras_classifier(x_train: Union[pd.DataFrame, np.ndarray] , y_trai
     mlp_model = _create_mlp_model(x_train.shape[1], model_name)
 
     # Create the ART KerasClassifier wrapper
-    mlp_classifier = KerasClassifier(model=mlp_model, use_logits=False)
+    mlp_classifier = TensorFlowV2Classifier(
+        model=mlp_model,
+        loss_object=tf.keras.losses.CategoricalCrossentropy(from_logits=False),
+        optimizer=tf.keras.optimizers.Adam(learning_rate=0.001),
+        nb_classes=2,  # Ensure this is set correctly
+        input_shape=(x_train.shape[1],)
+    )
+
 
     # Requires ndarrays, so the dataframes are transformed
     x_values = x_train.values if type(x_train) == pd.DataFrame else x_train
@@ -131,7 +135,12 @@ class TestInitialization(unittest.TestCase):
         self.mock_model.compile(optimizer='adam', loss='binary_crossentropy')
         self.mock_model.fit(self.x_train, self.y_train, epochs=1) # Train for a few steps
 
-        self.mock_classifier = KerasClassifier(model=self.mock_model, use_logits=False)
+        self.mock_classifier = TensorFlowV2Classifier(
+            model=self.mock_model,
+            loss_object=tf.keras.losses.CategoricalCrossentropy(from_logits=False),
+            optimizer=tf.keras.optimizers.Adam(learning_rate=0.001),
+            nb_classes=2, input_shape=(10,)
+        )
 
     def is_valid_scaler(self, obj):
         """Check if an object is a valid scaler."""
@@ -176,39 +185,31 @@ class TestInitialization(unittest.TestCase):
 
         # Verify model types and names
         self.assertIsInstance(feature_model, Model)
-        self.assertIsInstance(classify_model, Model)
+        self.assertIsInstance(classify_model, Sequential)
         self.assertEqual('feature_representation_model', feature_model.name)
         self.assertEqual('classifying_submodel', classify_model.name)
-
-        # Get the TensorFlow session
-        if hasattr(tf.keras.backend, 'get_session'):
-            sess = tf.keras.backend.get_session()
-        else:
-            sess = tf.compat.v1.keras.backend.get_session()
 
         # Create a test input and get reference output
         sample_input = np.random.rand(1, 10)
 
-        # Get the original model output using the session
-        with sess.as_default():
-            sample_output = self.mock_classifier.model.predict(sample_input)
+        sample_output = self.mock_classifier.model.predict(sample_input)
 
-            # Get feature representation
-            feature_value = feature_model.predict(sample_input)
+        # Get feature representation
+        feature_value = feature_model.predict(sample_input)
 
-            # Verify intermediate feature shape is compatible with classifier input
-            self.assertEqual(classify_model.input_shape[1], feature_value.shape[1],
-                             "Feature sub model output and classifying sub model input do not match.")
+        # Verify intermediate feature shape is compatible with classifier input
+        self.assertEqual(classify_model.input_shape[1], feature_value.shape[1],
+                         "Feature sub model output and classifying sub model input do not match.")
 
-            # Predict with classifier submodel
-            final_value = classify_model.predict(feature_value)
+        # Predict with classifier submodel
+        final_value = classify_model.predict(feature_value)
 
-            # Verify output shapes match
-            self.assertEqual(sample_output.shape, final_value.shape)
+        # Verify output shapes match
+        self.assertEqual(sample_output.shape, final_value.shape)
 
-            # Due to TensorFlow non-eager mode, we might have numerical differences
-            # We test that the outputs are approximately equal with a reasonable tolerance
-            np.testing.assert_allclose(sample_output, final_value, rtol=1e-3, atol=1e-3)
+        # Due to TensorFlow non-eager mode, we might have numerical differences
+        # We test that the outputs are approximately equal with a reasonable tolerance
+        np.testing.assert_allclose(sample_output, final_value, rtol=1e-3, atol=1e-3)
 
 
     def test_extract_submodels_invalid_layer(self):
@@ -244,7 +245,7 @@ class TestInitialization(unittest.TestCase):
         self.assertTrue(np.array_equal(cca.x_benign, self.x_train[[0, 2]]))
         self.assertTrue(np.array_equal(cca.y_benign, self.y_train[[0, 2]]))
         self.assertIsInstance(cca.feature_representation_model, Model)
-        self.assertIsInstance(cca.classifying_submodel, Model)
+        self.assertIsInstance(cca.classifying_submodel, Sequential)
         self.assertEqual({0, 1}, cca.unique_classes)
 
     def test_init_empty_benign_indices(self):

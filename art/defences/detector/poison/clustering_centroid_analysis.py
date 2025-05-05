@@ -22,11 +22,12 @@ from typing import TYPE_CHECKING
 
 import tensorflow as tf
 import numpy as np
+from tensorflow.keras import Model, Sequential
+
 from art.defences.detector.poison.ground_truth_evaluator import GroundTruthEvaluator
 from sklearn.base import ClusterMixin
 from sklearn.cluster import DBSCAN
 from sklearn.decomposition import FastICA, PCA
-from tensorflow.python.keras import Model, Input
 from umap import UMAP
 
 from art.defences.detector.poison.clustering_analyzer import ClusterAnalysisType
@@ -179,12 +180,6 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
         if not hasattr(final_feature_layer, 'activation') or final_feature_layer.activation != tf.keras.activations.relu:
             raise ValueError(f"Final feature layer '{final_feature_layer_name}' must have a ReLU activation.")
 
-        # Get the current TensorFlow session
-        if hasattr(tf.keras.backend, 'get_session'):
-            sess = tf.keras.backend.get_session()
-        else:
-            sess = tf.compat.v1.keras.backend.get_session()
-
         # Create a feature representation submodel with weight sharing
         feature_representation_model = Model(
             inputs=keras_model.inputs,
@@ -192,23 +187,15 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
             name="feature_representation_model"
         )
 
-        # Get the shape of the feature layer output (excluding batch dimension)
-        intermediate_shape = feature_representation_model.output_shape[1:]
-
-        # Create input for the classifier submodel
-        classifier_input = Input(shape=intermediate_shape, name="classifier_input")
-
-        # Copy the architecture of the remaining layers
-        x = classifier_input
-        for layer in keras_model.layers[keras_model.layers.index(final_feature_layer) + 1:]:
-            x = layer(x)
+        final_feature_layer_index = keras_model.layers.index(final_feature_layer)
+        classifier_submodel_layers = keras_model.layers[final_feature_layer_index + 1:]
 
         # Create the classifier submodel
-        classifying_submodel = Model(inputs=classifier_input, outputs=x, name="classifying_submodel")
+        classifying_submodel = Sequential(classifier_submodel_layers, name="classifying_submodel")
 
-        # Initialize variables for the new models
-        with sess.as_default():
-            sess.run(tf.compat.v1.global_variables_initializer())
+        intermediate_shape = feature_representation_model.output_shape[1:]
+        dummy_input = tf.zeros((1,) + intermediate_shape)
+        classifying_submodel(dummy_input)
 
         return feature_representation_model, classifying_submodel
 
