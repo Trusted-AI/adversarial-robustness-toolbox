@@ -221,7 +221,7 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
 
         intermediate_shape = feature_representation_model.output_shape[1:]
         dummy_input = tf.zeros((1,) + intermediate_shape)
-        classifying_submodel(dummy_input)
+        classifying_submodel(dummy_input, training=False)
 
         return feature_representation_model, classifying_submodel
 
@@ -307,20 +307,97 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
 
 
     def _calculate_misclassification_rate(self, class_label: int, deviation: np.array) -> np.float64:
+        """
+        Calculate the misclassification rate when applying a deviation to other classes.
+
+        Args:
+            class_label: The class label for which the deviation is calculated
+            deviation: The deviation vector to apply
+
+        Returns:
+            The misclassification rate (0.0 to 1.0)
+        """
+        # Convert deviation to a tensor once
+        deviation_tf = tf.convert_to_tensor(deviation, dtype=tf.float32)
+
+        # Get a sample to determine the input shape
+        sample_data = self.x_benign[0:1]
+        sample_shape = sample_data.shape[1:]  # Get shape excluding batch dimension
+
+        # Define optimized prediction functions with tf.function
+        @tf.function(input_signature=[tf.TensorSpec(shape=[None, *sample_shape], dtype=tf.float32)])
+        def extract_features(x):
+            return self.feature_representation_model(x, training=False)
+
+        # The feature shape depends on the feature_representation_model output
+        # We need to run once to get the output shape
+        sample_features = self.feature_representation_model.predict(sample_data)
+        feature_shape = sample_features.shape[1:]
+
+        @tf.function(input_signature=[
+            tf.TensorSpec(shape=[None, *feature_shape], dtype=tf.float32),
+            tf.TensorSpec(shape=deviation.shape, dtype=tf.float32)
+        ])
+        def predict_with_deviation(features, deviation):
+            # Add deviation to features
+            deviated_features = features + deviation
+            # Get predictions from classifying submodel
+            predictions = self.classifying_submodel(deviated_features, training=False)
+            return predictions
+
         total_elements = 0
         misclassified_elements = 0
 
-        for other_class_label in self.unique_classes - {class_label}:
-            other_class_data = self.x_benign[self.y_benign == other_class_label]
+        # Get all classes except the current one
+        other_classes = self.unique_classes - {class_label}
+
+        # Process each class
+        for other_class_label in other_classes:
+            # Get data for this class
+            other_class_mask = self.y_benign == other_class_label
+            other_class_data = self.x_benign[other_class_mask]
+
+            if len(other_class_data) == 0:
+                continue
+
             total_elements += len(other_class_data)
 
-            deviated_features = self.feature_representation_model.predict(other_class_data) + deviation
-            deviated_predictions = np.argmax(self.classifying_submodel.predict(deviated_features), axis=1)
+            # Process in batches to avoid memory issues
+            batch_size = 128  # Adjust based on your GPU memory
+            num_samples = len(other_class_data)
+            num_batches = int(np.ceil(num_samples / batch_size))
 
-            # how many elements of other_class_label are misclassified towards class label if its deviation is applied?
-            misclassified_elements += len(deviated_predictions[deviated_predictions == class_label])
+            class_misclassified = 0
+
+            for i in range(num_batches):
+                start_idx = i * batch_size
+                end_idx = min((i + 1) * batch_size, num_samples)
+                batch_data = other_class_data[start_idx:end_idx]
+
+                # Convert to tensor
+                batch_data_tf = tf.convert_to_tensor(batch_data, dtype=tf.float32)
+
+                # Extract features
+                features = extract_features(batch_data_tf)
+
+                # Get predictions with deviation
+                predictions = predict_with_deviation(features, deviation_tf)
+
+                # Convert predictions to class indices
+                pred_classes = tf.argmax(predictions, axis=1).numpy()
+
+                # Count misclassifications (predicted as class_label)
+                batch_misclassified = np.sum(pred_classes == class_label)
+                class_misclassified += batch_misclassified
+
+            misclassified_elements += class_misclassified
+
+        # Avoid division by zero
+        if total_elements == 0:
+            return np.float64(0.0)
 
         return np.float64(misclassified_elements) / np.float64(total_elements)
+
 
     def detect_poison(self, **kwargs) -> (dict, list[int]):
 
