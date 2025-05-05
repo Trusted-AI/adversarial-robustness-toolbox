@@ -642,19 +642,12 @@ class TestFeatureExtraction(unittest.TestCase):
         ])
         model.compile(optimizer='adam', loss='mse')
 
-        # Use different reducers
-        reducers = [
-            PCA(n_components=2),
-            FastICA(n_components=2, max_iter=100)
-        ]
+        # Execute
+        result = _feature_extraction(self.x_train, model)
 
-        for reducer in reducers:
-            # Execute
-            result = _feature_extraction(self.x_train, model, reducer)
-
-            # Assert
-            self.assertEqual((100, 5), result.shape)
-            self.assertIsInstance(result, np.ndarray)
+        # Assert
+        self.assertEqual((100, 5), result.shape)
+        self.assertIsInstance(result, np.ndarray)
 
 
 class TestReducersClusterers(unittest.TestCase):

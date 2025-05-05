@@ -53,6 +53,9 @@ def _encode_labels(y: np.array) -> (np.array, set, np.array, dict):
     unique_classes = set(reverse_mapping.values())
     return y_encoded, unique_classes, label_mapping, reverse_mapping
 
+@tf.function(reduce_retracing=True)
+def _calculate_centroid_tf(features):
+    return tf.reduce_mean(features, axis=0)
 
 def _calculate_centroid(selected_indices: np.ndarray, features: np.array) -> np.ndarray:
     """
@@ -63,7 +66,9 @@ def _calculate_centroid(selected_indices: np.ndarray, features: np.array) -> np.
     :return: d-dimensional numpy array
     """
     selected_features = features[selected_indices]
-    return np.mean(selected_features, axis=0)
+    features_tf = tf.convert_to_tensor(selected_features, dtype=tf.float32)
+    centroid = _calculate_centroid_tf(features_tf)
+    return centroid.numpy()
 
 def _class_clustering(y: np.array, features: np.array, label: any, clusterer: ClusterMixin) -> (np.array, np.array):
     """
@@ -80,20 +85,41 @@ def _class_clustering(y: np.array, features: np.array, label: any, clusterer: Cl
     cluster_labels = clusterer.fit_predict(selected_features)
     return cluster_labels, selected_indices
 
-def _feature_extraction(x_train: np.array, feature_representation_model: Model, reducer: any) -> np.ndarray:
+def _feature_extraction(x_train: np.array, feature_representation_model: Model) -> np.ndarray:
     """
-    Extracts the feature representations of the training data
+    Extract features from the model using the feature representation sub model.
 
-    :return: Ordered dataframe with a "class" column for the true label and "cluster_labels" column
-    for the cluster labels for each data point from the training data.
+    :param x_train: numpy array d-dimensional features for n data entries. Features are extracted from here
+    :return: features. numpy array of features
     """
-    logging.info("Extracting feature representations...")
-    # TODO: find critical layer using https://arxiv.org/pdf/2302.12758
-    features = feature_representation_model.predict(x_train)
+    # Convert data to TensorFlow tensors if needed
+    if not isinstance(x_train, tf.Tensor):
+        data = tf.convert_to_tensor(x_train, dtype=tf.float32)
 
-    # Reduces clustering time and mitigates dimensionality clustering problems
-    # TODO: what to do about the reducer? Idea: used reduced features for clustering, then return to normal features
-    return features
+    # Apply tf.function to the feature extraction for better performance
+    @tf.function
+    def extract_features(x):
+        return feature_representation_model(x, training=False)
+
+    # Process in batches to avoid memory issues
+    batch_size = 256
+    num_batches = int(np.ceil(len(data) / batch_size))
+    features = []
+
+    for i in range(num_batches):
+        start_idx = i * batch_size
+        end_idx = min((i + 1) * batch_size, len(data))
+        batch = data[start_idx:end_idx]
+        batch_features = extract_features(batch)
+        features.append(batch_features)
+
+    # Concatenate all batches
+    if len(features) > 1:
+        features = tf.concat(features, axis=0)
+    else:
+        features = features[0]
+
+    return features.numpy()
 
 
 def _cluster_classes(y_train: np.array, unique_classes: set[int], features: np.array, clusterer: ClusterMixin) -> (np.array, dict):
@@ -300,7 +326,7 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
 
         self.is_clean = np.ones(len(self.y_train))
 
-        self.features = _feature_extraction(self.x_train, self.feature_representation_model, self.reducer)
+        self.features = _feature_extraction(self.x_train, self.feature_representation_model)
         self.features_reduced = self.reducer.fit_transform(self.features)
 
         self.class_cluster_labels, self.cluster_class_mapping = _cluster_classes(self.y_train,
