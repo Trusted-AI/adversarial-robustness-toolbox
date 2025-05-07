@@ -38,6 +38,7 @@ if TYPE_CHECKING:
     from art.utils import CLASSIFIER_NEURALNETWORK_TYPE, CLASSIFIER_TYPE
 
 logger = logging.getLogger(__name__)
+tf.get_logger().setLevel(logging.WARN)
 
 def _encode_labels(y: np.array) -> (np.array, set, np.array, dict):
     """
@@ -85,6 +86,10 @@ def _class_clustering(y: np.array, features: np.array, label: any, clusterer: Cl
     cluster_labels = clusterer.fit_predict(selected_features)
     return cluster_labels, selected_indices
 
+@tf.function
+def _calculate_features(feature_representation_model, x):
+    return feature_representation_model(x, training=False)
+
 def _feature_extraction(x_train: np.array, feature_representation_model: Model) -> np.ndarray:
     """
     Extract features from the model using the feature representation sub model.
@@ -93,13 +98,9 @@ def _feature_extraction(x_train: np.array, feature_representation_model: Model) 
     :return: features. numpy array of features
     """
     # Convert data to TensorFlow tensors if needed
+    data = x_train
     if not isinstance(x_train, tf.Tensor):
         data = tf.convert_to_tensor(x_train, dtype=tf.float32)
-
-    # Apply tf.function to the feature extraction for better performance
-    @tf.function
-    def extract_features(x):
-        return feature_representation_model(x, training=False)
 
     # Process in batches to avoid memory issues
     batch_size = 256
@@ -110,7 +111,7 @@ def _feature_extraction(x_train: np.array, feature_representation_model: Model) 
         start_idx = i * batch_size
         end_idx = min((i + 1) * batch_size, len(data))
         batch = data[start_idx:end_idx]
-        batch_features = extract_features(batch)
+        batch_features = _calculate_features(feature_representation_model, batch)
         features.append(batch_features)
 
     # Concatenate all batches
@@ -203,8 +204,8 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
         except ValueError:
             raise ValueError(f"Layer with name '{final_feature_layer_name}' not found in the model.")
 
-        if not hasattr(final_feature_layer, 'activation') or final_feature_layer.activation != tf.keras.activations.relu:
-            raise ValueError(f"Final feature layer '{final_feature_layer_name}' must have a ReLU activation.")
+        #if not hasattr(final_feature_layer, 'activation') or final_feature_layer.activation != tf.keras.activations.relu:
+            #raise ValueError(f"Final feature layer '{final_feature_layer_name}' must have a ReLU activation.")
 
         # Create a feature representation submodel with weight sharing
         feature_representation_model = Model(
@@ -253,7 +254,7 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
             benign_indices: np.array,
             final_feature_layer_name: str,
             misclassification_threshold: float,
-            reducer = UMAP(n_components=2, random_state=42),
+            reducer = UMAP(n_neighbors=5, min_dist=0, random_state=42),
             clusterer = DBSCAN(eps=0.8, min_samples=20)
     ):
         """
@@ -322,12 +323,6 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
 
         # Get a sample to determine the input shape
         sample_data = self.x_benign[0:1]
-        sample_shape = sample_data.shape[1:]  # Get shape excluding batch dimension
-
-        # Define optimized prediction functions with tf.function
-        @tf.function(input_signature=[tf.TensorSpec(shape=[None, *sample_shape], dtype=tf.float32)])
-        def extract_features(x):
-            return self.feature_representation_model(x, training=False)
 
         # The feature shape depends on the feature_representation_model output
         # We need to run once to get the output shape
@@ -339,8 +334,8 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
             tf.TensorSpec(shape=deviation.shape, dtype=tf.float32)
         ])
         def predict_with_deviation(features, deviation):
-            # Add deviation to features
-            deviated_features = features + deviation
+            # Add deviation to features and pass through ReLu to keep in latent space
+            deviated_features = tf.nn.relu(features + deviation)
             # Get predictions from classifying submodel
             predictions = self.classifying_submodel(deviated_features, training=False)
             return predictions
@@ -350,6 +345,8 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
 
         # Get all classes except the current one
         other_classes = self.unique_classes - {class_label}
+
+        all_features = []
 
         # Process each class
         for other_class_label in other_classes:
@@ -378,7 +375,8 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
                 batch_data_tf = tf.convert_to_tensor(batch_data, dtype=tf.float32)
 
                 # Extract features
-                features = extract_features(batch_data_tf)
+                features = _calculate_features(self.feature_representation_model, batch_data_tf)
+                all_features.append(features)
 
                 # Get predictions with deviation
                 predictions = predict_with_deviation(features, deviation_tf)
@@ -396,6 +394,9 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
         if total_elements == 0:
             return np.float64(0.0)
 
+        all_f_vectors_np = np.concatenate(all_features, axis=0)
+        logger.info(f"MR --> {class_label} , |f| = {np.linalg.norm(np.mean(all_f_vectors_np, axis=0))}: {misclassified_elements} / {total_elements} = {np.float64(misclassified_elements) / np.float64(total_elements)}")
+
         return np.float64(misclassified_elements) / np.float64(total_elements)
 
 
@@ -404,6 +405,12 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
         self.is_clean = np.ones(len(self.y_train))
 
         self.features = _feature_extraction(self.x_train, self.feature_representation_model)
+
+        # FIXME: temporal fix to test other layers
+        if len(self.features.shape) > 2:
+            num_samples = self.features.shape[0]
+            self.features = self.features.reshape(num_samples, -1) # Flattening
+
         self.features_reduced = self.reducer.fit_transform(self.features)
 
         self.class_cluster_labels, self.cluster_class_mapping = _cluster_classes(self.y_train,
@@ -431,7 +438,7 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
         # for each target class
         for class_label in self.unique_classes:
             benign_class_indices = np.intersect1d(self.benign_indices, np.where(self.y_train == class_label)[0])
-            benign_centroids[class_label] = _calculate_centroid(benign_class_indices, #FIXME: this is wrong. y_benign has different dimensions and features extracted wont be the same
+            benign_centroids[class_label] = _calculate_centroid(benign_class_indices,
                                                                 self.features)
 
         logging.info("Calculating misclassification rates...")
@@ -444,14 +451,18 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
 
             # MR^k_i
             # with unique cluster labels for each cluster in each clustering run, the label already maps to a target class
+            logging.info(f"MR (k={cluster_label}, i={class_label}, |d|={np.linalg.norm(deviation)})...")
             misclassification_rates[cluster_label] = self._calculate_misclassification_rate(class_label, deviation)
+            logging.info(f"MR (k={cluster_label}, i={class_label}, |d|={np.linalg.norm(deviation)}) = {misclassification_rates[cluster_label]}")
 
 
         logging.info("Evaluating cluster misclassification...")
         for cluster_label, mr in misclassification_rates.items():
-            if mr >= 1 - self.misclassification_threshold:
+            # FIXME: changed the misclassification threshold
+            if mr >= self.misclassification_threshold:
                 cluster_indices = np.where(self.class_cluster_labels == cluster_label)[0]
                 self.is_clean[cluster_indices] = 0
+                logging.info(f"Cluster k={cluster_label} i={self.cluster_class_mapping[cluster_label]} considered poison ({misclassification_rates[cluster_label]} >= {1 - self.misclassification_threshold})")
 
         return dict(), self.is_clean.copy()
 
