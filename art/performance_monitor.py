@@ -1,14 +1,15 @@
 """
 Performance monitoring utilities for ART benchmarking and testing.
 """
-import time
+import os
 import threading
-from typing import Dict, List, Optional, Tuple, Union, Any
+import time
 from datetime import datetime
+from typing import Dict, List, Optional, Any
+
+import numpy as np
 import pandas as pd
 import psutil
-import os
-import numpy as np
 from matplotlib import pyplot as plt
 
 # GPU monitoring support
@@ -72,6 +73,8 @@ class ResourceMonitor:
         # Check for GPU availability
         self.has_gpu = HAS_NVML and GPU_COUNT > 0
 
+        self.data_lock = threading.Lock()
+
     def start(self) -> None:
         """Start monitoring resources in a background thread."""
         self.stop_flag = False
@@ -88,33 +91,35 @@ class ResourceMonitor:
     def _monitor_resources(self) -> None:
         """Resource monitoring loop that runs in a background thread."""
         while not self.stop_flag:
-            # CPU usage (percent)
-            cpu_percent = self.process.cpu_percent()
-            self.cpu_percentages.append(cpu_percent)
 
-            # Memory usage (MB)
-            memory_info = self.process.memory_info()
-            memory_mb = memory_info.rss / (1024 * 1024)
-            self.memory_usages.append(memory_mb)
+            with self.data_lock:
+                # CPU usage (percent)
+                cpu_percent = self.process.cpu_percent()
+                self.cpu_percentages.append(cpu_percent)
 
-            # Timestamp
-            self.timestamps.append(time.time())
+                # Memory usage (MB)
+                memory_info = self.process.memory_info()
+                memory_mb = memory_info.rss / (1024 * 1024)
+                self.memory_usages.append(memory_mb)
 
-            # GPUs
-            if self.has_gpu:
-                usages = []
-                memories = []
-                for i in range(GPU_COUNT):
-                    handle = nvmlDeviceGetHandleByIndex(i)
-                    util = nvmlDeviceGetUtilizationRates(handle)
-                    mem_info = nvmlDeviceGetMemoryInfo(handle)
-                    usages.append(util.gpu)
-                    # use used memory in MB
-                    memories.append(mem_info.used / (1024**2))
-                self.gpu_usages.append(usages)
-                self.gpu_memories.append(memories)
+                # Timestamp
+                self.timestamps.append(time.time())
 
-            time.sleep(self.interval)
+                # GPUs
+                if self.has_gpu:
+                    usages = []
+                    memories = []
+                    for i in range(GPU_COUNT):
+                        handle = nvmlDeviceGetHandleByIndex(i)
+                        util = nvmlDeviceGetUtilizationRates(handle)
+                        mem_info = nvmlDeviceGetMemoryInfo(handle)
+                        usages.append(util.gpu)
+                        # use used memory in MB
+                        memories.append(mem_info.used / (1024**2))
+                    self.gpu_usages.append(usages)
+                    self.gpu_memories.append(memories)
+
+                time.sleep(self.interval)
 
     def get_data(self) -> Dict[str, List[float]]:
         """
@@ -122,16 +127,42 @@ class ResourceMonitor:
 
         :return: Dictionary containing resource usage time series
         """
-        relative_times = [t - self.timestamps[0] for t in self.timestamps] if self.timestamps else []
-        data = {
-            'time': relative_times,
-            'cpu_percent': self.cpu_percentages,
-            'memory_mb': self.memory_usages,
-        }
+        with self.data_lock:
+            timestamps = self.timestamps.copy()
+            cpu_percentages = self.cpu_percentages.copy()
+            memory_usages = self.memory_usages.copy()
+
+            if self.has_gpu:
+                gpu_usages = self.gpu_usages.copy()
+                gpu_memories = self.gpu_memories.copy()
+
+
+        min_length = min(len(timestamps),
+                         len(cpu_percentages),
+                         len(memory_usages))
+
+        timestamps = [t - timestamps[0] for t in timestamps[:min_length]]
+        cpu_percentages = cpu_percentages[:min_length]
+        memory_usages = memory_usages[:min_length]
+
+        data = {}
 
         if self.has_gpu:
-            data['gpu_percent'] = self.gpu_usages
-            data['gpu_memory_mb'] = self.gpu_memories
+            min_length = min(min_length,
+                             len(gpu_usages),
+                             len(gpu_memories))
+            timestamps = timestamps[:min_length]
+            cpu_percentages = cpu_percentages[:min_length]
+            memory_usages = memory_usages[:min_length]
+            gpu_usages = gpu_usages[:min_length]
+            gpu_memories = gpu_memories[:min_length]
+
+            data['gpu_percent'] = gpu_usages
+            data['gpu_memory_mb'] = gpu_memories
+
+        data['time'] = timestamps
+        data['cpu_percent'] = cpu_percentages
+        data['memory_mb'] = memory_usages
 
         return data
 
