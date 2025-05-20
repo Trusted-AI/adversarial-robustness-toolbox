@@ -402,6 +402,9 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
 
     def detect_poison(self, **kwargs) -> (dict, list[int]):
 
+        # saves important information about the algorithm execution for further analysis
+        report = dict()
+
         self.is_clean = np.ones(len(self.y_train))
 
         self.features = _feature_extraction(self.x_train, self.feature_representation_model)
@@ -422,13 +425,20 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
         outlier_indices = np.where(self.class_cluster_labels == -1)[0]
         self.is_clean[outlier_indices] = 0
 
+        # cluster labels are saved in the report
+        report["cluster_labels"] = self.get_clusters()
+        report["cluster_data"] = dict()
+
         logging.info("Calculating real centroids...")
         real_centroids = dict()
 
         # for each cluster found for each target class
         for label in np.unique(self.class_cluster_labels[self.class_cluster_labels != -1]):
-            real_centroids[label] = _calculate_centroid(np.where(self.class_cluster_labels == label)[0],
-                                                        self.features)
+            selected_elements = np.where(self.class_cluster_labels == label)[0]
+            real_centroids[label] = _calculate_centroid(selected_elements, self.features)
+
+            report["cluster_data"][label] = dict()
+            report["cluster_data"][label]["size"] = len(selected_elements)
 
         logging.info("Calculating benign centroids...")
         benign_centroids = dict()
@@ -451,9 +461,13 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
 
             # MR^k_i
             # with unique cluster labels for each cluster in each clustering run, the label already maps to a target class
-            logging.info(f"MR (k={cluster_label}, i={class_label}, |d|={np.linalg.norm(deviation)})...")
             misclassification_rates[cluster_label] = self._calculate_misclassification_rate(class_label, deviation)
             logging.info(f"MR (k={cluster_label}, i={class_label}, |d|={np.linalg.norm(deviation)}) = {misclassification_rates[cluster_label]}")
+
+            report["cluster_data"][cluster_label]["centroid_l2"] = np.linalg.norm(real_centroids[cluster_label])
+            report["cluster_data"][cluster_label]["deviation_l2"] = np.linalg.norm(deviation)
+            report["cluster_data"][cluster_label]["class"] = class_label
+            report["cluster_data"][cluster_label]["misclassification_rate"] = misclassification_rates[cluster_label]
 
 
         logging.info("Evaluating cluster misclassification...")
@@ -464,7 +478,7 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
                 self.is_clean[cluster_indices] = 0
                 logging.info(f"Cluster k={cluster_label} i={self.cluster_class_mapping[cluster_label]} considered poison ({misclassification_rates[cluster_label]} >= {1 - self.misclassification_threshold})")
 
-        return dict(), self.is_clean.copy()
+        return report, self.is_clean.copy()
 
 
 def get_reducer(reduce: ReducerType, nb_dims: int):
