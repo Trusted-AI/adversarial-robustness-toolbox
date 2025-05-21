@@ -23,7 +23,7 @@ if TYPE_CHECKING:
     import torch
 
 
-def box_iou(boxes1: torch.Tensor, boxes2: torch.Tensor, eps: float = 1e-7) -> torch.Tensor:
+def box_iou(boxes1: "torch.Tensor", boxes2: "torch.Tensor", eps: float = 1e-7) -> "torch.Tensor":
     """
     Compute the Intersection over Union (IoU) between two sets of bounding boxes.
 
@@ -33,6 +33,8 @@ def box_iou(boxes1: torch.Tensor, boxes2: torch.Tensor, eps: float = 1e-7) -> to
 
     :return: IoU matrix of shape (N, M) containing pairwise IoU values.
     """
+    import torch
+
     # Expand dimensions for broadcasting
     boxes1 = boxes1.unsqueeze(1)  # (N, 1, 4)
     boxes2 = boxes2.unsqueeze(0)  # (1, M, 4)
