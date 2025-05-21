@@ -52,9 +52,9 @@ jobs:
           pip3 install -r requirements_test.txt
           pip install tensorflow==2.14.0
           pip install keras==2.14.0
-          pip install torch==${{ matrix.torch }} -f https://download.pytorch.org/whl/cpu/torch_stable.html
-          pip install torchvision==${{ matrix.torchvision }} -f https://download.pytorch.org/whl/cpu/torch_stable.html
-          pip install torchaudio==${{ matrix.torchaudio }} -f https://download.pytorch.org/whl/cpu/torch_stable.html
+          pip install torch==${{ matrix.torch }} --index-url https://download.pytorch.org/whl/cpu
+          pip install torchvision==${{ matrix.torchvision }} --index-url https://download.pytorch.org/whl/cpu
+          pip install torchaudio==${{ matrix.torchaudio }} --index-url https://download.pytorch.org/whl/cpu
           pip install transformers==${{ matrix.transformers }}
           pip list
       - name: Run Tests

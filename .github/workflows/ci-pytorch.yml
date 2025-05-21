@@ -56,9 +56,9 @@ jobs:
           python -m pip install --upgrade pip setuptools wheel
           pip3 install -r requirements_test.txt
           pip install -q -r <(sed '/^torch/d;/^torchvision/d;/^torchaudio/d' requirements_test.txt)
-          pip install torch==${{ matrix.torch }} -f https://download.pytorch.org/whl/cpu/torch_stable.html
-          pip install torchvision==${{ matrix.torchvision }} -f https://download.pytorch.org/whl/cpu/torch_stable.html
-          pip install torchaudio==${{ matrix.torchaudio }} -f https://download.pytorch.org/whl/cpu/torch_stable.html
+          pip install torch==${{ matrix.torch }} --index-url https://download.pytorch.org/whl/cpu
+          pip install torchvision==${{ matrix.torchvision }} --index-url https://download.pytorch.org/whl/cpu
+          pip install torchaudio==${{ matrix.torchaudio }} --index-url https://download.pytorch.org/whl/cpu
           pip list
       - name: Run Tests
         run: ./run_tests.sh ${{ matrix.framework }}
