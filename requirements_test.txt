@@ -1,7 +1,7 @@
 # base
 
-numpy>=1.18.5,<1.27
-scipy==1.10.1
+numpy==2.2.6
+scipy==1.15.3
 matplotlib==3.7.1
 scikit-learn==1.4.1.post1
 six==1.17.0
