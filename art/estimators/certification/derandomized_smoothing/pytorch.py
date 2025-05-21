@@ -699,7 +699,9 @@ class PyTorchDeRandomizedSmoothing(DeRandomizedSmoothingMixin, PyTorchClassifier
             if not self.logits:
                 return np.asarray((outputs >= self.threshold))
             return np.asarray(
-                (torch.nn.functional.softmax(torch.from_numpy(outputs), dim=1) >= self.threshold).type(torch.int)  # type: ignore
+                (torch.nn.functional.softmax(torch.from_numpy(outputs), dim=1) >= self.threshold).type(  # type: ignore
+                    torch.int
+                )
             )
         return outputs
 
