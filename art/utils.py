@@ -1575,7 +1575,7 @@ def _extract(full_path: str, path: str) -> bool:
         return False
 
     try:
-        for entry in archive.getmembers():
+        for entry in archive.getmembers():  # type: ignore
             if os.path.isabs(entry.name) or ".." in entry.name:
                 raise ValueError(f"Illegal tar archive entry: {entry.name}")
         archive.extractall(path)
