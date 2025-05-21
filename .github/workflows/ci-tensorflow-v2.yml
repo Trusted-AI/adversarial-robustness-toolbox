@@ -28,13 +28,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: TensorFlow 2.13.1 (Keras 2.13.1 Python 3.10)
-            framework: tensorflow
-            python: '3.10'
-            tensorflow: 2.13.1
-            tf_version: v2
-            keras: 2.13.1
-            tf_addons: 0.21.0
           - name: TensorFlow 2.14.0v1 (Keras 2.14.0 Python 3.10)
             framework: tensorflow2v1
             python: '3.10'
