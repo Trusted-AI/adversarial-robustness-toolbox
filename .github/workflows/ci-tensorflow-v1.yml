@@ -59,7 +59,7 @@ jobs:
           pip install numpy==1.20
           pip install torch==1.13.1
           pip install torchaudio==0.13.1
-          pip install torchvision==0.14.1+cpu
+          pip install torchvision==0.14.1
           pip install Pillow==9.5.0
           pip install h5py==3.8.0
           pip install kornia==0.6.12
