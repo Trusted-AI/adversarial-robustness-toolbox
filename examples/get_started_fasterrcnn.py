@@ -282,7 +282,7 @@ if __name__ == "__main__":
 
     for i in range(config["max_iter"]):
         print("Iteration:", i)
-        patch = attack.generate(x)
+        _ = attack.generate(x)
         x_patch = attack.apply_patch(x)
 
         loss = get_loss(frcnn, x_patch, y)
