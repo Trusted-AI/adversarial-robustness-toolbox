@@ -56,8 +56,6 @@ if TYPE_CHECKING:
     from art.utils import CLASSIFIER_NEURALNETWORK_TYPE
     import torch
 
-_estimator_requirements = (BaseEstimator, ClassifierMixin)
-
 
 def dist2pixels(dist: float, width: float, obj_width: float = 30) -> float:
     """
