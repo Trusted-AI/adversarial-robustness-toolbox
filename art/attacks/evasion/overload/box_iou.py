@@ -40,7 +40,7 @@ def box_iou(boxes1: "torch.Tensor", boxes2: "torch.Tensor", eps: float = 1e-7) -
     boxes2 = boxes2.unsqueeze(0)  # (1, M, 4)
 
     # Calculate coordinates of the intersection rectangle
-    top_left = torch.max(boxes1[..., :2], boxes2[..., :2])   # (N, M, 2)
+    top_left = torch.max(boxes1[..., :2], boxes2[..., :2])  # (N, M, 2)
     bottom_right = torch.min(boxes1[..., 2:], boxes2[..., 2:])  # (N, M, 2)
 
     # Compute width and height of the intersection
