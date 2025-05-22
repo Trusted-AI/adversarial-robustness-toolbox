@@ -37,9 +37,7 @@ from tensorflow.keras import Model, Sequential, Input
 from tensorflow.keras.layers import Dense
 from umap import UMAP
 
-from art.defences.detector.poison.clustering_centroid_analysis import get_reducer, get_clusterer, \
-    ClusteringCentroidAnalysis, _calculate_centroid, _class_clustering, _feature_extraction, _cluster_classes, \
-    _encode_labels
+from art.defences.detector.poison.clustering_centroid_analysis import ClusteringCentroidAnalysis, _calculate_centroid, _class_clustering, _feature_extraction, _cluster_classes, _encode_labels
 from art.defences.detector.poison.utils import ReducerType, ClustererType
 
 logger = logging.getLogger(__name__)
@@ -276,7 +274,7 @@ class TestInitialization(unittest.TestCase):
 
     def test_init_invalid_layer_non_relu(self):
         """Test __init__ with an invalid layer that does not have ReLu activation. Check that it raises error."""
-        with self.assertRaises(ValueError) as e:
+        with self.assertWarns(UserWarning) as w:
             ClusteringCentroidAnalysis(
                 classifier=self.mock_classifier,
                 x_train=self.x_train,
@@ -285,7 +283,9 @@ class TestInitialization(unittest.TestCase):
                 final_feature_layer_name=self.non_relu_intermediate_layer_name,
                 misclassification_threshold=self.misclassification_threshold
             )
-            self.assertEqual(f"Final feature layer '{self.non_relu_intermediate_layer_name}' must have a ReLU activation.", str(e.exception))
+            self.assertEqual(1, len(w.warnings))
+            self.assertEqual(f"Final feature layer '{self.non_relu_intermediate_layer_name}' must have a ReLU activation.",
+                             str(w.warnings[0].message))
 
 class TestEncodeLabels(unittest.TestCase):
 
@@ -648,44 +648,6 @@ class TestFeatureExtraction(unittest.TestCase):
         # Assert
         self.assertEqual((100, 5), result.shape)
         self.assertIsInstance(result, np.ndarray)
-
-
-class TestReducersClusterers(unittest.TestCase):
-    """
-    Suite of tests for the valid and invalid utils used in :class: ``ClusteringCentroidAnalysis``
-    """
-
-    def test_get_reducer_valid(self):
-        reducer_cases = [
-            (ReducerType.FASTICA, FastICA),
-            (ReducerType.PCA, PCA),
-            (ReducerType.UMAP, UMAP),
-        ]
-        for reducer_type, expected in reducer_cases:
-            with self.subTest(reducer=reducer_type):
-                reducer = get_reducer(reducer_type, nb_dims=5)
-                self.assertIsInstance(reducer, expected)
-
-    def test_get_reducer_invalid(self):
-        for invalid in ["INVALID", None]:
-            with self.subTest(invalid=invalid):
-                with self.assertRaises(ValueError):
-                    get_reducer(invalid, nb_dims=5)
-
-    def test_get_clusterer_valid(self):
-        clusterer_cases = [
-            (ClustererType.DBSCAN, DBSCAN),
-        ]
-        for clusterer_type, expected in clusterer_cases:
-            with self.subTest(clusterer=clusterer_type):
-                clusterer = get_clusterer(clusterer_type)
-                self.assertIsInstance(clusterer, expected)
-
-    def test_get_clusterer_invalid(self):
-        for invalid in ["INVALID", None]:
-            with self.subTest(invalid=invalid):
-                with self.assertRaises(ValueError):
-                    get_clusterer(invalid)
 
 
 class TestDetectPoison(unittest.TestCase):

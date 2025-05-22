@@ -18,6 +18,7 @@
 from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
+import warnings
 from typing import TYPE_CHECKING
 
 import tensorflow as tf
@@ -165,15 +166,18 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
 
     """
 
-    _DEFENCE_PARAMS = []
-    _VALID_CLUSTERING = ["DBSCAN"]
-    _VALID_REDUCE = ["UMAP", "PCA"]
-    _VALID_ANALYSIS = [
-        ClusterAnalysisType.SMALLER,
-        ClusterAnalysisType.RELATIVE_SIZE,
-        ClusterAnalysisType.DISTANCE,
-        ClusterAnalysisType.SILHOUETTE_SCORES
+    defence_params = [
+        "classifier",
+        "x_train",
+        "y_train",
+        "benign_indices",
+        "final_feature_layer_name",
+        "misclassification_threshold",
+        "reducer",
+        "clsuterer"
     ]
+    valid_clustering = ["DBSCAN"]
+    valid_reduce = ["UMAP"]
 
     def _get_benign_data(self) -> (np.ndarray, np.ndarray):
         """
@@ -204,8 +208,8 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
         except ValueError:
             raise ValueError(f"Layer with name '{final_feature_layer_name}' not found in the model.")
 
-        #if not hasattr(final_feature_layer, 'activation') or final_feature_layer.activation != tf.keras.activations.relu:
-            #raise ValueError(f"Final feature layer '{final_feature_layer_name}' must have a ReLU activation.")
+        if not hasattr(final_feature_layer, 'activation') or final_feature_layer.activation != tf.keras.activations.relu:
+            warnings.warn(f"Final feature layer '{final_feature_layer_name}' must have a ReLU activation.", UserWarning)
 
         # Create a feature representation submodel with weight sharing
         feature_representation_model = Model(
@@ -479,23 +483,3 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
                 logging.info(f"Cluster k={cluster_label} i={self.cluster_class_mapping[cluster_label]} considered poison ({misclassification_rates[cluster_label]} >= {1 - self.misclassification_threshold})")
 
         return report, self.is_clean.copy()
-
-
-def get_reducer(reduce: ReducerType, nb_dims: int):
-    """Initialize the right reducer based on the selected type."""
-    if reduce == ReducerType.FASTICA:
-        return FastICA(n_components=nb_dims, max_iter=1000, tol=0.005)
-    if reduce == ReducerType.PCA:
-        return PCA(n_components=nb_dims)
-    if reduce == ReducerType.UMAP:
-        return UMAP(n_components=nb_dims, random_state=42)  # TODO: should I remove the random state?
-
-    raise ValueError(f"{reduce} dimensionality reduction method not supported.")
-
-
-def get_clusterer(clusterer_type: ClustererType) -> ClusterMixin:
-    """Initialize the right cluster algorithm (a.k.a., clusterer) based on the selected type. """
-    if clusterer_type == ClustererType.DBSCAN:
-        return DBSCAN(eps=0.8, min_samples=20)
-
-    raise ValueError(f"{clusterer_type} cluster method not supported.")
