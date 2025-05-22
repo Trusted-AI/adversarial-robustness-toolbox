@@ -173,13 +173,13 @@ class PyTorchDeRandomizedSmoothing(DeRandomizedSmoothingMixin, PyTorchClassifier
                     pretrained_cfg = model.pretrained_cfg
                     supplied_state_dict = model.state_dict()
                     supported_models = self.get_models()
-                    if pretrained_cfg["architecture"] not in supported_models:
+                    if pretrained_cfg["architecture"] not in supported_models:  # type: ignore
                         raise ValueError(
                             "Architecture not supported. Use PyTorchDeRandomizedSmoothing.get_models() "
                             "to get the supported model architectures."
                         )
                     model = timm.create_model(
-                        pretrained_cfg["architecture"], drop_tokens=drop_tokens, device_type=device_type
+                        pretrained_cfg["architecture"], drop_tokens=drop_tokens, device_type=device_type  # type: ignore
                     )
                     model.load_state_dict(supplied_state_dict)  # type: ignore
                     if replace_last_layer:
@@ -205,24 +205,24 @@ class PyTorchDeRandomizedSmoothing(DeRandomizedSmoothingMixin, PyTorchClassifier
                 if not isinstance(model, PyTorchVisionTransformer):
                     raise ValueError("Vision transformer is not of PyTorchViT. Error occurred in PyTorchViT creation.")
 
-                if model.default_cfg["input_size"][0] != input_shape[0]:
+                if model.default_cfg["input_size"][0] != input_shape[0]:  # type: ignore
                     raise ValueError(
-                        f'ViT requires {model.default_cfg["input_size"][0]} channel input,'
+                        f'ViT requires {model.default_cfg["input_size"][0]} channel input,'  # type: ignore
                         f" but {input_shape[0]} channels were provided."
                     )
 
-                if model.default_cfg["input_size"] != input_shape:
+                if model.default_cfg["input_size"] != input_shape:  # type: ignore
                     if verbose:
                         logger.warning(
                             " ViT expects input shape of: (%i, %i, %i) but (%i, %i, %i) specified as the input shape."
                             " The input will be rescaled to (%i, %i, %i)",
-                            *model.default_cfg["input_size"],
+                            *model.default_cfg["input_size"],  # type: ignore
                             *input_shape,
-                            *model.default_cfg["input_size"],
+                            *model.default_cfg["input_size"],  # type: ignore
                         )
 
                     self.to_reshape = True
-                output_shape = model.default_cfg["input_size"]
+                output_shape = model.default_cfg["input_size"]  # type: ignore
 
                 # set the method back to avoid unexpected side effects later on should timm need to be reused.
                 timm.models.vision_transformer._create_vision_transformer = tmp_func
