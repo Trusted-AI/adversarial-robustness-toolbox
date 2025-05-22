@@ -5,13 +5,13 @@ scipy==1.10.1
 matplotlib==3.7.1
 scikit-learn==1.6.1
 six==1.17.0
-Pillow==11.0.0
+Pillow==11.1.0
 tqdm==4.67.1
 statsmodels==0.14.2
 pydub==0.25.1
 resampy==0.4.3
 ffmpeg-python==0.2.0
-cma==4.0.0
+cma==4.2.0
 pandas==2.2.3
 librosa==0.10.2.post1
 numba~=0.56.4
@@ -36,14 +36,14 @@ torchaudio==2.5.0
 torchvision==0.20.0
 
 # PyTorch image transformers
-timm==0.9.2
+timm==1.0.15
 
-catboost==1.2.3
-GPy==1.13.1
-lightgbm==4.3.0
+catboost==1.2.7
+GPy==1.13.2
+lightgbm==4.6.0
 xgboost==2.1.1
 
-kornia~=0.7.1
+kornia~=0.8.0
 tensorboardX==2.6.2.2
 lief==0.15.1
 jax[cpu]==0.4.26
@@ -58,10 +58,10 @@ pylint==3.2.6
 mypy==1.11.1
 pycodestyle==2.12.1
 black==24.8.0
-ruff==0.5.5
+ruff==0.9.3
 types-six==1.16.21.9
 types-PyYAML==6.0.12.20240917
-types-setuptools==71.1.0.20240726
+types-setuptools==80.8.0.20250521
 
 # other
 requests~=2.32.3
