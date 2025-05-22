@@ -796,7 +796,7 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
         for i_f, img_file in enumerate(img_files):
             image = Image.open(img_file)
             if not image.mode == "RGB":
-                image = image.convert("RGB")
+                image = image.convert("RGB")  # type: ignore
 
             start_time = time.time()
             if i_f == 0:
