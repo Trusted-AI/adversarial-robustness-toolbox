@@ -17,6 +17,7 @@
 # SOFTWARE.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import json
 from unittest.mock import MagicMock, patch
 
 import tensorflow as tf
@@ -648,6 +649,203 @@ class TestFeatureExtraction(unittest.TestCase):
         # Assert
         self.assertEqual((100, 5), result.shape)
         self.assertIsInstance(result, np.ndarray)
+
+class TestEvaluateDefence(unittest.TestCase):
+    """
+    Unit tests for the evaluate_defence method of the ClusteringCentroidAnalysis class.
+    """
+
+    def setUp(self):
+        """
+        Set up a mock ClusteringCentroidAnalysis object and its necessary attributes.
+        """
+        self.mock_classifier = MagicMock()
+        self.mock_classifier.model = MagicMock()
+
+        # Dummy data for constructor - these values might not be directly used by
+        # evaluate_defence but are needed for instantiation.
+        x_train_dummy = np.array([[1, 2], [3, 4], [5, 6]])
+        y_train_constructor_dummy = np.array(['A', 'B', 'A'])
+        benign_indices_dummy = np.array([0, 2])
+        final_feature_layer_name_dummy = "mock_feature_layer"
+        misclassification_threshold_dummy = 0.1
+
+        # Patch _extract_submodels to avoid complex model setup if it's problematic
+        # and not relevant to evaluate_defence
+        with patch('art.defences.detector.poison.clustering_centroid_analysis.ClusteringCentroidAnalysis._extract_submodels',
+                   return_value=(MagicMock(), MagicMock())) as _:
+            self.defence = ClusteringCentroidAnalysis(
+                classifier=self.mock_classifier,
+                x_train=x_train_dummy,
+                y_train=y_train_constructor_dummy, # Used by _encode_labels in __init__
+                benign_indices=benign_indices_dummy,
+                final_feature_layer_name=final_feature_layer_name_dummy,
+                misclassification_threshold=misclassification_threshold_dummy
+            )
+
+        # The following attributes are set after instantiation to control the test
+        # environment precisely
+
+        self.defence.unique_classes = {0, 1} # e.g., 'A' -> 0, 'B' -> 1
+        self.defence.y_train = np.array([0, 0, 1, 1, 0]) # Total 5 samples
+        self.defence.is_clean = np.array([1, 0, 1, 0, 1]) # Predictions by the defence
+
+    @patch('art.defences.detector.poison.clustering_centroid_analysis.GroundTruthEvaluator')
+    def test_evaluate_defence_basic_case(self, MockGroundTruthEvaluator):
+        """
+        Test evaluate_defence with a basic scenario of ground truth and predictions.
+        """
+        # Mock setup
+        mock_evaluator_instance = MockGroundTruthEvaluator.return_value
+        expected_json_report = json.dumps({"accuracy": 0.6, "class_0_fp": 1, "class_1_fn": 0})
+        mock_evaluator_instance.analyze_correctness.return_value = (
+            {"some_errors": []},  # errors_by_class (not directly used by evaluate_defence's return)
+            expected_json_report    # confusion_matrix_json
+        )
+
+        # Ground truth setup
+        # This is the `is_clean` array passed as an argument to evaluate_defence
+        ground_truth_is_clean = np.array([1, 1, 1, 0, 0]) # Ground truth for the 5 samples
+
+        returned_json_report = self.defence.evaluate_defence(is_clean=ground_truth_is_clean)
+
+        self.assertEqual(returned_json_report, expected_json_report)
+
+        # Verify how analyze_correctness was called
+        mock_evaluator_instance.analyze_correctness.assert_called_once()
+        call_args = mock_evaluator_instance.analyze_correctness.call_args[1] # Get kwargs
+
+        # Expected segmentation based on self.defence.y_train, self.defence.is_clean, and ground_truth_is_clean
+        # self.defence.y_train = np.array([0, 0, 1, 1, 0])
+        # self.defence.is_clean (predictions) = np.array([1, 0, 1, 0, 1])
+        # ground_truth_is_clean (truth) = np.array([1, 1, 1, 0, 0])
+
+        # Class 0 indices: 0, 1, 4
+        # Class 1 indices: 2, 3
+
+        expected_assigned_clean_by_class = [
+            self.defence.is_clean[[0, 1, 4]], # Predictions for class 0: [1, 0, 1]
+            self.defence.is_clean[[2, 3]]     # Predictions for class 1: [1, 0]
+        ]
+        expected_is_clean_by_class = [
+            ground_truth_is_clean[[0, 1, 4]], # Ground truth for class 0: [1, 1, 0]
+            ground_truth_is_clean[[2, 3]]     # Ground truth for class 1: [1, 0]
+        ]
+
+        # np.testing.assert_equal doesn't work well for lists of arrays directly in assert_called_with
+        # So we compare element by element
+        self.assertEqual(len(call_args['assigned_clean_by_class']), len(expected_assigned_clean_by_class))
+        for i, arr in enumerate(call_args['assigned_clean_by_class']):
+            np.testing.assert_array_equal(arr, expected_assigned_clean_by_class[i])
+
+        self.assertEqual(len(call_args['is_clean_by_class']), len(expected_is_clean_by_class))
+        for i, arr in enumerate(call_args['is_clean_by_class']):
+            np.testing.assert_array_equal(arr, expected_is_clean_by_class[i])
+
+
+    @patch('art.defences.detector.poison.clustering_centroid_analysis.GroundTruthEvaluator')
+    def test_evaluate_defence_all_predicted_clean_all_truth_clean(self, MockGroundTruthEvaluator):
+        """
+        Test case: All samples predicted as clean by defence, and all are truly clean.
+        """
+        mock_evaluator_instance = MockGroundTruthEvaluator.return_value
+        expected_json_report = json.dumps({"accuracy": 1.0})
+        mock_evaluator_instance.analyze_correctness.return_value = ({}, expected_json_report)
+
+        self.defence.is_clean = np.ones_like(self.defence.y_train) # All predicted clean
+        ground_truth_is_clean = np.ones_like(self.defence.y_train) # All truly clean
+
+        returned_json_report = self.defence.evaluate_defence(is_clean=ground_truth_is_clean)
+        self.assertEqual(returned_json_report, expected_json_report)
+
+        call_args = mock_evaluator_instance.analyze_correctness.call_args[1]
+
+        # self.defence.y_train = np.array([0, 0, 1, 1, 0])
+        # Class 0 indices: 0, 1, 4
+        # Class 1 indices: 2, 3
+        expected_assigned_clean_by_class = [np.array([1,1,1]), np.array([1,1])]
+        expected_is_clean_by_class = [np.array([1,1,1]), np.array([1,1])]
+
+        self.assertEqual(len(call_args['assigned_clean_by_class']), len(expected_assigned_clean_by_class))
+        for i, arr in enumerate(call_args['assigned_clean_by_class']):
+            np.testing.assert_array_equal(arr, expected_assigned_clean_by_class[i])
+
+        self.assertEqual(len(call_args['is_clean_by_class']), len(expected_is_clean_by_class))
+        for i, arr in enumerate(call_args['is_clean_by_class']):
+            np.testing.assert_array_equal(arr, expected_is_clean_by_class[i])
+
+
+    @patch('art.defences.detector.poison.clustering_centroid_analysis.GroundTruthEvaluator')
+    def test_evaluate_defence_all_predicted_poisoned_all_truth_poisoned(self, MockGroundTruthEvaluator):
+        """
+        Test case: All samples predicted as poisoned, and all are truly poisoned.
+        """
+        mock_evaluator_instance = MockGroundTruthEvaluator.return_value
+        expected_json_report = json.dumps({"accuracy": 1.0, "tn_perfect": True}) # Example detail
+        mock_evaluator_instance.analyze_correctness.return_value = ({}, expected_json_report)
+
+        self.defence.is_clean = np.zeros_like(self.defence.y_train) # All predicted poisoned
+        ground_truth_is_clean = np.zeros_like(self.defence.y_train) # All truly poisoned
+
+        returned_json_report = self.defence.evaluate_defence(is_clean=ground_truth_is_clean)
+        self.assertEqual(returned_json_report, expected_json_report)
+
+        call_args = mock_evaluator_instance.analyze_correctness.call_args[1]
+        expected_assigned_clean_by_class = [np.array([0,0,0]), np.array([0,0])]
+        expected_is_clean_by_class = [np.array([0,0,0]), np.array([0,0])]
+
+        self.assertEqual(len(call_args['assigned_clean_by_class']), len(expected_assigned_clean_by_class))
+        for i, arr in enumerate(call_args['assigned_clean_by_class']):
+            np.testing.assert_array_equal(arr, expected_assigned_clean_by_class[i])
+
+        self.assertEqual(len(call_args['is_clean_by_class']), len(expected_is_clean_by_class))
+        for i, arr in enumerate(call_args['is_clean_by_class']):
+            np.testing.assert_array_equal(arr, expected_is_clean_by_class[i])
+
+    @patch('art.defences.detector.poison.clustering_centroid_analysis.GroundTruthEvaluator')
+    def test_evaluate_defence_no_samples_for_a_class_in_unique_classes(self, MockGroundTruthEvaluator):
+        """
+        Test case: A class in unique_classes has no samples in y_train (edge case).
+        This shouldn't happen if unique_classes is derived from y_train correctly,
+        but tests robustness.
+        """
+        mock_evaluator_instance = MockGroundTruthEvaluator.return_value
+        expected_json_report = json.dumps({"note": "class 2 had no samples"})
+        mock_evaluator_instance.analyze_correctness.return_value = ({}, expected_json_report)
+
+        self.defence.unique_classes = {0, 1, 2} # Add class 2
+        # self.defence.y_train remains [0, 0, 1, 1, 0] (no samples for class 2)
+        self.defence.is_clean = np.array([1, 0, 1, 0, 1])
+        ground_truth_is_clean = np.array([1, 1, 1, 0, 0])
+
+        returned_json_report = self.defence.evaluate_defence(is_clean=ground_truth_is_clean)
+        self.assertEqual(returned_json_report, expected_json_report)
+
+        call_args = mock_evaluator_instance.analyze_correctness.call_args[1]
+
+        # Class 0 indices: 0, 1, 4
+        # Class 1 indices: 2, 3
+        # Class 2 indices: []
+        expected_assigned_clean_by_class = [
+            self.defence.is_clean[[0, 1, 4]],
+            self.defence.is_clean[[2, 3]],
+            np.array([]) # Empty for class 2
+        ]
+        expected_is_clean_by_class = [
+            ground_truth_is_clean[[0, 1, 4]],
+            ground_truth_is_clean[[2, 3]],
+            np.array([]) # Empty for class 2
+        ]
+
+        self.assertEqual(len(call_args['assigned_clean_by_class']), len(expected_assigned_clean_by_class))
+        for i, arr in enumerate(call_args['assigned_clean_by_class']):
+            np.testing.assert_array_equal(arr, expected_assigned_clean_by_class[i],
+                                          err_msg=f"Mismatch in assigned_clean_by_class at index {i}")
+
+        self.assertEqual(len(call_args['is_clean_by_class']), len(expected_is_clean_by_class))
+        for i, arr in enumerate(call_args['is_clean_by_class']):
+            np.testing.assert_array_equal(arr, expected_is_clean_by_class[i],
+                                          err_msg=f"Mismatch in is_clean_by_class at index {i}")
 
 
 class TestDetectPoison(unittest.TestCase):

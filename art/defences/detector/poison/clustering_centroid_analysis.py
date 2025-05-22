@@ -21,22 +21,18 @@ import logging
 import warnings
 from typing import TYPE_CHECKING
 
-import tensorflow as tf
 import numpy as np
-from tensorflow.keras import Model, Sequential
-
-from art.defences.detector.poison.ground_truth_evaluator import GroundTruthEvaluator
+import tensorflow as tf
 from sklearn.base import ClusterMixin
 from sklearn.cluster import DBSCAN
-from sklearn.decomposition import FastICA, PCA
+from tensorflow.keras import Model, Sequential
 from umap import UMAP
 
-from art.defences.detector.poison.clustering_analyzer import ClusterAnalysisType
+from art.defences.detector.poison.ground_truth_evaluator import GroundTruthEvaluator
 from art.defences.detector.poison.poison_filtering_defence import PoisonFilteringDefence
-from art.defences.detector.poison.utils import ReducerType, ClustererType
 
 if TYPE_CHECKING:
-    from art.utils import CLASSIFIER_NEURALNETWORK_TYPE, CLASSIFIER_TYPE
+    from art.utils import CLASSIFIER_TYPE
 
 logger = logging.getLogger(__name__)
 tf.get_logger().setLevel(logging.WARN)
