@@ -31,8 +31,13 @@ logger = logging.getLogger(__name__)
 def test_generate(art_warning):
     try:
         import torch
+        from torch.serialization import add_safe_globals
+        from ultralytics import YOLO
+        from ultralytics.nn.tasks import DetectionModel
 
-        model = torch.hub.load("ultralytics/yolov5:v7.0", model="yolov5s")
+        add_safe_globals([DetectionModel])
+
+        model = YOLO("yolov5s.pt")
         py_model = PyTorchYolo(model=model, input_shape=(3, 640, 640), channels_first=True)
         # Download a sample image
         import requests
@@ -44,7 +49,7 @@ def test_generate(art_warning):
         org_img = np.asarray(Image.open(BytesIO(response.content)).resize((640, 640)))
         x = np.stack([org_img.transpose((2, 0, 1))], axis=0).astype(np.float32)
 
-        attack = OverloadPyTorch(py_model, eps=16.0 / 255.0, max_iter=10, num_grid=10, batch_size=1)
+        attack = OverloadPyTorch(py_model, eps=16.0 / 255.0, max_iter=10, num_grid=10, batch_size=1, threshold=0.5)
 
         x_adv = attack.generate(x / 255.0)
         assert x.shape == x_adv.shape
@@ -53,7 +58,8 @@ def test_generate(art_warning):
 
         adv_np = np.transpose(x_adv[0, :] * 255, (1, 2, 0)).astype(np.uint8)
         result = model(adv_np)
-        assert result.pred[0].shape[0] > 150
+        assert result[0].names[0] == "person"
+        assert result[0].names[1] == "bicycle"
 
     except ARTTestException as e:
         art_warning(e)
@@ -63,26 +69,39 @@ def test_generate(art_warning):
 def test_check_params(art_warning):
     try:
         import torch
+        from torch.serialization import add_safe_globals
+        from ultralytics import YOLO
+        from ultralytics.nn.tasks import DetectionModel
 
-        model = torch.hub.load("ultralytics/yolov5:v7.0", model="yolov5s")
+        add_safe_globals([DetectionModel])
+
+        model = YOLO("yolov5s.pt")
         py_model = PyTorchYolo(model=model, input_shape=(3, 640, 640), channels_first=True)
 
         with pytest.raises(ValueError):
-            _ = OverloadPyTorch(estimator=py_model, eps=-1.0, max_iter=5, num_grid=10, batch_size=1)
+            _ = OverloadPyTorch(estimator=py_model, eps=-1.0, max_iter=5, num_grid=10, batch_size=1, threshold=0.5)
         with pytest.raises(ValueError):
-            _ = OverloadPyTorch(estimator=py_model, eps=2.0, max_iter=5, num_grid=10, batch_size=1)
+            _ = OverloadPyTorch(estimator=py_model, eps=2.0, max_iter=5, num_grid=10, batch_size=1, threshold=0.5)
         with pytest.raises(TypeError):
-            _ = OverloadPyTorch(estimator=py_model, eps=8 / 255.0, max_iter=1.0, num_grid=10, batch_size=1)
+            _ = OverloadPyTorch(
+                estimator=py_model, eps=8 / 255.0, max_iter=1.0, num_grid=10, batch_size=1, threshold=0.5
+            )
         with pytest.raises(ValueError):
-            _ = OverloadPyTorch(estimator=py_model, eps=8 / 255.0, max_iter=0, num_grid=10, batch_size=1)
+            _ = OverloadPyTorch(estimator=py_model, eps=8 / 255.0, max_iter=0, num_grid=10, batch_size=1, threshold=0.5)
         with pytest.raises(TypeError):
-            _ = OverloadPyTorch(estimator=py_model, eps=8 / 255.0, max_iter=5, num_grid=1.0, batch_size=1)
+            _ = OverloadPyTorch(
+                estimator=py_model, eps=8 / 255.0, max_iter=5, num_grid=1.0, batch_size=1, threshold=0.5
+            )
         with pytest.raises(ValueError):
-            _ = OverloadPyTorch(estimator=py_model, eps=8 / 255.0, max_iter=5, num_grid=0, batch_size=1)
+            _ = OverloadPyTorch(estimator=py_model, eps=8 / 255.0, max_iter=5, num_grid=0, batch_size=1, threshold=0.5)
         with pytest.raises(TypeError):
-            _ = OverloadPyTorch(estimator=py_model, eps=8 / 255.0, max_iter=5, num_grid=10, batch_size=1.0)
+            _ = OverloadPyTorch(
+                estimator=py_model, eps=8 / 255.0, max_iter=5, num_grid=10, batch_size=1.0, threshold=0.5
+            )
         with pytest.raises(ValueError):
-            _ = OverloadPyTorch(estimator=py_model, eps=8 / 255.0, max_iter=5, num_grid=0, batch_size=0)
+            _ = OverloadPyTorch(estimator=py_model, eps=8 / 255.0, max_iter=5, num_grid=0, batch_size=0, threshold=0.5)
+        with pytest.raises(ValueError):
+            _ = OverloadPyTorch(estimator=py_model, eps=8 / 255.0, max_iter=5, num_grid=0, batch_size=1, threshold=1.5)
 
     except ARTTestException as e:
         art_warning(e)

@@ -33,8 +33,12 @@ def test_generate(art_warning):
         # The ultralytics package does not support Python versions earlier than 3.8.
         # To avoid an import error with the TF 1.x pipeline, it is imported only within the function scope.
         import torch
+        from torch.serialization import add_safe_globals
         import requests
         from ultralytics import YOLO
+        from ultralytics.nn.tasks import DetectionModel
+
+        add_safe_globals([DetectionModel])
 
         model = YOLO("yolov8m")
         py_model = PyTorchYolo(model=model, input_shape=(3, 640, 640), channels_first=True, is_yolov8=True)
