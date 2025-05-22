@@ -62,7 +62,7 @@ def fix_get_mnist_subset(get_mnist_dataset):
 
 @pytest.mark.parametrize("loss_type", ["cross_entropy", "difference_logits_ratio"])
 @pytest.mark.parametrize("norm", ["inf", np.inf, 1, 2])
-@pytest.mark.skip_framework("keras", "non_dl_frameworks", "mxnet", "kerastf", "tensorflow1", "tensorflow2v1")
+@pytest.mark.skip_framework("keras", "non_dl_frameworks", "kerastf", "tensorflow2v1")
 def test_generate(art_warning, fix_get_mnist_subset, image_dl_estimator_for_attack, framework, loss_type, norm):
     print("test_generate")
     try:
@@ -70,7 +70,7 @@ def test_generate(art_warning, fix_get_mnist_subset, image_dl_estimator_for_atta
 
         print("framework", framework)
 
-        if framework in ["tensorflow1", "tensorflow2v1"] and loss_type == "difference_logits_ratio":
+        if framework == "tensorflow2v1" and loss_type == "difference_logits_ratio":
             with pytest.raises(ValueError):
                 _ = AutoConjugateGradient(
                     estimator=classifier,

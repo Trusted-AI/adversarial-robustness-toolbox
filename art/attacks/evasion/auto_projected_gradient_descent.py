@@ -92,10 +92,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
             "cross_entropy", or "difference_logits_ratio"
         :param verbose: Show progress bars.
         """
-        from art.estimators.classification import TensorFlowClassifier, TensorFlowV2Classifier, PyTorchClassifier
-
-        if isinstance(estimator, TensorFlowClassifier):
-            raise ValueError("This attack does not support TensorFlow  v1.")
+        from art.estimators.classification import  TensorFlowV2Classifier, PyTorchClassifier
 
         if loss_type not in self._predefined_losses:
             raise ValueError(

@@ -80,7 +80,6 @@ if TYPE_CHECKING:
     from art.estimators.classification.keras import KerasClassifier
     from art.experimental.estimators.classification.jax import JaxClassifier
     from art.estimators.classification.lightgbm import LightGBMClassifier
-    from art.estimators.classification.mxnet import MXClassifier
     from art.estimators.classification.pytorch import PyTorchClassifier
     from art.estimators.classification.query_efficient_bb import QueryEfficientGradientEstimationClassifier
     from art.estimators.classification.scikitlearn import (
@@ -96,7 +95,7 @@ if TYPE_CHECKING:
         ScikitlearnRandomForestClassifier,
         ScikitlearnSVC,
     )
-    from art.estimators.classification.tensorflow import TensorFlowClassifier, TensorFlowV2Classifier
+    from art.estimators.classification.tensorflow import TensorFlowV2Classifier
     from art.estimators.classification.xgboost import XGBoostClassifier
     from art.estimators.certification.deep_z import PytorchDeepZ
     from art.estimators.certification.interval import PyTorchIBPClassifier
@@ -125,11 +124,9 @@ if TYPE_CHECKING:
         GPyGaussianProcessClassifier,
         KerasClassifier,
         JaxClassifier,
-        MXClassifier,
         PyTorchClassifier,
         ScikitlearnLogisticRegression,
         ScikitlearnSVC,
-        TensorFlowClassifier,
         TensorFlowV2Classifier,
         QueryEfficientGradientEstimationClassifier,
     ]
@@ -139,11 +136,9 @@ if TYPE_CHECKING:
         EnsembleClassifier,
         GPyGaussianProcessClassifier,
         KerasClassifier,
-        MXClassifier,
         PyTorchClassifier,
         ScikitlearnLogisticRegression,
         ScikitlearnSVC,
-        TensorFlowClassifier,
         TensorFlowV2Classifier,
     ]
 
@@ -152,9 +147,7 @@ if TYPE_CHECKING:
         DetectorClassifier,
         EnsembleClassifier,
         KerasClassifier,
-        MXClassifier,
         PyTorchClassifier,
-        TensorFlowClassifier,
         TensorFlowV2Classifier,
     ]
 
@@ -178,7 +171,6 @@ if TYPE_CHECKING:
         KerasClassifier,
         JaxClassifier,
         LightGBMClassifier,
-        MXClassifier,
         PyTorchClassifier,
         ScikitlearnClassifier,
         ScikitlearnDecisionTreeClassifier,
@@ -190,7 +182,6 @@ if TYPE_CHECKING:
         ScikitlearnRandomForestClassifier,
         ScikitlearnLogisticRegression,
         ScikitlearnSVC,
-        TensorFlowClassifier,
         TensorFlowV2Classifier,
         XGBoostClassifier,
         CLASSIFIER_NEURALNETWORK_TYPE,

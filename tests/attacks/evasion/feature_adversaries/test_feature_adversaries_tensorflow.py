@@ -37,7 +37,7 @@ def fix_get_mnist_subset(get_mnist_dataset):
 
 
 @pytest.mark.skip_framework(
-    "tensorflow1", "tensorflow2v1", "keras", "kerastf", "mxnet", "non_dl_frameworks", "pytorch", "huggingface"
+    "tensorflow2v1", "keras", "kerastf", "non_dl_frameworks", "pytorch", "huggingface"
 )
 def test_images_pgd(art_warning, fix_get_mnist_subset, image_dl_estimator_for_attack):
     try:
@@ -58,7 +58,7 @@ def test_images_pgd(art_warning, fix_get_mnist_subset, image_dl_estimator_for_at
 
 
 @pytest.mark.skip_framework(
-    "tensorflow1", "tensorflow2v1", "keras", "kerastf", "mxnet", "non_dl_frameworks", "pytorch", "huggingface"
+    "tensorflow2v1", "keras", "kerastf", "non_dl_frameworks", "pytorch", "huggingface"
 )
 def test_images_unconstrained_adam(art_warning, fix_get_mnist_subset, image_dl_estimator_for_attack):
     try:
@@ -87,7 +87,7 @@ def test_images_unconstrained_adam(art_warning, fix_get_mnist_subset, image_dl_e
         art_warning(e)
 
 
-@pytest.mark.skip_framework("pytorch", "huggingface", "keras", "kerastf", "mxnet", "non_dl_frameworks")
+@pytest.mark.skip_framework("pytorch", "huggingface", "keras", "kerastf", "non_dl_frameworks")
 def test_check_params(art_warning, image_dl_estimator_for_attack):
     try:
         classifier = image_dl_estimator_for_attack(FeatureAdversariesTensorFlowV2)

@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 
 
 @pytest.mark.skip_module("object_detection")
-@pytest.mark.skip_framework("pytorch", "tensorflow2v1", "keras", "kerastf", "mxnet", "non_dl_frameworks")
+@pytest.mark.skip_framework("pytorch", "tensorflow2v1", "keras", "kerastf", "non_dl_frameworks")
 def test_tf_faster_rcnn(art_warning, get_mnist_dataset):
     try:
         master_seed(seed=1234, set_tensorflow=True)

@@ -62,7 +62,6 @@ setup(
         "gpy": ["GPy"],
         "keras": ["keras", "h5py"],
         "lightgbm": ["lightgbm"],
-        "mxnet": ["mxnet"],
         "tensorflow": ["tensorflow", "tensorflow_addons", "h5py"],
         "tensorflow_image": ["tensorflow", "tensorflow_addons", "h5py", "Pillow", "ffmpeg-python", "opencv-python"],
         "tensorflow_audio": ["tensorflow", "tensorflow_addons", "h5py", "pydub", "resampy", "librosa"],
@@ -72,7 +71,6 @@ setup(
         "xgboost": ["xgboost"],
         "lingvo_asr": ["tensorflow-gpu==2.1.0", "lingvo==0.6.4", "pydub", "resampy", "librosa"],
         "all": [
-            "mxnet",
             "catboost",
             "lightgbm",
             "tensorflow",

@@ -65,11 +65,11 @@ def fix_get_cifar10_data():
 
 
 @pytest.mark.skip_framework(
-    "mxnet", "non_dl_frameworks", "tensorflow1", "keras", "kerastf", "tensorflow2", "tensorflow2v1", "huggingface"
+    "non_dl_frameworks", "keras", "kerastf", "tensorflow2", "tensorflow2v1", "huggingface"
 )
 def test_mnist_certified_training(art_warning, fix_get_mnist_data):
     """
-    Check the following properties for the first 100 samples of the MNIST test set given an l_inft bound
+    Check the following properties for the first 100 samples of the MNIST test set given an l_inf bound
         1) Check regular loss
         2) Train the model for 3 epochs using certified training.
         3) Re-Check regular loss
@@ -115,7 +115,7 @@ def test_mnist_certified_training(art_warning, fix_get_mnist_data):
 
 
 @pytest.mark.skip_framework(
-    "mxnet", "non_dl_frameworks", "tensorflow1", "keras", "kerastf", "tensorflow2", "tensorflow2v1", "huggingface"
+    "non_dl_frameworks", "keras", "kerastf", "tensorflow2", "tensorflow2v1", "huggingface"
 )
 def test_mnist_certified_loss(art_warning, fix_get_mnist_data):
     """
@@ -236,11 +236,11 @@ def test_mnist_certified_loss(art_warning, fix_get_mnist_data):
 
 
 @pytest.mark.skip_framework(
-    "mxnet", "non_dl_frameworks", "tensorflow1", "keras", "kerastf", "tensorflow2", "tensorflow2v1", "huggingface"
+    "non_dl_frameworks", "keras", "kerastf", "tensorflow2", "tensorflow2v1", "huggingface"
 )
 def test_cifar_certified_training(art_warning, fix_get_cifar10_data):
     """
-    Check the following properties for the first 10 samples of the CIFAR test set given an l_inft bound
+    Check the following properties for the first 10 samples of the CIFAR test set given an l_inf bound
         1) Check regular loss
         2) Train the model for 3 epochs using certified training.
         3) Re-Check regular loss
@@ -286,7 +286,7 @@ def test_cifar_certified_training(art_warning, fix_get_cifar10_data):
 
 
 @pytest.mark.skip_framework(
-    "mxnet", "non_dl_frameworks", "tensorflow1", "keras", "kerastf", "tensorflow2", "tensorflow2v1", "huggingface"
+    "non_dl_frameworks", "keras", "kerastf", "tensorflow2", "tensorflow2v1", "huggingface"
 )
 def test_cifar_certified_loss(art_warning, fix_get_cifar10_data):
     """

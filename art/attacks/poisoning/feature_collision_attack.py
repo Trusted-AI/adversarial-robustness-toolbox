@@ -301,8 +301,7 @@ def tensor_norm(tensor, norm_type: int | float | str = 2):  # pylint: disable=in
         "tensorflow.python.framework.ops.SymbolicTensor",
     )
     torch_tensor_types = ("torch.Tensor", "torch.float", "torch.double", "torch.long")
-    mxnet_tensor_types = ()
-    supported_types = tf_tensor_types + torch_tensor_types + mxnet_tensor_types
+    supported_types = tf_tensor_types + torch_tensor_types
     tensor_type = get_class_name(tensor)
     if tensor_type not in supported_types:  # pragma: no cover
         raise TypeError("Tensor type `" + tensor_type + "` is not supported")
@@ -316,8 +315,3 @@ def tensor_norm(tensor, norm_type: int | float | str = 2):  # pylint: disable=in
         import torch
 
         return torch.norm
-
-    if tensor_type in mxnet_tensor_types:  # pragma: no cover
-        import mxnet
-
-        return mxnet.ndarray.norm(tensor, ord=norm_type)

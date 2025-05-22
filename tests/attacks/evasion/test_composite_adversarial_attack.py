@@ -39,7 +39,7 @@ def fix_get_cifar10_subset(get_cifar10_dataset):
 
 
 @pytest.mark.skip_framework(
-    "tensorflow1", "tensorflow2", "tensorflow2v1", "keras", "non_dl_frameworks", "mxnet", "kerastf", "huggingface"
+    "tensorflow2", "tensorflow2v1", "keras", "non_dl_frameworks", "kerastf", "huggingface"
 )
 def test_generate(art_warning, fix_get_cifar10_subset):
     try:
@@ -63,7 +63,7 @@ def test_generate(art_warning, fix_get_cifar10_subset):
 
 
 @pytest.mark.skip_framework(
-    "tensorflow1", "tensorflow2", "tensorflow2v1", "keras", "non_dl_frameworks", "mxnet", "kerastf"
+    "tensorflow2", "tensorflow2v1", "keras", "non_dl_frameworks", "kerastf"
 )
 def test_check_params(art_warning):
     try:

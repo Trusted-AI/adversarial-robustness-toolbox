@@ -24,4 +24,4 @@ If applicable, add screenshots to help explain your problem.
  - OS
  - Python version
  - ART version or commit number
- - TensorFlow / Keras / PyTorch / MXNet version
+ - TensorFlow / Keras / PyTorch version

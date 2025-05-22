@@ -44,7 +44,7 @@ class Model(torch.nn.Module):
 
 
 @pytest.mark.skip_framework(
-    "tensorflow1", "tensorflow2", "tensorflow2v1", "keras", "non_dl_frameworks", "mxnet", "kerastf"
+    "tensorflow2", "tensorflow2v1", "keras", "non_dl_frameworks", "kerastf"
 )
 def test_get_loss_gradients(art_warning):
     try:
@@ -70,7 +70,7 @@ def test_get_loss_gradients(art_warning):
 
 
 @pytest.mark.skip_framework(
-    "tensorflow1", "tensorflow2", "tensorflow2v1", "keras", "non_dl_frameworks", "mxnet", "kerastf"
+    "tensorflow2", "tensorflow2v1", "keras", "non_dl_frameworks", "kerastf"
 )
 def test_generate(art_warning):
     try:
@@ -96,7 +96,7 @@ def test_generate(art_warning):
 
 
 @pytest.mark.skip_framework(
-    "tensorflow1", "tensorflow2", "tensorflow2v1", "keras", "non_dl_frameworks", "mxnet", "kerastf"
+    "tensorflow2", "tensorflow2v1", "keras", "non_dl_frameworks", "kerastf"
 )
 def test_check_params(art_warning, image_dl_estimator_for_attack):
     try:

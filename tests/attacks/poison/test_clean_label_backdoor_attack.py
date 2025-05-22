@@ -30,7 +30,7 @@ from tests.utils import ARTTestException
 logger = logging.getLogger(__name__)
 
 
-@pytest.mark.skip_framework("non_dl_frameworks", "mxnet")
+@pytest.mark.skip_framework("non_dl_frameworks",)
 def test_poison(art_warning, get_default_mnist_subset, image_dl_estimator, framework):
     try:
         (x_train, y_train), (_, _) = get_default_mnist_subset
@@ -52,7 +52,7 @@ def test_poison(art_warning, get_default_mnist_subset, image_dl_estimator, frame
 
 
 @pytest.mark.parametrize("params", [dict(pp_poison=-0.2), dict(pp_poison=1.2)])
-@pytest.mark.skip_framework("non_dl_frameworks", "mxnet")
+@pytest.mark.skip_framework("non_dl_frameworks",)
 def test_failure_modes(art_warning, image_dl_estimator, params):
     try:
         classifier, _ = image_dl_estimator()
