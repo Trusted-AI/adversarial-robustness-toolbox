@@ -57,9 +57,9 @@ jobs:
           pip install tensorflow-addons==${{ matrix.tf_addons }}
           pip install lingvo==0.13.1
           pip install Pillow==10.0.0
-          pip install torch==2.5.0
-          pip install torchaudio==2.5.0
-          pip install torchvision==0.20.0
+          pip install torch==2.5.0 --index-url https://download.pytorch.org/whl/cpu
+          pip install torchaudio==2.5.0 --index-url https://download.pytorch.org/whl/cpu
+          pip install torchvision==0.20.0 --index-url https://download.pytorch.org/whl/cpu
           pip list
       - name: Run ${{ matrix.name }} Tests
         run: pytest --cov-report=xml --cov=art --cov-append -q -vv tests/estimators/speech_recognition/test_tensorflow_lingvo.py --framework=${{ matrix.framework }} --durations=0

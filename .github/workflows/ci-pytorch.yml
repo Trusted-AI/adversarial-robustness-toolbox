@@ -31,13 +31,13 @@ jobs:
           - name: PyTorch 2.6.0 (Python 3.10)
             framework: pytorch
             python: '3.10'
-            torch: 2.6.0+cpu
+            torch: 2.6.0
             torchvision: 0.21.0
             torchaudio: 2.6.0
           - name: PyTorch 2.7.0 (Python 3.10)
             framework: pytorch
             python: '3.10'
-            torch: 2.7.0+cpu
+            torch: 2.7.0
             torchvision: 0.22.0
             torchaudio: 2.7.0
 
