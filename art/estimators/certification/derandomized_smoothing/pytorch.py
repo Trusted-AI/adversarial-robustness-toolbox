@@ -162,7 +162,7 @@ class PyTorchDeRandomizedSmoothing(DeRandomizedSmoothingMixin, PyTorchClassifier
                         model, pretrained=load_pretrained, drop_tokens=drop_tokens, device_type=device_type
                     )
                     if replace_last_layer:
-                        model.head = torch.nn.Linear(model.head.in_features, nb_classes)
+                        model.head = torch.nn.Linear(model.head.in_features, nb_classes)  # type: ignore
                     if isinstance(optimizer, type):
                         if optimizer_params is not None:
                             optimizer = optimizer(model.parameters(), **optimizer_params)
@@ -181,9 +181,9 @@ class PyTorchDeRandomizedSmoothing(DeRandomizedSmoothingMixin, PyTorchClassifier
                     model = timm.create_model(
                         pretrained_cfg["architecture"], drop_tokens=drop_tokens, device_type=device_type
                     )
-                    model.load_state_dict(supplied_state_dict)
+                    model.load_state_dict(supplied_state_dict)  # type: ignore
                     if replace_last_layer:
-                        model.head = torch.nn.Linear(model.head.in_features, nb_classes)
+                        model.head = torch.nn.Linear(model.head.in_features, nb_classes)  # type: ignore
 
                     if optimizer is not None:
                         if not isinstance(optimizer, torch.optim.Optimizer):
@@ -193,10 +193,10 @@ class PyTorchDeRandomizedSmoothing(DeRandomizedSmoothingMixin, PyTorchClassifier
                         opt_state_dict = optimizer.state_dict()
                         if isinstance(optimizer, torch.optim.Adam):
                             logging.info("Converting Adam Optimiser")
-                            converted_optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
+                            converted_optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)  # type: ignore
                         elif isinstance(optimizer, torch.optim.SGD):
                             logging.info("Converting SGD Optimiser")
-                            converted_optimizer = torch.optim.SGD(model.parameters(), lr=1e-4)
+                            converted_optimizer = torch.optim.SGD(model.parameters(), lr=1e-4)  # type: ignore
                         else:
                             raise ValueError("Optimiser not supported for conversion")
                         converted_optimizer.load_state_dict(opt_state_dict)
