@@ -201,6 +201,9 @@ class AutoAttack(EvasionAttack):
                 attack.set_params(targeted=False)
 
             if self.parallel_pool_size > 0:
+                attack.estimator._optimizer = None
+                self.estimator._optimizer = None
+
                 args.append(
                     (
                         deepcopy(x_adv),
