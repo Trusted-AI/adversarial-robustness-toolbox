@@ -847,6 +847,238 @@ class TestEvaluateDefence(unittest.TestCase):
             np.testing.assert_array_equal(arr, expected_is_clean_by_class[i],
                                           err_msg=f"Mismatch in is_clean_by_class at index {i}")
 
+class TestCalculateMisclassificationRate(unittest.TestCase):
+    """
+    Unit tests for the _calculate_misclassification_rate method of ClusteringCentroidAnalysis.
+    """
+
+    def setUp(self):
+        """Set up a ClusteringCentroidAnalysis instance with mocked components."""
+        self.original_eager_value = tf.config.functions_run_eagerly()
+        tf.config.run_functions_eagerly(True) # Run functions eagerly for this test class
+
+        x_train_dummy = np.array([[1,2]] * 10)
+        y_train_constructor_dummy = np.array(['A'] * 5 + ['B'] * 5)
+        benign_indices_dummy = np.arange(10)
+
+        with patch('art.defences.detector.poison.clustering_centroid_analysis.ClusteringCentroidAnalysis._extract_submodels',
+                   return_value=(MagicMock(), MagicMock())):
+            self.defence = ClusteringCentroidAnalysis(
+                classifier=MagicMock(),
+                x_train=x_train_dummy,
+                y_train=y_train_constructor_dummy,
+                benign_indices=benign_indices_dummy,
+                final_feature_layer_name="dummy_layer",
+                misclassification_threshold=0.1
+            )
+
+        self.feature_dim = 5
+        self.num_benign_samples_class_0 = 3
+        self.num_benign_samples_class_1 = 2
+        self.num_benign_samples_class_2 = 4
+
+        self.defence.x_benign = np.random.rand(
+            self.num_benign_samples_class_0 + self.num_benign_samples_class_1 + self.num_benign_samples_class_2,
+            10
+        )
+        self.defence.y_benign = np.array(
+            [0] * self.num_benign_samples_class_0 +
+            [1] * self.num_benign_samples_class_1 +
+            [2] * self.num_benign_samples_class_2
+        )
+        self.defence.unique_classes = {0, 1, 2}
+
+        self.defence.feature_representation_model = MagicMock(spec=tf.keras.Model)
+        self.defence.feature_representation_model.predict.return_value = np.random.rand(1, self.feature_dim)
+        self.defence.classifying_submodel = MagicMock(spec=tf.keras.Sequential)
+
+        self.calculate_features_patcher = patch('art.defences.detector.poison.clustering_centroid_analysis._calculate_features')
+        self.mock_calculate_features = self.calculate_features_patcher.start()
+
+    def tearDown(self):
+        self.calculate_features_patcher.stop()
+        tf.config.run_functions_eagerly(self.original_eager_value) # Restore original eager mode
+        self.calculate_features_patcher.stop()
+
+    def test_zero_misclassification(self):
+        """Test when no samples are misclassified."""
+        target_class_label = 0
+        deviation_vector = np.random.rand(self.feature_dim)
+
+        mock_features_class1 = np.random.rand(self.num_benign_samples_class_1, self.feature_dim)
+        mock_features_class2 = np.random.rand(self.num_benign_samples_class_2, self.feature_dim)
+        self.mock_calculate_features.side_effect = [mock_features_class1, mock_features_class2]
+
+        def mock_classifier_predict_side_effect(deviated_features, training=False):
+            num_unique_classes = len(self.defence.unique_classes)
+            concrete_batch_size = tf.compat.v1.dimension_value(deviated_features.shape[0])
+
+            if concrete_batch_size is None:
+                dynamic_batch_size = tf.shape(deviated_features)[0]
+                predicted_indices = tf.ones([dynamic_batch_size], dtype=tf.int32)
+                symbolic_logits = tf.one_hot(predicted_indices, depth=num_unique_classes, dtype=tf.float32)
+                return symbolic_logits
+            else:
+                num_samples_concrete = concrete_batch_size
+                logits_np = np.zeros((num_samples_concrete, num_unique_classes))
+                call_num = self.defence.classifying_submodel.call_count
+                if call_num == 0:
+                    logits_np[:, 1] = 1.0
+                elif call_num == 1:
+                    logits_np[:, 2] = 1.0
+                else:
+                    logits_np[:, 1] = 1.0
+                return tf.convert_to_tensor(logits_np, dtype=tf.float32)
+
+        self.defence.classifying_submodel.side_effect = mock_classifier_predict_side_effect
+
+        rate = self.defence._calculate_misclassification_rate(target_class_label, deviation_vector)
+        self.assertEqual(rate, 0.0)
+        self.assertEqual(self.mock_calculate_features.call_count, 2)
+        self.assertEqual(self.defence.classifying_submodel.call_count, 2)
+
+    def test_full_misclassification(self):
+        """Test when all samples from other classes are misclassified as target_class_label."""
+        target_class_label = 1
+        deviation_vector = np.random.rand(self.feature_dim)
+
+        mock_features_class0 = np.random.rand(self.num_benign_samples_class_0, self.feature_dim)
+        mock_features_class2 = np.random.rand(self.num_benign_samples_class_2, self.feature_dim)
+        self.mock_calculate_features.side_effect = [mock_features_class0, mock_features_class2]
+
+        def mock_classifier_predict_side_effect(deviated_features, training=False):
+            num_unique_classes = len(self.defence.unique_classes)
+            concrete_batch_size = tf.compat.v1.dimension_value(deviated_features.shape[0])
+
+            if concrete_batch_size is None:
+                dynamic_batch_size = tf.shape(deviated_features)[0]
+                predicted_indices = tf.fill([dynamic_batch_size], target_class_label)
+                symbolic_logits = tf.one_hot(predicted_indices, depth=num_unique_classes, dtype=tf.float32)
+                return symbolic_logits
+            else:
+                num_samples_concrete = concrete_batch_size
+                logits_np = np.zeros((num_samples_concrete, num_unique_classes))
+                logits_np[:, target_class_label] = 1.0
+                return tf.convert_to_tensor(logits_np, dtype=tf.float32)
+        self.defence.classifying_submodel.side_effect = mock_classifier_predict_side_effect
+
+        rate = self.defence._calculate_misclassification_rate(target_class_label, deviation_vector)
+        self.assertEqual(rate, 1.0)
+        self.assertEqual(self.mock_calculate_features.call_count, 2)
+        self.assertEqual(self.defence.classifying_submodel.call_count, 2)
+
+    def test_partial_misclassification(self):
+        """Test with a mix of misclassifications."""
+        target_class_label = 2
+        deviation_vector = np.random.rand(self.feature_dim)
+
+        mock_features_class0 = np.random.rand(self.num_benign_samples_class_0, self.feature_dim)
+        mock_features_class1 = np.random.rand(self.num_benign_samples_class_1, self.feature_dim)
+        self.mock_calculate_features.side_effect = [mock_features_class0, mock_features_class1]
+
+        def mock_classifier_predict_side_effect(deviated_features, training=False):
+            num_unique_classes = len(self.defence.unique_classes)
+            num_samples_concrete = tf.compat.v1.dimension_value(deviated_features.shape[0]) # Eager mode
+
+            logits_np = np.zeros((num_samples_concrete, num_unique_classes))
+
+            # Logic based on the number of samples received, assuming distinct counts for class 0 and 1
+            if num_samples_concrete == self.num_benign_samples_class_0: # Processing features for class 0 (3 samples)
+                # 1 misclassified as target_class_label (2), 2 correctly as class 0
+                logits_np[0, target_class_label] = 1.0
+                logits_np[1, 0] = 1.0
+                logits_np[2, 0] = 1.0
+            elif num_samples_concrete == self.num_benign_samples_class_1: # Processing features for class 1 (2 samples)
+                # 1 misclassified as target_class_label (2), 1 correctly as class 1
+                logits_np[0, target_class_label] = 1.0
+                logits_np[1, 1] = 1.0
+            else:
+                # This case should ideally not be hit if mock_calculate_features.side_effect is correct
+                # and num_benign_samples for class 0 and 1 are distinct.
+                # For safety, make it predict something non-target or raise error.
+                # For this test, we expect specific inputs, so an error might be appropriate if unexpected shape.
+                raise ValueError(f"Unexpected number of samples in mock_classifier_predict_side_effect: {num_samples_concrete}")
+            return tf.convert_to_tensor(logits_np, dtype=tf.float32)
+
+        self.defence.classifying_submodel.side_effect = mock_classifier_predict_side_effect
+
+        rate = self.defence._calculate_misclassification_rate(target_class_label, deviation_vector)
+        self.assertAlmostEqual(rate, 2.0 / (self.num_benign_samples_class_0 + self.num_benign_samples_class_1), places=6)
+        self.assertEqual(self.mock_calculate_features.call_count, 2)
+        self.assertEqual(self.defence.classifying_submodel.call_count, 2)
+
+    def test_no_other_classes_exist(self):
+        """Test when there are no 'other' classes to check against."""
+        self.defence.unique_classes = {0}
+        target_class_label = 0
+        deviation_vector = np.random.rand(self.feature_dim)
+
+        rate = self.defence._calculate_misclassification_rate(target_class_label, deviation_vector)
+        self.assertEqual(rate, 0.0)
+        self.mock_calculate_features.assert_not_called()
+        self.defence.classifying_submodel.assert_not_called()
+
+    def test_other_classes_exist_but_no_benign_samples(self):
+        """Test when other classes exist, but no benign samples are available for them."""
+        target_class_label = 0
+        self.defence.unique_classes = {0, 1, 2}
+        self.defence.y_benign = np.array([0] * self.num_benign_samples_class_0)
+        self.defence.x_benign = np.random.rand(self.num_benign_samples_class_0, 10)
+        deviation_vector = np.random.rand(self.feature_dim)
+
+        rate = self.defence._calculate_misclassification_rate(target_class_label, deviation_vector)
+        self.assertEqual(rate, 0.0)
+        self.mock_calculate_features.assert_not_called()
+        self.defence.classifying_submodel.assert_not_called()
+
+    def test_batching_multiple_batches_for_one_class(self):
+        """Test when one 'other class' has enough samples to require multiple batches."""
+        target_class_label = 0
+        deviation_vector = np.random.rand(self.feature_dim)
+
+        num_samples_class1_large = 200
+        num_samples_class2_small = 50
+        original_num_benign_samples_class_1 = self.num_benign_samples_class_1
+        self.num_benign_samples_class_1 = num_samples_class1_large
+
+        self.defence.x_benign = np.random.rand(
+            self.num_benign_samples_class_0 + num_samples_class1_large + num_samples_class2_small, 10
+        )
+        self.defence.y_benign = np.array(
+            [0] * self.num_benign_samples_class_0 +
+            [1] * num_samples_class1_large +
+            [2] * num_samples_class2_small
+        )
+        self.defence.unique_classes = {0, 1, 2}
+
+        features_batch1_c1 = np.random.rand(128, self.feature_dim)
+        features_batch2_c1 = np.random.rand(num_samples_class1_large - 128, self.feature_dim)
+        features_batch1_c2 = np.random.rand(num_samples_class2_small, self.feature_dim)
+        self.mock_calculate_features.side_effect = [features_batch1_c1, features_batch2_c1, features_batch1_c2]
+
+        def mock_classifier_predict_side_effect_for_batching_test(deviated_features, training=False):
+            num_unique_classes = len(self.defence.unique_classes)
+            concrete_batch_size = tf.compat.v1.dimension_value(deviated_features.shape[0])
+
+            if concrete_batch_size is None:
+                dynamic_batch_size = tf.shape(deviated_features)[0]
+                predicted_indices = tf.fill([dynamic_batch_size], target_class_label)
+                symbolic_logits = tf.one_hot(predicted_indices, depth=num_unique_classes, dtype=tf.float32)
+                return symbolic_logits
+            else:
+                num_samples_concrete = concrete_batch_size
+                logits_np = np.zeros((num_samples_concrete, num_unique_classes))
+                logits_np[:, target_class_label] = 1.0
+                return tf.convert_to_tensor(logits_np, dtype=tf.float32)
+        self.defence.classifying_submodel.side_effect = mock_classifier_predict_side_effect_for_batching_test
+
+        rate = self.defence._calculate_misclassification_rate(target_class_label, deviation_vector)
+        self.assertEqual(rate, 1.0)
+        self.assertEqual(self.mock_calculate_features.call_count, 3)
+        self.assertEqual(self.defence.classifying_submodel.call_count, 3)
+
+        self.num_benign_samples_class_1 = original_num_benign_samples_class_1
+
 
 class TestDetectPoison(unittest.TestCase):
     """
