@@ -46,50 +46,6 @@ logger.setLevel(logging.INFO)
 
 # TODO: add a better formatter for the logger. Eliminate date
 
-def _create_mlp_model(input_dim: int, model_name: str) -> Model:
-
-    # Define a small DNN with one hidden layer
-    base_model = Sequential(name=model_name, layers=[
-        Dense(64, activation="relu", name="input_layer", input_shape=(input_dim,)), # FIXME: 28, 1, 1 to input_dim,
-        Dense(64, activation="relu", name="hidden_layer"),
-        Dense(1, activation="sigmoid", name="output_layer")
-    ])
-    base_model.compile(optimizer="adam",
-                       loss="binary_crossentropy",
-                       metrics=["accuracy",
-                                Precision(name="precision"),
-                                Recall(name="recall"),
-                                AUC(name="auc")])
-
-    base_model.summary(print_fn=logger.info)
-    return base_model
-
-
-def train_art_keras_classifier(x_train: Union[pd.DataFrame, np.ndarray] , y_train: Union[pd.DataFrame, np.ndarray], model_name: str) -> KerasClassifier:
-    """Trains a KerasClassifier using the ART wrapper."""
-
-    # Create the Keras model
-    mlp_model = _create_mlp_model(x_train.shape[1], model_name)
-
-    # Create the ART KerasClassifier wrapper
-    mlp_classifier = TensorFlowV2Classifier(
-        model=mlp_model,
-        loss_object=tf.keras.losses.CategoricalCrossentropy(from_logits=False),
-        optimizer=tf.keras.optimizers.Adam(learning_rate=0.001),
-        nb_classes=2,  # Ensure this is set correctly
-        input_shape=(x_train.shape[1],)
-    )
-
-
-    # Requires ndarrays, so the dataframes are transformed
-    x_values = x_train.values if type(x_train) == pd.DataFrame else x_train
-    y_values = np.squeeze(y_train.values) if type(y_train) == pd.DataFrame else y_train
-
-    # Train the model
-    mlp_classifier.fit(x_values, y_values, batch_size=512, nb_epochs=100, verbose=True)
-
-    return mlp_classifier
-
 class MockClusterer(ClusterMixin):
     """
     A mock ClusterMixin for testing purposes.  This avoids using a real clustering
