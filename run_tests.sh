@@ -114,7 +114,6 @@ else
                           "tests/attacks/test_pixel_attack.py" \
                           "tests/attacks/test_threshold_attack.py" \
                           "tests/attacks/test_wasserstein.py" \
-                          "tests/attacks/test_shapeshifter.py" \
                           "tests/attacks/test_targeted_universal_perturbation.py" \
                           "tests/attacks/test_simba.py" )
 

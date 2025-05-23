@@ -193,9 +193,7 @@ def test_classifier_type_check_fail(art_warning):
         art_warning(e)
 
 
-@pytest.mark.skip_framework(
-    "tensorflow2v1", "tensorflow2", "keras", "non_dl_frameworks", "kerastf"
-)
+@pytest.mark.skip_framework("tensorflow2v1", "tensorflow2", "keras", "non_dl_frameworks", "kerastf")
 def test_generate_parallel(art_warning, fix_get_mnist_subset, image_dl_estimator, framework):
     try:
         classifier, _ = image_dl_estimator(from_logits=True)

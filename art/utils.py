@@ -95,7 +95,7 @@ if TYPE_CHECKING:
         ScikitlearnRandomForestClassifier,
         ScikitlearnSVC,
     )
-    from art.estimators.classification.tensorflow import TensorFlowV2Classifier
+    from art.estimators.classification.tensorflow import TensorFlowClassifier, TensorFlowV2Classifier
     from art.estimators.classification.xgboost import XGBoostClassifier
     from art.estimators.certification.deep_z import PytorchDeepZ
     from art.estimators.certification.interval import PyTorchIBPClassifier
@@ -125,6 +125,7 @@ if TYPE_CHECKING:
         PyTorchClassifier,
         ScikitlearnLogisticRegression,
         ScikitlearnSVC,
+        TensorFlowClassifier,
         TensorFlowV2Classifier,
         QueryEfficientGradientEstimationClassifier,
     ]
@@ -137,6 +138,7 @@ if TYPE_CHECKING:
         PyTorchClassifier,
         ScikitlearnLogisticRegression,
         ScikitlearnSVC,
+        TensorFlowClassifier,
         TensorFlowV2Classifier,
     ]
 
@@ -146,6 +148,7 @@ if TYPE_CHECKING:
         EnsembleClassifier,
         KerasClassifier,
         PyTorchClassifier,
+        TensorFlowClassifier,
         TensorFlowV2Classifier,
     ]
 
@@ -180,6 +183,7 @@ if TYPE_CHECKING:
         ScikitlearnRandomForestClassifier,
         ScikitlearnLogisticRegression,
         ScikitlearnSVC,
+        TensorFlowClassifier,
         TensorFlowV2Classifier,
         XGBoostClassifier,
         CLASSIFIER_NEURALNETWORK_TYPE,
@@ -199,9 +203,7 @@ if TYPE_CHECKING:
         TensorFlowV2FasterRCNN,
     ]
 
-    SPEECH_RECOGNIZER_TYPE = Union[  # pylint: disable=invalid-name
-        PyTorchDeepSpeech,
-    ]
+    SPEECH_RECOGNIZER_TYPE = Union[PyTorchDeepSpeech,]  # pylint: disable=invalid-name
 
     PYTORCH_ESTIMATOR_TYPE = Union[  # pylint: disable=invalid-name
         PyTorchClassifier,

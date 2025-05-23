@@ -95,7 +95,11 @@ def test_membership_leakage_decision_tree(art_warning, decision_tree_estimator, 
         art_warning(e)
 
 
-@pytest.mark.skip_framework("keras", "kerastf", "tensorflow2v1",)
+@pytest.mark.skip_framework(
+    "keras",
+    "kerastf",
+    "tensorflow2v1",
+)
 def test_membership_leakage_tabular(art_warning, tabular_dl_estimator, get_iris_dataset):
     try:
         classifier = tabular_dl_estimator()
@@ -117,7 +121,12 @@ def test_membership_leakage_tabular(art_warning, tabular_dl_estimator, get_iris_
         art_warning(e)
 
 
-@pytest.mark.skip_framework("scikitlearn", "keras", "kerastf", "tensorflow2v1",)
+@pytest.mark.skip_framework(
+    "scikitlearn",
+    "keras",
+    "kerastf",
+    "tensorflow2v1",
+)
 def test_membership_leakage_image(art_warning, image_dl_estimator, get_default_mnist_subset):
     try:
         classifier, _ = image_dl_estimator()
@@ -169,7 +178,11 @@ def test_membership_leakage_decision_tree_diff(art_warning, decision_tree_estima
         art_warning(e)
 
 
-@pytest.mark.skip_framework("keras", "kerastf", "tensorflow2v1",)
+@pytest.mark.skip_framework(
+    "keras",
+    "kerastf",
+    "tensorflow2v1",
+)
 def test_membership_leakage_tabular_diff(art_warning, tabular_dl_estimator, get_iris_dataset):
     try:
         classifier = tabular_dl_estimator()
@@ -194,7 +207,11 @@ def test_membership_leakage_tabular_diff(art_warning, tabular_dl_estimator, get_
         art_warning(e)
 
 
-@pytest.mark.skip_framework("keras", "kerastf", "tensorflow2v1",)
+@pytest.mark.skip_framework(
+    "keras",
+    "kerastf",
+    "tensorflow2v1",
+)
 def test_membership_leakage_image_diff(art_warning, image_dl_estimator, get_default_mnist_subset):
     try:
         classifier, _ = image_dl_estimator()
@@ -226,7 +243,12 @@ def test_membership_leakage_image_diff(art_warning, image_dl_estimator, get_defa
         art_warning(e)
 
 
-@pytest.mark.skip_framework("scikitlearn", "keras", "kerastf", "tensorflow2v1",)
+@pytest.mark.skip_framework(
+    "scikitlearn",
+    "keras",
+    "kerastf",
+    "tensorflow2v1",
+)
 def test_errors(art_warning, tabular_dl_estimator, get_iris_dataset, image_data_generator):
     try:
         classifier = tabular_dl_estimator()

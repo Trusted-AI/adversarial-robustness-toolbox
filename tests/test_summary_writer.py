@@ -35,7 +35,9 @@ def fix_get_mnist_subset(get_mnist_dataset):
     yield x_train_mnist[:n_train], y_train_mnist[:n_train], x_test_mnist[:n_test], y_test_mnist[:n_test]
 
 
-@pytest.mark.skip_framework("scikitlearn",)
+@pytest.mark.skip_framework(
+    "scikitlearn",
+)
 def test_update_image_classification_sw(art_warning, fix_get_mnist_subset, image_dl_estimator):
     try:
 
@@ -63,7 +65,9 @@ def test_update_image_classification_sw(art_warning, fix_get_mnist_subset, image
         art_warning(e)
 
 
-@pytest.mark.skip_framework("scikitlearn",)
+@pytest.mark.skip_framework(
+    "scikitlearn",
+)
 @pytest.mark.parametrize("summary_writer", [True, "./"])
 def test_update_image_classification_bool_str(art_warning, fix_get_mnist_subset, image_dl_estimator, summary_writer):
     try:
