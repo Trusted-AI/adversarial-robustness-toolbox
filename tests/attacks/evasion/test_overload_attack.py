@@ -31,9 +31,11 @@ logger = logging.getLogger(__name__)
 def test_generate(art_warning):
     try:
         import torch
+        import ultralytics
         from ultralytics import YOLO
 
         torch.serialization.add_safe_globals([torch.nn.modules.container.Sequential])
+        torch.serialization.add_safe_globals([ultralytics.nn.tasks.DetectionModel])
 
         model = YOLO("yolov5su.pt")
         py_model = PyTorchYolo(model=model, input_shape=(3, 640, 640), channels_first=True)
@@ -67,9 +69,11 @@ def test_generate(art_warning):
 def test_check_params(art_warning):
     try:
         import torch
+        import ultralytics
         from ultralytics import YOLO
 
         torch.serialization.add_safe_globals([torch.nn.modules.container.Sequential])
+        torch.serialization.add_safe_globals([ultralytics.nn.tasks.DetectionModel])
 
         model = YOLO("yolov5su.pt")
         py_model = PyTorchYolo(model=model, input_shape=(3, 640, 640), channels_first=True)
