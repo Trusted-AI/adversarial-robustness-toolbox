@@ -115,7 +115,6 @@ if TYPE_CHECKING:
     from art.estimators.regression.keras import KerasRegressor
     from art.estimators.regression.blackbox import BlackBoxRegressor
     from art.estimators.speech_recognition.pytorch_deep_speech import PyTorchDeepSpeech
-    from art.estimators.speech_recognition.tensorflow_lingvo import TensorFlowLingvoASR
     from art.estimators.tensorflow import TensorFlowV2Estimator
 
     CLASSIFIER_LOSS_GRADIENTS_TYPE = Union[  # pylint: disable=invalid-name

@@ -69,7 +69,6 @@ setup(
         "pytorch_image": ["torch", "torchvision", "kornia", "Pillow", "ffmpeg-python", "opencv-python"],
         "pytorch_audio": ["torch", "torchvision", "torchaudio", "pydub", "resampy", "librosa"],
         "xgboost": ["xgboost"],
-        "lingvo_asr": ["tensorflow-gpu==2.1.0", "lingvo==0.6.4", "pydub", "resampy", "librosa"],
         "all": [
             "catboost",
             "lightgbm",

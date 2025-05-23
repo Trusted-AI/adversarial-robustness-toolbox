@@ -45,8 +45,6 @@ tensorboardX==2.6.2.2
 lief==0.15.1
 jax[cpu]==0.4.26
 
-# lingvo==0.13.1
-
 # tests and style checking
 pytest~=8.3.2
 pytest-mock~=3.14.0
