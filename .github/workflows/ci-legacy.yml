@@ -29,10 +29,10 @@ jobs:
       matrix:
         module: [attacks_1, attacks_2, estimators, defences, metrics, art]
         include:
-          - name: legacy (TensorFlow 2.19.0 Keras 3.10.0 PyTorch 2.7.0 scikit-learn 1.6.1 Python 3.10)
+          - name: legacy (TensorFlow 2.18.1 Keras 3.10.0 PyTorch 2.7.0 scikit-learn 1.6.1 Python 3.10)
             framework: legacy
             python: '3.10'
-            tensorflow: 2.19.0
+            tensorflow: 2.18.1
             keras: 3.10.0
             torch: 2.7.0
             torchvision: 0.22.0
@@ -52,7 +52,7 @@ jobs:
           sudo apt-get update
           sudo apt-get -y -q install ffmpeg libavcodec-extra
           python -m pip install --upgrade pip setuptools wheel
-          pip install -q -r <(sed '/^mxnet/d' requirements_test.txt)
+          pip install -q -r <(sed '/^tensorflow/d;/^keras/d;/^torch/d;/^torchvision/d;/^torchaudio/d/^mxnet/d' requirements_test.txt)
           pip install tensorflow==${{ matrix.tensorflow }}
           pip install keras==${{ matrix.keras }}
           pip install scikit-learn==${{ matrix.scikit-learn }}
