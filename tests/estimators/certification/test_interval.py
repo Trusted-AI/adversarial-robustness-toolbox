@@ -81,7 +81,7 @@ def fix_get_mnist_data():
     return x_test, y_test
 
 
-@pytest.mark.skip_framework("mxnet", "non_dl_frameworks", "tensorflow1", "keras", "kerastf", "tensorflow2")
+@pytest.mark.skip_framework("non_dl_frameworks", "keras", "kerastf", "tensorflow2")
 def test_conv_single_channel_in_multi_out(art_warning):
     """
     Check that the conversion works for a single input channel.
@@ -99,7 +99,7 @@ def test_conv_single_channel_in_multi_out(art_warning):
         art_warning(e)
 
 
-@pytest.mark.skip_framework("mxnet", "non_dl_frameworks", "tensorflow1", "keras", "kerastf", "tensorflow2")
+@pytest.mark.skip_framework("non_dl_frameworks", "keras", "kerastf", "tensorflow2")
 def test_conv_multi_channel_in_single_out():
     """
     Check that the conversion works for multiple input channels with single output
@@ -117,7 +117,7 @@ def test_conv_multi_channel_in_single_out():
     assert torch.allclose(output_from_equivalent, output_from_conv, atol=1e-05)
 
 
-@pytest.mark.skip_framework("mxnet", "non_dl_frameworks", "tensorflow1", "keras", "kerastf", "tensorflow2")
+@pytest.mark.skip_framework("non_dl_frameworks", "keras", "kerastf", "tensorflow2")
 def test_conv_multi_channel_in_multi_out():
     """
     Check that the conversion works for multiple input channels and multiple output channels.
@@ -132,7 +132,7 @@ def test_conv_multi_channel_in_multi_out():
     assert torch.allclose(output_from_equivalent, output_from_conv, atol=1e-05)
 
 
-@pytest.mark.skip_framework("mxnet", "non_dl_frameworks", "tensorflow1", "keras", "kerastf", "tensorflow2")
+@pytest.mark.skip_framework("non_dl_frameworks", "keras", "kerastf", "tensorflow2")
 def test_conv_layer_multi_channel_in_multi_out_with_stride():
     """
     Check that the conversion works for multiple input/output channels with strided convolution
@@ -148,7 +148,7 @@ def test_conv_layer_multi_channel_in_multi_out_with_stride():
     assert torch.allclose(output_from_equivalent, output_from_conv, atol=1e-05)
 
 
-@pytest.mark.skip_framework("mxnet", "non_dl_frameworks", "tensorflow1", "keras", "kerastf", "tensorflow2")
+@pytest.mark.skip_framework("non_dl_frameworks", "keras", "kerastf", "tensorflow2")
 def test_conv_layer_multi_channel_in_multi_out_with_stride_and_bias():
     """
     Check that the conversion works for multiple input/output channels with strided convolution and bias
@@ -163,7 +163,7 @@ def test_conv_layer_multi_channel_in_multi_out_with_stride_and_bias():
     assert torch.allclose(output_from_equivalent, output_from_conv, atol=1e-05)
 
 
-@pytest.mark.skip_framework("mxnet", "non_dl_frameworks", "tensorflow1", "keras", "kerastf", "tensorflow2")
+@pytest.mark.skip_framework("non_dl_frameworks", "keras", "kerastf", "tensorflow2")
 def test_conv_layer_padding():
     """
     Check that the conversion works for multiple input/output channels with strided convolution, bias,
@@ -181,7 +181,7 @@ def test_conv_layer_padding():
     assert torch.allclose(output_from_equivalent, output_from_conv, atol=1e-05)
 
 
-@pytest.mark.skip_framework("mxnet", "non_dl_frameworks", "tensorflow1", "keras", "kerastf", "tensorflow2")
+@pytest.mark.skip_framework("non_dl_frameworks", "keras", "kerastf", "tensorflow2")
 def test_conv_layer_dilation():
     """
     Check that the conversion works for multiple input/output channels with strided convolution, bias,
@@ -199,7 +199,7 @@ def test_conv_layer_dilation():
     assert torch.allclose(output_from_equivalent, output_from_conv, atol=1e-05)
 
 
-@pytest.mark.skip_framework("mxnet", "non_dl_frameworks", "tensorflow1", "keras", "kerastf", "tensorflow2")
+@pytest.mark.skip_framework("non_dl_frameworks", "keras", "kerastf", "tensorflow2")
 def test_conv_layer_grads():
     """
     Checking that the gradients are correctly backpropagated through the convolutional layer
@@ -236,7 +236,7 @@ def test_conv_layer_grads():
     assert torch.allclose(equivalent_bias, model.conv1.conv_debug.bias.grad, atol=1e-05)
 
 
-@pytest.mark.skip_framework("mxnet", "non_dl_frameworks", "tensorflow1", "keras", "kerastf", "tensorflow2")
+@pytest.mark.skip_framework("non_dl_frameworks", "keras", "kerastf", "tensorflow2")
 def test_conv_train_loop():
     """
     Assert that training the interval conv layer gives the same results as a regular layer
@@ -333,7 +333,7 @@ def test_conv_train_loop():
         assert torch.allclose(equivalent_bias, test_model.conv.bias.grad, atol=1e-05)
 
 
-@pytest.mark.skip_framework("mxnet", "non_dl_frameworks", "tensorflow1", "keras", "kerastf", "tensorflow2")
+@pytest.mark.skip_framework("non_dl_frameworks", "keras", "kerastf", "tensorflow2")
 def test_mnist_certification(art_warning, fix_get_mnist_data):
     """
     Assert the certification performance on sample MNIST data
@@ -368,7 +368,7 @@ def test_mnist_certification(art_warning, fix_get_mnist_data):
     assert np.sum(cert_results) == 48
 
 
-@pytest.mark.skip_framework("mxnet", "non_dl_frameworks", "tensorflow1", "keras", "kerastf", "tensorflow2")
+@pytest.mark.skip_framework("non_dl_frameworks", "keras", "kerastf", "tensorflow2")
 def test_mnist_certification_conversion(art_warning, fix_get_mnist_data):
     """
     Assert that the re-convert method does not throw errors
@@ -427,7 +427,7 @@ def test_mnist_certification_conversion(art_warning, fix_get_mnist_data):
         box_model.model.re_convert()
 
 
-@pytest.mark.skip_framework("mxnet", "non_dl_frameworks", "tensorflow1", "keras", "kerastf", "tensorflow2")
+@pytest.mark.skip_framework("non_dl_frameworks", "keras", "kerastf", "tensorflow2")
 def test_certification_bounds_vs_empirical(art_warning, fix_get_mnist_data):
     """
     Create adversarial examples and assert that the lower bounds given by the classifier is higher than
@@ -471,7 +471,7 @@ def test_certification_bounds_vs_empirical(art_warning, fix_get_mnist_data):
         assert np.all(adv_pred < cert_prd[1])
 
 
-@pytest.mark.skip_framework("mxnet", "non_dl_frameworks", "tensorflow1", "keras", "kerastf", "tensorflow2")
+@pytest.mark.skip_framework("non_dl_frameworks", "keras", "kerastf", "tensorflow2")
 def test_mnist_certification_training(art_warning, fix_get_mnist_data):
     """
     Assert that the training loop runs without errors
@@ -504,7 +504,7 @@ def test_mnist_certification_training(art_warning, fix_get_mnist_data):
     trainer.fit(x=mnist_data, y=mnist_labels, scheduler=scheduler, batch_size=32, nb_epochs=2, limits=[0, 1])
 
 
-@pytest.mark.skip_framework("mxnet", "non_dl_frameworks", "tensorflow1", "keras", "kerastf", "tensorflow2")
+@pytest.mark.skip_framework("non_dl_frameworks", "keras", "kerastf", "tensorflow2")
 def test_mnist_certification_training_with_pgd(art_warning, fix_get_mnist_data):
     """
     Assert that the training loop runs without errors when also doing PGD augmentation

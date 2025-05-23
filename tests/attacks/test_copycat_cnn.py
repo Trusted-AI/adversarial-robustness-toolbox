@@ -61,68 +61,6 @@ class TestCopycatCNN(TestBase):
         master_seed(seed=1234)
         super().setUpClass()
 
-    @unittest.skipIf(tf.__version__[0] == "2", reason="Skip unittests for TensorFlow v2.")
-    def test_tensorflow_classifier(self):
-        """
-        First test with the TensorFlowClassifier.
-        :return:
-        """
-        # Build TensorFlowClassifiers
-        victim_tfc, sess = get_image_classifier_tf()
-
-        # Define input and output placeholders
-        input_ph = tf.placeholder(tf.float32, shape=[None, 28, 28, 1])
-        output_ph = tf.placeholder(tf.int32, shape=[None, 10])
-
-        # Define the tensorflow graph
-        conv = tf.layers.conv2d(input_ph, 1, 7, activation=tf.nn.relu)
-        conv = tf.layers.max_pooling2d(conv, 4, 4)
-        flattened = tf.layers.flatten(conv)
-
-        # Logits layer
-        logits = tf.layers.dense(flattened, 10)
-
-        # Train operator
-        loss = tf.reduce_mean(tf.losses.softmax_cross_entropy(logits=logits, onehot_labels=output_ph))
-        optimizer = tf.train.AdamOptimizer(learning_rate=0.001)
-        train = optimizer.minimize(loss)
-
-        # TensorFlow session and initialization
-        sess.run(tf.global_variables_initializer())
-
-        # Create the classifier
-        thieved_tfc = TensorFlowClassifier(
-            clip_values=(0, 1),
-            input_ph=input_ph,
-            output=logits,
-            labels_ph=output_ph,
-            train=train,
-            loss=loss,
-            learning=None,
-            sess=sess,
-        )
-
-        # Create attack
-        copycat_cnn = CopycatCNN(
-            classifier=victim_tfc,
-            batch_size_query=self.batch_size,
-            batch_size_fit=self.batch_size,
-            nb_epochs=NB_EPOCHS,
-            nb_stolen=NB_STOLEN,
-        )
-        thieved_tfc = copycat_cnn.extract(x=self.x_train_mnist, thieved_classifier=thieved_tfc)
-
-        victim_preds = np.argmax(victim_tfc.predict(x=self.x_train_mnist[:100]), axis=1)
-        thieved_preds = np.argmax(thieved_tfc.predict(x=self.x_train_mnist[:100]), axis=1)
-        acc = np.sum(victim_preds == thieved_preds) / len(victim_preds)
-
-        self.assertGreater(acc, 0.3)
-
-        # Clean-up session
-        if sess is not None:
-            sess.close()
-            tf.reset_default_graph()
-
     def test_keras_classifier(self):
         """
         Second test with the KerasClassifier.
@@ -290,66 +228,6 @@ class TestCopycatCNNVectors(TestBase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-
-    @unittest.skipIf(tf.__version__[0] == "2", reason="Skip unittests for TensorFlow v2.")
-    def test_tensorflow_iris(self):
-        """
-        First test for TensorFlow.
-        :return:
-        """
-        # Get the TensorFlow classifier
-        victim_tfc, sess = get_tabular_classifier_tf()
-
-        # Define input and output placeholders
-        input_ph = tf.placeholder(tf.float32, shape=[None, 4])
-        output_ph = tf.placeholder(tf.int32, shape=[None, 3])
-
-        # Define the tensorflow graph
-        dense1 = tf.layers.dense(input_ph, 10)
-        dense2 = tf.layers.dense(dense1, 10)
-        logits = tf.layers.dense(dense2, 3)
-
-        # Train operator
-        loss = tf.reduce_mean(tf.losses.softmax_cross_entropy(logits=logits, onehot_labels=output_ph))
-        optimizer = tf.train.AdamOptimizer(learning_rate=0.001)
-        train = optimizer.minimize(loss)
-
-        # TensorFlow session and initialization
-        sess.run(tf.global_variables_initializer())
-
-        # Train the classifier
-        thieved_tfc = TensorFlowClassifier(
-            clip_values=(0, 1),
-            input_ph=input_ph,
-            output=logits,
-            labels_ph=output_ph,
-            train=train,
-            loss=loss,
-            learning=None,
-            sess=sess,
-            channels_first=True,
-        )
-
-        # Create attack
-        copycat_cnn = CopycatCNN(
-            classifier=victim_tfc,
-            batch_size_fit=self.batch_size,
-            batch_size_query=self.batch_size,
-            nb_epochs=NB_EPOCHS,
-            nb_stolen=NB_STOLEN,
-        )
-        thieved_tfc = copycat_cnn.extract(x=self.x_train_iris, thieved_classifier=thieved_tfc)
-
-        victim_preds = np.argmax(victim_tfc.predict(x=self.x_train_iris[:100]), axis=1)
-        thieved_preds = np.argmax(thieved_tfc.predict(x=self.x_train_iris[:100]), axis=1)
-        acc = np.sum(victim_preds == thieved_preds) / len(victim_preds)
-
-        self.assertGreater(acc, 0.3)
-
-        # Clean-up session
-        if sess is not None:
-            sess.close()
-            tf.reset_default_graph()
 
     def test_keras_iris(self):
         """

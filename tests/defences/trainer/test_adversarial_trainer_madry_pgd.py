@@ -35,7 +35,7 @@ def fix_get_mnist_subset(get_mnist_dataset):
     yield x_train_mnist[:n_train], y_train_mnist[:n_train], x_test_mnist[:n_test], y_test_mnist[:n_test]
 
 
-@pytest.mark.only_with_platform("pytorch", "tensorflow2", "huggingface", "tensorflow1", "tensorflow2v1")
+@pytest.mark.only_with_platform("pytorch", "tensorflow2", "huggingface", "tensorflow2v1")
 def test_fit_predict(art_warning, image_dl_estimator, fix_get_mnist_subset):
     classifier, _ = image_dl_estimator()
 
@@ -53,7 +53,7 @@ def test_fit_predict(art_warning, image_dl_estimator, fix_get_mnist_subset):
     assert np.allclose(x_test_original, x_test)
 
 
-@pytest.mark.only_with_platform("pytorch", "tensorflow2", "tensorflow1", "huggingface", "tensorflow2v1")
+@pytest.mark.only_with_platform("pytorch", "tensorflow2", "huggingface", "tensorflow2v1")
 def test_get_classifier(art_warning, image_dl_estimator):
     classifier, _ = image_dl_estimator()
 

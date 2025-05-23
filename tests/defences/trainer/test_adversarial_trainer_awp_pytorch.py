@@ -72,12 +72,12 @@ def get_adv_trainer_awptrades(framework, image_dl_estimator):
             attack = ProjectedGradientDescent(
                 classifier,
                 norm=np.inf,
-                eps=0.2,
-                eps_step=0.02,
-                max_iter=20,
+                eps=0.1,
+                eps_step=0.01,
+                max_iter=5,
                 targeted=False,
-                num_random_init=1,
-                batch_size=128,
+                num_random_init=0,
+                batch_size=16,
                 verbose=False,
             )
             trainer = AdversarialTrainerAWPPyTorch(

@@ -40,13 +40,6 @@ Keras Classifier
    :special-members: __init__
    :inherited-members:
 
-MXNet Classifier
-----------------
-.. autoclass:: MXClassifier
-   :members:
-   :special-members: __init__
-   :inherited-members:
-
 PyTorch Classifier
 ------------------
 .. autoclass:: PyTorchClassifier

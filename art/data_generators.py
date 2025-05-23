@@ -33,7 +33,6 @@ import numpy as np
 
 if TYPE_CHECKING:
     import keras
-    import mxnet
     import tensorflow as tf
     import torch
 
@@ -254,47 +253,6 @@ class PyTorchDataGenerator(DataGenerator):
 
         for i, item in enumerate(batch):
             batch[i] = item.data.cpu().numpy()
-
-        return tuple(batch)
-
-
-class MXDataGenerator(DataGenerator):
-    """
-    Wrapper class on top of the MXNet/Gluon native data loader :class:`mxnet.gluon.data.DataLoader`.
-    """
-
-    def __init__(self, iterator: "mxnet.gluon.data.DataLoader", size: int, batch_size: int) -> None:
-        """
-        Create a data generator wrapper on top of an MXNet :class:`DataLoader`.
-
-        :param iterator: A MXNet DataLoader instance.
-        :param size: Total size of the dataset.
-        :param batch_size: Size of the minibatches.
-        """
-        import mxnet
-
-        super().__init__(size=size, batch_size=batch_size)
-        if not isinstance(iterator, mxnet.gluon.data.DataLoader):
-            raise TypeError(f"Expected instance of Gluon `DataLoader, received {type(iterator)} instead.`")
-
-        self._iterator = iterator
-        self._current = iter(self.iterator)
-
-    def get_batch(self) -> tuple:
-        """
-        Provide the next batch for training in the form of a tuple `(x, y)`. The generator should loop over the data
-        indefinitely.
-
-        :return: A tuple containing a batch of data `(x, y)`.
-        """
-        try:
-            batch = list(next(self._current))
-        except StopIteration:
-            self._current = iter(self.iterator)
-            batch = list(next(self._current))
-
-        for i, item in enumerate(batch):
-            batch[i] = item.asnumpy()
 
         return tuple(batch)
 

@@ -69,7 +69,7 @@ def jax_classifier():
 classifier = jax_classifier()
 
 
-@pytest.mark.skip_framework("pytorch", "tensorflow", "keras", "kerastf", "mxnet", "non_dl_frameworks")
+@pytest.mark.skip_framework("pytorch", "tensorflow", "keras", "kerastf", "non_dl_frameworks")
 def test_fit(art_warning, get_default_mnist_subset, default_batch_size):
     try:
         (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
@@ -87,7 +87,7 @@ def test_fit(art_warning, get_default_mnist_subset, default_batch_size):
         art_warning(e)
 
 
-@pytest.mark.skip_framework("pytorch", "tensorflow", "keras", "kerastf", "mxnet", "non_dl_frameworks")
+@pytest.mark.skip_framework("pytorch", "tensorflow", "keras", "kerastf", "non_dl_frameworks")
 def test_predict(art_warning, get_default_mnist_subset, expected_values):
     try:
         (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
@@ -100,7 +100,7 @@ def test_predict(art_warning, get_default_mnist_subset, expected_values):
         art_warning(e)
 
 
-@pytest.mark.skip_framework("pytorch", "tensorflow", "keras", "kerastf", "mxnet", "non_dl_frameworks")
+@pytest.mark.skip_framework("pytorch", "tensorflow", "keras", "kerastf", "non_dl_frameworks")
 def test_shapes(art_warning, get_default_mnist_subset):
     try:
         (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
@@ -119,7 +119,7 @@ def test_shapes(art_warning, get_default_mnist_subset):
         art_warning(e)
 
 
-@pytest.mark.skip_framework("pytorch", "tensorflow", "keras", "kerastf", "mxnet", "non_dl_frameworks")
+@pytest.mark.skip_framework("pytorch", "tensorflow", "keras", "kerastf", "non_dl_frameworks")
 def test_loss_gradient(art_warning, get_default_mnist_subset, expected_values, mnist_shape):
     try:
         (expected_gradients_1, expected_gradients_2) = expected_values()
@@ -148,7 +148,7 @@ def test_loss_gradient(art_warning, get_default_mnist_subset, expected_values, m
         art_warning(e)
 
 
-@pytest.mark.skip_framework("pytorch", "tensorflow", "keras", "kerastf", "mxnet", "non_dl_frameworks")
+@pytest.mark.skip_framework("pytorch", "tensorflow", "keras", "kerastf", "non_dl_frameworks")
 def test_nb_classes(art_warning):
     try:
         assert classifier.nb_classes == 10
@@ -157,7 +157,7 @@ def test_nb_classes(art_warning):
         art_warning(e)
 
 
-@pytest.mark.skip_framework("pytorch", "tensorflow", "keras", "kerastf", "mxnet", "non_dl_frameworks")
+@pytest.mark.skip_framework("pytorch", "tensorflow", "keras", "kerastf", "non_dl_frameworks")
 def test_input_shape(art_warning, mnist_shape):
     try:
         assert classifier.input_shape == mnist_shape

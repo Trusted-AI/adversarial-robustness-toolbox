@@ -61,7 +61,7 @@ def audio_batch(request, channels_first):
     return test_input, test_output, audio_input.sample_rate
 
 
-@pytest.mark.skip_framework("tensorflow", "keras", "scikitlearn", "mxnet", "kerastf")
+@pytest.mark.skip_framework("tensorflow", "keras", "scikitlearn", "kerastf")
 def test_sample_rate_error(art_warning):
     try:
         exc_msg = "Sample rate be must a positive integer."
@@ -71,7 +71,7 @@ def test_sample_rate_error(art_warning):
         art_warning(e)
 
 
-@pytest.mark.skip_framework("tensorflow", "keras", "scikitlearn", "mxnet", "kerastf")
+@pytest.mark.skip_framework("tensorflow", "keras", "scikitlearn", "kerastf")
 def test_non_temporal_data_error(art_warning, image_batch_small):
     try:
         test_input = image_batch_small
@@ -85,7 +85,7 @@ def test_non_temporal_data_error(art_warning, image_batch_small):
 
 
 @pytest.mark.parametrize("channels_first", [True, False])
-@pytest.mark.skip_framework("tensorflow", "keras", "scikitlearn", "mxnet", "kerastf")
+@pytest.mark.skip_framework("tensorflow", "keras", "scikitlearn", "kerastf")
 def test_mp3_compression(art_warning, audio_batch, channels_first):
     try:
         test_input, test_output, sample_rate = audio_batch
@@ -110,7 +110,7 @@ def test_mp3_compression(art_warning, audio_batch, channels_first):
         art_warning(e)
 
 
-@pytest.mark.skip_framework("tensorflow", "keras", "scikitlearn", "mxnet", "kerastf")
+@pytest.mark.skip_framework("tensorflow", "keras", "scikitlearn", "kerastf")
 def test_check_params(art_warning):
     try:
         with pytest.raises(ValueError):

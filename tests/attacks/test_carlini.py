@@ -72,7 +72,7 @@ class TestCarlini(TestBase):
         """
         x_test_original = self.x_test_mnist.copy()
 
-        # Build TensorFlowClassifier
+        # Build TensorFlowV2Classifier
         tfc, sess = get_image_classifier_tf(from_logits=True)
 
         # Failure attack

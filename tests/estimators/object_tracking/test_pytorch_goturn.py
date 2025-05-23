@@ -28,7 +28,7 @@ from tests.utils import ARTTestException
 logger = logging.getLogger(__name__)
 
 
-@pytest.mark.skip_framework("tensorflow", "tensorflow2v1", "keras", "kerastf", "mxnet", "non_dl_frameworks")
+@pytest.mark.skip_framework("tensorflow", "tensorflow2v1", "keras", "kerastf", "non_dl_frameworks")
 def test_pytorch_goturn(art_warning):
     try:
         import torch

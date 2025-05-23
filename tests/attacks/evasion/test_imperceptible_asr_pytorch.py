@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 
 
 @pytest.mark.skip_module("deepspeech_pytorch")
-@pytest.mark.skip_framework("tensorflow", "keras", "kerastf", "mxnet", "non_dl_frameworks")
+@pytest.mark.skip_framework("tensorflow", "keras", "kerastf", "non_dl_frameworks")
 @pytest.mark.parametrize("use_amp", [False, True])
 @pytest.mark.parametrize("device_type", ["cpu", "gpu"])
 def test_imperceptible_asr_pytorch(art_warning, expected_values, use_amp, device_type):
@@ -137,7 +137,7 @@ def test_imperceptible_asr_pytorch(art_warning, expected_values, use_amp, device
 
 
 @pytest.mark.skip_module("deepspeech_pytorch")
-@pytest.mark.skip_framework("tensorflow", "keras", "kerastf", "mxnet", "non_dl_frameworks")
+@pytest.mark.skip_framework("tensorflow", "keras", "kerastf", "non_dl_frameworks")
 @pytest.mark.parametrize("use_amp", [False])
 @pytest.mark.parametrize("device_type", ["cpu"])
 def test_imperceptible_asr_pytorch_mp3compression_pytorch(art_warning, expected_values, use_amp, device_type):
@@ -229,7 +229,7 @@ def test_imperceptible_asr_pytorch_mp3compression_pytorch(art_warning, expected_
 
 
 @pytest.mark.skip_module("deepspeech_pytorch")
-@pytest.mark.skip_framework("tensorflow", "keras", "kerastf", "mxnet", "non_dl_frameworks")
+@pytest.mark.skip_framework("tensorflow", "keras", "kerastf", "non_dl_frameworks")
 def test_check_params(art_warning):
     try:
         from art.estimators.speech_recognition.pytorch_deep_speech import PyTorchDeepSpeech

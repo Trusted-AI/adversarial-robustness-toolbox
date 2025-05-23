@@ -37,7 +37,7 @@ def fix_get_mnist_subset(get_mnist_dataset):
     yield x_train_mnist[:n_train], y_train_mnist[:n_train], x_test_mnist[:n_test], y_test_mnist[:n_test]
 
 
-@pytest.mark.skip_framework("keras", "scikitlearn", "mxnet", "kerastf")
+@pytest.mark.skip_framework("keras", "scikitlearn", "kerastf")
 @pytest.mark.parametrize("norm", [2, "inf"])
 def test_generate(art_warning, fix_get_mnist_subset, image_dl_estimator_for_attack, norm):
     try:

@@ -31,7 +31,7 @@ def x_target():
     return np.random.random_sample((28, 28, 1))
 
 
-@pytest.mark.skip_framework("keras", "pytorch", "scikitlearn", "mxnet", "kerastf")
+@pytest.mark.skip_framework("keras", "pytorch", "scikitlearn", "kerastf")
 def test_poison_estimator_red(art_warning, image_dl_generator, x_target):
     try:
         generator = image_dl_generator()
