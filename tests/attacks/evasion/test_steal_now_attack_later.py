@@ -234,8 +234,6 @@ def test_check_params(art_warning):
         torch.serialization.add_safe_globals([ultralytics.nn.modules.DFL])
 
         model = YOLO("yolov8m")
-        print(model)
-        sdf
         py_model = PyTorchYolo(model=model, input_shape=(3, 640, 640), channels_first=True, is_yolov8=True)
 
         def dummy_func(model, imags):

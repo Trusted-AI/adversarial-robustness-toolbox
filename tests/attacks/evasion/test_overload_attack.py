@@ -52,6 +52,7 @@ def test_generate(art_warning):
 
         model = YOLO("yolov5su.pt")
         py_model = PyTorchYolo(model=model, input_shape=(3, 640, 640), channels_first=True)
+
         # Download a sample image
         import requests
         from io import BytesIO
@@ -102,7 +103,6 @@ def test_check_params(art_warning):
         torch.serialization.add_safe_globals([ultralytics.nn.modules.DFL])
 
         model = YOLO("yolov5su.pt")
-        print(model)
         py_model = PyTorchYolo(model=model, input_shape=(3, 640, 640), channels_first=True)
 
         with pytest.raises(ValueError):
