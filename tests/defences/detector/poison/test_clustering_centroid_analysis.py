@@ -18,28 +18,19 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import json
-from unittest.mock import MagicMock, patch
-
-import tensorflow as tf
-from sklearn.base import ClusterMixin
-from tensorflow.keras.metrics import Precision, Recall, AUC
-
 import logging
 import unittest
-from typing import Union
+from unittest.mock import MagicMock, patch
 
 import numpy as np
-import pandas as pd
-
-from art.estimators.classification import KerasClassifier, TensorFlowV2Classifier
-from sklearn.cluster import DBSCAN
-from sklearn.decomposition import FastICA, PCA
+import tensorflow as tf
+from sklearn.base import ClusterMixin
 from tensorflow.keras import Model, Sequential, Input
 from tensorflow.keras.layers import Dense
-from umap import UMAP
 
-from art.defences.detector.poison.clustering_centroid_analysis import ClusteringCentroidAnalysis, _calculate_centroid, _class_clustering, _feature_extraction, _cluster_classes, _encode_labels
-from art.defences.detector.poison.utils import ReducerType, ClustererType
+from art.defences.detector.poison.clustering_centroid_analysis import ClusteringCentroidAnalysis, _calculate_centroid, \
+    _class_clustering, _feature_extraction, _cluster_classes, _encode_labels
+from art.estimators.classification import TensorFlowV2Classifier
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
