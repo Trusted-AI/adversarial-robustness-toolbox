@@ -35,7 +35,6 @@ def test_generate(art_warning):
         import torch
         import requests
         from ultralytics import YOLO
-        from ultralytics.nn.tasks import DetectionModel
 
         torch.serialization.add_safe_globals([torch.nn.modules.container.Sequential])
 
@@ -198,7 +197,11 @@ def test_check_params(art_warning):
     try:
         # The ultralytics package does not support Python versions earlier than 3.8.
         # To avoid an import error with the TF 1.x pipeline, it is imported only within the function scope.
+        import torch
+        import requests
         from ultralytics import YOLO
+
+        torch.serialization.add_safe_globals([torch.nn.modules.container.Sequential])
 
         model = YOLO("yolov8m")
         py_model = PyTorchYolo(model=model, input_shape=(3, 640, 640), channels_first=True, is_yolov8=True)

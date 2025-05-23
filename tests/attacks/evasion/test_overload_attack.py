@@ -32,7 +32,6 @@ def test_generate(art_warning):
     try:
         import torch
         from ultralytics import YOLO
-        from ultralytics.nn.tasks import DetectionModel
 
         torch.serialization.add_safe_globals([torch.nn.modules.container.Sequential])
 
@@ -68,13 +67,11 @@ def test_generate(art_warning):
 def test_check_params(art_warning):
     try:
         import torch
-        from torch.serialization import add_safe_globals
         from ultralytics import YOLO
-        from ultralytics.nn.tasks import DetectionModel
 
-        add_safe_globals([DetectionModel])
+        torch.serialization.add_safe_globals([torch.nn.modules.container.Sequential])
 
-        model = YOLO("yolov5s.pt")
+        model = YOLO("yolov5su.pt")
         py_model = PyTorchYolo(model=model, input_shape=(3, 640, 640), channels_first=True)
 
         with pytest.raises(ValueError):
