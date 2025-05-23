@@ -48,8 +48,7 @@ def test_generate(art_warning):
         torch.serialization.add_safe_globals([ultralytics.nn.tasks.Bottleneck])
         torch.serialization.add_safe_globals([ultralytics.nn.tasks.Detect])
         torch.serialization.add_safe_globals([Conv])
-        # from ultralytics.nn.modules import Conv
-        # torch.serialization.add_safe_globals([ultralytics.nn.modules.Conv])
+        torch.serialization.add_safe_globals([ultralytics.nn.modules.Conv])
         # torch.serialization.add_safe_globals([ultralytics.nn.modules.Concat])
         # torch.serialization.add_safe_globals([ultralytics.nn.modules.DFL])
 
@@ -103,7 +102,7 @@ def test_check_params(art_warning):
         torch.serialization.add_safe_globals([ultralytics.nn.tasks.Bottleneck])
         torch.serialization.add_safe_globals([ultralytics.nn.tasks.Detect])
         torch.serialization.add_safe_globals([Conv])
-        # torch.serialization.add_safe_globals([ultralytics.nn.modules.Conv])
+        torch.serialization.add_safe_globals([ultralytics.nn.modules.Conv])
         # torch.serialization.add_safe_globals([ultralytics.nn.modules.Concat])
         # torch.serialization.add_safe_globals([ultralytics.nn.modules.DFL])
 
