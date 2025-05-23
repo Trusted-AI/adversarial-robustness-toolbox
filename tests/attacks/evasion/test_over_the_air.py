@@ -43,9 +43,7 @@ class Model(torch.nn.Module):
         return logit_output.view(-1, 101)
 
 
-@pytest.mark.skip_framework(
-    "tensorflow1", "tensorflow2", "tensorflow2v1", "keras", "non_dl_frameworks", "mxnet", "kerastf"
-)
+@pytest.mark.skip_framework("tensorflow2", "tensorflow2v1", "keras", "non_dl_frameworks", "kerastf")
 def test_get_loss_gradients(art_warning):
     try:
 
@@ -69,9 +67,7 @@ def test_get_loss_gradients(art_warning):
         art_warning(e)
 
 
-@pytest.mark.skip_framework(
-    "tensorflow1", "tensorflow2", "tensorflow2v1", "keras", "non_dl_frameworks", "mxnet", "kerastf"
-)
+@pytest.mark.skip_framework("tensorflow2", "tensorflow2v1", "keras", "non_dl_frameworks", "kerastf")
 def test_generate(art_warning):
     try:
 
@@ -95,9 +91,7 @@ def test_generate(art_warning):
         art_warning(e)
 
 
-@pytest.mark.skip_framework(
-    "tensorflow1", "tensorflow2", "tensorflow2v1", "keras", "non_dl_frameworks", "mxnet", "kerastf"
-)
+@pytest.mark.skip_framework("tensorflow2", "tensorflow2v1", "keras", "non_dl_frameworks", "kerastf")
 def test_check_params(art_warning, image_dl_estimator_for_attack):
     try:
         classifier = image_dl_estimator_for_attack(OverTheAirFlickeringPyTorch)

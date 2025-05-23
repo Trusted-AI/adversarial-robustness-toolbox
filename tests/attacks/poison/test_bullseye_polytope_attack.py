@@ -28,7 +28,7 @@ from tests.utils import ARTTestException
 logger = logging.getLogger(__name__)
 
 
-@pytest.mark.skip_framework("non_dl_frameworks", "tensorflow", "mxnet", "keras", "kerastf", "huggingface")
+@pytest.mark.skip_framework("non_dl_frameworks", "tensorflow", "keras", "kerastf", "huggingface")
 def test_poison(art_warning, get_default_mnist_subset, image_dl_estimator):
     try:
         (x_train, y_train), (_, _) = get_default_mnist_subset
@@ -47,7 +47,7 @@ def test_poison(art_warning, get_default_mnist_subset, image_dl_estimator):
         art_warning(e)
 
 
-@pytest.mark.skip_framework("non_dl_frameworks", "tensorflow", "mxnet", "keras", "kerastf", "huggingface")
+@pytest.mark.skip_framework("non_dl_frameworks", "tensorflow", "keras", "kerastf", "huggingface")
 def test_poison_end2end(art_warning, get_default_mnist_subset, image_dl_estimator):
     try:
         (x_train, y_train), (_, _) = get_default_mnist_subset
@@ -68,7 +68,7 @@ def test_poison_end2end(art_warning, get_default_mnist_subset, image_dl_estimato
         art_warning(e)
 
 
-@pytest.mark.skip_framework("non_dl_frameworks", "tensorflow", "mxnet", "keras", "kerastf")
+@pytest.mark.skip_framework("non_dl_frameworks", "tensorflow", "keras", "kerastf")
 def test_poison_multiple_layers(art_warning, get_default_mnist_subset, image_dl_estimator):
     try:
         (x_train, y_train), (_, _) = get_default_mnist_subset
@@ -88,7 +88,7 @@ def test_poison_multiple_layers(art_warning, get_default_mnist_subset, image_dl_
         art_warning(e)
 
 
-@pytest.mark.skip_framework("non_dl_frameworks", "tensorflow", "mxnet", "keras", "kerastf")
+@pytest.mark.skip_framework("non_dl_frameworks", "tensorflow", "keras", "kerastf")
 def test_check_params(art_warning, get_default_mnist_subset, image_dl_estimator):
     try:
         (x_train, y_train), (_, _) = get_default_mnist_subset

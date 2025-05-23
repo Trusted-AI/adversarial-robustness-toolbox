@@ -52,12 +52,12 @@ class TestSpatialTransformation(TestBase):
 
     def test_2_tensorflow_classifier(self):
         """
-        First test with the TensorFlowClassifier.
+        First test with the TensorFlowV2Classifier.
         :return:
         """
         x_test_original = self.x_test_mnist.copy()
 
-        # Build TensorFlowClassifier
+        # Build TensorFlowV2Classifier
         tfc, sess = get_image_classifier_tf()
 
         # Attack

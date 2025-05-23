@@ -26,9 +26,6 @@ tensorflow==2.14.0
 keras==2.14.0
 tensorflow-addons>=0.13.0
 
-# using mxnet-native for reproducible test results on CI machines without Intel Architecture Processors, but mxnet is fully supported by ART
-mxnet-native==1.8.0.post0
-
 # PyTorch
 --find-links https://download.pytorch.org/whl/cpu/torch_stable.html
 torch==2.5.0
@@ -47,8 +44,6 @@ kornia~=0.8.0
 tensorboardX==2.6.2.2
 lief==0.15.1
 jax[cpu]==0.4.26
-
-# lingvo==0.13.1
 
 # tests and style checking
 pytest~=8.3.2
