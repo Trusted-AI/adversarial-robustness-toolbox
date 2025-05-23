@@ -60,7 +60,6 @@ from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent_t
 from art.attacks.evasion.over_the_air_flickering.over_the_air_flickering_pytorch import OverTheAirFlickeringPyTorch
 from art.attacks.evasion.saliency_map import SaliencyMapMethod
 from art.attacks.evasion.shadow_attack import ShadowAttack
-from art.attacks.evasion.shapeshifter import ShapeShifter
 from art.attacks.evasion.simba import SimBA
 from art.attacks.evasion.spatial_transformation import SpatialTransformation
 from art.attacks.evasion.steal_now_attack_later.steal_now_attack_later import SNAL
