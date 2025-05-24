@@ -288,7 +288,7 @@ class AdversarialTrainerCertifiedPytorch(Trainer):
                     bias = torch.unsqueeze(bias, dim=0)
 
                     if certification_loss == "max_logit_loss":
-                        certified_loss += self.classifier.max_logit_loss(
+                        certified_loss += self.classifier.max_logit_loss(  # type: ignore
                             prediction=torch.cat((bias, eps)),
                             target=torch.from_numpy(np.expand_dims(label, axis=0)).to(self.classifier.device),
                         )

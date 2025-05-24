@@ -105,9 +105,9 @@ class BeyondDetectorPyTorch(EvasionDetector):
         samples = torch.from_numpy(x).to(self.device)
 
         self.target_model.eval()
-        self.backbone.eval()
-        self.model_classifier.eval()
-        self.projector.eval()
+        self.backbone.eval()  # type: ignore
+        self.model_classifier.eval()  # type: ignore
+        self.projector.eval()  # type: ignore
 
         number_batch = int(math.ceil(len(samples) / batch_size))
 
@@ -122,15 +122,15 @@ class BeyondDetectorPyTorch(EvasionDetector):
                 b, c, h, w = batch_samples.shape
 
                 trans_images = self._multi_transform(batch_samples).to(self.device)
-                ssl_backbone_out = self.backbone(batch_samples)
+                ssl_backbone_out = self.backbone(batch_samples)  # type: ignore
 
-                ssl_repre = self.projector(ssl_backbone_out)
-                ssl_pred = self.model_classifier(ssl_backbone_out)
+                ssl_repre = self.projector(ssl_backbone_out)  # type: ignore
+                ssl_pred = self.model_classifier(ssl_backbone_out)  # type: ignore
                 ssl_label = torch.max(ssl_pred, -1)[1]
 
-                aug_backbone_out = self.backbone(trans_images.reshape(-1, c, h, w))
-                aug_repre = self.projector(aug_backbone_out)
-                aug_pred = self.model_classifier(aug_backbone_out)
+                aug_backbone_out = self.backbone(trans_images.reshape(-1, c, h, w))  # type: ignore
+                aug_repre = self.projector(aug_backbone_out)  # type: ignore
+                aug_pred = self.model_classifier(aug_backbone_out)  # type: ignore
                 aug_pred = aug_pred.reshape(b, self.aug_num, -1)
 
                 sim_repre = F.cosine_similarity(
