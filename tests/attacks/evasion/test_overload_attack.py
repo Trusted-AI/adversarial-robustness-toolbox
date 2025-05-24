@@ -35,24 +35,31 @@ def test_generate(art_warning):
         from ultralytics.nn.modules import Conv
         from ultralytics import YOLO
 
-        torch.serialization.add_safe_globals([torch.nn.modules.container.Sequential])
-        torch.serialization.add_safe_globals([torch.nn.modules.container.ModuleList])
-        torch.serialization.add_safe_globals([torch.nn.modules.pooling.MaxPool2d])
-        torch.serialization.add_safe_globals([torch.nn.modules.batchnorm.BatchNorm2d])
-        torch.serialization.add_safe_globals([torch.nn.modules.activation.SiLU])
-        torch.serialization.add_safe_globals([torch.nn.modules.conv.Conv2d])
-        torch.serialization.add_safe_globals([torch.nn.modules.upsampling.Upsample])
-        torch.serialization.add_safe_globals([ultralytics.nn.tasks.DetectionModel])
-        torch.serialization.add_safe_globals([ultralytics.nn.tasks.SPPF])
-        torch.serialization.add_safe_globals([ultralytics.nn.tasks.C3])
-        torch.serialization.add_safe_globals([ultralytics.nn.tasks.Bottleneck])
-        torch.serialization.add_safe_globals([ultralytics.nn.tasks.Detect])
-        torch.serialization.add_safe_globals([Conv])
-        torch.serialization.add_safe_globals([ultralytics.nn.modules.Conv])
+        # torch.serialization.add_safe_globals([torch.nn.modules.container.Sequential])
+        # torch.serialization.add_safe_globals([torch.nn.modules.container.ModuleList])
+        # torch.serialization.add_safe_globals([torch.nn.modules.pooling.MaxPool2d])
+        # torch.serialization.add_safe_globals([torch.nn.modules.batchnorm.BatchNorm2d])
+        # torch.serialization.add_safe_globals([torch.nn.modules.activation.SiLU])
+        # torch.serialization.add_safe_globals([torch.nn.modules.conv.Conv2d])
+        # torch.serialization.add_safe_globals([torch.nn.modules.upsampling.Upsample])
+        # torch.serialization.add_safe_globals([ultralytics.nn.tasks.DetectionModel])
+        # torch.serialization.add_safe_globals([ultralytics.nn.tasks.SPPF])
+        # torch.serialization.add_safe_globals([ultralytics.nn.tasks.C3])
+        # torch.serialization.add_safe_globals([ultralytics.nn.tasks.Bottleneck])
+        # torch.serialization.add_safe_globals([ultralytics.nn.tasks.Detect])
+        # torch.serialization.add_safe_globals([Conv])
+        # torch.serialization.add_safe_globals([ultralytics.nn.modules.Conv])
         # torch.serialization.add_safe_globals([ultralytics.nn.modules.Concat])
         # torch.serialization.add_safe_globals([ultralytics.nn.modules.DFL])
 
         model = YOLO("yolov5su.pt")
+
+        # Collect all unique classes used in the model
+        all_classes = set(type(module) for module in model.modules())
+
+        # Add them to safe_globals
+        torch.serialization.add_safe_globals(list(all_classes))
+
         py_model = PyTorchYolo(model=model, input_shape=(3, 640, 640), channels_first=True)
 
         # Download a sample image
@@ -89,24 +96,31 @@ def test_check_params(art_warning):
         from ultralytics import YOLO
         from ultralytics.nn.modules import Conv
 
-        torch.serialization.add_safe_globals([torch.nn.modules.container.Sequential])
-        torch.serialization.add_safe_globals([torch.nn.modules.container.ModuleList])
-        torch.serialization.add_safe_globals([torch.nn.modules.pooling.MaxPool2d])
-        torch.serialization.add_safe_globals([torch.nn.modules.batchnorm.BatchNorm2d])
-        torch.serialization.add_safe_globals([torch.nn.modules.activation.SiLU])
-        torch.serialization.add_safe_globals([torch.nn.modules.conv.Conv2d])
-        torch.serialization.add_safe_globals([torch.nn.modules.upsampling.Upsample])
-        torch.serialization.add_safe_globals([ultralytics.nn.tasks.DetectionModel])
-        torch.serialization.add_safe_globals([ultralytics.nn.tasks.SPPF])
-        torch.serialization.add_safe_globals([ultralytics.nn.tasks.C3])
-        torch.serialization.add_safe_globals([ultralytics.nn.tasks.Bottleneck])
-        torch.serialization.add_safe_globals([ultralytics.nn.tasks.Detect])
-        torch.serialization.add_safe_globals([Conv])
-        torch.serialization.add_safe_globals([ultralytics.nn.modules.Conv])
+        # torch.serialization.add_safe_globals([torch.nn.modules.container.Sequential])
+        # torch.serialization.add_safe_globals([torch.nn.modules.container.ModuleList])
+        # torch.serialization.add_safe_globals([torch.nn.modules.pooling.MaxPool2d])
+        # torch.serialization.add_safe_globals([torch.nn.modules.batchnorm.BatchNorm2d])
+        # torch.serialization.add_safe_globals([torch.nn.modules.activation.SiLU])
+        # torch.serialization.add_safe_globals([torch.nn.modules.conv.Conv2d])
+        # torch.serialization.add_safe_globals([torch.nn.modules.upsampling.Upsample])
+        # torch.serialization.add_safe_globals([ultralytics.nn.tasks.DetectionModel])
+        # torch.serialization.add_safe_globals([ultralytics.nn.tasks.SPPF])
+        # torch.serialization.add_safe_globals([ultralytics.nn.tasks.C3])
+        # torch.serialization.add_safe_globals([ultralytics.nn.tasks.Bottleneck])
+        # torch.serialization.add_safe_globals([ultralytics.nn.tasks.Detect])
+        # torch.serialization.add_safe_globals([Conv])
+        # torch.serialization.add_safe_globals([ultralytics.nn.modules.Conv])
         # torch.serialization.add_safe_globals([ultralytics.nn.modules.Concat])
         # torch.serialization.add_safe_globals([ultralytics.nn.modules.DFL])
 
         model = YOLO("yolov5su.pt")
+
+        # Collect all unique classes used in the model
+        all_classes = set(type(module) for module in model.modules())
+
+        # Add them to safe_globals
+        torch.serialization.add_safe_globals(list(all_classes))
+
         py_model = PyTorchYolo(model=model, input_shape=(3, 640, 640), channels_first=True)
 
         with pytest.raises(ValueError):
