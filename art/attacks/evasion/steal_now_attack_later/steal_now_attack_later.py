@@ -101,7 +101,7 @@ def _generate_tile_kernel(patch: list, mask: list, tile_size: int) -> Tuple["tor
             repeat = 2
             p1_list = []
             for _ in range(repeat):
-                p_1 = torchvision.transforms.Resize((tile_size // 2, new_len))(t_patch)
+                p_1 = torchvision.transforms.Resize((max(tile_size // 2, 1), new_len))(t_patch)
                 if torch.rand([]) < 0.6:
                     p1_list.append(FlipOp(p_1))
                 else:
@@ -109,7 +109,7 @@ def _generate_tile_kernel(patch: list, mask: list, tile_size: int) -> Tuple["tor
             p_1 = torch.cat(p1_list, dim=-2)
             p_list.append(p_1)
 
-        p_2 = torchvision.transforms.RandomCrop((tile_size, tile_size % new_len))(p_1)
+        p_2 = torchvision.transforms.RandomCrop((tile_size, max(tile_size % new_len, 1)))(p_1)
         p_list.append(FlipOp(p_2))
 
         n_patch = torch.cat(p_list, dim=-1)
