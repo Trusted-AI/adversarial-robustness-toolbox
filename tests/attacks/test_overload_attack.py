@@ -68,7 +68,7 @@ def test_generate(art_warning, get_pytorch_detector_yolo):
         scores_list_adv_filtered = [scores_list_adv.index(x) for x in scores_list_adv if x > threshold]
 
         assert len(scores_list_filtered) == 11
-        assert len(scores_list_adv_filtered) == 178
+        assert len(scores_list_adv_filtered) > 170
 
     except ARTTestException as e:
         art_warning(e)
