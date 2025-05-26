@@ -34,7 +34,6 @@ def test_generate(art_warning, get_pytorch_detector_yolo):
         from PIL import Image
         import requests
         import torch
-        from ultralytics import YOLO
 
         threshold = 0.85
 
