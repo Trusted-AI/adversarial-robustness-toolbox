@@ -210,7 +210,7 @@ def image_iterator(framework, get_default_mnist_subset, default_batch_size):
 
     def _get_image_iterator():
         if framework == "keras" or framework == "kerastf":
-            from keras.preprocessing.image import ImageDataGenerator
+            from tensorflow.keras.preprocessing.image import ImageDataGenerator
 
             keras_gen = ImageDataGenerator(
                 width_shift_range=0.075,

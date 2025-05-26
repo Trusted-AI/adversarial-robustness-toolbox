@@ -15,20 +15,20 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-# import logging
-#
-# import pytest
+import logging
+
+import numpy as np
+import pytest
 
 from art.attacks.evasion.overload.overload import OverloadPyTorch
 
 from tests.utils import ARTTestException
-from tests.estimators.object_detection.conftest import *
 
 logger = logging.getLogger(__name__)
 
 
 @pytest.mark.only_with_platform("pytorch")
-def test_generate(art_warning, get_pytorch_yolo):
+def test_generate(art_warning, get_pytorch_detector_yolo):
     try:
         from io import BytesIO
         from PIL import Image
@@ -38,7 +38,7 @@ def test_generate(art_warning, get_pytorch_yolo):
 
         threshold = 0.85
 
-        object_detector, _, _ = get_pytorch_yolo
+        object_detector = get_pytorch_detector_yolo
         object_detector.set_params(input_shape=(3, 640, 640))
 
         # Download a sample image
@@ -76,9 +76,9 @@ def test_generate(art_warning, get_pytorch_yolo):
 
 
 @pytest.mark.only_with_platform("pytorch")
-def test_check_params(art_warning, get_pytorch_yolo):
+def test_check_params(art_warning, get_pytorch_detector_yolo):
     try:
-        object_detector, _, _ = get_pytorch_yolo
+        object_detector = get_pytorch_detector_yolo
         object_detector.set_params(input_shape=(3, 640, 640))
 
         with pytest.raises(ValueError):
