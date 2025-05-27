@@ -150,10 +150,10 @@ class FeatureAdversariesPyTorch(EvasionAttack):
                 loss.backward()
 
                 # pgd step
-                if adv.grad is not None:
+                if adv.grad is not None and self.step_size is not None:
                     adv.data = adv - adv.grad.detach().sign() * self.step_size
                 else:
-                    raise ValueError("Gradient tensor in PyTorch model is `None`.")
+                    raise ValueError("Gradient tensor in PyTorch model or step_size is `None`.")
                 perturbation = torch.clamp(adv.detach() - x.detach(), -self.delta, self.delta)
                 adv.data = x.detach() + perturbation
                 if self.estimator.clip_values is not None:

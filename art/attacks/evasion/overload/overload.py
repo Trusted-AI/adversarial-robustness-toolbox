@@ -61,6 +61,7 @@ class OverloadPyTorch(EvasionAttack):
         max_iter: int,
         num_grid: int,
         batch_size: int,
+        threshold: float,
     ) -> None:
         """
         Create an overload attack instance.
@@ -70,12 +71,14 @@ class OverloadPyTorch(EvasionAttack):
         :param max_iter: The maximum number of iterations.
         :param num_grid: The number of grids for width and high dimension.
         :param batch_size: Size of the batch on which adversarial samples are generated.
+        :param threshold: IoU threshold.
         """
         super().__init__(estimator=estimator)
         self.eps = eps
         self.max_iter = max_iter
         self.num_grid = num_grid
         self.batch_size = batch_size
+        self.threshold = threshold
         self._check_params()
 
     def generate(self, x: np.ndarray, y: np.ndarray | None = None, **kwargs) -> np.ndarray:
@@ -157,10 +160,9 @@ class OverloadPyTorch(EvasionAttack):
         if isinstance(adv_logits, tuple):
             adv_logits = adv_logits[0]
 
-        threshold = self.estimator.model.conf
         conf = adv_logits[..., 4]
         prob = adv_logits[..., 5:]
-        prob = torch.where(conf[:, :, None] * prob > threshold, torch.ones_like(prob), prob)
+        prob = torch.where(conf[:, :, None] * prob > self.threshold, torch.ones_like(prob), prob)
         prob = torch.sum(prob, dim=2)
         conf = conf * prob
 
@@ -185,7 +187,7 @@ class OverloadPyTorch(EvasionAttack):
             for x_i in range(x.shape[0]):
                 xyhw = adv_logits[x_i, :, :4]
                 prob = torch.max(adv_logits[x_i, :, 5:], dim=1).values
-                box_idx = adv_logits[x_i, :, 4] * prob > threshold
+                box_idx = adv_logits[x_i, :, 4] * prob > self.threshold
                 xyhw = xyhw[box_idx]
                 c_xyxy = self.xywh2xyxy(xyhw)
                 scores = box_iou(grid_box, c_xyxy)
@@ -244,3 +246,6 @@ class OverloadPyTorch(EvasionAttack):
 
         if self.batch_size < 1:
             raise ValueError("The batch size must be a positive integer.")
+
+        if self.threshold < 0.0 or self.threshold > 1.0:
+            raise ValueError("The threshold must be in the range [0, 1].")
