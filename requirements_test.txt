@@ -1,3 +1,5 @@
+--find-links https://download.pytorch.org/whl/cpu
+
 # base
 
 numpy>=1.18.5,<1.27
@@ -27,10 +29,9 @@ keras==2.14.0
 tensorflow-addons>=0.13.0
 
 # PyTorch
---find-links https://download.pytorch.org/whl/cpu/torch_stable.html
-torch==2.5.0
-torchaudio==2.5.0
-torchvision==0.20.0
+torch==2.7.0
+torchaudio==2.7.0
+torchvision==0.22.0
 
 # PyTorch image transformers
 timm==1.0.15
@@ -60,8 +61,6 @@ types-setuptools==80.8.0.20250521
 
 # other
 requests~=2.32.3
-ultralytics==8.0.217
-ipython==8.31.0
 
 # ART
 -e .

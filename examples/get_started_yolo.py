@@ -147,6 +147,8 @@ def plot_image_with_boxes(img, boxes, pred_cls, title):
     text_th = 3
     rect_th = 1
 
+    img = img.copy()
+
     for i in range(len(boxes)):
         cv2.rectangle(
             img,
@@ -206,8 +208,10 @@ if MODEL == "yolov3":
             else:
                 return self.model(x)
 
-    model_path = "./yolov3.cfg"
-    weights_path = "./yolov3.weights"
+    # model_path = "./yolov3.cfg"
+    # weights_path = "./yolov3.weights"
+    model_path = "/tmp/PyTorch-YOLOv3/config/yolov3.cfg"
+    weights_path = "/tmp/PyTorch-YOLOv3/weights/yolov3.weights"
     model = load_model(model_path=model_path, weights_path=weights_path)
 
     model = Yolo(model)
