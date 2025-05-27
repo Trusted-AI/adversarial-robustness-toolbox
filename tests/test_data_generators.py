@@ -22,7 +22,7 @@ import unittest
 
 import tensorflow as tf
 import numpy as np
-from keras.preprocessing.image import ImageDataGenerator
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
 
 from art.data_generators import KerasDataGenerator, PyTorchDataGenerator, TensorFlowDataGenerator
 from art.data_generators import TensorFlowV2DataGenerator, NumpyDataGenerator
