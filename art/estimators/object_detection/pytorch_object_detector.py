@@ -141,7 +141,7 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
         self._model.to(self._device)
         self.is_yolov8 = is_yolov8
         if self.is_yolov8:
-            self._model.model.eval()
+            self._model.model.eval()  # type: ignore
         else:
             self._model.eval()
 
@@ -226,7 +226,7 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
 
             if not self.channels_first:
                 x_tensor = torch.permute(x_tensor, (0, 3, 1, 2))
-            x_tensor = x_tensor / norm_factor
+            x_tensor = x_tensor / norm_factor  # type: ignore
 
             # Set gradients
             if not no_grad:
@@ -410,7 +410,7 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
 
         # Set model to evaluation mode
         if self.is_yolov8:
-            self._model.model.eval()
+            self._model.model.eval()  # type: ignore
         else:
             self._model.eval()
 
