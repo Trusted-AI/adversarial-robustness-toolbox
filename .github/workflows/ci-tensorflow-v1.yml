@@ -57,9 +57,9 @@ jobs:
           pip install tensorflow==${{ matrix.tensorflow }}
           pip install keras==${{ matrix.keras }}
           pip install numpy==1.20
-          pip install torch==1.13.1
-          pip install torchaudio==0.13.1
-          pip install torchvision==0.14.1
+          pip install torch==1.13.1 --index-url https://download.pytorch.org/whl/cpu
+          pip install torchaudio==0.13.1 --index-url https://download.pytorch.org/whl/cpu
+          pip install torchvision==0.14.1 --index-url https://download.pytorch.org/whl/cpu
           pip install Pillow==9.5.0
           pip install h5py==3.8.0
           pip install kornia==0.6.12
@@ -77,7 +77,7 @@ jobs:
       - name: Run Tests
         run: ./run_tests.sh ${{ matrix.framework }}
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: true
