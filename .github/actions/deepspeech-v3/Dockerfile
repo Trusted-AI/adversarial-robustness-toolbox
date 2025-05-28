@@ -1,5 +1,5 @@
 # Get base image
-FROM python:3.10.13-slim-bullseye
+FROM python:3.10.13-slim-bookworm
 
 # Set to install things in non-interactive mode
 ENV DEBIAN_FRONTEND noninteractive
