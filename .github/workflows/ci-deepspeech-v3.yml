@@ -25,7 +25,7 @@ jobs:
   test_deepspeech_v3_torch_2_1_1:
     name: PyTorchDeepSpeech v3 / PyTorch 2.1.1
     runs-on: ubuntu-latest
-    container: bbuesser/art_testing_envs_deepspeech_v3_torch_2_1_1:latest
+    container: bbuesser/art_testing_env_deepspeech_v3_torch_2_1_1:latest
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
