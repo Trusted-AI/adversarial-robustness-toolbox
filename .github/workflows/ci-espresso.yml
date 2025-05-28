@@ -25,7 +25,7 @@ jobs:
   test_espresso:
     name: PyTorchEspresso
     runs-on: ubuntu-latest
-    container: adversarialrobustnesstoolbox/art_testing_envs:espresso
+    container: bbuesser/art_testing_env_espresso:latest
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4

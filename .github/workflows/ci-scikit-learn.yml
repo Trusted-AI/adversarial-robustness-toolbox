@@ -28,13 +28,13 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: scikit-learn 1.3.2 (Python 3.10)
+          - name: scikit-learn 1.5.2 (Python 3.10)
             framework: scikitlearn
-            scikit-learn: 1.3.2
+            scikit-learn: 1.5.2
             python: '3.10'
-          - name: scikit-learn 1.4.0 (Python 3.10)
+          - name: scikit-learn 1.6.1 (Python 3.10)
             framework: scikitlearn
-            scikit-learn: 1.4.0
+            scikit-learn: 1.6.1
             python: '3.10'
 
     name: ${{ matrix.name }}
@@ -50,7 +50,7 @@ jobs:
           sudo apt-get update
           sudo apt-get -y -q install ffmpeg libavcodec-extra
           python -m pip install --upgrade pip setuptools wheel
-          pip install -r requirements_test.txt
+          pip install -q -r <(sed '/^scikit-learn/d' requirements_test.txt)
           pip install scikit-learn==${{ matrix.scikit-learn }}
           pip list
       - name: Run Tests
