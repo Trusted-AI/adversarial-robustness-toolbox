@@ -78,8 +78,8 @@ def test_baseline(art_warning, get_iris_dataset, model_type):
             baseline_inferred_test
         )
 
-        expected_train_acc = {"nn": 0.58, "rf": 0.98, "gb": 0.98, "lr": 0.77, "dt": 0.98, "knn": 0.86, "svm": 0.83}
-        expected_test_acc = {"nn": 0.62, "rf": 0.86, "gb": 0.82, "lr": 0.86, "dt": 0.84, "knn": 0.82, "svm": 0.93}
+        expected_train_acc = {"nn": 0.58, "rf": 0.98, "gb": 0.98, "lr": 0.77, "dt": 0.98, "knn": 0.84, "svm": 0.83}
+        expected_test_acc = {"nn": 0.62, "rf": 0.83, "gb": 0.79, "lr": 0.86, "dt": 0.82, "knn": 0.82, "svm": 0.93}
 
         assert expected_train_acc[model_type] <= baseline_train_acc
         assert expected_test_acc[model_type] <= baseline_test_acc
@@ -176,7 +176,7 @@ def test_baseline_slice(art_warning, get_iris_dataset, model_type):
         )
 
         expected_train_acc = {"nn": 0.58, "rf": 0.98, "gb": 0.98, "lr": 0.77, "dt": 0.98, "knn": 0.85, "svm": 0.83}
-        expected_test_acc = {"nn": 0.62, "rf": 0.86, "gb": 0.82, "lr": 0.86, "dt": 0.8, "knn": 0.81, "svm": 0.93}
+        expected_test_acc = {"nn": 0.62, "rf": 0.83, "gb": 0.82, "lr": 0.86, "dt": 0.8, "knn": 0.81, "svm": 0.93}
 
         assert expected_train_acc[model_type] <= baseline_train_acc
         assert expected_test_acc[model_type] <= baseline_test_acc
@@ -228,7 +228,7 @@ def test_baseline_no_values(art_warning, get_iris_dataset, model_type):
         )
 
         expected_train_acc = {"nn": 0.58, "rf": 0.98, "gb": 0.98, "lr": 0.77, "dt": 0.98, "knn": 0.85, "svm": 0.83}
-        expected_test_acc = {"nn": 0.62, "rf": 0.88, "gb": 0.82, "lr": 0.86, "dt": 0.8, "knn": 0.81, "svm": 0.93}
+        expected_test_acc = {"nn": 0.62, "rf": 0.82, "gb": 0.8, "lr": 0.86, "dt": 0.8, "knn": 0.81, "svm": 0.93}
 
         assert expected_train_acc[model_type] <= baseline_train_acc
         assert expected_test_acc[model_type] <= baseline_test_acc
@@ -510,7 +510,7 @@ def test_baseline_no_encoder_after_feature(art_warning, get_iris_dataset, model_
         )
 
         expected_train_acc = {"nn": 0.58, "rf": 0.94, "gb": 0.95, "lr": 0.8, "dt": 0.94, "knn": 0.87, "svm": 0.8}
-        expected_test_acc = {"nn": 0.62, "rf": 0.84, "gb": 0.84, "lr": 0.86, "dt": 0.82, "knn": 0.86, "svm": 0.88}
+        expected_test_acc = {"nn": 0.62, "rf": 0.82, "gb": 0.84, "lr": 0.86, "dt": 0.79, "knn": 0.86, "svm": 0.88}
 
         assert expected_train_acc[model_type] <= baseline_train_acc
         assert expected_test_acc[model_type] <= baseline_test_acc

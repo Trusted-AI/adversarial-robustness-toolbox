@@ -1,5 +1,7 @@
 # Get base image
-FROM python:3.8.19-slim-bullseye
+FROM python:3.8.19-slim-bookworm
+
+ENV MONO_TLS_PROVIDER=legacy
 
 # Install system wide software
 RUN apt-get update \

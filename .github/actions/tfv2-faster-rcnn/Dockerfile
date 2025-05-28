@@ -1,5 +1,5 @@
 # Get base from a tensorflow image
-FROM tensorflow/tensorflow:2.10.1
+FROM tensorflow/tensorflow:2.13.0
 
 # Set to install things in non-interactive mode
 ENV DEBIAN_FRONTEND noninteractive
@@ -38,10 +38,9 @@ RUN cd TensorFlow && wget https://github.com/protocolbuffers/protobuf/releases/d
 RUN cd TensorFlow && unzip protoc-3.17.3-linux-x86_64.zip -d protobuf
 RUN cd TensorFlow/models/research && /TensorFlow/protobuf/bin/protoc object_detection/protos/*.proto --python_out=.
 RUN cd TensorFlow/models/research && cp object_detection/packages/tf2/setup.py .
-RUN cd TensorFlow/models/research && python -m pip install --use-feature=2020-resolver .
+RUN cd TensorFlow/models/research && python -m pip install .
 
 RUN pip install tqdm
 RUN pip install requests
-RUN pip install sklearn
 RUN pip install numba==0.50.0
 RUN pip install pytest-cov
