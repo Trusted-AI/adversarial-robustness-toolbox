@@ -58,7 +58,7 @@ pytest-cov~=6.0.0
 pylint==3.2.6
 mypy==1.11.1
 pycodestyle==2.12.1
-black==24.8.0
+black==25.1.0
 ruff==0.9.3
 types-six==1.16.21.9
 types-PyYAML==6.0.12.20240917

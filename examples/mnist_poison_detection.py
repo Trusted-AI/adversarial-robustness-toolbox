@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
-"""Generates a backdoor for MNIST dataset, then trains a convolutional neural network on the poisoned dataset,
- and runs activation defence to find poison."""
+"""
+Generates a backdoor for MNIST dataset, then trains a convolutional neural network on the poisoned dataset,
+and runs activation defence to find poison.
+"""
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import pprint
