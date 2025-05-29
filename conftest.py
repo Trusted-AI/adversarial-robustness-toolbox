@@ -30,7 +30,6 @@ import requests
 
 from art.data_generators import (
     KerasDataGenerator,
-    MXDataGenerator,
     PyTorchDataGenerator,
     TensorFlowDataGenerator,
     TensorFlowV2DataGenerator,
@@ -45,7 +44,6 @@ from tests.utils import (
     get_image_classifier_kr_tf,
     get_image_classifier_kr_tf_functional,
     get_image_classifier_kr_tf_with_wildcard,
-    get_image_classifier_mxnet_custom_ini,
     get_image_classifier_pt,
     get_image_classifier_pt_functional,
     get_image_classifier_tf,
@@ -66,7 +64,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 deep_learning_frameworks = [
-    "keras", "tensorflow1", "tensorflow2", "tensorflow2v1", "pytorch", "kerastf", "mxnet", "jax", "huggingface",
+    "keras", "tensorflow2", "tensorflow2v1", "pytorch", "kerastf", "jax", "huggingface",
 ]
 non_deep_learning_frameworks = ["scikitlearn"]
 
@@ -83,7 +81,7 @@ def get_default_framework():
     if tf.__version__[0] == "2":
         default_framework = "tensorflow2"
     else:
-        default_framework = "tensorflow1"
+        raise ValueError("TensorFlow version not recognised.")
 
     return default_framework
 
@@ -185,7 +183,7 @@ def estimator_for_attack(framework):
 @pytest.fixture(autouse=True)
 def setup_tear_down_framework(framework):
     # Ran before each test
-    if framework == "tensorflow1" or framework == "tensorflow2":
+    if framework == "tensorflow2":
         import tensorflow as tf
 
         if tf.__version__[0] != "2":
@@ -223,7 +221,7 @@ def image_iterator(framework, get_default_mnist_subset, default_batch_size):
             )
             return keras_gen.flow(x_train_mnist, y_train_mnist, batch_size=default_batch_size)
 
-        if framework in ["tensorflow1", "tensorflow2v1"]:
+        if framework == "tensorflow2v1":
             import tensorflow.compat.v1 as tf
 
             x_tensor = tf.convert_to_tensor(x_train_mnist.reshape(10, 100, 28, 28, 1))
@@ -247,12 +245,6 @@ def image_iterator(framework, get_default_mnist_subset, default_batch_size):
             dataset = torch.utils.data.TensorDataset(x_train_tens, y_train_tens)
             return torch.utils.data.DataLoader(dataset=dataset, batch_size=default_batch_size, shuffle=True)
 
-        if framework == "mxnet":
-            from mxnet import gluon
-
-            dataset = gluon.data.dataset.ArrayDataset(x_train_mnist, y_train_mnist)
-            return gluon.data.DataLoader(dataset, batch_size=5, shuffle=True)
-
         return None
 
     return _get_image_iterator
@@ -272,7 +264,7 @@ def image_data_generator(framework, get_default_mnist_subset, image_iterator, de
                 batch_size=default_batch_size,
             )
 
-        if framework in ["tensorflow1", "tensorflow2v1"]:
+        if framework == "tensorflow2v1":
             data_generator = TensorFlowDataGenerator(
                 sess=kwargs["sess"],
                 iterator=image_it,
@@ -291,11 +283,6 @@ def image_data_generator(framework, get_default_mnist_subset, image_iterator, de
 
         if framework in ["pytorch", "huggingface"]:
             data_generator = PyTorchDataGenerator(
-                iterator=image_it, size=x_train_mnist.shape[0], batch_size=default_batch_size
-            )
-
-        if framework == "mxnet":
-            data_generator = MXDataGenerator(
                 iterator=image_it, size=x_train_mnist.shape[0], batch_size=default_batch_size
             )
 
@@ -376,85 +363,6 @@ def expected_values(framework, request):
                 )
 
     return _expected_values
-
-
-@pytest.fixture(scope="session")
-def get_image_classifier_mx_model():
-    import mxnet  # lgtm [py/import-and-import-from]
-
-    # TODO needs to be made parameterizable once Mxnet allows multiple identical models to be created in one session
-    from_logits = True
-
-    class Model(mxnet.gluon.nn.Block):
-        def __init__(self, **kwargs):
-            super(Model, self).__init__(**kwargs)
-            self.model = mxnet.gluon.nn.Sequential()
-            self.model.add(
-                mxnet.gluon.nn.Conv2D(
-                    channels=1,
-                    kernel_size=7,
-                    activation="relu",
-                ),
-                mxnet.gluon.nn.MaxPool2D(pool_size=4, strides=4),
-                mxnet.gluon.nn.Flatten(),
-                mxnet.gluon.nn.Dense(
-                    10,
-                    activation=None,
-                ),
-            )
-
-        def forward(self, x):
-            y = self.model(x)
-            if from_logits:
-                return y
-
-            return y.softmax()
-
-    model = Model()
-    custom_init = get_image_classifier_mxnet_custom_ini()
-    model.initialize(init=custom_init)
-    return model
-
-
-@pytest.fixture
-def get_image_classifier_mx_instance(get_image_classifier_mx_model, mnist_shape):
-    import mxnet  # lgtm [py/import-and-import-from]
-    from art.estimators.classification import MXClassifier
-
-    model = get_image_classifier_mx_model
-
-    def _get_image_classifier_mx_instance(from_logits=True):
-        if from_logits is False:
-            # due to the fact that only 1 instance of get_image_classifier_mx_model can be created in one session
-            # this will be resolved once Mxnet allows for 2 models with identical weights to be created in 1 session
-            raise ARTTestFixtureNotImplemented(
-                "Currently only supporting Mxnet classifier with from_logit set to True",
-                get_image_classifier_mx_instance.__name__,
-                framework,
-            )
-
-        loss = mxnet.gluon.loss.SoftmaxCrossEntropyLoss(from_logits=from_logits)
-        trainer = mxnet.gluon.Trainer(model.collect_params(), "sgd", {"learning_rate": 0.1})
-
-        # Get classifier
-        mxc = MXClassifier(
-            model=model,
-            loss=loss,
-            input_shape=mnist_shape,
-            # input_shape=(28, 28, 1),
-            nb_classes=10,
-            optimizer=trainer,
-            ctx=None,
-            channels_first=True,
-            clip_values=(0, 1),
-            preprocessing_defences=None,
-            postprocessing_defences=None,
-            preprocessing=(0.0, 1.0),
-        )
-
-        return mxc
-
-    return _get_image_classifier_mx_instance
 
 
 @pytest.fixture
@@ -550,7 +458,7 @@ def image_dl_gan(framework):
 
 
 @pytest.fixture
-def image_dl_estimator(framework, get_image_classifier_mx_instance):
+def image_dl_estimator(framework):
     def _image_dl_estimator(functional=False, **kwargs):
         sess = None
         wildcard = False
@@ -574,7 +482,7 @@ def image_dl_estimator(framework, get_image_classifier_mx_instance):
                             image_dl_estimator.__name__,
                             framework,
                         )
-        if framework in ["tensorflow1", "tensorflow2", "tensorflow2v1"]:
+        if framework in ["tensorflow2", "tensorflow2v1"]:
             if wildcard is False and functional is False:
                 classifier, sess = get_image_classifier_tf(**kwargs, framework=framework)
                 return classifier, sess
@@ -592,10 +500,6 @@ def image_dl_estimator(framework, get_image_classifier_mx_instance):
                     classifier = get_image_classifier_kr_tf_functional(**kwargs)
                 else:
                     classifier = get_image_classifier_kr_tf(**kwargs)
-
-        if framework == "mxnet":
-            if wildcard is False and functional is False:
-                classifier = get_image_classifier_mx_instance(**kwargs)
 
         if framework == "huggingface":
             if not wildcard:
@@ -665,7 +569,7 @@ def tabular_dl_estimator(framework):
                 kr_classifier = get_tabular_classifier_kr()
                 classifier = KerasClassifier(model=kr_classifier.model, use_logits=False, channels_first=True)
 
-        if framework == "tensorflow1" or framework == "tensorflow2":
+        if framework == "tensorflow2":
             if clipped:
                 classifier, _ = get_tabular_classifier_tf()
 
@@ -706,7 +610,7 @@ def framework(request):
         if tf.__version__[0] == "2":
             ml_framework = "tensorflow2"
         else:
-            ml_framework = "tensorflow1"
+            raise ValueError("TensorFlow version not recognised.")
 
     if ml_framework not in art_supported_frameworks:
         raise Exception(
@@ -784,7 +688,7 @@ def default_dataset_subset_sizes():
 
 @pytest.fixture()
 def mnist_shape(framework):
-    if framework in ["pytorch", "mxnet", "huggingface"]:
+    if framework in ["pytorch", "huggingface"]:
         return (1, 28, 28)
     else:
         return (28, 28, 1)
@@ -792,7 +696,7 @@ def mnist_shape(framework):
 
 @pytest.fixture()
 def cifar10_shape(framework):
-    if framework == "pytorch" or framework == "mxnet":
+    if framework == "pytorch":
         return (3, 32, 32)
     else:
         return (32, 32, 3)
@@ -894,7 +798,7 @@ def only_with_platform(request, framework):
 
 # ART test fixture to skip test for specific framework values
 # eg: @pytest.mark.skip_framework("tensorflow", "keras", "pytorch", "scikitlearn",
-# "mxnet", "kerastf", "non_dl_frameworks", "dl_frameworks")
+# "kerastf", "non_dl_frameworks", "dl_frameworks")
 @pytest.fixture(autouse=True)
 def skip_by_framework(request, framework):
     if request.node.get_closest_marker("skip_framework"):
@@ -906,7 +810,6 @@ def skip_by_framework(request, framework):
             framework_to_skip_list.extend(non_deep_learning_frameworks)
 
         if "tensorflow" in framework_to_skip_list:
-            framework_to_skip_list.append("tensorflow1")
             framework_to_skip_list.append("tensorflow2")
             framework_to_skip_list.append("tensorflow2v1")
 

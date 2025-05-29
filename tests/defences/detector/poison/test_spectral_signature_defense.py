@@ -45,7 +45,7 @@ def test_wrong_parameters(params, art_warning, get_default_mnist_subset, image_d
         art_warning(e)
 
 
-@pytest.mark.skip_framework("non_dl_frameworks", "mxnet")
+@pytest.mark.skip_framework("non_dl_frameworks")
 def test_detect_poison(art_warning, get_default_mnist_subset, image_dl_estimator):
     try:
         (x_train_mnist, y_train_mnist), (_, _) = get_default_mnist_subset
@@ -66,7 +66,7 @@ def test_detect_poison(art_warning, get_default_mnist_subset, image_dl_estimator
         art_warning(e)
 
 
-@pytest.mark.skip_framework("non_dl_frameworks", "mxnet")
+@pytest.mark.skip_framework("non_dl_frameworks")
 def test_evaluate_defense(art_warning, get_default_mnist_subset, image_dl_estimator):
     try:
         (x_train_mnist, y_train_mnist), (_, _) = get_default_mnist_subset

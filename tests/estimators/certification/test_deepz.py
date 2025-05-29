@@ -61,10 +61,10 @@ def fix_get_cifar10_data():
     return x_test, y_test
 
 
-@pytest.mark.skip_framework("mxnet", "non_dl_frameworks", "tensorflow1", "keras", "kerastf", "tensorflow2")
+@pytest.mark.skip_framework("non_dl_frameworks", "keras", "kerastf", "tensorflow2")
 def test_mnist_certification(art_warning, fix_get_mnist_data):
     """
-    Check the following properties for the first 100 samples of the MNIST test set given an l_inft bound of 0.05.
+    Check the following properties for the first 100 samples of the MNIST test set given an l_inf bound of 0.05.
         1) Upper and lower bounds are calculated correctly.
         2) The correct number of datapoints are certified.
         3) The standard accuracy is correct.
@@ -163,10 +163,10 @@ def test_mnist_certification(art_warning, fix_get_mnist_data):
         art_warning(e)
 
 
-@pytest.mark.skip_framework("mxnet", "non_dl_frameworks", "tensorflow1", "keras", "kerastf", "tensorflow2")
+@pytest.mark.skip_framework("non_dl_frameworks", "keras", "kerastf", "tensorflow2")
 def test_cifar_certification(art_warning, fix_get_cifar10_data):
     """
-    Check the following properties for the first 100 samples of the CIFAR10 test set given an l_inft bound of 0.004.
+    Check the following properties for the first 100 samples of the CIFAR10 test set given an l_inf bound of 0.004.
         1) Upper and lower bounds are calculated correctly.
         2) The correct number of datapoints are certified.
         3) The standard accuracy is correct.

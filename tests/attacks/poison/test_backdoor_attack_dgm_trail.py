@@ -30,7 +30,7 @@ def x_target():
     return np.random.random_sample((28, 28, 1))
 
 
-@pytest.mark.skip_framework("keras", "pytorch", "scikitlearn", "mxnet", "kerastf")
+@pytest.mark.skip_framework("keras", "pytorch", "scikitlearn", "kerastf")
 def test_poison_estimator_trail(art_warning, get_default_mnist_subset, image_dl_gan, x_target):
     try:
         (train_images, y_train_images), _ = get_default_mnist_subset

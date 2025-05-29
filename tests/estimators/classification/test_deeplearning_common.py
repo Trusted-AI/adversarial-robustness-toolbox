@@ -48,9 +48,8 @@ def test_loss_gradient_with_wildcard(art_warning, image_dl_estimator):
         art_warning(e)
 
 
-# Note: because mxnet only supports 1 concurrent version of a model if we fit that model, all expected values will
 # change for all other tests using that fitted model
-@pytest.mark.skip_framework("mxnet", "non_dl_frameworks")
+@pytest.mark.skip_framework("non_dl_frameworks")
 def test_fit(art_warning, get_default_mnist_subset, default_batch_size, image_dl_estimator):
     try:
         (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
@@ -191,7 +190,7 @@ def test_functional_model(art_warning, image_dl_estimator):
         art_warning(e)
 
 
-@pytest.mark.skip_framework("mxnet", "non_dl_frameworks")
+@pytest.mark.skip_framework("non_dl_frameworks")
 def test_fit_kwargs(
     art_warning, image_dl_estimator, get_default_mnist_subset, image_data_generator, default_batch_size, framework
 ):
@@ -257,9 +256,8 @@ def test_defences_predict(art_warning, get_default_mnist_subset, image_dl_estima
         art_warning(e)
 
 
-# Note: because mxnet only supports 1 concurrent version of a model if we fit that model, all expected values will
 # change for all other tests using that fitted model
-@pytest.mark.skip_framework("mxnet", "non_dl_frameworks")
+@pytest.mark.skip_framework("non_dl_frameworks")
 def test_fit_image_generator(
     art_warning, framework, image_dl_estimator, image_data_generator, get_default_mnist_subset
 ):
@@ -464,12 +462,11 @@ def test_class_gradient(
         assert gradients.shape == new_shape
 
         sub_gradients2 = get_gradient2_column(gradients)
-        if framework != "mxnet":
-            np.testing.assert_array_almost_equal(
-                sub_gradients2,
-                grad_2_all_labels[0],
-                decimal=4,
-            )
+        np.testing.assert_array_almost_equal(
+            sub_gradients2,
+            grad_2_all_labels[0],
+            decimal=4,
+        )
 
         # Test 1 gradient label = 5
         gradients = classifier.class_gradient(x_test_mnist, label=5)
@@ -484,20 +481,18 @@ def test_class_gradient(
         )
 
         sub_gradients2 = get_gradient3_column(gradients)
-        if framework != "mxnet":
-            np.testing.assert_array_almost_equal(
-                sub_gradients2,
-                grad_1_label5[0],
-                decimal=4,
-            )
+        np.testing.assert_array_almost_equal(
+            sub_gradients2,
+            grad_1_label5[0],
+            decimal=4,
+        )
 
         sub_gradients4 = get_gradient4_column(gradients)
-        if framework != "mxnet":
-            np.testing.assert_array_almost_equal(
-                sub_gradients4,
-                grad_2_label5[0],
-                decimal=4,
-            )
+        np.testing.assert_array_almost_equal(
+            sub_gradients4,
+            grad_2_label5[0],
+            decimal=4,
+        )
 
         # # Test a set of gradients label = array
         gradients = classifier.class_gradient(x_test_mnist, label=labels)
@@ -509,26 +504,24 @@ def test_class_gradient(
         assert gradients.shape == new_shape
 
         sub_gradients5 = get_gradient3_column(gradients)
-        if framework != "mxnet":
-            np.testing.assert_array_almost_equal(
-                sub_gradients5,
-                grad_1_labelArray[0],
-                decimal=4,
-            )
+        np.testing.assert_array_almost_equal(
+            sub_gradients5,
+            grad_1_labelArray[0],
+            decimal=4,
+        )
 
         sub_gradients6 = get_gradient4_column(gradients)
-        if framework != "mxnet":
-            np.testing.assert_array_almost_equal(
-                sub_gradients6,
-                grad_2_labelArray[0],
-                decimal=4,
-            )
+        np.testing.assert_array_almost_equal(
+            sub_gradients6,
+            grad_2_labelArray[0],
+            decimal=4,
+        )
 
     except ARTTestException as e:
         art_warning(e)
 
 
-@pytest.mark.skip_framework("mxnet", "non_dl_frameworks")
+@pytest.mark.skip_framework("non_dl_frameworks")
 def test_compute_loss(
     art_warning,
     framework,
@@ -550,7 +543,7 @@ def test_compute_loss(
         art_warning(e)
 
 
-@pytest.mark.skip_framework("keras", "kerastf", "mxnet", "non_dl_frameworks")
+@pytest.mark.skip_framework("keras", "kerastf", "non_dl_frameworks")
 def test_clone_for_refitting(
     art_warning,
     image_dl_estimator,

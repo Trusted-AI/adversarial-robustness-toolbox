@@ -38,9 +38,7 @@ def fix_get_cifar10_subset(get_cifar10_dataset):
     yield x_train_cifar10[:n_train], y_train_cifar10[:n_train], x_test_cifar10[:n_test], y_test_cifar10[:n_test]
 
 
-@pytest.mark.skip_framework(
-    "tensorflow1", "tensorflow2", "tensorflow2v1", "keras", "non_dl_frameworks", "mxnet", "kerastf", "huggingface"
-)
+@pytest.mark.skip_framework("tensorflow2", "tensorflow2v1", "keras", "non_dl_frameworks", "kerastf", "huggingface")
 def test_generate(art_warning, fix_get_cifar10_subset):
     try:
         (x_train, y_train, x_test, y_test) = fix_get_cifar10_subset
@@ -62,9 +60,7 @@ def test_generate(art_warning, fix_get_cifar10_subset):
         art_warning(e)
 
 
-@pytest.mark.skip_framework(
-    "tensorflow1", "tensorflow2", "tensorflow2v1", "keras", "non_dl_frameworks", "mxnet", "kerastf"
-)
+@pytest.mark.skip_framework("tensorflow2", "tensorflow2v1", "keras", "non_dl_frameworks", "kerastf")
 def test_check_params(art_warning):
     try:
         classifier = get_cifar10_image_classifier_pt(from_logits=False, load_init=True)
