@@ -16,7 +16,7 @@ ffmpeg-python==0.2.0
 cma==4.2.0
 pandas==2.2.3
 librosa==0.10.2.post1
-numba~=0.56.4
+numba~=0.59.1
 opencv-python
 sortedcontainers==2.4.0
 h5py==3.10.0
@@ -53,11 +53,11 @@ pytest-cov~=6.0.0
 pylint==3.2.6
 mypy==1.11.1
 pycodestyle==2.12.1
-black==24.8.0
+black==25.1.0
 ruff==0.9.3
 types-six==1.16.21.9
 types-PyYAML==6.0.12.20240917
-types-setuptools==80.8.0.20250521
+types-setuptools==80.9.0.20250529
 
 # other
 requests~=2.32.3
