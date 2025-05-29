@@ -25,14 +25,14 @@ jobs:
   test_espresso:
     name: PyTorchEspresso
     runs-on: ubuntu-latest
-    container: adversarialrobustnesstoolbox/art_testing_envs:espresso
+    container: bbuesser/art_testing_env_espresso:latest
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
       - name: Run Test Action
         uses: ./.github/actions/espresso
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: true

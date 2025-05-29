@@ -28,18 +28,18 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: PyTorch 1.13.1 (Python 3.10)
+          - name: PyTorch 2.6.0 (Python 3.10)
             framework: pytorch
             python: '3.10'
-            torch: 1.13.1+cpu
-            torchvision: 0.14.1+cpu
-            torchaudio: 0.13.1
-          - name: PyTorch 2.2.1 (Python 3.10)
+            torch: 2.6.0
+            torchvision: 0.21.0
+            torchaudio: 2.6.0
+          - name: PyTorch 2.7.0 (Python 3.10)
             framework: pytorch
             python: '3.10'
-            torch: 2.2.1
-            torchvision: 0.17.1+cpu
-            torchaudio: 2.2.1
+            torch: 2.7.0
+            torchvision: 0.22.0
+            torchaudio: 2.7.0
 
     name: ${{ matrix.name }}
     steps:
@@ -55,14 +55,15 @@ jobs:
           sudo apt-get -y -q install ffmpeg libavcodec-extra
           python -m pip install --upgrade pip setuptools wheel
           pip3 install -r requirements_test.txt
-          pip install torch==${{ matrix.torch }} -f https://download.pytorch.org/whl/cpu/torch_stable.html
-          pip install torchvision==${{ matrix.torchvision }} -f https://download.pytorch.org/whl/cpu/torch_stable.html
-          pip install torchaudio==${{ matrix.torchaudio }} -f https://download.pytorch.org/whl/cpu/torch_stable.html
+          pip install -q -r <(sed '/^torch/d;/^torchvision/d;/^torchaudio/d' requirements_test.txt)
+          pip install torch==${{ matrix.torch }} --index-url https://download.pytorch.org/whl/cpu
+          pip install torchvision==${{ matrix.torchvision }} --index-url https://download.pytorch.org/whl/cpu
+          pip install torchaudio==${{ matrix.torchaudio }} --index-url https://download.pytorch.org/whl/cpu
           pip list
       - name: Run Tests
         run: ./run_tests.sh ${{ matrix.framework }}
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: true

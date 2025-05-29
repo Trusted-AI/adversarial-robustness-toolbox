@@ -25,14 +25,14 @@ jobs:
   test_tf_v2_faster_rcnn:
     name: TensorFlowV2FasterRCNN
     runs-on: ubuntu-latest
-    container: adversarialrobustnesstoolbox/art_testing_envs:tfv2-faster-rcnn
+    container: bbuesser/art_testing_env_tfv2-faster-rcnn:latest
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
       - name: Run Test Action
         uses: ./.github/actions/tfv2-faster-rcnn
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: true
