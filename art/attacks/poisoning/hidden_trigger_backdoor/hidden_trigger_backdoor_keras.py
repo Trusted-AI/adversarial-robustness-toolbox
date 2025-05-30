@@ -270,7 +270,7 @@ class HiddenTriggerBackdoorKeras(PoisoningAttackWhiteBox):
                 pert = poison_samples - original_images[cur_index : cur_index + offset]
                 pert = np.clip(pert, -self.eps, self.eps)
                 poison_samples = pert + original_images[cur_index : cur_index + offset]
-                poison_samples = np.clip(poison_samples, *self.estimator.clip_values)
+                poison_samples = np.clip(poison_samples, *tuple(self.estimator.clip_values))
 
                 if i % self.print_iter == 0:
                     print(

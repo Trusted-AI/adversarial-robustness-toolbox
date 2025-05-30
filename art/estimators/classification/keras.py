@@ -201,18 +201,8 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         # Get predictions
         predictions = self._model(x_tf, training=False)
 
-        # Compute loss without reduction
-        loss_fn = self._model.loss
-
-        # Temporarily override loss reduction if needed
-        if hasattr(loss_fn, "reduction"):
-            prev_reduction = loss_fn.reduction
-            loss_fn.reduction = tf.keras.losses.Reduction.NONE
-            loss_tensor = loss_fn(y_tf, predictions)
-            loss_fn.reduction = prev_reduction
-        else:
-            # If the loss function has no reduction attribute, just compute it
-            loss_tensor = loss_fn(y_tf, predictions)
+        # Compute loss (no need to access .loss attribute directly)
+        loss_tensor = self._model.compiled_loss(y_tf, predictions, regularization_losses=None)
 
         # Convert loss tensor to numpy
         loss_value = loss_tensor.numpy()
@@ -221,9 +211,15 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         if reduction == "none":
             pass
         elif reduction == "mean":
-            loss_value = np.mean(loss_value, axis=0)
+            if loss_value.ndim > 0:
+                loss_value = np.mean(loss_value, axis=0)
+            else:
+                loss_value = np.mean(loss_value)
         elif reduction == "sum":
-            loss_value = np.sum(loss_value, axis=0)
+            if loss_value.ndim > 0:
+                loss_value = np.sum(loss_value, axis=0)
+            else:
+                loss_value = np.sum(loss_value)
 
         return loss_value
 
