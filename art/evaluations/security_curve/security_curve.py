@@ -165,7 +165,12 @@ class SecurityCurve(Evaluation):
         from matplotlib import pyplot as plt
 
         plt.plot(self.eps_list, self.accuracy_adv_list, label="adversarial", marker="o")
-        plt.plot([self.eps_list[0], self.eps_list[-1]], [self.accuracy, self.accuracy], linestyle="--", label="benign")  # type: ignore
+        plt.plot(
+            [self.eps_list[0], self.eps_list[-1]],  # type: ignore
+            [self.accuracy, self.accuracy],  # type: ignore
+            linestyle="--",
+            label="benign",
+        )
         plt.legend()
         plt.xlabel("Attack budget eps")
         plt.ylabel("Accuracy")
