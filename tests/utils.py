@@ -937,7 +937,9 @@ def get_image_classifier_kr_tf_binary():
         [_kr_tf_weights_loader("MNIST_BINARY", "W", "DENSE"), _kr_tf_weights_loader("MNIST_BINARY", "B", "DENSE")]
     )
 
-    model.compile(loss="binary_crossentropy", optimizer=tf.keras.optimizers.Adam(learning_rate=0.01), metrics=["accuracy"])
+    model.compile(
+        loss="binary_crossentropy", optimizer=tf.keras.optimizers.Adam(learning_rate=0.01), metrics=["accuracy"]
+    )
 
     # Get classifier
     krc = KerasClassifier(model, clip_values=(0, 1), use_logits=False)

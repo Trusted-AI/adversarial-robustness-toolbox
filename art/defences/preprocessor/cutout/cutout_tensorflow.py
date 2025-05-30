@@ -84,7 +84,6 @@ class CutoutTensorFlowV2(PreprocessorTensorFlowV2):
         :return: Data augmented sample.
         """
         import tensorflow as tf  # lgtm [py/repeated-import]
-        import tensorflow_addons as tfa
 
         x_ndim = len(x.shape)
 
@@ -113,7 +112,7 @@ class CutoutTensorFlowV2(PreprocessorTensorFlowV2):
         length = self.length if self.length % 2 == 0 else max(self.length - 1, 2)
 
         # apply random cutout
-        x_nhwc = tfa.image.random_cutout(x_nhwc, (length, length))
+        x_nhwc = random_cutout(x_nhwc, (length, length))
 
         # NCHW/NCFHW/NFHWC <-- NHWC
         if x_ndim == 4:
@@ -137,3 +136,57 @@ class CutoutTensorFlowV2(PreprocessorTensorFlowV2):
     def _check_params(self) -> None:
         if self.length <= 0:
             raise ValueError("Bounding box length must be positive.")
+
+
+def random_cutout(x_nhwc, mask_size, seed=None):
+    """
+    Transformation of an input image by applying a random cutout mask.
+
+    :param x_nhwc: Input samples of shape `(batch_size, height, width, channels)`.
+    :param mask_size: A tuple of two integers `(mask_height, mask_width)` specifying the cutout size.
+    :param seed: Optional. A tensor of shape `(2,)` for stateless random seed. If `None`, a random seed is generated.
+    :return: Samples with the random cutout mask applied, of the same shape as the input.
+    """
+    import tensorflow as tf
+
+    batch_size, height, width, channels = tf.unstack(tf.shape(x_nhwc))
+    mask_height, mask_width = mask_size
+
+    if seed is None:
+        seed = tf.random.uniform([2], maxval=10000, dtype=tf.int32)
+
+    # Sample top-left corners for cutouts
+    top = tf.random.stateless_uniform(
+        [batch_size], minval=0, maxval=height - mask_height + 1, seed=seed, dtype=tf.int32
+    )
+    left = tf.random.stateless_uniform(
+        [batch_size], minval=0, maxval=width - mask_width + 1, seed=seed + 1, dtype=tf.int32
+    )
+
+    # Create masks
+    mask = tf.ones([batch_size, height, width, 1], dtype=x_nhwc.dtype)
+
+    for i in tf.range(batch_size):
+        mask = tf.tensor_scatter_nd_update(
+            mask,
+            indices=[[i]],
+            updates=[
+                tf.tensor_scatter_nd_update(
+                    mask[i],
+                    indices=tf.reshape(
+                        tf.stack(
+                            tf.meshgrid(
+                                tf.range(top[i], top[i] + mask_height),
+                                tf.range(left[i], left[i] + mask_width),
+                                indexing="ij",
+                            ),
+                            axis=-1,
+                        ),
+                        [-1, 2],
+                    ),
+                    updates=tf.zeros([mask_height * mask_width, 1], dtype=x_nhwc.dtype),
+                )
+            ],
+        )
+
+    return x_nhwc * mask
