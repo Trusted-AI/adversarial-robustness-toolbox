@@ -19,9 +19,13 @@ import logging
 
 import numpy as np
 import pytest
+import tensorflow as tf
 import torch
 
-from art.preprocessing.expectation_over_transformation.image_rotation.tensorflow import EoTImageRotationTensorFlow
+from art.preprocessing.expectation_over_transformation.image_rotation.tensorflow import (
+    EoTImageRotationTensorFlow,
+    rotate_images,
+)
 from art.preprocessing.expectation_over_transformation.image_rotation.pytorch import EoTImageRotationPyTorch
 from tests.utils import ARTTestException
 
@@ -90,6 +94,31 @@ def test_eot_image_rotation_classification_tensorflow_v2(art_warning, fix_get_mn
         )
 
         np.testing.assert_almost_equal(x_eot.numpy()[0, 14, :, 0], x_eot_expected)
+
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.only_with_platform("tensorflow2")
+def test_eot_image_rotation_classification_tensorflow_v2_rotate_images(art_warning):
+    try:
+        # Create a test image: batch of 1, shape 5x5 with a simple pattern
+        x = np.zeros((1, 5, 5, 1), dtype=np.float32)
+        x[0, 2, 2, 0] = 1.0  # Center pixel set to 1
+
+        angles = tf.constant([np.pi / 2], dtype=tf.float32)  # 90 degrees rotation
+
+        # Rotate using custom function
+        rotated_custom = rotate_images(x, angles, interpolation="NEAREST")
+        assert rotated_custom[0, 2, 2, 0] == 1.0
+
+        # Create a test image: batch of 1, shape 5x5 with a simple pattern
+        x = np.zeros((1, 5, 5, 1), dtype=np.float32)
+        x[0, 0, 0, 0] = 1.0  # Center pixel set to 1
+
+        # Rotate using custom function
+        rotated_custom = rotate_images(x, angles, interpolation="NEAREST")
+        assert rotated_custom[0, 4, 0, 0] == 1.0
 
     except ARTTestException as e:
         art_warning(e)

@@ -182,7 +182,7 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier):
         self.loss_combined = self.loss_ce + self.loss_reg * self.cost_tensor
 
         try:
-            from keras.optimizers.legacy import Adam
+            from keras.optimizers import Adam
 
             self.opt = Adam(lr=self.learning_rate, beta_1=0.5, beta_2=0.9)
         except ImportError:

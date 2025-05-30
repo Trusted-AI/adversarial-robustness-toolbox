@@ -828,7 +828,6 @@ class CarliniLInfMethod(EvasionAttack):
             raise ValueError("The initial constant value must be a positive float.")
 
         if not isinstance(self.largest_const, (int, float)) or self.largest_const < 0:
-            print(self.largest_const)
             raise ValueError("The largest constant value must be a positive float.")
 
         if not isinstance(self.const_factor, (int, float)) or self.const_factor < 0:

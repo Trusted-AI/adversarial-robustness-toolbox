@@ -113,9 +113,9 @@ class PoisoningAttackAdversarialEmbedding(PoisoningAttackTransformer):
                     BatchNormalization,
                     LeakyReLU,
                 )
-                from tensorflow.keras.optimizers.legacy import Adam
+                from tensorflow.keras.optimizers import Adam
 
-                opt = Adam(lr=self.learning_rate)
+                opt = Adam(learning_rate=self.learning_rate)
 
             else:
                 from keras import Model
@@ -123,13 +123,13 @@ class PoisoningAttackAdversarialEmbedding(PoisoningAttackTransformer):
                 from keras.layers import GaussianNoise, Dense, BatchNormalization, LeakyReLU
 
                 try:
-                    from keras.optimizers.legacy import Adam
+                    from keras.optimizers import Adam
 
-                    opt = Adam(lr=self.learning_rate)
+                    opt = Adam(learning_rate=self.learning_rate)
                 except ImportError:
                     from keras.optimizers import adam_v2
 
-                    opt = adam_v2.Adam(lr=self.learning_rate)
+                    opt = adam_v2.Adam(learning_rate=self.learning_rate)
 
             if clone:
                 self.orig_model = clone_model(self.estimator.model, input_tensors=self.estimator.model.inputs)

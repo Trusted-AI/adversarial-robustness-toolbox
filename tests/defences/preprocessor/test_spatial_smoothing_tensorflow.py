@@ -22,8 +22,9 @@ import logging
 import numpy as np
 from numpy.testing import assert_array_equal
 import pytest
+import tensorflow as tf
 
-from art.defences.preprocessor.spatial_smoothing_tensorflow import SpatialSmoothingTensorFlowV2
+from art.defences.preprocessor.spatial_smoothing_tensorflow import SpatialSmoothingTensorFlowV2, median_filter2d
 from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)
@@ -35,7 +36,7 @@ def test_spatial_smoothing_median_filter_call(art_warning):
     try:
         test_input = np.array([[[[1], [2]], [[3], [4]]]])
         test_output = np.array([[[[1], [2]], [[3], [3]]]])
-        spatial_smoothing = SpatialSmoothingTensorFlowV2(channels_first=False, window_size=2)
+        spatial_smoothing = SpatialSmoothingTensorFlowV2(channels_first=False, window_size=3)
 
         assert_array_equal(spatial_smoothing(test_input)[0], test_output)
     except ARTTestException as e:
@@ -46,8 +47,8 @@ def test_spatial_smoothing_median_filter_call(art_warning):
 def test_spatial_smoothing_median_filter_call_expected_behavior(art_warning):
     try:
         test_input = np.array([[[[1], [2]], [[3], [4]]]])
-        test_output = np.array([[[[2], [2]], [[2], [2]]]])
-        spatial_smoothing = SpatialSmoothingTensorFlowV2(channels_first=False, window_size=2)
+        test_output = np.array([[[[3], [3]], [[2], [2]]]])
+        spatial_smoothing = SpatialSmoothingTensorFlowV2(channels_first=False, window_size=3)
 
         assert_array_equal(spatial_smoothing(test_input)[0], test_output)
     except ARTTestException as e:
@@ -59,7 +60,7 @@ def test_spatial_smoothing_estimate_gradient(art_warning):
     try:
         test_input = np.array([[[[1], [2]], [[3], [4]]]])
         test_output = np.array([[[[2], [2]], [[2], [2]]]])
-        spatial_smoothing = SpatialSmoothingTensorFlowV2(channels_first=False, window_size=2)
+        spatial_smoothing = SpatialSmoothingTensorFlowV2(channels_first=False, window_size=3)
 
         test_gradients = spatial_smoothing.estimate_gradient(x=test_input, grad=np.ones_like(test_output))
 
@@ -73,7 +74,7 @@ def test_spatial_smoothing_estimate_gradient(art_warning):
     "window_size",
     [
         1,
-        2,
+        3,
         pytest.param(
             10,
             marks=pytest.mark.xfail(
@@ -108,9 +109,9 @@ def test_spatial_smoothing_video_data(art_warning, video_batch, channels_first):
         if channels_first:
             exc_msg = "Only channels last input data is supported"
             with pytest.raises(ValueError, match=exc_msg):
-                _ = SpatialSmoothingTensorFlowV2(channels_first=channels_first, window_size=2)
+                _ = SpatialSmoothingTensorFlowV2(channels_first=channels_first, window_size=3)
         else:
-            spatial_smoothing = SpatialSmoothingTensorFlowV2(channels_first=channels_first, window_size=2)
+            spatial_smoothing = SpatialSmoothingTensorFlowV2(channels_first=channels_first, window_size=3)
             assert_array_equal(spatial_smoothing(test_input)[0], test_output)
     except ARTTestException as e:
         art_warning(e)
@@ -155,5 +156,33 @@ def test_relation_clip_values_error(art_warning):
         exc_msg = "Invalid 'clip_values': min >= max."
         with pytest.raises(ValueError, match=exc_msg):
             SpatialSmoothingTensorFlowV2(clip_values=(1, 0))
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.only_with_platform("tensorflow2")
+def test_median_filter2d(art_warning):
+    try:
+        # Create a test image: batch of 1, 5x5 grayscale
+        x = np.zeros((1, 5, 5, 1), dtype=np.float32)
+        x[0, 0, 0, 0] = 1.0
+        x[0, 0, 2, 0] = 1.0
+        x[0, 0, 4, 0] = 1.0
+        x[0, 2, 0, 0] = 1.0
+        x[0, 2, 2, 0] = 1.0
+        x[0, 2, 4, 0] = 1.0
+        x[0, 4, 0, 0] = 1.0
+        x[0, 4, 2, 0] = 1.0
+        x[0, 4, 4, 0] = 1.0
+
+        x_tf = tf.constant(x)
+
+        # Apply both filters
+        filter_size = 1
+        custom_result = median_filter2d(x_tf, filter_size=filter_size, padding="REFLECT")
+
+        expected_results = np.array([1.0, 0.0, 1.0, 0.0, 1.0])
+        assert np.isclose(custom_result[0, :, 2, 0].numpy(), expected_results).all()
+
     except ARTTestException as e:
         art_warning(e)

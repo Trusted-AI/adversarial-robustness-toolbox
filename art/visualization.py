@@ -150,7 +150,7 @@ def plot_3d(
     for i, coord in enumerate(points):
         try:
             color_point = labels[i]
-            axis.scatter3D(coord[0], coord[1], coord[2], color=colors[color_point])
+            axis.scatter3D(coord[0], coord[1], coord[2], color=colors[color_point])  # type: ignore
         except IndexError:
             raise ValueError(
                 "Labels outside the range. Should start from zero and be sequential there after"

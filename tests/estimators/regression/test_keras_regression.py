@@ -33,11 +33,6 @@ class TestKerasRegressor(TestBase):
     def setUpClass(cls):
         master_seed(seed=1234, set_tensorflow=True)
         super().setUpClass()
-
-        import tensorflow as tf
-
-        tf.compat.v1.disable_eager_execution()
-
         cls.art_model = get_tabular_regressor_kr()
 
     def test_type(self):
@@ -86,8 +81,6 @@ class TestKerasRegressorClass(TestBase):
 
         import tensorflow as tf
         import tensorflow.keras as keras
-
-        tf.compat.v1.disable_eager_execution()
 
         class TestModel(tf.keras.Model):
             def __init__(self):
@@ -153,8 +146,6 @@ class TestKerasRegressorFunctional(TestBase):
         import tensorflow as tf
         import keras
         from keras.models import Model
-
-        tf.compat.v1.disable_eager_execution()
 
         def functional():
             in_layer = keras.layers.Input(shape=(10,))

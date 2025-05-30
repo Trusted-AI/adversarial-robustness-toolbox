@@ -82,11 +82,10 @@ class EoTImageRotationTensorFlow(EoTTensorFlowV2):
         :return: Transformed samples and labels.
         """
         import tensorflow as tf
-        import tensorflow_addons as tfa
 
         angles = tf.random.uniform(shape=(), minval=self.angles_range[0], maxval=self.angles_range[1])
         angles = angles / 360.0 * 2.0 * np.pi
-        x_preprocess = tfa.image.rotate(images=x, angles=angles, interpolation="NEAREST", name=None)
+        x_preprocess = rotate_images(images=x, angles=angles, interpolation="NEAREST")
         x_preprocess = tf.clip_by_value(
             t=x_preprocess, clip_value_min=-self.clip_values[0], clip_value_max=self.clip_values[1], name=None
         )
@@ -111,3 +110,48 @@ class EoTImageRotationTensorFlow(EoTTensorFlowV2):
                 f"The input for label_type needs to be one of {self.label_types}, currently receiving "
                 f"`{self.label_type}`."
             )
+
+
+def rotate_images(images, angles, interpolation="NEAREST"):
+    """
+    Transformation of input images by a specified rotation angle.
+
+    :param images: Input samples, a 4D tensor of shape `(batch_size, height, width, channels)`.
+    :param angles: Rotation angles in radians for each image in the batch, a 1D tensor of shape `(batch_size,)`.
+    :param interpolation: Interpolation method to use for rotating images. Can be `"NEAREST"` or `"BILINEAR"`.
+    :return: Rotated images as a 4D tensor of the same shape as `images`.
+    """
+    import tensorflow as tf
+
+    # Ensure batch dimensions
+    if tf.rank(angles) == 0:
+        angles = tf.expand_dims(angles, 0)
+    if tf.rank(images) == 3:
+        images = tf.expand_dims(images, 0)
+
+    height = tf.cast(tf.shape(images)[1], tf.float32)
+    width = tf.cast(tf.shape(images)[2], tf.float32)
+
+    cx = (width - 1) / 2.0
+    cy = (height - 1) / 2.0
+
+    cos_angles = tf.math.cos(angles)
+    sin_angles = tf.math.sin(angles)
+
+    tx = cx - (cx * cos_angles) + (cy * sin_angles)
+    ty = cy - (cx * sin_angles) - (cy * cos_angles)
+
+    transforms = tf.stack(
+        [cos_angles, -sin_angles, tx, sin_angles, cos_angles, ty, tf.zeros_like(angles), tf.zeros_like(angles)], axis=1
+    )
+
+    rotated = tf.raw_ops.ImageProjectiveTransformV3(
+        images=images,
+        transforms=transforms,
+        interpolation=interpolation,
+        output_shape=tf.shape(images)[1:3],
+        fill_mode="CONSTANT",
+        fill_value=0.0,
+    )
+
+    return rotated

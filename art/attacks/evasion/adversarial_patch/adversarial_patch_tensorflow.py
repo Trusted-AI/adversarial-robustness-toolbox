@@ -256,7 +256,6 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         mask: np.ndarray | "tf.Tensor" | None = None,
     ) -> "tf.Tensor":
         import tensorflow as tf
-        import tensorflow_addons as tfa
 
         nb_samples = images.shape[0]
 
@@ -378,26 +377,38 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
             transform_vectors.append([a_0, a_1, x_origin_delta, b_0, b_1, y_origin_delta, 0, 0])
             translation_vectors.append([1, 0, -x_shift, 0, 1, -y_shift, 0, 0])
 
-        image_mask = tfa.image.transform(
-            image_mask,
-            transform_vectors,
-            "BILINEAR",
+        image_mask = tf.raw_ops.ImageProjectiveTransformV3(
+            images=image_mask,
+            transforms=transform_vectors,
+            interpolation="BILINEAR",
+            output_shape=tf.shape(image_mask)[1:3],  # Preserve original shape
+            fill_mode="REFLECT",  # Optional: can change to "CONSTANT", "NEAREST", etc.
+            fill_value=0.0,
         )
-        padded_patch = tfa.image.transform(
-            padded_patch,
-            transform_vectors,
-            "BILINEAR",
+        padded_patch = tf.raw_ops.ImageProjectiveTransformV3(
+            images=padded_patch,
+            transforms=transform_vectors,
+            interpolation="BILINEAR",
+            output_shape=tf.shape(image_mask)[1:3],  # Preserve original shape
+            fill_mode="REFLECT",  # Optional: can change to "CONSTANT", "NEAREST", etc.
+            fill_value=0.0,
         )
 
-        image_mask = tfa.image.transform(
-            image_mask,
-            translation_vectors,
-            "BILINEAR",
+        image_mask = tf.raw_ops.ImageProjectiveTransformV3(
+            images=image_mask,
+            transforms=translation_vectors,
+            interpolation="BILINEAR",
+            output_shape=tf.shape(image_mask)[1:3],  # Preserve original shape
+            fill_mode="REFLECT",  # Optional: can change to "CONSTANT", "NEAREST", etc.
+            fill_value=0.0,
         )
-        padded_patch = tfa.image.transform(
-            padded_patch,
-            translation_vectors,
-            "BILINEAR",
+        padded_patch = tf.raw_ops.ImageProjectiveTransformV3(
+            images=padded_patch,
+            transforms=translation_vectors,
+            interpolation="BILINEAR",
+            output_shape=tf.shape(image_mask)[1:3],  # Preserve original shape
+            fill_mode="REFLECT",  # Optional: can change to "CONSTANT", "NEAREST", etc.
+            fill_value=0.0,
         )
 
         if self.nb_dims == 4:

@@ -24,7 +24,7 @@ import pytest
 from numpy.testing import assert_array_equal
 
 from art.config import ART_NUMPY_DTYPE
-from art.defences.preprocessor import CutoutTensorFlowV2
+from art.defences.preprocessor.cutout.cutout_tensorflow import CutoutTensorFlowV2, random_cutout
 from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)
@@ -105,6 +105,34 @@ def test_cutout_video_data(art_warning, video_batch, length, channels_first):
         else:
             channels = video_batch.shape[-1]
         assert count <= n * frames * channels * length * length
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.only_with_platform("tensorflow2")
+def test_random_cutout(art_warning):
+    try:
+        import tensorflow as tf
+
+        x = np.ones((2, 5, 5, 1), dtype=np.float32)
+
+        # Fixed seeds
+        tf_seed = tf.constant([42, 24], dtype=tf.int32)  # Tensor seed for custom function
+
+        # Apply both cutout methods
+        custom_cutout = random_cutout(tf.constant(x), mask_size=(2, 2), seed=tf_seed)
+
+        expected_cutout = np.array(
+            [
+                [1.0, 1.0, 1.0, 1.0, 1.0],
+                [0.0, 0.0, 1.0, 1.0, 1.0],
+                [0.0, 0.0, 1.0, 1.0, 1.0],
+                [1.0, 1.0, 1.0, 1.0, 1.0],
+                [1.0, 1.0, 1.0, 1.0, 1.0],
+            ]
+        )
+        assert np.isclose(custom_cutout[0, :, :, 0].numpy(), expected_cutout).all()
+
     except ARTTestException as e:
         art_warning(e)
 

@@ -92,13 +92,11 @@ class KerasEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
 
         :return: new estimator
         """
-
         import tensorflow as tf
-        import keras
 
         try:
             # only works for functionally defined models
-            model = keras.models.clone_model(self.model, input_tensors=self.model.inputs)
+            model = tf.keras.models.clone_model(self.model, input_tensors=self.model.inputs)
         except ValueError as error:
             raise ValueError("Cannot clone custom models") from error
 

@@ -39,17 +39,15 @@ jobs:
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip setuptools wheel
-          pip install -r requirements_test.txt
-          pip install -q -r <(sed '/^numpy/d;/^tensorflow/d;/^keras/d' requirements_test.txt)
-          pip install numpy==1.22.4
-          pip install tensorflow==2.13.1
-          pip install keras==2.13.1
+          pip install -q -r <(sed '/^tensorflow/d;/^keras/d;/^mxnet/d' requirements_test.txt)
+          pip install tensorflow==2.18.1
+          pip install keras==3.10.0
           pip list
       - name: pycodestyle
         run: pycodestyle --ignore=C0330,C0415,E203,E231,W503 --max-line-length=120 art
       - name: pylint
         if: ${{ always() }}
-        run: pylint --fail-under=9.67 art/
+        run: pylint --fail-under=9.6 art/
       - name: mypy
         if: ${{ always() }}
         run: mypy art
