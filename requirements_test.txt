@@ -47,7 +47,7 @@ xgboost==2.1.1
 kornia~=0.8.0
 tensorboardX==2.6.2.2
 lief==0.15.1
-jax[cpu]==0.4.26
+jax[cpu]==0.4.30
 
 # lingvo==0.13.1
 
