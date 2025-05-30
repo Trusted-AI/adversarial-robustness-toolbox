@@ -355,7 +355,7 @@ def test_save_1(art_warning, image_dl_estimator):
         t_file = tempfile.NamedTemporaryFile()
         model_path = t_file.name
         t_file.close()
-        filename = "model_to_save"
+        filename = "model_to_save.keras"
         classifier.save(filename, path=model_path)
 
         assert path.exists(model_path)
@@ -381,7 +381,7 @@ def test_save_2(art_warning, image_dl_estimator, get_default_mnist_subset, tmp_p
         full_path.mkdir()
 
         assert not os.listdir(full_path._str)
-        classifier.save("modelFile", path=full_path._str)
+        classifier.save("modelFile.keras", path=full_path._str)
         assert os.listdir(full_path._str)
     except ARTTestException as e:
         art_warning(e)

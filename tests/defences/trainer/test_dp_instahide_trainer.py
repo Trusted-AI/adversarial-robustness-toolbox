@@ -73,9 +73,6 @@ def get_mnist_classifier(framework):
             import tensorflow as tf
             from tensorflow.keras import layers, Sequential
 
-            if tf.__version__[0] == "2":
-                tf.compat.v1.disable_eager_execution()
-
             model = Sequential()
             model.add(layers.Conv2D(1, kernel_size=(7, 7), activation="relu", input_shape=(28, 28, 1)))
             model.add(layers.MaxPooling2D(pool_size=(4, 4)))

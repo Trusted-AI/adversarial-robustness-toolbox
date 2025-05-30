@@ -252,12 +252,6 @@ def get_image_classifier_tf_v1(from_logits=False, load_init=True, sess=None):
     """
     # pylint: disable=E0401
     import tensorflow as tf
-
-    if tf.__version__[0] == "2":
-        tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
-        import tensorflow.compat.v1 as tf
-
-        tf.disable_eager_execution()
     from art.estimators.classification.tensorflow import TensorFlowClassifier
 
     # Define input and output placeholders
@@ -496,7 +490,7 @@ def get_image_classifier_tf_v2(from_logits=False):
         from_logits=from_logits, reduction=tf.keras.losses.Reduction.SUM
     )
 
-    optimizer = tf.keras.optimizers.legacy.Adam(learning_rate=0.01)
+    optimizer = tf.keras.optimizers.Adam(learning_rate=0.01)
 
     model.compile(optimizer=optimizer, loss=loss_object)
 
@@ -534,19 +528,8 @@ def get_image_classifier_kr(
     :return: KerasClassifier, tf.Session()
     """
     import tensorflow as tf
-
-    tf_version = [int(v) for v in tf.__version__.split(".")]
-    if tf_version[0] == 2 and tf_version[1] >= 3:
-        is_tf23_keras24 = True
-        tf.compat.v1.disable_eager_execution()
-        from tensorflow import keras
-        from tensorflow.keras.layers import Conv2D, Dense, Flatten, MaxPooling2D
-        from tensorflow.keras.models import Sequential
-    else:
-        is_tf23_keras24 = False
-        import keras
-        from keras.models import Sequential
-        from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
+    from tensorflow.keras.layers import Conv2D, Dense, Flatten, MaxPooling2D
+    from tensorflow.keras.models import Sequential
 
     from art.estimators.classification.keras import KerasClassifier
 
@@ -554,28 +537,16 @@ def get_image_classifier_kr(
     model = Sequential()
 
     if load_init:
-        if is_tf23_keras24:
-            model.add(
-                Conv2D(
-                    1,
-                    kernel_size=(7, 7),
-                    activation="relu",
-                    input_shape=(28, 28, 1),
-                    kernel_initializer=_tf_weights_loader("MNIST", "W", "CONV2D", 2),
-                    bias_initializer=_tf_weights_loader("MNIST", "B", "CONV2D", 2),
-                )
+        model.add(
+            Conv2D(
+                1,
+                kernel_size=(7, 7),
+                activation="relu",
+                input_shape=(28, 28, 1),
+                kernel_initializer=_tf_weights_loader("MNIST", "W", "CONV2D", 2),
+                bias_initializer=_tf_weights_loader("MNIST", "B", "CONV2D", 2),
             )
-        else:
-            model.add(
-                Conv2D(
-                    1,
-                    kernel_size=(7, 7),
-                    activation="relu",
-                    input_shape=(28, 28, 1),
-                    kernel_initializer=_kr_weights_loader("MNIST", "W", "CONV2D"),
-                    bias_initializer=_kr_weights_loader("MNIST", "B", "CONV2D"),
-                )
-            )
+        )
     else:
         model.add(Conv2D(1, kernel_size=(7, 7), activation="relu", input_shape=(28, 28, 1)))
 
@@ -584,46 +555,26 @@ def get_image_classifier_kr(
 
     if from_logits:
         if load_init:
-            if is_tf23_keras24:
-                model.add(
-                    Dense(
-                        10,
-                        activation="linear",
-                        kernel_initializer=_tf_weights_loader("MNIST", "W", "DENSE", 2),
-                        bias_initializer=_tf_weights_loader("MNIST", "B", "DENSE", 2),
-                    )
+            model.add(
+                Dense(
+                    10,
+                    activation="linear",
+                    kernel_initializer=_tf_weights_loader("MNIST", "W", "DENSE", 2),
+                    bias_initializer=_tf_weights_loader("MNIST", "B", "DENSE", 2),
                 )
-            else:
-                model.add(
-                    Dense(
-                        10,
-                        activation="linear",
-                        kernel_initializer=_kr_weights_loader("MNIST", "W", "DENSE"),
-                        bias_initializer=_kr_weights_loader("MNIST", "B", "DENSE"),
-                    )
-                )
+            )
         else:
             model.add(Dense(10, activation="linear"))
     else:
         if load_init:
-            if is_tf23_keras24:
-                model.add(
-                    Dense(
-                        10,
-                        activation="softmax",
-                        kernel_initializer=_tf_weights_loader("MNIST", "W", "DENSE", 2),
-                        bias_initializer=_tf_weights_loader("MNIST", "B", "DENSE", 2),
-                    )
+            model.add(
+                Dense(
+                    10,
+                    activation="softmax",
+                    kernel_initializer=_tf_weights_loader("MNIST", "W", "DENSE", 2),
+                    bias_initializer=_tf_weights_loader("MNIST", "B", "DENSE", 2),
                 )
-            else:
-                model.add(
-                    Dense(
-                        10,
-                        activation="softmax",
-                        kernel_initializer=_kr_weights_loader("MNIST", "W", "DENSE"),
-                        bias_initializer=_kr_weights_loader("MNIST", "B", "DENSE"),
-                    )
-                )
+            )
         else:
             model.add(Dense(10, activation="softmax"))
 
@@ -633,7 +584,7 @@ def get_image_classifier_kr(
         if loss_type == "label":
             raise AttributeError("This combination of loss function options is not supported.")
         elif loss_type == "function_losses":
-            loss = keras.losses.categorical_hinge
+            loss = tf.keras.losses.categorical_hinge
     elif loss_name == "categorical_crossentropy":
         if loss_type == "label":
             if from_logits:
@@ -642,25 +593,22 @@ def get_image_classifier_kr(
                 loss = loss_name
         elif loss_type == "function_losses":
             if from_logits:
-                if is_tf23_keras24:
 
-                    def categorical_crossentropy(y_true, y_pred):
-                        return keras.losses.categorical_crossentropy(y_true, y_pred, from_logits=True)
+                def categorical_crossentropy(y_true, y_pred):
+                    return tf.keras.losses.categorical_crossentropy(y_true, y_pred, from_logits=True)
 
-                    loss = categorical_crossentropy
-                else:
-                    raise NotImplementedError("This combination of loss function options is not supported.")
+                loss = categorical_crossentropy
             else:
-                loss = keras.losses.categorical_crossentropy
+                loss = tf.keras.losses.categorical_crossentropy
         elif loss_type == "function_backend":
             if from_logits:
 
                 def categorical_crossentropy(y_true, y_pred):
-                    return keras.backend.categorical_crossentropy(y_true, y_pred, from_logits=True)
+                    return tf.keras.backend.categorical_crossentropy(y_true, y_pred, from_logits=True)
 
                 loss = categorical_crossentropy
             else:
-                loss = keras.backend.categorical_crossentropy
+                loss = tf.keras.backend.categorical_crossentropy
     elif loss_name == "sparse_categorical_crossentropy":
         if loss_type == "label":
             if from_logits:
@@ -669,44 +617,41 @@ def get_image_classifier_kr(
                 loss = loss_name
         elif loss_type == "function_losses":
             if from_logits:
-                if int(keras.__version__.split(".")[0]) == 2 and int(keras.__version__.split(".")[1]) >= 3:
 
-                    def sparse_categorical_crossentropy(y_true, y_pred):
-                        return keras.losses.sparse_categorical_crossentropy(y_true, y_pred, from_logits=True)
+                def sparse_categorical_crossentropy(y_true, y_pred):
+                    return tf.keras.losses.sparse_categorical_crossentropy(y_true, y_pred, from_logits=True)
 
-                    loss = sparse_categorical_crossentropy
-                else:
-                    raise AttributeError("This combination of loss function options is not supported.")
+                loss = sparse_categorical_crossentropy
             else:
-                loss = keras.losses.sparse_categorical_crossentropy
+                loss = tf.keras.losses.sparse_categorical_crossentropy
         elif loss_type == "function_backend":
             if from_logits:
 
                 def sparse_categorical_crossentropy(y_true, y_pred):
-                    return keras.backend.sparse_categorical_crossentropy(y_true, y_pred, from_logits=True)
+                    return tf.keras.backend.sparse_categorical_crossentropy(y_true, y_pred, from_logits=True)
 
                 loss = sparse_categorical_crossentropy
             else:
-                loss = keras.backend.sparse_categorical_crossentropy
+                loss = tf.keras.backend.sparse_categorical_crossentropy
     elif loss_name == "kullback_leibler_divergence":
         if loss_type == "label":
             raise AttributeError("This combination of loss function options is not supported.")
         elif loss_type == "function_losses":
-            loss = keras.losses.kullback_leibler_divergence
+            loss = tf.keras.losses.kullback_leibler_divergence
         elif loss_type == "function_backend":
             raise AttributeError("This combination of loss function options is not supported.")
     elif loss_name == "cosine_similarity":
         if loss_type == "label":
             loss = loss_name
         elif loss_type == "function_losses":
-            loss = keras.losses.cosine_similarity
+            loss = tf.keras.losses.cosine_similarity
         elif loss_type == "function_backend":
-            loss = keras.backend.cosine_similarity
+            loss = tf.keras.backend.cosine_similarity
 
     else:
         raise ValueError("Loss name not recognised.")
 
-    model.compile(loss=loss, optimizer=keras.optimizers.legacy.Adam(lr=0.01), metrics=["accuracy"])
+    model.compile(loss=loss, optimizer=tf.keras.optimizers.Adam(learning_rate=0.01), metrics=["accuracy"])
 
     # Get classifier
     krc = KerasClassifier(model, clip_values=(0, 1), use_logits=from_logits)
@@ -764,10 +709,6 @@ def get_image_classifier_kr_tf_functional(input_layer=1, output_layer=1):
 
     :return: KerasClassifier
     """
-    import tensorflow as tf
-
-    if tf.__version__[0] == "2":
-        tf.compat.v1.disable_eager_execution()
     from tensorflow.keras.layers import Conv2D, Dense, Dropout, Flatten, Input, MaxPooling2D
     from tensorflow.keras.models import Model
 
@@ -825,11 +766,9 @@ def get_image_classifier_kr_tf(loss_name="categorical_crossentropy", loss_type="
 
     :return: KerasClassifier
     """
-    # pylint: disable=E0401
     import tensorflow as tf
 
-    if tf.__version__[0] == "2":
-        tf.compat.v1.disable_eager_execution()
+    # pylint: disable=E0401
     from tensorflow.keras.layers import Conv2D, Dense, Flatten, MaxPooling2D
     from tensorflow.keras.models import Sequential
 
@@ -964,7 +903,7 @@ def get_image_classifier_kr_tf(loss_name="categorical_crossentropy", loss_type="
     else:
         raise ValueError("Loss name not recognised.")
 
-    model.compile(loss=loss, optimizer=tf.keras.optimizers.legacy.Adam(lr=0.01), metrics=["accuracy"])
+    model.compile(loss=loss, optimizer=tf.keras.optimizers.Adam(lr=0.01), metrics=["accuracy"])
 
     # Get classifier
     krc = KerasClassifier(model, clip_values=(0, 1), use_logits=from_logits)
@@ -979,10 +918,6 @@ def get_image_classifier_kr_tf_binary():
     :return: KerasClassifier
     """
     # pylint: disable=E0401
-    import tensorflow as tf
-
-    if tf.__version__[0] == "2":
-        tf.compat.v1.disable_eager_execution()
     from tensorflow.keras.layers import Conv2D, Dense, Flatten, MaxPooling2D
     from tensorflow.keras.models import Sequential
 
@@ -1002,7 +937,7 @@ def get_image_classifier_kr_tf_binary():
         [_kr_tf_weights_loader("MNIST_BINARY", "W", "DENSE"), _kr_tf_weights_loader("MNIST_BINARY", "B", "DENSE")]
     )
 
-    model.compile(loss="binary_crossentropy", optimizer=tf.keras.optimizers.legacy.Adam(lr=0.01), metrics=["accuracy"])
+    model.compile(loss="binary_crossentropy", optimizer=tf.keras.optimizers.Adam(lr=0.01), metrics=["accuracy"])
 
     # Get classifier
     krc = KerasClassifier(model, clip_values=(0, 1), use_logits=False)
@@ -1017,10 +952,6 @@ def get_image_classifier_kr_tf_with_wildcard():
     :return: KerasClassifier
     """
     # pylint: disable=E0401
-    import tensorflow as tf
-
-    if tf.__version__[0] == "2":
-        tf.compat.v1.disable_eager_execution()
     from tensorflow.keras.layers import LSTM, Conv1D, Dense
     from tensorflow.keras.models import Sequential
 
@@ -1554,11 +1485,6 @@ def get_tabular_classifier_tf_v1(load_init=True, sess=None):
     """
     import tensorflow as tf
 
-    if tf.__version__[0] == "2":
-        # pylint: disable=E0401
-        import tensorflow.compat.v1 as tf
-
-        tf.disable_eager_execution()
     from art.estimators.classification.tensorflow import TensorFlowClassifier
 
     # Define input and output placeholders
@@ -1685,7 +1611,7 @@ def get_tabular_classifier_tf_v2():
 
     model = TensorFlowModel()
     loss_object = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
-    optimizer = tf.keras.optimizers.legacy.Adam(learning_rate=0.01)
+    optimizer = tf.keras.optimizers.Adam(learning_rate=0.01)
 
     # Create the classifier
     tfc = TensorFlowV2Classifier(
@@ -1778,19 +1704,9 @@ def get_tabular_classifier_kr(load_init=True):
     :rtype: `tuple(KerasClassifier, tf.Session)`
     """
     import tensorflow as tf
-
-    tf_version = [int(v) for v in tf.__version__.split(".")]
-    if tf_version[0] == 2 and tf_version[1] >= 3:
-        is_tf23_keras24 = True
-        tf.compat.v1.disable_eager_execution()
-        from tensorflow import keras
-        from tensorflow.keras.layers import Dense
-        from tensorflow.keras.models import Sequential
-    else:
-        is_tf23_keras24 = False
-        import keras
-        from keras.models import Sequential
-        from keras.layers import Dense
+    from tensorflow import keras
+    from tensorflow.keras.layers import Dense
+    from tensorflow.keras.models import Sequential
 
     from art.estimators.classification.keras import KerasClassifier
 
@@ -1798,66 +1714,37 @@ def get_tabular_classifier_kr(load_init=True):
     model = Sequential()
 
     if load_init:
-        if is_tf23_keras24:
-            model.add(
-                Dense(
-                    10,
-                    input_shape=(4,),
-                    activation="relu",
-                    kernel_initializer=_tf_weights_loader("IRIS", "W", "DENSE1", 2),
-                    bias_initializer=_tf_weights_loader("IRIS", "B", "DENSE1", 2),
-                )
+        model.add(
+            Dense(
+                10,
+                input_shape=(4,),
+                activation="relu",
+                kernel_initializer=_tf_weights_loader("IRIS", "W", "DENSE1", 2),
+                bias_initializer=_tf_weights_loader("IRIS", "B", "DENSE1", 2),
             )
-            model.add(
-                Dense(
-                    10,
-                    activation="relu",
-                    kernel_initializer=_tf_weights_loader("IRIS", "W", "DENSE2", 2),
-                    bias_initializer=_tf_weights_loader("IRIS", "B", "DENSE2", 2),
-                )
+        )
+        model.add(
+            Dense(
+                10,
+                activation="relu",
+                kernel_initializer=_tf_weights_loader("IRIS", "W", "DENSE2", 2),
+                bias_initializer=_tf_weights_loader("IRIS", "B", "DENSE2", 2),
             )
-            model.add(
-                Dense(
-                    3,
-                    activation="softmax",
-                    kernel_initializer=_tf_weights_loader("IRIS", "W", "DENSE3", 2),
-                    bias_initializer=_tf_weights_loader("IRIS", "B", "DENSE3", 2),
-                )
+        )
+        model.add(
+            Dense(
+                3,
+                activation="softmax",
+                kernel_initializer=_tf_weights_loader("IRIS", "W", "DENSE3", 2),
+                bias_initializer=_tf_weights_loader("IRIS", "B", "DENSE3", 2),
             )
-        else:
-            model.add(
-                Dense(
-                    10,
-                    input_shape=(4,),
-                    activation="relu",
-                    kernel_initializer=_kr_weights_loader("IRIS", "W", "DENSE1"),
-                    bias_initializer=_kr_weights_loader("IRIS", "B", "DENSE1"),
-                )
-            )
-            model.add(
-                Dense(
-                    10,
-                    activation="relu",
-                    kernel_initializer=_kr_weights_loader("IRIS", "W", "DENSE2"),
-                    bias_initializer=_kr_weights_loader("IRIS", "B", "DENSE2"),
-                )
-            )
-            model.add(
-                Dense(
-                    3,
-                    activation="softmax",
-                    kernel_initializer=_kr_weights_loader("IRIS", "W", "DENSE3"),
-                    bias_initializer=_kr_weights_loader("IRIS", "B", "DENSE3"),
-                )
-            )
+        )
     else:
         model.add(Dense(10, input_shape=(4,), activation="relu"))
         model.add(Dense(10, activation="relu"))
         model.add(Dense(3, activation="softmax"))
 
-    model.compile(
-        loss="categorical_crossentropy", optimizer=keras.optimizers.legacy.Adam(lr=0.001), metrics=["accuracy"]
-    )
+    model.compile(loss="categorical_crossentropy", optimizer=keras.optimizers.Adam(lr=0.001), metrics=["accuracy"])
 
     # Get classifier
     krc = KerasClassifier(model, clip_values=(0, 1), use_logits=False, channels_first=True)
@@ -1875,19 +1762,9 @@ def get_tabular_regressor_kr(load_init=True):
     :rtype: `tuple(KerasRegressor, tf.Session)`
     """
     import tensorflow as tf
-
-    tf_version = [int(v) for v in tf.__version__.split(".")]
-    if tf_version[0] == 2 and tf_version[1] >= 3:
-        is_tf23_keras24 = True
-        tf.compat.v1.disable_eager_execution()
-        from tensorflow import keras
-        from tensorflow.keras.layers import Dense
-        from tensorflow.keras.models import Sequential
-    else:
-        is_tf23_keras24 = False
-        import keras
-        from keras.models import Sequential
-        from keras.layers import Dense
+    from tensorflow import keras
+    from tensorflow.keras.layers import Dense
+    from tensorflow.keras.models import Sequential
 
     from art.estimators.regression.keras import KerasRegressor
 
@@ -1895,62 +1772,36 @@ def get_tabular_regressor_kr(load_init=True):
     model = Sequential()
 
     if load_init:
-        if is_tf23_keras24:
-            model.add(
-                Dense(
-                    100,
-                    input_shape=(10,),
-                    activation="relu",
-                    kernel_initializer=_tf_weights_loader("DIABETES", "W", "DENSE1", 2),
-                    bias_initializer=_tf_weights_loader("DIABETES", "B", "DENSE1", 2),
-                )
+        model.add(
+            Dense(
+                100,
+                input_shape=(10,),
+                activation="relu",
+                kernel_initializer=_tf_weights_loader("DIABETES", "W", "DENSE1", 2),
+                bias_initializer=_tf_weights_loader("DIABETES", "B", "DENSE1", 2),
             )
-            model.add(
-                Dense(
-                    10,
-                    activation="relu",
-                    kernel_initializer=_tf_weights_loader("DIABETES", "W", "DENSE2", 2),
-                    bias_initializer=_tf_weights_loader("DIABETES", "B", "DENSE2", 2),
-                )
+        )
+        model.add(
+            Dense(
+                10,
+                activation="relu",
+                kernel_initializer=_tf_weights_loader("DIABETES", "W", "DENSE2", 2),
+                bias_initializer=_tf_weights_loader("DIABETES", "B", "DENSE2", 2),
             )
-            model.add(
-                Dense(
-                    1,
-                    kernel_initializer=_tf_weights_loader("DIABETES", "W", "DENSE3", 2),
-                    bias_initializer=_tf_weights_loader("DIABETES", "B", "DENSE3", 2),
-                )
+        )
+        model.add(
+            Dense(
+                1,
+                kernel_initializer=_tf_weights_loader("DIABETES", "W", "DENSE3", 2),
+                bias_initializer=_tf_weights_loader("DIABETES", "B", "DENSE3", 2),
             )
-        else:
-            model.add(
-                Dense(
-                    100,
-                    input_shape=(10,),
-                    activation="relu",
-                    kernel_initializer=_kr_weights_loader("DIABETES", "W", "DENSE1"),
-                    bias_initializer=_kr_weights_loader("DIABETES", "B", "DENSE1"),
-                )
-            )
-            model.add(
-                Dense(
-                    10,
-                    activation="relu",
-                    kernel_initializer=_kr_weights_loader("DIABETES", "W", "DENSE2"),
-                    bias_initializer=_kr_weights_loader("DIABETES", "B", "DENSE2"),
-                )
-            )
-            model.add(
-                Dense(
-                    1,
-                    kernel_initializer=_kr_weights_loader("DIABETES", "W", "DENSE3"),
-                    bias_initializer=_kr_weights_loader("DIABETES", "B", "DENSE3"),
-                )
-            )
+        )
     else:
         model.add(Dense(100, input_shape=(10,), activation="relu"))
         model.add(Dense(10, activation="relu"))
         model.add(Dense(1))
 
-    model.compile(loss="mean_squared_error", optimizer=keras.optimizers.legacy.Adam(lr=0.001), metrics=["accuracy"])
+    model.compile(loss="mean_squared_error", optimizer=keras.optimizers.Adam(lr=0.001), metrics=["accuracy"])
 
     # Get regressor
     krc = KerasRegressor(model)

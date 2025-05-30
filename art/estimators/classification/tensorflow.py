@@ -1427,6 +1427,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         :return: The output of `layer`, where the first dimension is the batch size corresponding to `x`.
         """
         import tensorflow as tf
+        import tensorflow.keras.backend as k
         from art.config import ART_NUMPY_DTYPE
 
         if not isinstance(self._model, tf.keras.models.Sequential):  # pragma: no cover
@@ -1464,7 +1465,9 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
             return activation_model(tf.convert_to_tensor(x_preprocessed), training=False)
 
         # Determine shape of expected output and prepare array
-        output_shape = self._model.layers[i_layer].output_shape
+        layer = self._model.layers[i_layer]
+        input_shape = k.int_shape(layer.input)  # Keras 3.x-safe way
+        output_shape = layer.compute_output_shape(input_shape)
         activations = np.zeros((x_preprocessed.shape[0],) + output_shape[1:], dtype=ART_NUMPY_DTYPE)
 
         # Get activations with batching

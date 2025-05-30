@@ -236,7 +236,7 @@ class GradientMatchingAttack(Attack):
                 """
                 return {"schedule": self.schedule}
 
-        self.optimizer = tf.keras.optimizers.legacy.Adam(
+        self.optimizer = tf.keras.optimizers.Adam(
             gradient_transformers=[lambda grads_and_vars: [(tf.sign(g), v) for (g, v) in grads_and_vars]]
         )
         self.lr_schedule = tf.keras.callbacks.LearningRateScheduler(PredefinedLRSchedule(*self.learning_rate_schedule))

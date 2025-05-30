@@ -27,7 +27,7 @@ import tensorflow as tf
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
 from tensorflow.keras.losses import categorical_crossentropy
-from tensorflow.keras.optimizers.legacy import Adam
+from tensorflow.keras.optimizers import Adam
 
 import torch.nn as nn
 import torch.nn.functional as F
@@ -223,8 +223,6 @@ class TestDeepPartitionEnsemble(unittest.TestCase):
         Test with a Keras Classifier.
         :return:
         """
-        tf.compat.v1.disable_eager_execution()
-
         # Get MNIST
         (x_train, y_train), (x_test, y_test) = self.mnist
 

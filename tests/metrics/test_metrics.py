@@ -126,7 +126,6 @@ class TestMetrics(unittest.TestCase):
 
         tf_version = [int(v) for v in tf.__version__.split(".")]
         if tf_version[0] == 2 and tf_version[1] >= 3:
-            tf.compat.v1.disable_eager_execution()
             from tensorflow import keras
             from tensorflow.keras.models import Sequential
             from tensorflow.keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
@@ -144,7 +143,7 @@ class TestMetrics(unittest.TestCase):
 
         model.compile(
             loss=keras.losses.categorical_crossentropy,
-            optimizer=keras.optimizers.legacy.Adam(lr=0.01),
+            optimizer=keras.optimizers.Adam(lr=0.01),
             metrics=["accuracy"],
         )
 
@@ -204,7 +203,6 @@ class TestMetrics(unittest.TestCase):
 
         tf_version = [int(v) for v in tf.__version__.split(".")]
         if tf_version[0] == 2 and tf_version[1] >= 3:
-            tf.compat.v1.disable_eager_execution()
             from tensorflow import keras
             from tensorflow.keras.models import Sequential
             from tensorflow.keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
@@ -222,7 +220,7 @@ class TestMetrics(unittest.TestCase):
 
         model.compile(
             loss=keras.losses.categorical_crossentropy,
-            optimizer=keras.optimizers.legacy.Adam(lr=0.01),
+            optimizer=keras.optimizers.Adam(lr=0.01),
             metrics=["accuracy"],
         )
 

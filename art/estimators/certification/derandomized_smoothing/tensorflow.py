@@ -68,7 +68,7 @@ class TensorFlowV2DeRandomizedSmoothing(TensorFlowV2Classifier, DeRandomizedSmoo
         logits: bool,
         input_shape: tuple[int, ...],
         loss_object: "tf.Tensor" | None = None,
-        optimizer: "tf.keras.optimizers.legacy.Optimizer" | None = None,
+        optimizer: "tf.keras.optimizers.Optimizer" | None = None,
         train_step: Callable | None = None,
         channels_first: bool = False,
         clip_values: "CLIP_VALUES_TYPE" | None = None,
