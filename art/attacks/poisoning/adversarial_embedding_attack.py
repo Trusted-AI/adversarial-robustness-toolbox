@@ -115,7 +115,7 @@ class PoisoningAttackAdversarialEmbedding(PoisoningAttackTransformer):
                 )
                 from tensorflow.keras.optimizers import Adam
 
-                opt = Adam(lr=self.learning_rate)
+                opt = Adam(learning_rate=self.learning_rate)
 
             else:
                 from keras import Model
@@ -125,11 +125,11 @@ class PoisoningAttackAdversarialEmbedding(PoisoningAttackTransformer):
                 try:
                     from keras.optimizers import Adam
 
-                    opt = Adam(lr=self.learning_rate)
+                    opt = Adam(learning_rate=self.learning_rate)
                 except ImportError:
                     from keras.optimizers import adam_v2
 
-                    opt = adam_v2.Adam(lr=self.learning_rate)
+                    opt = adam_v2.Adam(learning_rate=self.learning_rate)
 
             if clone:
                 self.orig_model = clone_model(self.estimator.model, input_tensors=self.estimator.model.inputs)

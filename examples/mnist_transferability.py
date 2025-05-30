@@ -54,7 +54,7 @@ def cnn_mnist_k(input_shape):
     model.add(Dense(10, activation="softmax"))
 
     model.compile(
-        loss=keras.losses.categorical_crossentropy, optimizer=keras.optimizers.Adam(lr=0.01), metrics=["accuracy"]
+        loss=keras.losses.categorical_crossentropy, optimizer=keras.optimizers.Adam(learning_rate=0.01), metrics=["accuracy"]
     )
 
     classifier = KerasClassifier(model=model, clip_values=(0, 1))

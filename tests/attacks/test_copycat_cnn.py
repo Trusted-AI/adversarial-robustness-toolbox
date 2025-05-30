@@ -79,11 +79,11 @@ class TestCopycatCNN(TestBase):
         try:
             from keras.optimizers import Adam
 
-            optimizer = Adam(lr=0.001)
+            optimizer = Adam(learning_rate=0.001)
         except ImportError:
             from keras.optimizers import adam_v2
 
-            optimizer = adam_v2.Adam(lr=0.001)
+            optimizer = adam_v2.Adam(learning_rate=0.001)
         model.compile(loss=loss, optimizer=optimizer, metrics=["accuracy"])
 
         # Get classifier
@@ -245,11 +245,11 @@ class TestCopycatCNNVectors(TestBase):
         try:
             from keras.optimizers import Adam
 
-            optimizer = Adam(lr=0.001)
+            optimizer = Adam(learning_rate=0.001)
         except ImportError:
             from keras.optimizers import adam_v2
 
-            optimizer = adam_v2.Adam(lr=0.001)
+            optimizer = adam_v2.Adam(learning_rate=0.001)
         model.compile(loss="categorical_crossentropy", optimizer=optimizer, metrics=["accuracy"])
 
         # Get classifier

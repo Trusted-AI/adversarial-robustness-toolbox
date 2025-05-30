@@ -44,7 +44,7 @@ def build_model(input_shape=(32, 32, 3), nb_classes=10):
     model = Model(img_input, img_output)
 
     model.compile(
-        loss=keras.losses.categorical_crossentropy, optimizer=keras.optimizers.Adam(lr=0.01), metrics=["accuracy"]
+        loss=keras.losses.categorical_crossentropy, optimizer=keras.optimizers.Adam(learning_rate=0.01), metrics=["accuracy"]
     )
 
     return model
