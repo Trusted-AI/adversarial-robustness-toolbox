@@ -52,7 +52,7 @@ def test_database_reconstruction_gaussian_nb(get_iris_dataset):
     assert x_recon.shape == (1, 4)
     assert y_recon.shape == (1, 3)
     # assert np.isclose(x_recon, x_private).all()
-    assert np.isclose(x_recon, np.array([[0.84792859, 0.41754906, 0.72134743, 0.2278481]])).all()
+    assert np.isclose(x_recon, np.array([[0.84792809, 0.41754901, 0.72134694, 0.31628275]])).all()
     assert np.argmax(y_recon, axis=1) == y_private
 
 

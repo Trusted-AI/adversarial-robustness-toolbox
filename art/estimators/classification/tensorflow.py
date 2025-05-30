@@ -1465,9 +1465,9 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
             return activation_model(tf.convert_to_tensor(x_preprocessed), training=False)
 
         # Determine shape of expected output and prepare array
-        layer = self._model.layers[i_layer]
-        input_shape = k.int_shape(layer.input)  # Keras 3.x-safe way
-        output_shape = layer.compute_output_shape(input_shape)
+        layer_instance = self._model.layers[i_layer]
+        input_shape = k.int_shape(layer_instance.input)  # Keras 3.x-safe way
+        output_shape = layer_instance.compute_output_shape(input_shape)
         activations = np.zeros((x_preprocessed.shape[0],) + output_shape[1:], dtype=ART_NUMPY_DTYPE)
 
         # Get activations with batching

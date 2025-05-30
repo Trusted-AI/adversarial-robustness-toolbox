@@ -129,14 +129,11 @@ class HiddenTriggerBackdoorKeras(PoisoningAttackWhiteBox):
         """
 
         import tensorflow as tf
+        import tensorflow.keras.backend as k
         from scipy.spatial import distance
 
-        if isinstance(self.estimator, KerasClassifier):
-
-            if not self.estimator.is_tensorflow:
-                import keras.backend as k
-            else:
-                import tensorflow.keras.backend as k
+        if not isinstance(self.estimator, KerasClassifier):
+            raise ValueError("This attack requires a KerasClassifier as input.")
 
         data = np.copy(x)
         if y is None:

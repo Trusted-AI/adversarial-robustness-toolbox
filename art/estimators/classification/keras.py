@@ -481,14 +481,16 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         # Apply preprocessing
         x_preprocessed, _ = self._apply_preprocessing(x=x, y=None, fit=False)
 
+        layer_name: str
+
         x_tensor = tf.convert_to_tensor(x_preprocessed)
         if isinstance(layer, int):
             layer_index: int = layer
             layer_name = self._model.layers[layer_index].name
         else:
-            layer_name: str = layer
-        layer = self._model.get_layer(name=layer_name)
-        submodel = tf.keras.Model(inputs=self._input, outputs=layer.output)
+            layer_name = layer
+        layer_instance = self._model.get_layer(name=layer_name)
+        submodel = tf.keras.Model(inputs=self._input, outputs=layer_instance.output)
         return submodel.predict(x_tensor)
 
     def custom_loss_gradient(self, nn_function, tensors, input_values, name="default"):

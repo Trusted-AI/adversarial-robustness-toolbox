@@ -251,7 +251,9 @@ def get_image_classifier_tf_v1(from_logits=False, load_init=True, sess=None):
     :return: TensorFlowClassifier, tf.Session()
     """
     # pylint: disable=E0401
-    import tensorflow as tf
+    import tensorflow.compat.v1 as tf
+
+    tf.disable_v2_behavior()
     from art.estimators.classification.tensorflow import TensorFlowClassifier
 
     # Define input and output placeholders
@@ -709,6 +711,7 @@ def get_image_classifier_kr_tf_functional(input_layer=1, output_layer=1):
 
     :return: KerasClassifier
     """
+    import tensorflow as tf
     from tensorflow.keras.layers import Conv2D, Dense, Dropout, Flatten, Input, MaxPooling2D
     from tensorflow.keras.models import Model
 
@@ -918,6 +921,7 @@ def get_image_classifier_kr_tf_binary():
     :return: KerasClassifier
     """
     # pylint: disable=E0401
+    import tensorflow as tf
     from tensorflow.keras.layers import Conv2D, Dense, Flatten, MaxPooling2D
     from tensorflow.keras.models import Sequential
 
@@ -1485,7 +1489,9 @@ def get_tabular_classifier_tf_v1(load_init=True, sess=None):
     :return: The trained model for Iris dataset and the session.
     :rtype: `tuple(TensorFlowClassifier, tf.Session)`
     """
-    import tensorflow as tf
+    import tensorflow.compat.v1 as tf
+
+    tf.disable_v2_behavior()
 
     from art.estimators.classification.tensorflow import TensorFlowClassifier
 

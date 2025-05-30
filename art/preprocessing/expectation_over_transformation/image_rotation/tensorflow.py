@@ -129,7 +129,6 @@ def rotate_images(images, angles, interpolation="NEAREST"):
     if tf.rank(images) == 3:
         images = tf.expand_dims(images, 0)
 
-    batch_size = tf.shape(images)[0]
     height = tf.cast(tf.shape(images)[1], tf.float32)
     width = tf.cast(tf.shape(images)[2], tf.float32)
 
