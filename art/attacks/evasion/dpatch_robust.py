@@ -146,7 +146,7 @@ class RobustDPatch(EvasionAttack):
         Generate RobustDPatch.
 
         :param x: Sample images.
-        :param y: Target labels for object detector.
+        :param y: Target labels for object detector. For untargeted attacks, this should be None.
         :return: Adversarial patch.
         """
         channel_index = 1 if self.estimator.channels_first else x.ndim - 1
@@ -155,7 +155,8 @@ class RobustDPatch(EvasionAttack):
         if y is None and self.targeted:
             raise ValueError("The targeted version of RobustDPatch attack requires target labels provided to `y`.")
         if y is not None and not self.targeted:
-            raise ValueError("The RobustDPatch attack does not use target labels.")
+            logger.warning("Labels provided for untargeted attack will be ignored")
+            y = None
         if x.ndim != 4:  # pragma: no cover
             raise ValueError("The adversarial patch can only be applied to images.")
 
