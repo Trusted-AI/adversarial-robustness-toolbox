@@ -17,25 +17,26 @@
 # SOFTWARE.
 import json
 import os
-from metric.perspective_api import PerspectiveApiScorer
-from metric.detoxify import DetoxifyScorer
+
+# from metric.perspective_api import PerspectiveApiScorer
+# from metric.detoxify import DetoxifyScorer
 import torch
-from minigpt4.common.config import Config
-from minigpt4.common.registry import registry
-from minigpt4.conversation.conversation import Chat, CONV_VISION
+# from minigpt4.common.config import Config
+# from minigpt4.common.registry import registry
+# from minigpt4.conversation.conversation import Chat, CONV_VISION
 from PIL import Image
 
 
-# 假设这是调用minigpt模型进行图像评价的函数
+# Assume this is a function for image evaluation using the MiniGPT model
 def minigpt_image_eval(content):
     """
-    模拟minigpt对图像相关内容进行评价的函数
+    Simulates a function for image evaluation using the MiniGPT model
 
-    :param content: 输入的图像相关内容
-    :return: 评价结果
+    :param content: Input image-related content
+    :return: Evaluation result
     """
-    # 这里应该是实际调用minigpt模型的代码
-    # 为了示例，简单返回一个字符串
+    # This should be the actual code calling the MiniGPT model
+    # For demonstration purposes, simply return a string
     return "Image evaluation result"
 
 
@@ -58,7 +59,7 @@ def initialize_minigpt(cfg_path, gpu_id=0):
     return Chat(model, vis_processor, device=f"cuda:{gpu_id}")
 
 
-def get_image_score(question_file, answer_list_files, rule_file, output_file, context_file, cfg_path, max_tokens=1024):
+def get_retention_score_image(question_file, answer_list_files, rule_file, output_file, context_file, cfg_path, max_tokens=1024):
     """
     Get image scores function
 

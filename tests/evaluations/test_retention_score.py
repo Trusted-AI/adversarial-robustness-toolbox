@@ -1,15 +1,37 @@
+# MIT License
+#
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2025
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+# documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
+# rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit
+# persons to whom the Software is furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all copies or substantial portions of the
+# Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
+# WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+# TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 import json
 import os
-import torch
+
 import numpy as np
 import math
-from retention_image_score import get_image_score
-from retention_text_score import get_text_score
+
+import pytest
+
+from art.evaluations import get_retention_score_image, get_retention_score_text
+
 
 
 def generate_synthetic_images(prompt, num_images=1):
     """
     Placeholder function for generating synthetic images using Stable Diffusion
+
     :param prompt: Image generation prompt
     :param num_images: Number of images to generate
     :return: List of generated image paths
@@ -22,6 +44,7 @@ def generate_synthetic_images(prompt, num_images=1):
 def paraphrase_text(prompts):
     """
     Placeholder function for text paraphrasing using DiffuseQ
+
     :param prompts: List of original prompts
     :return: List of paraphrased prompts
     """
@@ -33,6 +56,7 @@ def paraphrase_text(prompts):
 def calculate_retention_score(output_file):
     """
     Calculate the final retention score
+
     :param output_file: Path to output file
     :return: retention score and standard deviation
     """
@@ -62,18 +86,11 @@ def calculate_retention_score(output_file):
     return retention_score, score_std
 
 
-def get_score(
-    question_file,
-    answer_list_files,
-    rule_file,
-    output_file,
-    mode="text",
-    cfg_path=None,
-    context_file=None,
-    max_tokens=1024,
+def test_get_score_text(
 ):
     """
     General function for getting scores
+
     :param question_file: Path to question file
     :param answer_list_files: List of paths to answer files
     :param rule_file: Path to rule file
@@ -84,6 +101,13 @@ def get_score(
     :param max_tokens: Maximum number of tokens
     :return: (retention_score, score_std)
     """
+    question_file = None
+    answer_list_files = None
+    rule_file = None
+    output_file = None
+    cfg_path = None
+    max_tokens = 1024
+
     if not cfg_path:
         cfg_path = "path/to/minigpt4_config.yaml"
 
@@ -91,39 +115,18 @@ def get_score(
     with open(os.path.expanduser(question_file)) as f:
         questions = [json.loads(line)["text"] for line in f]
 
-    if mode == "image":
-        # Note: Should call actual Stable Diffusion model for image generation
-        synthetic_images = []
-        for prompt in questions:
-            images = generate_synthetic_images(prompt)
-            synthetic_images.extend(images)
+    # Note: Should call actual DiffuseQ model for text paraphrasing
+    paraphrased_prompts = paraphrase_text(questions)
 
-        get_image_score(
-            question_file=question_file,
-            answer_list_files=answer_list_files,
-            rule_file=rule_file,
-            output_file=output_file,
-            context_file=context_file,
-            cfg_path=cfg_path,
-            max_tokens=max_tokens,
-        )
-
-    elif mode == "text":
-        # Note: Should call actual DiffuseQ model for text paraphrasing
-        paraphrased_prompts = paraphrase_text(questions)
-
-        get_text_score(
-            question_file=question_file,
-            answer_list_files=answer_list_files,
-            rule_file=rule_file,
-            output_file=output_file,
-            cfg_path=cfg_path,
-            gpu_id=0,
-            max_tokens=max_tokens,
-        )
-
-    else:
-        raise ValueError("Mode must be either 'text' or 'image'")
+    get_retention_score_text(
+        question_file=question_file,
+        answer_list_files=answer_list_files,
+        rule_file=rule_file,
+        output_file=output_file,
+        cfg_path=cfg_path,
+        gpu_id=0,
+        max_tokens=max_tokens,
+    )
 
     # Calculate final retention score
     retention_score, score_std = calculate_retention_score(output_file)
@@ -132,59 +135,55 @@ def get_score(
     return retention_score, score_std
 
 
-def parse_score(review):
+
+def test_get_score_image(
+):
     """
-    Parse scores into float list, return [-1, -1] if parsing fails
-    :param review: Review text
-    :return: Score list
+    General function for getting scores
+
+    :param question_file: Path to question file
+    :param answer_list_files: List of paths to answer files
+    :param rule_file: Path to rule file
+    :param output_file: Path to output file
+    :param mode: Evaluation mode ('text' or 'image')
+    :param cfg_path: Path to MiniGPT config file
+    :param context_file: Path to context file (for image mode)
+    :param max_tokens: Maximum number of tokens
+    :return: (retention_score, score_std)
     """
-    try:
-        score_pair = review.split("\n")[0]
-        score_pair = score_pair.replace(",", " ")
-        sp = score_pair.split(" ")
-        if len(sp) == 2:
-            return [float(sp[0]), float(sp[1])]
-        else:
-            print("error", review)
-            return [-1, -1]
-    except Exception as e:
-        print(e)
-        print("error", review)
-        return [-1, -1]
+    question_file = None
+    answer_list_files = None
+    rule_file = None
+    output_file = None
+    cfg_path = None
+    context_file = None
+    max_tokens = 1024
 
+    if not cfg_path:
+        cfg_path = "path/to/minigpt4_config.yaml"
 
-if __name__ == "__main__":
-    import argparse
+    # Read original prompts from question file
+    with open(os.path.expanduser(question_file)) as f:
+        questions = [json.loads(line)["text"] for line in f]
 
-    parser = argparse.ArgumentParser(description="Calculate retention score for text or image")
-    parser.add_argument("--question_file", type=str, required=True, help="Path to question file")
-    parser.add_argument("--answer_files", nargs="+", required=True, help="Paths to answer files")
-    parser.add_argument("--rule_file", type=str, required=True, help="Path to rule file")
-    parser.add_argument("--output_file", type=str, required=True, help="Path to output file")
-    parser.add_argument("--mode", type=str, choices=["text", "image"], default="text", help="Evaluation mode")
-    parser.add_argument("--cfg_path", type=str, help="Path to MiniGPT config file")
-    parser.add_argument("--context_file", type=str, help="Path to context file (required for image mode)")
-    parser.add_argument("--max_tokens", type=int, default=1024, help="Maximum number of tokens")
+    # Note: Should call actual Stable Diffusion model for image generation
+    synthetic_images = []
+    for prompt in questions:
+        images = generate_synthetic_images(prompt)
+        synthetic_images.extend(images)
 
-    args = parser.parse_args()
-
-    # Validate context_file requirement for image mode
-    if args.mode == "image" and not args.context_file:
-        parser.error("--context_file is required when mode is 'image'")
-
-    # Calculate retention score
-    retention_score, std = get_score(
-        question_file=args.question_file,
-        answer_list_files=args.answer_files,
-        rule_file=args.rule_file,
-        output_file=args.output_file,
-        mode=args.mode,
-        cfg_path=args.cfg_path,
-        context_file=args.context_file,
-        max_tokens=args.max_tokens,
+    get_retention_score_image(
+        question_file=question_file,
+        answer_list_files=answer_list_files,
+        rule_file=rule_file,
+        output_file=output_file,
+        context_file=context_file,
+        cfg_path=cfg_path,
+        max_tokens=max_tokens,
     )
 
-    print(f"\nFinal Results:")
-    print(f"Mode: {args.mode}")
-    print(f"Retention Score: {retention_score:.4f}")
-    print(f"Standard Deviation: {std:.4f}")
+    # Calculate final retention score
+    retention_score, score_std = calculate_retention_score(output_file)
+    print(f"Retention Score: {retention_score:.4f} (std: {score_std:.4f})")
+
+    return retention_score, score_std

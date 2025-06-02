@@ -17,17 +17,19 @@
 # SOFTWARE.
 import json
 import os
+
 import torch
-from minigpt4.common.config import Config
-from minigpt4.common.registry import registry
-from minigpt4.conversation.conversation import Chat, CONV_VISION
-from transformers import AutoTokenizer, AutoModelForCausalLM
+# from minigpt4.common.config import Config
+# from minigpt4.common.registry import registry
+# from minigpt4.conversation.conversation import Chat, CONV_VISION
+# from transformers import AutoTokenizer, AutoModelForCausalLM
 from tqdm import tqdm
 
 
 def initialize_minigpt(cfg_path, gpu_id=0):
     """
     Initialize MiniGPT model
+
     :param cfg_path: Path to configuration file
     :param gpu_id: GPU device ID
     :return: Initialized Chat model
@@ -58,6 +60,7 @@ def initialize_judge_model(model_path="/Llama-2-70b-chat-hf"):
 def extract_content(tag, text):
     """
     Extract content from judge response
+
     :param tag: Tag to search for
     :param text: Text to search in
     :return: Extracted content
@@ -113,7 +116,7 @@ def judge_response(judge_model, tokenizer, response, prefix="<s>[INST] %s[/INST]
         return None
 
 
-def get_text_score(question_file, answer_list_files, rule_file, output_file, cfg_path, gpu_id=0, max_tokens=1024):
+def get_retention_score_text(question_file, answer_list_files, rule_file, output_file, cfg_path, gpu_id=0, max_tokens=1024):
     """
     Get text scores function
 
