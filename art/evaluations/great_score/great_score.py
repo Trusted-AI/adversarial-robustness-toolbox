@@ -31,7 +31,7 @@ class GreatScorePyTorch(Evaluation):
         self.classifier = classifier
         super().__init__()
 
-    def evaluate(self, x: np.ndarray, y: np.ndarray) -> (list[float], float):
+    def evaluate(self, x: np.ndarray, y: np.ndarray) -> tuple[list[float], float]:
         """
         Calculate the GREAT score and accuracy for given samples using the specified model.
 
