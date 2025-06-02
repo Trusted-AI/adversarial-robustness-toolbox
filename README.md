@@ -26,7 +26,7 @@ Adversarial Robustness Toolbox (ART) is a Python library for Machine Learning Se
 [Linux Foundation AI & Data Foundation](https://lfaidata.foundation) (LF AI & Data). ART provides tools that enable
 developers and researchers to defend and evaluate Machine Learning models and applications against the
 adversarial threats of Evasion, Poisoning, Extraction, and Inference. ART supports all popular machine learning frameworks
-(TensorFlow, Keras, PyTorch, MXNet, scikit-learn, XGBoost, LightGBM, CatBoost, GPy, etc.), all data types
+(TensorFlow, Keras, PyTorch, scikit-learn, XGBoost, LightGBM, CatBoost, GPy, etc.), all data types
 (images, tables, audio, video, etc.) and machine learning tasks (classification, object detection, speech recognition,
 generation, certification, etc.).
 

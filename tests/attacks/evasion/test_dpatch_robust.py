@@ -38,7 +38,7 @@ def fix_get_mnist_subset(get_mnist_dataset):
     yield x_train_mnist[:n_train], y_train_mnist[:n_train], x_test_mnist[:n_test], y_test_mnist[:n_test]
 
 
-@pytest.mark.skip_framework("keras", "scikitlearn", "mxnet", "kerastf")
+@pytest.mark.skip_framework("keras", "scikitlearn", "kerastf")
 def test_generate(art_warning, fix_get_mnist_subset, fix_get_rcnn, framework):
     try:
         (_, _, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
@@ -73,7 +73,7 @@ def test_generate(art_warning, fix_get_mnist_subset, fix_get_rcnn, framework):
         art_warning(e)
 
 
-@pytest.mark.skip_framework("keras", "scikitlearn", "mxnet", "kerastf")
+@pytest.mark.skip_framework("keras", "scikitlearn", "kerastf")
 def test_generate_targeted(art_warning, fix_get_mnist_subset, fix_get_rcnn, framework):
     try:
         (_, _, x_test_mnist, _) = fix_get_mnist_subset
@@ -108,7 +108,7 @@ def test_generate_targeted(art_warning, fix_get_mnist_subset, fix_get_rcnn, fram
 
 
 @pytest.mark.parametrize("channels_first", [False, True])
-@pytest.mark.skip_framework("keras", "scikitlearn", "mxnet", "kerastf")
+@pytest.mark.skip_framework("keras", "scikitlearn", "kerastf")
 def test_augment_images_with_patch(art_warning, channels_first, fix_get_rcnn):
     try:
         frcnn = fix_get_rcnn
@@ -158,7 +158,7 @@ def test_augment_images_with_patch(art_warning, channels_first, fix_get_rcnn):
         art_warning(e)
 
 
-@pytest.mark.skip_framework("keras", "scikitlearn", "mxnet", "kerastf")
+@pytest.mark.skip_framework("keras", "scikitlearn", "kerastf")
 def test_apply_patch(art_warning, fix_get_rcnn):
     try:
         frcnn = fix_get_rcnn
@@ -195,7 +195,7 @@ def test_apply_patch(art_warning, fix_get_rcnn):
 
 
 @pytest.mark.parametrize("channels_first", [False, True])
-@pytest.mark.skip_framework("keras", "scikitlearn", "mxnet", "kerastf")
+@pytest.mark.skip_framework("keras", "scikitlearn", "kerastf")
 def test_untransform_gradients(art_warning, fix_get_rcnn, channels_first):
     try:
         crop_x = 1

@@ -34,21 +34,21 @@ class TestImperceptibleASR:
     Test the ImperceptibleASR attack.
     """
 
-    @pytest.mark.skip_framework("tensorflow1", "tensorflow2", "mxnet", "kerastf", "non_dl_frameworks")
+    @pytest.mark.skip_framework("tensorflow2", "kerastf", "non_dl_frameworks")
     def test_is_subclass(self, art_warning):
         try:
             assert issubclass(ImperceptibleASR, EvasionAttack)
         except ARTTestException as e:
             art_warning(e)
 
-    @pytest.mark.skip_framework("tensorflow1", "tensorflow2", "mxnet", "kerastf", "non_dl_frameworks")
+    @pytest.mark.skip_framework("tensorflow2", "kerastf", "non_dl_frameworks")
     def test_implements_abstract_methods(self, art_warning, asr_dummy_estimator):
         try:
             ImperceptibleASR(estimator=asr_dummy_estimator(), masker=PsychoacousticMasker())
         except ARTTestException as e:
             art_warning(e)
 
-    @pytest.mark.skip_framework("tensorflow1", "tensorflow2", "mxnet", "kerastf", "non_dl_frameworks")
+    @pytest.mark.skip_framework("tensorflow2", "kerastf", "non_dl_frameworks")
     def test_generate(self, art_warning, mocker, asr_dummy_estimator, audio_data):
         try:
             test_input, test_target = audio_data
@@ -62,7 +62,7 @@ class TestImperceptibleASR:
         except ARTTestException as e:
             art_warning(e)
 
-    @pytest.mark.skip_framework("tensorflow1", "tensorflow2", "mxnet", "kerastf", "non_dl_frameworks")
+    @pytest.mark.skip_framework("tensorflow2", "kerastf", "non_dl_frameworks")
     def test_generate_batch(self, art_warning, mocker, asr_dummy_estimator, audio_data):
         try:
             test_input, test_target = audio_data
@@ -78,7 +78,7 @@ class TestImperceptibleASR:
         except ARTTestException as e:
             art_warning(e)
 
-    @pytest.mark.skip_framework("tensorflow1", "tensorflow2", "mxnet", "kerastf", "non_dl_frameworks")
+    @pytest.mark.skip_framework("tensorflow2", "kerastf", "non_dl_frameworks")
     def test_create_adversarial(self, art_warning, mocker, asr_dummy_estimator, audio_data):
         try:
             test_input, test_target = audio_data
@@ -105,7 +105,7 @@ class TestImperceptibleASR:
         except ARTTestException as e:
             art_warning(e)
 
-    @pytest.mark.skip_framework("tensorflow1", "tensorflow2", "mxnet", "kerastf", "non_dl_frameworks")
+    @pytest.mark.skip_framework("tensorflow2", "kerastf", "non_dl_frameworks")
     def test_create_imperceptible(self, art_warning, mocker, asr_dummy_estimator, audio_data):
         try:
             test_input, test_target = audio_data
@@ -132,7 +132,7 @@ class TestImperceptibleASR:
         except ARTTestException as e:
             art_warning(e)
 
-    @pytest.mark.skip_framework("tensorflow", "mxnet", "kerastf", "non_dl_frameworks")
+    @pytest.mark.skip_framework("tensorflow", "kerastf", "non_dl_frameworks")
     def test_loss_gradient_masking_threshold(self, art_warning, asr_dummy_estimator, audio_data):
         try:
             test_input, _ = audio_data
@@ -150,7 +150,7 @@ class TestImperceptibleASR:
         except ARTTestException as e:
             art_warning(e)
 
-    @pytest.mark.skip_framework("pytorch", "tensorflow1", "tensorflow2", "mxnet", "kerastf", "non_dl_frameworks")
+    @pytest.mark.skip_framework("pytorch", "tensorflow2", "kerastf", "non_dl_frameworks")
     def test_loss_gradient_masking_threshold_tf(self, art_warning, asr_dummy_estimator, audio_batch_padded):
         try:
             import tensorflow.compat.v1 as tf1
@@ -175,7 +175,7 @@ class TestImperceptibleASR:
         except ARTTestException as e:
             art_warning(e)
 
-    @pytest.mark.skip_framework("tensorflow", "mxnet", "kerastf", "non_dl_frameworks")
+    @pytest.mark.skip_framework("tensorflow", "kerastf", "non_dl_frameworks")
     def test_loss_gradient_masking_threshold_torch(self, art_warning, asr_dummy_estimator, audio_batch_padded):
         try:
             test_delta = audio_batch_padded
@@ -192,7 +192,7 @@ class TestImperceptibleASR:
         except ARTTestException as e:
             art_warning(e)
 
-    @pytest.mark.skip_framework("pytorch", "tensorflow1", "tensorflow2", "mxnet", "kerastf", "non_dl_frameworks")
+    @pytest.mark.skip_framework("pytorch", "tensorflow2", "kerastf", "non_dl_frameworks")
     def test_approximate_power_spectral_density_tf(self, art_warning, asr_dummy_estimator, audio_batch_padded):
         try:
             import tensorflow.compat.v1 as tf1
@@ -221,7 +221,7 @@ class TestImperceptibleASR:
         except ARTTestException as e:
             art_warning(e)
 
-    @pytest.mark.skip_framework("tensorflow", "mxnet", "kerastf", "non_dl_frameworks")
+    @pytest.mark.skip_framework("tensorflow", "kerastf", "non_dl_frameworks")
     def test_approximate_power_spectral_density_torch(self, art_warning, asr_dummy_estimator, audio_batch_padded):
         try:
             import torch
@@ -242,7 +242,7 @@ class TestImperceptibleASR:
         except ARTTestException as e:
             art_warning(e)
 
-    @pytest.mark.skip_framework("tensorflow1", "tensorflow2", "mxnet", "kerastf", "non_dl_frameworks")
+    @pytest.mark.skip_framework("tensorflow2", "kerastf", "non_dl_frameworks")
     def test_check_params(self, art_warning, image_dl_estimator_for_attack, asr_dummy_estimator):
         try:
             from art.attacks.evasion.imperceptible_asr.imperceptible_asr import ImperceptibleASR

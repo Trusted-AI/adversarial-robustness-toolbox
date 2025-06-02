@@ -1485,46 +1485,6 @@ def get_classifier_bb_nn(defences=None):
     return bbc
 
 
-def get_image_classifier_mxnet_custom_ini():
-    import mxnet
-
-    w_conv2d = np.load(
-        os.path.join(os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "W_CONV2D_MNIST.npy")
-    )
-    b_conv2d = np.load(
-        os.path.join(os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "B_CONV2D_MNIST.npy")
-    )
-    w_dense = np.load(
-        os.path.join(os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "W_DENSE_MNIST.npy")
-    )
-    b_dense = np.load(
-        os.path.join(os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "B_DENSE_MNIST.npy")
-    )
-
-    w_conv2d_mx = w_conv2d.reshape((1, 1, 7, 7))
-
-    alias = mxnet.registry.get_alias_func(mxnet.initializer.Initializer, "initializer")
-
-    @mxnet.init.register
-    @alias("mm_init")
-    class CustomInit(mxnet.init.Initializer):
-        def __init__(self):
-            super(CustomInit, self).__init__()
-            self.params = dict()
-            self.params["conv0_weight"] = w_conv2d_mx
-            self.params["conv0_bias"] = b_conv2d
-            self.params["dense0_weight"] = np.transpose(w_dense)
-            self.params["dense0_bias"] = b_dense
-
-        def _init_weight(self, name, arr):
-            arr[:] = self.params[name]
-
-        def _init_bias(self, name, arr):
-            arr[:] = self.params[name]
-
-    return CustomInit()
-
-
 def get_gan_inverse_gan_ft():
     import tensorflow as tf
 
@@ -2247,7 +2207,7 @@ def get_attack_classifier_pt(num_features):
 # -------------------------------------------------------------------------------------------- RANDOM NUMBER GENERATORS
 
 
-def master_seed(seed=1234, set_random=True, set_numpy=True, set_tensorflow=False, set_mxnet=False, set_torch=False):
+def master_seed(seed=1234, set_random=True, set_numpy=True, set_tensorflow=False, set_torch=False):
     """
     Set the seed for all random number generators used in the library. This ensures experiments reproducibility and
     stable testing.
@@ -2260,8 +2220,6 @@ def master_seed(seed=1234, set_random=True, set_numpy=True, set_tensorflow=False
     :type set_numpy: `bool`
     :param set_tensorflow: The flag to set seed for `tensorflow`.
     :type set_tensorflow: `bool`
-    :param set_mxnet: The flag to set seed for `mxnet`.
-    :type set_mxnet: `bool`
     :param set_torch: The flag to set seed for `torch`.
     :type set_torch: `bool`
     """
@@ -2293,15 +2251,6 @@ def master_seed(seed=1234, set_random=True, set_numpy=True, set_tensorflow=False
                 tf.set_random_seed(seed)
         except ImportError:
             logger.info("Could not set random seed for TensorFlow.")
-
-    if set_mxnet:
-        try:
-            import mxnet as mx
-
-            logger.info("Setting random seed for MXNet.")
-            mx.random.seed(seed)
-        except ImportError:
-            logger.info("Could not set random seed for MXNet.")
 
     if set_torch:
         try:

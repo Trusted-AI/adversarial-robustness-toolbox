@@ -16,7 +16,7 @@ ffmpeg-python==0.2.0
 cma==4.2.0
 pandas==2.2.3
 librosa==0.10.2.post1
-numba~=0.56.4
+numba~=0.59.1
 opencv-python
 sortedcontainers==2.4.0
 h5py==3.10.0
@@ -27,9 +27,6 @@ multiprocess>=0.70.12
 tensorflow==2.14.0
 keras==2.14.0
 tensorflow-addons>=0.13.0
-
-# using mxnet-native for reproducible test results on CI machines without Intel Architecture Processors, but mxnet is fully supported by ART
-mxnet-native==1.8.0.post0
 
 # PyTorch
 torch==2.7.0
@@ -48,8 +45,6 @@ kornia~=0.8.0
 tensorboardX==2.6.2.2
 lief==0.15.1
 jax[cpu]==0.4.30
-
-# lingvo==0.13.1
 
 # tests and style checking
 pytest~=8.3.2

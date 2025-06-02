@@ -20,7 +20,6 @@ Trained Models for Unittests, MNIST
 .. autofunction:: get_image_classifier_kr_tf_binary
 .. autofunction:: get_image_classifier_pt
 .. autofunction:: get_classifier_bb
-.. autofunction:: get_image_classifier_mxnet_custom_ini
 .. autofunction:: get_gan_inverse_gan_ft
 
 .. autofunction:: get_attack_classifier_pt
