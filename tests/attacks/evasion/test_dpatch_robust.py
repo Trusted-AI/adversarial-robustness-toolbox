@@ -39,7 +39,7 @@ def fix_get_mnist_subset(get_mnist_dataset):
 
 
 @pytest.mark.skip_framework("keras", "scikitlearn", "mxnet", "kerastf")
-def test_generate(art_warning, fix_get_mnist_subset, fix_get_rcnn, framework):
+def test_generate(art_warning, fix_get_mnist_subset, fix_get_rcnn, framework, caplog):
     try:
         (_, _, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
 
@@ -66,8 +66,9 @@ def test_generate(art_warning, fix_get_mnist_subset, fix_get_rcnn, framework):
         with pytest.raises(ValueError):
             _ = attack.generate(x=np.repeat(x_test_mnist, axis=3, repeats=2))
 
-        with pytest.raises(ValueError):
+        with caplog.at_level(logging.WARNING):
             _ = attack.generate(x=x_test_mnist, y=y_test_mnist)
+            assert "Labels provided for untargeted attack will be ignored" in caplog.text
 
     except ARTTestException as e:
         art_warning(e)
