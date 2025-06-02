@@ -107,7 +107,10 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         )
         self._model = model
         self._use_logits = use_logits
-        self.nb_classes = model.output_shape[-1]
+        if isinstance(model.output_shape, list):
+            self.nb_classes = model.output_shape[output_layer][-1]
+        else:
+            self.nb_classes = model.output_shape[-1]
 
         # Ensure model is built
         if not model.built:

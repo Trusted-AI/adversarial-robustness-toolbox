@@ -749,7 +749,7 @@ def get_image_classifier_kr_tf_functional(input_layer=1, output_layer=1):
 
         return model
 
-    return KerasClassifier(functional_model(), clip_values=(0, 1), input_layer=input_layer, output_layer=output_layer)
+    return KerasClassifier(functional_model(), clip_values=(0, 1), input_layer=0, output_layer=0)
 
 
 def get_image_classifier_kr_tf(loss_name="categorical_crossentropy", loss_type="function", from_logits=False):
