@@ -1,9 +1,11 @@
+--find-links https://download.pytorch.org/whl/cpu
+
 # base
 
 numpy>=1.18.5,<1.27
 scipy==1.10.1
-matplotlib==3.7.1
-scikit-learn==1.4.1.post1
+matplotlib==3.9.4
+scikit-learn==1.6.1
 six==1.17.0
 Pillow==11.1.0
 tqdm==4.67.1
@@ -30,10 +32,9 @@ tensorflow-addons>=0.13.0
 mxnet-native==1.8.0.post0
 
 # PyTorch
---find-links https://download.pytorch.org/whl/cpu/torch_stable.html
-torch==2.5.0
-torchaudio==2.5.0
-torchvision==0.20.0
+torch==2.7.0
+torchaudio==2.7.0
+torchvision==0.22.0
 
 # PyTorch image transformers
 timm==1.0.15
@@ -46,27 +47,25 @@ xgboost==2.1.1
 kornia~=0.8.0
 tensorboardX==2.6.2.2
 lief==0.15.1
-jax[cpu]==0.4.26
+jax[cpu]==0.4.30
 
 # lingvo==0.13.1
 
 # tests and style checking
 pytest~=8.3.2
 pytest-mock~=3.14.0
-pytest-cov~=6.0.0
+pytest-cov~=6.1.1
 pylint==3.2.6
 mypy==1.11.1
 pycodestyle==2.12.1
-black==24.8.0
+black==25.1.0
 ruff==0.9.3
-types-six==1.16.21.9
-types-PyYAML==6.0.12.20240917
-types-setuptools==80.8.0.20250521
+types-six==1.17.0.20250515
+types-PyYAML==6.0.12.20250516
+types-setuptools==80.9.0.20250529
 
 # other
 requests~=2.32.3
-ultralytics==8.0.217
-ipython==8.31.0
 
 # ART
 -e .

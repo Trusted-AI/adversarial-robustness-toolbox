@@ -42,15 +42,14 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-# tiling
 def _generate_tile_kernel(patch: list, mask: list, tile_size: int) -> Tuple["torch.Tensor", "torch.Tensor"]:
     """
-    Generate specific size of pertuerbed tiles from randomly selected patches.
+    Generate specific size of perturbed tiles from randomly selected patches.
 
-    :param patch: Candiate patches.
+    :param patch: Candidate patches.
     :param mask: Masks for each patch.
     :param tile_size: The size of each tile.
-    :return: Pertuerbed tiles and corresponding maskes.
+    :return: Perturbed tiles and corresponding masks.
     """
     import torch
     import torchvision
@@ -79,7 +78,7 @@ def _generate_tile_kernel(patch: list, mask: list, tile_size: int) -> Tuple["tor
         min_len = height
 
     if max_len > tile_size:
-        new_len = round(min_len * tile_size / max_len)
+        new_len = max(round(min_len * tile_size / max_len), 1)
         p_1 = torchvision.transforms.Resize((tile_size, new_len))(t_patch)
         # fix for the case that (strides - new_len) > new_len
         p_list = []
@@ -95,14 +94,14 @@ def _generate_tile_kernel(patch: list, mask: list, tile_size: int) -> Tuple["tor
         n_mask = torch.where(n_patch == 0, torch.zeros_like(n_patch), torch.ones_like(n_patch))
 
     elif max_len >= tile_size / 2.0:
-        new_len = round(min_len * (tile_size / 2.0) / max_len)
+        new_len = max(round(min_len * (tile_size / 2.0) / max_len), 1)
 
         p_list = []
         for _ in range(tile_size // new_len):
             repeat = 2
             p1_list = []
             for _ in range(repeat):
-                p_1 = torchvision.transforms.Resize((tile_size // 2, new_len))(t_patch)
+                p_1 = torchvision.transforms.Resize((max(tile_size // 2, 1), new_len))(t_patch)
                 if torch.rand([]) < 0.6:
                     p1_list.append(FlipOp(p_1))
                 else:
@@ -110,7 +109,7 @@ def _generate_tile_kernel(patch: list, mask: list, tile_size: int) -> Tuple["tor
             p_1 = torch.cat(p1_list, dim=-2)
             p_list.append(p_1)
 
-        p_2 = torchvision.transforms.RandomCrop((tile_size, tile_size % new_len))(p_1)
+        p_2 = torchvision.transforms.RandomCrop((tile_size, max(tile_size % new_len, 1)))(p_1)
         p_list.append(FlipOp(p_2))
 
         n_patch = torch.cat(p_list, dim=-1)
@@ -150,13 +149,13 @@ def _generate_tile_kernel(patch: list, mask: list, tile_size: int) -> Tuple["tor
 
 def generate_tile(patches: list, masks: list, tile_size: int, scale: list) -> Tuple["torch.Tensor", "torch.Tensor"]:
     """
-    Generate different size of pertuerbed tiles from randomly selected patches.
+    Generate different size of perturbed tiles from randomly selected patches.
 
-    :param patch: Candiate patches.
+    :param patch: Candidate patches.
     :param mask: Masks for each patch.
     :param tile_size: The size of each tile.
-    :param scale: Scale factor for various tileing size.
-    :return: Pertuerbed tiles and corresponding maskes.
+    :param scale: Scale factor for various tiling size.
+    :return: Perturbed tiles and corresponding masks.
     """
     import torch
 
@@ -316,8 +315,8 @@ class SNAL(EvasionAttack):
         Create a SNAL attack instance.
 
         :param estimator: A trained YOLOv8 model or other models with the same output format
-        :param candidates: The collected pateches to generate perturbations.
-        :param collector: A callbel uses to generate patches.
+        :param candidates: The collected patches to generate perturbations.
+        :param collector: A callable uses to generate patches.
         :param eps: Maximum perturbation that the attacker can introduce.
         :param max_iter: The maximum number of iterations.
         :param num_grid: The number of grids for width and high dimension.
@@ -391,7 +390,7 @@ class SNAL(EvasionAttack):
             raise ValueError("The size of the image must be divided by the number of grids")
         tile_size = x.shape[-1] // self.num_grid
 
-        # Prapare a 2D array to store the results of each grid
+        # Prepare a 2D array to store the results of each grid
         buffer_depth = 5
         tile_mat = {}
         for idx_i in range(self.num_grid):
@@ -503,10 +502,10 @@ class SNAL(EvasionAttack):
 
     def _get_loss(self, pert: "torch.Tensor", epsilon: float) -> "torch.Tensor":  # pylint: disable=R0201
         """
-        Calculate accumulated distance of the perturbations outside the epslion ball.
+        Calculate accumulated distance of the perturbations outside the epsilon ball.
 
         :param pert: Perturbations in the pixel space.
-        :param epsilon: The radius of the eplion bass.
+        :param epsilon: The radius of the epsilon bass.
         :return: loss.
         """
         import torch
@@ -526,7 +525,7 @@ class SNAL(EvasionAttack):
 
         :param tile: The target to convert.
         :param x_ref: The source data.
-        :param epsilon: The radius of the eplion bass.
+        :param epsilon: The radius of the epsilon bass.
         :return: The converted tile.
         """
         import torch

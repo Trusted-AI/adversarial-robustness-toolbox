@@ -761,7 +761,7 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
 
         curr = torch.from_numpy(image / 255.0)
         if self.clip_values is not None:
-            curr = curr * self.clip_values[1]
+            curr = curr * self.clip_values[1]  # type: ignore
         curr = curr.to(self.device)
         prev = torch.from_numpy(self.prev).to(self.device)
 
