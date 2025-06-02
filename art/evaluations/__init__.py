@@ -1,4 +1,2 @@
 from art.evaluations.great_score.great_score import GreatScorePyTorch
-from art.evaluations.retention_score.retention_image_score import get_retention_score_image
-from art.evaluations.retention_score.retention_text_score import get_retention_score_text
 from art.evaluations.security_curve.security_curve import SecurityCurve
