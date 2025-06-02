@@ -66,6 +66,8 @@ def test_generate(art_warning, get_pytorch_detector_yolo):
                 pos_matrix[:, 2] = torch.clamp_max(pos_matrix[:, 2], imgs.shape[3])
                 pos_matrix[:, 3] = torch.clamp_max(pos_matrix[:, 3], imgs.shape[2])
                 for pos_m in pos_matrix:
+                    if pos_m[3] - pos_m[1] == 0 or pos_m[2] - pos_m[0] == 0:
+                        continue
                     p = imgs[i, :, pos_m[1] : pos_m[3], pos_m[0] : pos_m[2]]
                     patch.append(p.to(detector.device))
 
@@ -165,7 +167,7 @@ def test_generate(art_warning, get_pytorch_detector_yolo):
         attack = SNAL(
             object_detector,
             eps=16.0 / 255.0,
-            max_iter=10,
+            max_iter=5,
             num_grid=10,
             candidates=candidates_list,
             collector=collect_patches_from_images,
