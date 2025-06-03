@@ -32,4 +32,4 @@ RUN cd TensorFlow/models/research && /TensorFlow/protobuf/bin/protoc object_dete
 RUN cd TensorFlow/models/research && cp object_detection/packages/tf2/setup.py . && sed -i "/^'tensorflow_io',$/d; /^'keras',$/d" setup.py
 RUN cd TensorFlow/models/research && python -m pip install .
 
-RUN pip install tqdm requests llvmlite numba==0.56.4 pytest-cov "pytest<8.0.0" "exceptiongroup<1.1.0" tensorflow==2.6.0 keras==2.6.0
+RUN pip install numpy matplotlib tqdm requests llvmlite numba==0.56.4 pytest-cov "pytest<8.0.0" "exceptiongroup<1.1.0" tensorflow==2.6.0 keras==2.6.0
