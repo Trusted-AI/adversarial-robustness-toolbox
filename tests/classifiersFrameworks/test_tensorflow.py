@@ -238,7 +238,7 @@ def test_binary_keras_instantiation_and_attack_pgd(art_warning):
             ]
         )
         model.summary()
-        model.compile(optimizer=tf.optimizers.legacy.Adam(), loss="binary_crossentropy", metrics=["accuracy"])
+        model.compile(optimizer=tf.optimizers.Adam(), loss="binary_crossentropy", metrics=["accuracy"])
         classifier = KerasClassifier(model=model)
         classifier.fit(train_x, train_y, nb_epochs=5)
         pred = classifier.predict(test_x)

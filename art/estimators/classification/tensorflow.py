@@ -1002,7 +1002,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
                     predictions = model(images, training=True)
                     loss = self.loss_object(labels, predictions)
                 gradients = tape.gradient(loss, model.trainable_variables)
-                if hasattr(self.optimizer, '_check_variables_are_known'):
+                if hasattr(self.optimizer, "_check_variables_are_known"):
                     self.optimizer._check_variables_are_known = lambda *args, **kwargs: None
                 self.optimizer.apply_gradients(zip(gradients, model.trainable_variables))
 

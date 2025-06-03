@@ -396,7 +396,8 @@ def get_image_gan_tf_v2():
     )
 
     def generator_orig_loss_fct(generated_output):
-        return tf.compat.v1.losses.sigmoid_cross_entropy(tf.ones_like(generated_output), generated_output)
+        loss_fn = tf.keras.losses.BinaryCrossentropy(from_logits=True)
+        return loss_fn(tf.ones_like(generated_output), generated_output)
 
     def discriminator_loss_fct(real_output, generated_output):
         """Discriminator loss
@@ -409,28 +410,32 @@ def get_image_gan_tf_v2():
         zeros (since these are the fake images).
         3. Calculate the total_loss as the sum of real_loss and generated_loss.
         """
-        # [1,1,...,1] with real output since it is true, and we want our generated examples to look like it
-        real_loss = tf.compat.v1.losses.sigmoid_cross_entropy(
-            multi_class_labels=tf.ones_like(real_output), logits=real_output
-        )
+        # Binary cross-entropy loss function (logits not passed through sigmoid yet)
+        bce = tf.keras.losses.BinaryCrossentropy(from_logits=True)
 
-        # [0,0,...,0] with generated images since they are fake
-        generated_loss = tf.compat.v1.losses.sigmoid_cross_entropy(
-            multi_class_labels=tf.zeros_like(generated_output), logits=generated_output
-        )
+        # Real images: label as 1
+        real_loss = bce(tf.ones_like(real_output), real_output)
+
+        # Generated (fake) images: label as 0
+        generated_loss = bce(tf.zeros_like(generated_output), generated_output)
 
         total_loss = real_loss + generated_loss
 
         return total_loss
 
+    # Use native TF 2.x optimizers
+    generator_optimizer = tf.keras.optimizers.Adam(learning_rate=1e-4)
+    discriminator_optimizer = tf.keras.optimizers.Adam(learning_rate=1e-4)
+
     gan = TensorFlowV2GAN(
         generator=generator,
         discriminator=discriminator_classifier,
         generator_loss=generator_orig_loss_fct,
-        generator_optimizer_fct=tf.compat.v1.train.AdamOptimizer(1e-4),
+        generator_optimizer_fct=generator_optimizer,
         discriminator_loss=discriminator_loss_fct,
-        discriminator_optimizer_fct=tf.compat.v1.train.AdamOptimizer(1e-4),
+        discriminator_optimizer_fct=discriminator_optimizer,
     )
+
     return gan
 
 

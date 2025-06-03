@@ -108,9 +108,14 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         self._model = model
         self._use_logits = use_logits
         if isinstance(model.output_shape, list):
-            self.nb_classes = model.output_shape[output_layer][-1]
+            nb_classes = model.output_shape[output_layer][-1]
         else:
-            self.nb_classes = model.output_shape[-1]
+            nb_classes = model.output_shape[-1]
+
+        # Check for binary classification
+        if nb_classes == 1:
+            nb_classes = 2
+        self.nb_classes = nb_classes
 
         # Ensure model is built
         if not model.built:
@@ -411,6 +416,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
                `fit_generator` function in Keras and will be passed to this function as such. Including the number of
                epochs or the number of steps per epoch as part of this argument will result in as error.
         """
+        y_ndim = y.ndim
         y = check_and_transform_label_format(y, nb_classes=self.nb_classes)
 
         # Apply preprocessing
@@ -418,8 +424,8 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
 
         # Adjust the shape of y for loss functions that do not take labels in one-hot encoding
         loss_name = getattr(self._model.loss, "__name__", None)
-        if loss_name in ["sparse_categorical_crossentropy", "SparseCategoricalCrossentropy"]:
-            y_preprocessed = np.argmax(y_preprocessed, axis=1) if y_preprocessed.ndim > 1 else y_preprocessed
+        if loss_name in ["sparse_categorical_crossentropy", "SparseCategoricalCrossentropy"] or y_ndim == 1:
+            y_preprocessed = np.argmax(y_preprocessed, axis=1)
 
         self._model.fit(
             x=x_preprocessed, y=y_preprocessed, batch_size=batch_size, epochs=nb_epochs, verbose=int(verbose), **kwargs
