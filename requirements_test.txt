@@ -44,7 +44,7 @@ GPy==1.13.2
 lightgbm==4.6.0
 xgboost==2.1.1
 
-kornia~=0.8.0
+kornia~=0.8.1
 tensorboardX==2.6.2.2
 lief==0.15.1
 jax[cpu]==0.4.30
