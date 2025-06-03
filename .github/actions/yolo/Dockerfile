@@ -8,7 +8,6 @@ RUN apt-get update \
         libx11-xcb1 \
         git \
         gcc \
-        mono-mcs \
         cmake \
         libavcodec-extra \
         ffmpeg \

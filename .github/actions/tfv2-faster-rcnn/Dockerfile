@@ -1,8 +1,5 @@
-# Get base from a tensorflow image
-FROM tensorflow/tensorflow:2.13.0
-
-# Set to install things in non-interactive mode
-ENV DEBIAN_FRONTEND noninteractive
+# Get base image
+FROM python:3.10.17-slim-bookworm
 
 # Install system wide softwares
 RUN apt-get update \
@@ -11,7 +8,6 @@ RUN apt-get update \
         libx11-xcb1 \
         git \
         gcc \
-        mono-mcs \
         libavcodec-extra \
         ffmpeg \
         curl \
@@ -19,17 +15,14 @@ RUN apt-get update \
         libsndfile1 \
         wget \
         unzip \
+        software-properties-common \
+        gnupg2 \
+        lsb-release \
      && apt-get clean all \
      && rm -r /var/lib/apt/lists/*
 
-RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
-RUN bash Miniconda3-latest-Linux-x86_64.sh -b -p /miniconda
-RUN /miniconda/bin/conda install --yes \
-    astropy \
-    matplotlib \
-    pandas \
-    scikit-learn \
-    scikit-image
+RUN pip install --upgrade pip setuptools wheel
+RUN pip install tensorflow==2.19.0
 
 # Install necessary libraries for tensorflow faster rcnn
 RUN mkdir TensorFlow
@@ -40,7 +33,4 @@ RUN cd TensorFlow/models/research && /TensorFlow/protobuf/bin/protoc object_dete
 RUN cd TensorFlow/models/research && cp object_detection/packages/tf2/setup.py .
 RUN cd TensorFlow/models/research && python -m pip install .
 
-RUN pip install tqdm
-RUN pip install requests
-RUN pip install numba==0.50.0
-RUN pip install pytest-cov
+RUN pip install tqdm requests llvmlite numba==0.56.4 pytest-cov

@@ -1,9 +1,6 @@
 # Get base image
 FROM python:3.10.17-slim-bookworm
 
-# Set to install things in non-interactive mode
-ENV DEBIAN_FRONTEND noninteractive
-
 # Install system wide software
 RUN apt-get update \
      && apt-get install -y \
@@ -16,7 +13,6 @@ RUN apt-get update \
         libx11-xcb1 \
         git \
         gcc \
-        mono-mcs \
         libavcodec-extra \
         ffmpeg \
         curl \

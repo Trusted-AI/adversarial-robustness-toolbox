@@ -11,7 +11,6 @@ RUN apt-get update \
         libx11-xcb1 \
         git \
         gcc \
-        mono-mcs \
         libavcodec-extra \
         ffmpeg \
         curl \
