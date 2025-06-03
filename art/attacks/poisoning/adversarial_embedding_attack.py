@@ -135,7 +135,7 @@ class PoisoningAttackAdversarialEmbedding(PoisoningAttackTransformer):
                 self.orig_model = clone_model(self.estimator.model, input_tensors=self.estimator.model.inputs)
             else:
                 self.orig_model = self.estimator.model
-            model_input = self.orig_model.input
+            model_input = self.orig_model.inputs
             init_model_output = self.orig_model(model_input)
 
             # Extracting feature tensor

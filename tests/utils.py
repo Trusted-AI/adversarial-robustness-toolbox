@@ -1752,7 +1752,7 @@ def get_tabular_classifier_kr(load_init=True):
         model.add(Dense(10, activation="relu"))
         model.add(Dense(3, activation="softmax"))
 
-    model.compile(loss="categorical_crossentropy", optimizer=keras.optimizers.Adam(lr=0.001), metrics=["accuracy"])
+    model.compile(loss="categorical_crossentropy", optimizer=keras.optimizers.Adam(learning_rate=0.001), metrics=["accuracy"])
 
     # Get classifier
     krc = KerasClassifier(model, clip_values=(0, 1), use_logits=False, channels_first=True)
@@ -1809,7 +1809,7 @@ def get_tabular_regressor_kr(load_init=True):
         model.add(Dense(10, activation="relu"))
         model.add(Dense(1))
 
-    model.compile(loss="mean_squared_error", optimizer=keras.optimizers.Adam(lr=0.001), metrics=["accuracy"])
+    model.compile(loss="mean_squared_error", optimizer=keras.optimizers.Adam(learning_rate=0.001), metrics=["accuracy"])
 
     # Get regressor
     krc = KerasRegressor(model)

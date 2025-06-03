@@ -1326,7 +1326,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
 
         try:
             # only works for functionally defined models
-            model = tf.keras.models.clone_model(self.model, input_tensors=self.model.inputs)
+            model = tf.keras.models.clone_model(self.model, input_tensors=self.model.input)
         except ValueError as error:
             raise ValueError("Cannot clone custom tensorflow models") from error
 

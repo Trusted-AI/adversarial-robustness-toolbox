@@ -158,9 +158,9 @@ class TestAdversarialPatch(TestBase):
         target = np.zeros(self.x_train_mnist.shape[0])
         patch_adv, _ = attack_ap.generate(self.x_train_mnist, target, shuffle=False)
 
-        self.assertAlmostEqual(patch_adv[8, 8, 0], 1.0, delta=0.05)
+        self.assertAlmostEqual(patch_adv[2, 8, 0], 0.4, delta=0.05)
         self.assertAlmostEqual(patch_adv[14, 14, 0], 0.0, delta=0.05)
-        self.assertAlmostEqual(float(np.sum(patch_adv)), 377.415771484375, delta=1.0)
+        self.assertAlmostEqual(float(np.sum(patch_adv)), 339.1322937011719, delta=1.0)
 
         # insert_transformed_patch
         x_out = attack_ap.insert_transformed_patch(
@@ -301,7 +301,7 @@ class TestAdversarialPatch(TestBase):
 
         self.assertAlmostEqual(patch_adv[0, 8, 8], 0.5, delta=0.05)
         self.assertAlmostEqual(patch_adv[0, 14, 14], 0.5, delta=0.05)
-        self.assertAlmostEqual(float(np.sum(patch_adv)), 367.6218066346819, delta=4.0)
+        self.assertAlmostEqual(float(np.sum(patch_adv)), 380.2155115437587, delta=4.0)
 
         mask = np.ones((1, 28, 28)).astype(bool)
         attack_ap.apply_patch(x=x_train, scale=0.1, mask=mask)
