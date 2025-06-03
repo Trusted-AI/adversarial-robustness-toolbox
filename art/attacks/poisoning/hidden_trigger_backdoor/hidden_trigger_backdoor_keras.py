@@ -131,9 +131,6 @@ class HiddenTriggerBackdoorKeras(PoisoningAttackWhiteBox):
         import tensorflow.keras.backend as k
         from scipy.spatial import distance
 
-        if not isinstance(self.estimator, KerasClassifier):
-            raise ValueError("This attack requires a KerasClassifier as input.")
-
         data = np.copy(x)
         if y is None:
             estimated_labels = self.estimator.predict(data)
@@ -269,14 +266,14 @@ class HiddenTriggerBackdoorKeras(PoisoningAttackWhiteBox):
         Helper function to get the feature layer output tensor in the keras graph
         :return: Output tensor
         """
-        if self.estimator._layer_names is None:
+        if self.estimator.layer_names is None:
             raise ValueError("No layer names identified.")
 
         if isinstance(self.feature_layer, str):
-            keras_layer = self.estimator._model.get_layer(self.feature_layer)
+            keras_layer = self.estimator.model.get_layer(self.feature_layer)
         elif isinstance(self.feature_layer, int):
-            layer_name = self.estimator._layer_names[self.feature_layer]
-            keras_layer = self.estimator._model.get_layer(layer_name)
+            layer_name = self.estimator.layer_names[self.feature_layer]
+            keras_layer = self.estimator.model.get_layer(layer_name)
         else:
             raise TypeError("feature_layer must be str or int")
         return keras_layer.output

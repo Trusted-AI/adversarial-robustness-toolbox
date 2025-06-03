@@ -77,39 +77,22 @@ class TestDeepPartitionEnsemble(unittest.TestCase):
 
             # Create a model from scratch
             from tensorflow.keras import Model
-            from tensorflow.keras.layers import Dense, Flatten, Conv2D, MaxPool2D
+            from tensorflow.keras.layers import Dense, Flatten, Conv2D, MaxPool2D, Input
 
-            class TensorFlowModel(Model):
-                """
-                Standard TensorFlow model for unit testing.
-                """
+            def build_tensorflow_functional_model():
+                inputs = Input(shape=(28, 28, 1))
 
-                def __init__(self):
-                    super(TensorFlowModel, self).__init__()
-                    self.conv1 = Conv2D(filters=4, kernel_size=5, activation="relu")
-                    self.conv2 = Conv2D(filters=10, kernel_size=5, activation="relu")
-                    self.maxpool = MaxPool2D(pool_size=(2, 2), strides=(2, 2), padding="valid", data_format=None)
-                    self.flatten = Flatten()
-                    self.dense1 = Dense(100, activation="relu")
-                    self.logits = Dense(10, activation="linear")
+                x = Conv2D(filters=4, kernel_size=5, activation="relu")(inputs)
+                x = MaxPool2D(pool_size=(2, 2), strides=(2, 2))(x)
+                x = Conv2D(filters=10, kernel_size=5, activation="relu")(x)
+                x = MaxPool2D(pool_size=(2, 2), strides=(2, 2))(x)
+                x = Flatten()(x)
+                x = Dense(100, activation="relu")(x)
+                outputs = Dense(10, activation="linear")(x)
 
-                def call(self, x):
-                    """
-                    Call function to evaluate the model.
+                return Model(inputs=inputs, outputs=outputs, name="TensorFlowModel")
 
-                    :param x: Input to the model
-                    :return: Prediction of the model
-                    """
-                    x = self.conv1(x)
-                    x = self.maxpool(x)
-                    x = self.conv2(x)
-                    x = self.maxpool(x)
-                    x = self.flatten(x)
-                    x = self.dense1(x)
-                    x = self.logits(x)
-                    return x
-
-            model = TensorFlowModel()
+            model = build_tensorflow_functional_model()
             loss_object = tf.keras.losses.CategoricalCrossentropy(from_logits=True)
             optimizer = Adam(learning_rate=0.01)
             model.compile(loss=loss_object, optimizer=optimizer)

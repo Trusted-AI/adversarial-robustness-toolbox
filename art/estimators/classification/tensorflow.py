@@ -1002,6 +1002,8 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
                     predictions = model(images, training=True)
                     loss = self.loss_object(labels, predictions)
                 gradients = tape.gradient(loss, model.trainable_variables)
+                if hasattr(self.optimizer, '_check_variables_are_known'):
+                    self.optimizer._check_variables_are_known = lambda *args, **kwargs: None
                 self.optimizer.apply_gradients(zip(gradients, model.trainable_variables))
 
         else:
@@ -1325,22 +1327,20 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         import tensorflow as tf
 
         try:
-            # only works for functionally defined models
             model = tf.keras.models.clone_model(self.model, input_tensors=self.model.input)
         except ValueError as error:
             raise ValueError("Cannot clone custom tensorflow models") from error
 
-        optimizer = self.model.optimizer
-        # reset optimizer variables
-        for var in optimizer.variables():
-            var.assign(tf.zeros_like(var))
+        # Recreate optimizer from config (fresh instance for each clone)
+        optimizer_config = self.model.optimizer.get_config()
+        optimizer_class = type(self.model.optimizer)
+        new_optimizer = optimizer_class.from_config(optimizer_config)
 
+        # Compile the model with the new optimizer
         model.compile(
-            optimizer=optimizer,
+            optimizer=new_optimizer,
             loss=self.model.loss,
             metrics=self.model.metrics,
-            loss_weights=self.model.compiled_loss._loss_weights,
-            weighted_metrics=self.model.compiled_metrics._weighted_metrics,
             run_eagerly=self.model.run_eagerly,
         )
 
@@ -1351,7 +1351,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         clone._train_step = self._train_step
         clone._reduce_labels = self._reduce_labels
         clone._loss_object = self._loss_object
-        clone._optimizer = self._optimizer
+        clone._optimizer = new_optimizer
         return clone
 
     def reset(self) -> None:
