@@ -1,5 +1,5 @@
 # Get base image
-FROM python:3.10.13-slim-bookworm
+FROM python:3.10.17-slim-bookworm
 
 # Set to install things in non-interactive mode
 ENV DEBIAN_FRONTEND noninteractive
@@ -25,10 +25,12 @@ RUN apt-get update \
      && rm -r /var/lib/apt/lists/*
 
 # Install necessary libraries for deepspeech v3
-RUN pip install --ignore-installed PyYAML torch==2.1.1 tensorflow==2.14.1 torchaudio==2.1.1 pytorch-lightning==2.1.2 scikit-learn==1.3.2
+RUN pip install --ignore-installed torch==2.1.2 torchaudio==2.1.2 --index-url https://download.pytorch.org/whl/cpu
+RUN pip install --ignore-installed --no-deps pytorch-lightning==2.1.2
+RUN pip install --ignore-installed PyYAML tensorflow==2.14.1 scikit-learn==1.3.2
 RUN pip install --no-build-isolation fairscale==0.4.13
 
-RUN git clone https://github.com/SeanNaren/deepspeech.pytorch.git && cd deepspeech.pytorch && sed -i '/^sklearn/d' requirements.txt && pip install -r requirements.txt && pip install -e .
+RUN git clone https://github.com/SeanNaren/deepspeech.pytorch.git && cd deepspeech.pytorch && sed -i '/^sklearn/d;/^torch/d;/^torchaudio/d' requirements.txt && pip install -r requirements.txt && pip install -e .
 
 RUN pip install numba==0.56.4 pytest-cov==4.1.0 pydub==0.25.1
 
