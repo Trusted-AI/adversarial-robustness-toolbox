@@ -31,7 +31,7 @@ RUN pip install tensorflow==2.9 scikit-learn==1.6.1 pytest~=6.2.5 pytest-cov~=4.
 
 RUN git clone https://github.com/nrupatunga/goturn-pytorch.git /tmp/goturn-pytorch
 #RUN cd /tmp/goturn-pytorch && pip install -r requirements.txt
-RUN pip install loguru==0.5.3 tqdm==4.62.3 imutils==0.5.3 numpy==1.21.6 Pillow==8.0.1 visdom==0.1.8.9 gdown==5.1.0
+RUN pip install loguru==0.5.3 tqdm==4.62.3 imutils==0.5.3 numpy==1.23.5 Pillow==8.0.1 visdom==0.1.8.9 gdown==5.1.0
 RUN pip install opencv_python==4.9.0.80 --no-build-isolation
 
 ENV PYTHONPATH "${PYTHONPATH}:/tmp/goturn-pytorch/src"
