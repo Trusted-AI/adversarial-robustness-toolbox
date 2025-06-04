@@ -19,7 +19,7 @@ import pytest
 
 from art.evaluations.great_score import GreatScorePyTorch
 
-from tests.utils import ARTTestException, get_cifar10_image_classifier_pt
+from tests.utils import ARTTestException
 
 
 @pytest.mark.only_with_platform("pytorch")
