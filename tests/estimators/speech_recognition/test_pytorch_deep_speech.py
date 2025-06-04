@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 
 
 @pytest.mark.skip_module("deepspeech_pytorch")
-@pytest.mark.skip_framework("tensorflow", "tensorflow2v1", "keras", "kerastf", "non_dl_frameworks")
+@pytest.mark.skip_framework("tensorflow", "keras", "kerastf", "non_dl_frameworks")
 @pytest.mark.parametrize("use_amp", [False, True])
 @pytest.mark.parametrize("device_type", ["cpu", "gpu"])
 def test_pytorch_deep_speech(art_warning, expected_values, use_amp, device_type):
@@ -124,7 +124,7 @@ def test_pytorch_deep_speech(art_warning, expected_values, use_amp, device_type)
 
 
 @pytest.mark.skip_module("deepspeech_pytorch")
-@pytest.mark.skip_framework("tensorflow", "tensorflow2v1", "keras", "kerastf", "non_dl_frameworks")
+@pytest.mark.skip_framework("tensorflow", "keras", "kerastf", "non_dl_frameworks")
 def test_pytorch_deep_speech_preprocessor(
     art_warning,
     expected_values,

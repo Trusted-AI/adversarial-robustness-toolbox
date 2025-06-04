@@ -32,15 +32,14 @@ import sklearn
 import numpy as np
 
 from art.estimators.classification.tensorflow import TensorFlowV2Classifier
-from art.estimators.encoding.tensorflow import TensorFlowEncoder
-from art.estimators.generation.tensorflow import TensorFlowGenerator, TensorFlowV2Generator
+from art.estimators.generation.tensorflow import TensorFlowV2Generator
 from art.estimators.gan.tensorflow import TensorFlowV2GAN
 from art.utils import load_dataset
 
 logger = logging.getLogger(__name__)
 
 # ----------------------------------------------------------------------------------------------------- TEST BASE CLASS
-art_supported_frameworks = ["keras", "tensorflow", "tensorflow2v1", "pytorch", "scikitlearn", "huggingface"]
+art_supported_frameworks = ["keras", "tensorflow", "pytorch", "scikitlearn", "huggingface"]
 
 
 class TestBase(unittest.TestCase):
@@ -170,18 +169,7 @@ def _tf_weights_loader(dataset, weights_type, layer="DENSE", tf_version=1):
     filename = str(weights_type) + "_" + str(layer) + "_" + str(dataset) + ".npy"
 
     # pylint: disable=W0613
-    # disable pylint because of API requirements for function
-    if tf_version == 1:
-
-        def _tf_initializer(_, dtype, partition_info):
-            import tensorflow as tf
-
-            weights = np.load(
-                os.path.join(os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", filename)
-            )
-            return tf.constant(weights, dtype)
-
-    elif tf_version == 2:
+    if tf_version == 2:
 
         def _tf_initializer(_, dtype):
             import tensorflow as tf
@@ -192,7 +180,7 @@ def _tf_weights_loader(dataset, weights_type, layer="DENSE", tf_version=1):
             return tf.constant(weights, dtype)
 
     else:
-        raise ValueError("The TensorFlow version tf_version has to be either 1 or 2.")
+        raise ValueError("The TensorFlow version tf_version has to be 2.")
 
     return _tf_initializer
 
@@ -218,117 +206,12 @@ def _kr_tf_weights_loader(dataset, weights_type, layer="DENSE"):
 def get_image_classifier_tf(from_logits=False, load_init=True, sess=None, framework=None):
     import tensorflow as tf
 
-    if tf.__version__[0] == "2":
-        if framework is None or framework == "tensorflow2":
-            # sess is not required but set to None to return 2 values for v1 and v2
-            classifier, sess = get_image_classifier_tf_v2(from_logits=from_logits), None
-        elif framework == "tensorflow2v1":
-            classifier, sess = get_image_classifier_tf_v1(from_logits=from_logits, load_init=load_init, sess=sess)
-        else:
-            raise ValueError("Unexpected value for `framework`.")
+    if framework is None or framework == "tensorflow2":
+        # sess is not required but set to None to return 2 values for v1 and v2
+        classifier, sess = get_image_classifier_tf_v2(from_logits=from_logits), None
     else:
-        classifier, sess = get_image_classifier_tf_v1(from_logits=from_logits, load_init=load_init, sess=sess)
+        raise ValueError("Unexpected value for `framework`.")
     return classifier, sess
-
-
-def get_image_classifier_tf_v1(from_logits=False, load_init=True, sess=None):
-    """
-    Standard TensorFlow classifier for unit testing.
-
-    The following hyperparameters were used to obtain the weights and biases:
-    learning_rate: 0.01
-    batch size: 10
-    number of epochs: 2
-    optimizer: tf.train.AdamOptimizer
-
-    :param from_logits: Flag if model should predict logits (True) or probabilities (False).
-    :type from_logits: `bool`
-    :param load_init: Load the initial weights if True.
-    :type load_init: `bool`
-    :param sess: Computation session.
-    :type sess: `tf.Session`
-    :return: TensorFlowClassifier, tf.Session()
-    """
-    # pylint: disable=E0401
-    import tensorflow.compat.v1 as tf
-
-    tf.disable_v2_behavior()
-    from art.estimators.classification.tensorflow import TensorFlowClassifier
-
-    # Define input and output placeholders
-    input_ph = tf.placeholder(tf.float32, shape=[None, 28, 28, 1])
-    output_ph = tf.placeholder(tf.float32, shape=[None, 10])
-
-    # Define the TensorFlow graph
-    if load_init:
-        conv = tf.layers.conv2d(
-            input_ph,
-            1,
-            7,
-            activation=tf.nn.relu,
-            kernel_initializer=_tf_weights_loader("MNIST", "W", "CONV2D"),
-            bias_initializer=_tf_weights_loader("MNIST", "B", "CONV2D"),
-        )
-    else:
-        conv = tf.layers.conv2d(input_ph, 1, 7, activation=tf.nn.relu)
-
-    conv = tf.layers.max_pooling2d(conv, 4, 4)
-    flattened = tf.layers.flatten(conv)
-
-    # Logits layer
-    if load_init:
-        logits = tf.layers.dense(
-            flattened,
-            10,
-            kernel_initializer=_tf_weights_loader("MNIST", "W", "DENSE"),
-            bias_initializer=_tf_weights_loader("MNIST", "B", "DENSE"),
-        )
-    else:
-        logits = tf.layers.dense(flattened, 10)
-
-    # probabilities
-    probabilities = tf.keras.activations.softmax(x=logits)
-
-    # Train operator
-    loss = tf.reduce_mean(
-        tf.losses.softmax_cross_entropy(logits=logits, onehot_labels=output_ph, reduction=tf.losses.Reduction.SUM)
-    )
-    optimizer = tf.train.AdamOptimizer(learning_rate=0.01)
-    train = optimizer.minimize(loss)
-
-    # TensorFlow session and initialization
-    if sess is None:
-        sess = tf.Session()
-    elif not isinstance(sess, tf.Session):
-        raise TypeError("An instance of `tf.Session` should be passed to `sess`.")
-
-    sess.run(tf.global_variables_initializer())
-
-    # Create the classifier
-    if from_logits:
-        tfc = TensorFlowClassifier(
-            clip_values=(0, 1),
-            input_ph=input_ph,
-            output=logits,
-            labels_ph=output_ph,
-            train=train,
-            loss=loss,
-            learning=None,
-            sess=sess,
-        )
-    else:
-        tfc = TensorFlowClassifier(
-            clip_values=(0, 1),
-            input_ph=input_ph,
-            output=probabilities,
-            labels_ph=output_ph,
-            train=train,
-            loss=loss,
-            learning=None,
-            sess=sess,
-        )
-
-    return tfc, sess
 
 
 def get_image_generator_tf_v2(capacity: int, z_dim: int):
@@ -456,9 +339,6 @@ def get_image_classifier_tf_v2(from_logits=False):
     from tensorflow.keras.models import Sequential
 
     from art.estimators.classification.tensorflow import TensorFlowV2Classifier
-
-    if tf.__version__[0] != "2":
-        raise ImportError("This function requires TensorFlow v2.")
 
     model = Sequential()
     model.add(
@@ -1435,135 +1315,16 @@ def get_classifier_bb_nn(defences=None):
     return bbc
 
 
-def get_gan_inverse_gan_ft():
-    import tensorflow as tf
-
-    from utils.resources.create_inverse_gan_models import build_gan_graph, build_inverse_gan_graph
-
-    if tf.__version__[0] == "2":
-        return None, None, None
-    else:
-
-        lr = 0.0002
-        latent_enc_len = 100
-
-        gen_tf, z_ph, gen_loss, gen_opt_tf, disc_loss_tf, disc_opt_tf, x_ph = build_gan_graph(lr, latent_enc_len)
-
-        enc_tf, image_to_enc_ph, latent_enc_loss, enc_opt = build_inverse_gan_graph(lr, gen_tf, z_ph, latent_enc_len)
-
-        sess = tf.Session()
-        sess.run(tf.global_variables_initializer())
-
-        gan = TensorFlowGenerator(
-            input_ph=z_ph,
-            model=gen_tf,
-            sess=sess,
-        )
-
-        inverse_gan = TensorFlowEncoder(
-            input_ph=image_to_enc_ph,
-            model=enc_tf,
-            sess=sess,
-        )
-        return gan, inverse_gan, sess
-
-
 # ------------------------------------------------------------------------------------------------ TEST MODELS FOR IRIS
 
 
 def get_tabular_classifier_tf(load_init=True, sess=None):
     import tensorflow as tf
 
-    if tf.__version__[0] == "2":
-        # sess is not required but set to None to return 2 values for v1 and v2
-        classifier, sess = get_tabular_classifier_tf_v2(), None
-    else:
-        classifier, sess = get_tabular_classifier_tf_v1(load_init=load_init, sess=sess)
+    # sess is not required but set to None to return 2 values for v1 and v2
+    classifier, sess = get_tabular_classifier_tf_v2(), None
+
     return classifier, sess
-
-
-def get_tabular_classifier_tf_v1(load_init=True, sess=None):
-    """
-    Standard TensorFlow classifier for unit testing.
-
-    The following hyperparameters were used to obtain the weights and biases:
-
-    * learning_rate: 0.01
-    * batch size: 5
-    * number of epochs: 200
-    * optimizer: tf.train.AdamOptimizer
-
-    The model is trained of 70% of the dataset, and 30% of the training set is used as validation split.
-
-    :param load_init: Load the initial weights if True.
-    :type load_init: `bool`
-    :param sess: Computation session.
-    :type sess: `tf.Session`
-    :return: The trained model for Iris dataset and the session.
-    :rtype: `tuple(TensorFlowClassifier, tf.Session)`
-    """
-    import tensorflow.compat.v1 as tf
-
-    tf.disable_v2_behavior()
-
-    from art.estimators.classification.tensorflow import TensorFlowClassifier
-
-    # Define input and output placeholders
-    input_ph = tf.placeholder(tf.float32, shape=[None, 4])
-    output_ph = tf.placeholder(tf.int32, shape=[None, 3])
-
-    # Define the TensorFlow graph
-    if load_init:
-        dense1 = tf.layers.dense(
-            input_ph,
-            10,
-            kernel_initializer=_tf_weights_loader("IRIS", "W", "DENSE1"),
-            bias_initializer=_tf_weights_loader("IRIS", "B", "DENSE1"),
-        )
-        dense2 = tf.layers.dense(
-            dense1,
-            10,
-            kernel_initializer=_tf_weights_loader("IRIS", "W", "DENSE2"),
-            bias_initializer=_tf_weights_loader("IRIS", "B", "DENSE2"),
-        )
-        logits = tf.layers.dense(
-            dense2,
-            3,
-            kernel_initializer=_tf_weights_loader("IRIS", "W", "DENSE3"),
-            bias_initializer=_tf_weights_loader("IRIS", "B", "DENSE3"),
-        )
-    else:
-        dense1 = tf.layers.dense(input_ph, 10)
-        dense2 = tf.layers.dense(dense1, 10)
-        logits = tf.layers.dense(dense2, 3)
-
-    # Train operator
-    loss = tf.reduce_mean(tf.losses.softmax_cross_entropy(logits=logits, onehot_labels=output_ph))
-    optimizer = tf.train.AdamOptimizer(learning_rate=0.01)
-    train = optimizer.minimize(loss)
-
-    # TensorFlow session and initialization
-    if sess is None:
-        sess = tf.Session()
-    elif not isinstance(sess, tf.Session):
-        raise TypeError("An instance of `tf.Session` should be passed to `sess`.")
-
-    sess.run(tf.global_variables_initializer())
-
-    # Train the classifier
-    tfc = TensorFlowClassifier(
-        clip_values=(0, 1),
-        input_ph=input_ph,
-        output=logits,
-        labels_ph=output_ph,
-        train=train,
-        loss=loss,
-        learning=None,
-        sess=sess,
-        channels_first=True,
-    )
-
-    return tfc, sess
 
 
 def get_tabular_classifier_tf_v2():
@@ -1588,9 +1349,6 @@ def get_tabular_classifier_tf_v2():
     from tensorflow.keras.layers import Dense
 
     from art.estimators.classification.tensorflow import TensorFlowV2Classifier
-
-    if tf.__version__[0] != "2":
-        raise ImportError("This function requires TensorFlow v2.")
 
     class TensorFlowModel(Model):
         """
@@ -2119,10 +1877,7 @@ def master_seed(seed=1234, set_random=True, set_numpy=True, set_tensorflow=False
             import tensorflow as tf
 
             logger.info("Setting random seed for TensorFlow.")
-            if tf.__version__[0] == "2":
-                tf.random.set_seed(seed)
-            else:
-                tf.set_random_seed(seed)
+            tf.random.set_seed(seed)
         except ImportError:
             logger.info("Could not set random seed for TensorFlow.")
 

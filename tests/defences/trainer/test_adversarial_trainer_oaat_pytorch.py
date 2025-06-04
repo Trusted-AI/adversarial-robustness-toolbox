@@ -31,7 +31,7 @@ def get_adv_trainer_oaat(framework, image_dl_estimator):
 
         if framework == "keras":
             trainer = None
-        if framework in ["tensorflow", "tensorflow2v1"]:
+        if framework == "tensorflow":
             trainer = None
         if framework == "pytorch":
             classifier, _ = image_dl_estimator(from_logits=True)

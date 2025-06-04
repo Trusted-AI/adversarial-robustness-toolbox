@@ -20,9 +20,5 @@ from art.estimators.classification.pytorch import PyTorchClassifier
 from art.estimators.classification.hugging_face import HuggingFaceClassifierPyTorch
 from art.estimators.classification.query_efficient_bb import QueryEfficientGradientEstimationClassifier
 from art.estimators.classification.scikitlearn import SklearnClassifier
-from art.estimators.classification.tensorflow import (
-    TFClassifier,
-    TensorFlowClassifier,
-    TensorFlowV2Classifier,
-)
+from art.estimators.classification.tensorflow import TensorFlowV2Classifier
 from art.estimators.classification.xgboost import XGBoostClassifier

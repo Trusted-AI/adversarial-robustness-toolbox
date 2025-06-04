@@ -35,7 +35,7 @@ The library is under continuous development. Feedback, bug reports and contribut
 Supported Machine Learning Libraries
 ------------------------------------
 
-* TensorFlow (v1 and v2) (https://www.tensorflow.org)
+* TensorFlow v2 (https://www.tensorflow.org)
 * Keras (https://www.keras.io)
 * PyTorch (https://www.pytorch.org)
 * Scikit-learn (https://www.scikit-learn.org)

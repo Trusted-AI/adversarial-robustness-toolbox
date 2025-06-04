@@ -62,45 +62,29 @@ def fix_get_mnist_subset(get_mnist_dataset):
 
 @pytest.mark.parametrize("loss_type", ["cross_entropy", "difference_logits_ratio"])
 @pytest.mark.parametrize("norm", ["inf", np.inf, 1, 2])
-@pytest.mark.skip_framework("keras", "non_dl_frameworks", "kerastf", "tensorflow2v1")
+@pytest.mark.skip_framework("keras", "non_dl_frameworks", "kerastf")
 def test_generate(art_warning, fix_get_mnist_subset, image_dl_estimator_for_attack, framework, loss_type, norm):
     try:
         classifier = image_dl_estimator_for_attack(AutoConjugateGradient, from_logits=True)
 
-        if framework == "tensorflow2v1" and loss_type == "difference_logits_ratio":
-            with pytest.raises(ValueError):
-                _ = AutoConjugateGradient(
-                    estimator=classifier,
-                    norm=norm,
-                    eps=0.3,
-                    eps_step=0.1,
-                    max_iter=5,
-                    targeted=False,
-                    nb_random_init=1,
-                    batch_size=32,
-                    loss_type=loss_type,
-                    verbose=False,
-                )
-        else:
+        attack = AutoConjugateGradient(
+            estimator=classifier,
+            norm=norm,
+            eps=0.3,
+            eps_step=0.1,
+            max_iter=5,
+            targeted=False,
+            nb_random_init=1,
+            batch_size=32,
+            loss_type=loss_type,
+            verbose=False,
+        )
 
-            attack = AutoConjugateGradient(
-                estimator=classifier,
-                norm=norm,
-                eps=0.3,
-                eps_step=0.1,
-                max_iter=5,
-                targeted=False,
-                nb_random_init=1,
-                batch_size=32,
-                loss_type=loss_type,
-                verbose=False,
-            )
+        (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
 
-            (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
+        x_train_mnist_adv = attack.generate(x=x_train_mnist, y=y_train_mnist)
 
-            x_train_mnist_adv = attack.generate(x=x_train_mnist, y=y_train_mnist)
-
-            assert np.max(np.abs(x_train_mnist_adv - x_train_mnist)) > 0.0
+        assert np.max(np.abs(x_train_mnist_adv - x_train_mnist)) > 0.0
 
     except ARTTestException as e:
         art_warning(e)

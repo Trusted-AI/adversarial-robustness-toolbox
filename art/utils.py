@@ -95,12 +95,11 @@ if TYPE_CHECKING:
         ScikitlearnRandomForestClassifier,
         ScikitlearnSVC,
     )
-    from art.estimators.classification.tensorflow import TensorFlowClassifier, TensorFlowV2Classifier
+    from art.estimators.classification.tensorflow import TensorFlowV2Classifier
     from art.estimators.classification.xgboost import XGBoostClassifier
     from art.estimators.certification.deep_z import PytorchDeepZ
     from art.estimators.certification.interval import PyTorchIBPClassifier
-    from art.estimators.certification.derandomized_smoothing.derandomized_smoothing import BlockAblator, ColumnAblator
-    from art.estimators.generation import TensorFlowGenerator
+    from art.estimators.certification.derandomized_smoothing.derandomized import BlockAblator, ColumnAblator
     from art.estimators.generation.tensorflow import TensorFlowV2Generator
     from art.estimators.object_detection.object_detector import ObjectDetector
     from art.estimators.object_detection.pytorch_object_detector import PyTorchObjectDetector
@@ -125,7 +124,6 @@ if TYPE_CHECKING:
         PyTorchClassifier,
         ScikitlearnLogisticRegression,
         ScikitlearnSVC,
-        TensorFlowClassifier,
         TensorFlowV2Classifier,
         QueryEfficientGradientEstimationClassifier,
     ]
@@ -138,7 +136,6 @@ if TYPE_CHECKING:
         PyTorchClassifier,
         ScikitlearnLogisticRegression,
         ScikitlearnSVC,
-        TensorFlowClassifier,
         TensorFlowV2Classifier,
     ]
 
@@ -148,7 +145,6 @@ if TYPE_CHECKING:
         EnsembleClassifier,
         KerasClassifier,
         PyTorchClassifier,
-        TensorFlowClassifier,
         TensorFlowV2Classifier,
     ]
 
@@ -183,13 +179,12 @@ if TYPE_CHECKING:
         ScikitlearnRandomForestClassifier,
         ScikitlearnLogisticRegression,
         ScikitlearnSVC,
-        TensorFlowClassifier,
         TensorFlowV2Classifier,
         XGBoostClassifier,
         CLASSIFIER_NEURALNETWORK_TYPE,
     ]
 
-    GENERATOR_TYPE = Union[TensorFlowGenerator, TensorFlowV2Generator]  # pylint: disable=invalid-name
+    GENERATOR_TYPE = Union[TensorFlowV2Generator]  # pylint: disable=invalid-name
 
     REGRESSOR_TYPE = Union[  # pylint: disable=invalid-name
         ScikitlearnRegressor, ScikitlearnDecisionTreeRegressor, PyTorchRegressor, KerasRegressor, BlackBoxRegressor

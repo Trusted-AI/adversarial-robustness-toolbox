@@ -33,15 +33,12 @@ from keras.models import Sequential
 from art.attacks.extraction.copycat_cnn import CopycatCNN
 from art.estimators.classification.keras import KerasClassifier
 from art.estimators.classification.pytorch import PyTorchClassifier
-from art.estimators.classification.tensorflow import TensorFlowClassifier
 from tests.utils import (
     TestBase,
     get_image_classifier_kr,
     get_image_classifier_pt,
-    get_image_classifier_tf,
     get_tabular_classifier_kr,
     get_tabular_classifier_pt,
-    get_tabular_classifier_tf,
     master_seed,
 )
 

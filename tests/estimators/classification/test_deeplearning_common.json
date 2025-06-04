@@ -394,27 +394,6 @@
         "clip_values=array([0., 1.], dtype=float32), ",
         "preprocessing_defences=None, postprocessing_defences=None, preprocessing=StandardisationMeanStdTensorFlow(mean=0.0, std=1.0, apply_fit=True, apply_predict=True)"
     ],
-        "test_repr_tensorflow2v1": [
-        "TensorFlowClassifier",
-        "input_ph=<tf.Tensor 'Placeholder:0'",
-        "channels_first=False, ",
-        "clip_values=array([0., 1.], dtype=float32), ",
-        "preprocessing_defences=None, postprocessing_defences=None, preprocessing=StandardisationMeanStd(mean=0.0, std=1.0, apply_fit=True, apply_predict=True)"
-    ],
-    "test_repr_tensorflow1": [
-        "TensorFlowClassifier",
-        "input_ph=<tf.Tensor 'Placeholder:0' shape=(?, 28, 28, 1) dtype=float32>",
-        "output=<tf.Tensor 'dense/BiasAdd:0' shape=(?, 10) dtype=float32>",
-        "labels_ph=<tf.Tensor 'Placeholder_1:0' shape=(?, 10) dtype=float32>",
-        "train=<tf.Operation 'Adam' type=NoOp>",
-        "loss=<tf.Tensor 'Mean:0' shape=() dtype=float32>",
-        "learning=None",
-        "sess=<tensorflow.python.client.session.Session object",
-        "channels_first=False",
-        "clip_values=array([0., 1.], dtype=float32)",
-        "preprocessing_defences=None, postprocessing_defences=None",
-        "preprocessing=StandardisationMeanStd(mean=0.0, std=1.0, apply_fit=True, apply_predict=True)"
-    ],
     "test_repr_pytorch": [
         "art.estimators.classification.pytorch.PyTorchClassifier",
         "(conv): Conv2d(1, 1, kernel_size=(7, 7), stride=(1, 1))",

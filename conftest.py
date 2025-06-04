@@ -31,7 +31,6 @@ import requests
 from art.data_generators import (
     KerasDataGenerator,
     PyTorchDataGenerator,
-    TensorFlowDataGenerator,
     TensorFlowV2DataGenerator,
 )
 from art.defences.preprocessor import FeatureSqueezing, JpegCompression, SpatialSmoothing
@@ -64,7 +63,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 deep_learning_frameworks = [
-    "keras", "tensorflow2", "tensorflow2v1", "pytorch", "kerastf", "jax", "huggingface",
+    "keras", "tensorflow2", "pytorch", "kerastf", "jax", "huggingface",
 ]
 non_deep_learning_frameworks = ["scikitlearn"]
 
@@ -189,10 +188,6 @@ def setup_tear_down_framework(framework):
         if tf.__version__[0] != "2":
             tf.reset_default_graph()
 
-    if framework == "tensorflow2v1":
-        import tensorflow.compat.v1 as tf1
-
-        tf1.reset_default_graph()
     yield True
 
     # Ran after each test
@@ -220,14 +215,6 @@ def image_iterator(framework, get_default_mnist_subset, default_batch_size):
                 cval=0,
             )
             return keras_gen.flow(x_train_mnist, y_train_mnist, batch_size=default_batch_size)
-
-        if framework == "tensorflow2v1":
-            import tensorflow.compat.v1 as tf
-
-            x_tensor = tf.convert_to_tensor(x_train_mnist.reshape(10, 100, 28, 28, 1))
-            y_tensor = tf.convert_to_tensor(y_train_mnist.reshape(10, 100, 10))
-            dataset = tf.data.Dataset.from_tensor_slices((x_tensor, y_tensor))
-            return dataset.make_initializable_iterator()
 
         if framework == "tensorflow2":
             import tensorflow as tf
@@ -260,16 +247,6 @@ def image_data_generator(framework, get_default_mnist_subset, image_iterator, de
         if framework == "keras" or framework == "kerastf":
             data_generator = KerasDataGenerator(
                 iterator=image_it,
-                size=x_train_mnist.shape[0],
-                batch_size=default_batch_size,
-            )
-
-        if framework == "tensorflow2v1":
-            data_generator = TensorFlowDataGenerator(
-                sess=kwargs["sess"],
-                iterator=image_it,
-                iterator_type="initializable",
-                iterator_arg={},
                 size=x_train_mnist.shape[0],
                 batch_size=default_batch_size,
             )
@@ -482,7 +459,7 @@ def image_dl_estimator(framework):
                             image_dl_estimator.__name__,
                             framework,
                         )
-        if framework in ["tensorflow2", "tensorflow2v1"]:
+        if framework == "tensorflow2":
             if wildcard is False and functional is False:
                 classifier, sess = get_image_classifier_tf(**kwargs, framework=framework)
                 return classifier, sess
@@ -811,7 +788,6 @@ def skip_by_framework(request, framework):
 
         if "tensorflow" in framework_to_skip_list:
             framework_to_skip_list.append("tensorflow2")
-            framework_to_skip_list.append("tensorflow2v1")
 
         if framework in framework_to_skip_list:
             pytest.skip("skipped on this platform: {}".format(framework))

@@ -32,7 +32,7 @@ from tests.utils import ARTTestException
 logger = logging.getLogger(__name__)
 
 
-@pytest.mark.skip_framework("non_dl_frameworks", "tensorflow2v1")
+@pytest.mark.skip_framework("non_dl_frameworks")
 def test_poison(art_warning, get_default_mnist_subset, image_dl_estimator, framework):
     try:
         (x_train, y_train), (_, _) = get_default_mnist_subset
@@ -79,7 +79,7 @@ def test_poison(art_warning, get_default_mnist_subset, image_dl_estimator, frame
         art_warning(e)
 
 
-@pytest.mark.skip_framework("non_dl_frameworks", "tensorflow2v1")
+@pytest.mark.skip_framework("non_dl_frameworks")
 def test_check_params(art_warning, get_default_mnist_subset, image_dl_estimator, framework):
     try:
         (x_train, y_train), (_, _) = get_default_mnist_subset

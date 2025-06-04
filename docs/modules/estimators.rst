@@ -50,13 +50,6 @@ Base Class ScikitlearnEstimator
    :special-members: __init__
    :inherited-members:
 
-Base Class TensorFlowEstimator
-------------------------------
-.. autoclass:: TensorFlowEstimator
-   :members:
-   :special-members: __init__
-   :inherited-members:
-
 Base Class TensorFlowV2Estimator
 --------------------------------
 .. autoclass:: TensorFlowV2Estimator

@@ -64,7 +64,7 @@ def fix_get_cifar10_data():
     return np.moveaxis(x_test, [3], [1]).astype(np.float32), y_test
 
 
-@pytest.mark.skip_framework("non_dl_frameworks", "keras", "kerastf", "tensorflow2", "tensorflow2v1", "huggingface")
+@pytest.mark.skip_framework("non_dl_frameworks", "keras", "kerastf", "tensorflow2", "huggingface")
 def test_mnist_certified_training(art_warning, fix_get_mnist_data):
     """
     Check the following properties for the first 100 samples of the MNIST test set given an l_inf bound
@@ -112,7 +112,7 @@ def test_mnist_certified_training(art_warning, fix_get_mnist_data):
         art_warning(e)
 
 
-@pytest.mark.skip_framework("non_dl_frameworks", "keras", "kerastf", "tensorflow2", "tensorflow2v1", "huggingface")
+@pytest.mark.skip_framework("non_dl_frameworks", "keras", "kerastf", "tensorflow2", "huggingface")
 def test_mnist_certified_loss(art_warning, fix_get_mnist_data):
     """
     Check the certified losses with interval_loss_cce, max_logit_loss, and make sure that we give a lower
@@ -231,7 +231,7 @@ def test_mnist_certified_loss(art_warning, fix_get_mnist_data):
         art_warning(e)
 
 
-@pytest.mark.skip_framework("non_dl_frameworks", "keras", "kerastf", "tensorflow2", "tensorflow2v1", "huggingface")
+@pytest.mark.skip_framework("non_dl_frameworks", "keras", "kerastf", "tensorflow2", "huggingface")
 def test_cifar_certified_training(art_warning, fix_get_cifar10_data):
     """
     Check the following properties for the first 10 samples of the CIFAR test set given an l_inf bound
@@ -279,7 +279,7 @@ def test_cifar_certified_training(art_warning, fix_get_cifar10_data):
         art_warning(e)
 
 
-@pytest.mark.skip_framework("non_dl_frameworks", "keras", "kerastf", "tensorflow2", "tensorflow2v1", "huggingface")
+@pytest.mark.skip_framework("non_dl_frameworks", "keras", "kerastf", "tensorflow2", "huggingface")
 def test_cifar_certified_loss(art_warning, fix_get_cifar10_data):
     """
     Check the certified losses with interval_loss_cce, max_logit_loss, and make sure that we give a lower
