@@ -1,5 +1,5 @@
 # Get base image
-FROM python:3.9.19-slim
+FROM python:3.10.17-slim-bookworm
 
 # Install system wide software
 RUN apt-get update \
@@ -8,7 +8,6 @@ RUN apt-get update \
         libx11-xcb1 \
         git \
         gcc \
-        mono-mcs \
         cmake \
         libavcodec-extra \
         ffmpeg \
@@ -20,7 +19,8 @@ RUN apt-get update \
      && apt-get clean all \
      && rm -r /var/lib/apt/lists/*
 
-RUN pip install pytorchyolo==1.8.0 tensorflow==2.14.1 scikit-learn==1.4.2 pytest-cov~=4.1.0 torch==1.12.1
+RUN pip install --ignore-installed torch==1.12.1 --index-url https://download.pytorch.org/whl/cpu
+RUN pip install pytorchyolo==1.8.0 tensorflow==2.14.1 scikit-learn==1.4.2 pytest-cov~=4.1.0
 
 RUN cd /tmp/ && git clone https://github.com/eriklindernoren/PyTorch-YOLOv3.git && cd ./PyTorch-YOLOv3/weights && ./download_weights.sh
 
