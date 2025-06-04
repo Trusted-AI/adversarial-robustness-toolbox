@@ -210,24 +210,31 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         predictions = self._model(x_tf, training=False)
 
         # Compute loss (no need to access .loss attribute directly)
-        loss_tensor = self._model.compiled_loss(y_tf, predictions, regularization_losses=None)
+        loss_tensor = self._model.compiled_loss(y_tf, predictions)
 
         # Convert loss tensor to numpy
         loss_value = loss_tensor.numpy()
 
         # Apply user-specified reduction
         if reduction == "none":
-            pass
+            loss_value_list = []
+            for i in range(x_tf.shape[0]):
+                predictions_i = self._model(x_tf[i : i + 1], training=False)
+                loss_tensor_i = self._model.compiled_loss(y_tf[i : i + 1], predictions_i)
+                loss_value_list.append(loss_tensor_i.numpy())
+            loss_value = np.array(loss_value_list)
+
         elif reduction == "mean":
-            if loss_value.ndim > 0:
-                loss_value = np.mean(loss_value, axis=0)
-            else:
-                loss_value = np.mean(loss_value)
+            predictions = self._model(x_tf, training=False)
+            loss_tensor = self._model.compiled_loss(y_tf, predictions)
+            loss_value = loss_tensor.numpy()
+
         elif reduction == "sum":
-            if loss_value.ndim > 0:
-                loss_value = np.sum(loss_value, axis=0)
-            else:
-                loss_value = np.sum(loss_value)
+            loss_value = 0
+            for i in range(x_tf.shape[0]):
+                predictions_i = self._model(x_tf[i : i + 1], training=False)
+                loss_tensor_i = self._model.compiled_loss(y_tf[i : i + 1], predictions_i)
+                loss_value += loss_tensor_i.numpy()
 
         return loss_value
 
@@ -391,9 +398,9 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
 
         # Run predictions with batching
         if training_mode:
-            predictions = self._model(x_preprocessed, training=training_mode)
+            predictions = self._model(x_preprocessed, training=training_mode, verbose=False)
         else:
-            predictions = self._model.predict(x_preprocessed, batch_size=batch_size)
+            predictions = self._model.predict(x_preprocessed, batch_size=batch_size, verbose=False)
 
         # Apply postprocessing
         predictions = self._apply_postprocessing(preds=predictions, fit=False)

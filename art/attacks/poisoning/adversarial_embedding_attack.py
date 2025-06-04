@@ -104,60 +104,65 @@ class PoisoningAttackAdversarialEmbedding(PoisoningAttackTransformer):
         self._check_params()
 
         if isinstance(self.estimator, KerasClassifier):
-            using_tf_keras = "tensorflow.python.keras" in str(type(self.estimator.model))
-            if using_tf_keras:  # pragma: no cover
-                from tensorflow.keras.models import Model, clone_model
-                from tensorflow.keras.layers import (
-                    GaussianNoise,
-                    Dense,
-                    BatchNormalization,
-                    LeakyReLU,
-                )
-                from tensorflow.keras.optimizers import Adam
 
-                opt = Adam(learning_rate=self.learning_rate)
+            from keras.models import Model, clone_model
+            from keras.layers import (
+                GaussianNoise,
+                Dense,
+                BatchNormalization,
+                LeakyReLU,
+                Input,
+                Flatten,
+            )
+            from keras.optimizers import Adam
+            import keras
 
-            else:
-                from keras import Model
-                from keras.models import clone_model
-                from keras.layers import GaussianNoise, Dense, BatchNormalization, LeakyReLU
+            opt = Adam(learning_rate=self.learning_rate)
 
-                try:
-                    from keras.optimizers import Adam
-
-                    opt = Adam(learning_rate=self.learning_rate)
-                except ImportError:
-                    from keras.optimizers import adam_v2
-
-                    opt = adam_v2.Adam(learning_rate=self.learning_rate)
-
+            # Clone and build model
             if clone:
-                self.orig_model = clone_model(self.estimator.model, input_tensors=self.estimator.model.inputs)
+                self.orig_model = clone_model(self.estimator.model)
+                self.orig_model.set_weights(self.estimator.model.get_weights())
             else:
                 self.orig_model = self.estimator.model
+
+            # Ensure model is built (important for Sequential models)
+            if not self.orig_model.built:
+                # Provide a dummy input shape based on the estimator input
+                dummy_input_shape = (None,) + self.estimator.input_shape[1:]
+                self.orig_model.build(dummy_input_shape)
+
+            # Access model input/output (safe for Functional & Sequential)
             model_input = self.orig_model.inputs
             init_model_output = self.orig_model(model_input)
 
-            # Extracting feature tensor
+            # Extract feature layer output
             if isinstance(self.feature_layer, int):
                 feature_layer_tensor = self.orig_model.layers[self.feature_layer].output
             else:
-                feature_layer_tensor = self.orig_model.get_layer(name=feature_layer).output
-            feature_layer_output = Model(inputs=[model_input], outputs=[feature_layer_tensor])
+                feature_layer_tensor = self.orig_model.get_layer(name=self.feature_layer).output
 
-            # Architecture for discriminator
-            discriminator_input = feature_layer_output(model_input)
-            discriminator_input = GaussianNoise(stddev=1)(discriminator_input)
-            dense_layer_1 = Dense(self.discriminator_layer_1)(discriminator_input)
-            norm_1_layer = BatchNormalization()(dense_layer_1)
-            leaky_layer_1 = LeakyReLU(alpha=0.2)(norm_1_layer)
-            dense_layer_2 = Dense(self.discriminator_layer_2)(leaky_layer_1)
-            norm_2_layer = BatchNormalization()(dense_layer_2)
-            leaky_layer_2 = LeakyReLU(alpha=0.2)(norm_2_layer)
-            backdoor_detect = Dense(2, activation="softmax", name="backdoor_detect")(leaky_layer_2)
+            feature_extractor = Model(inputs=model_input, outputs=feature_layer_tensor)
 
-            # Creating embedded model
-            self.embed_model = Model(inputs=self.orig_model.inputs, outputs=[init_model_output, backdoor_detect])
+            # Discriminator architecture
+            discriminator_input = feature_extractor(model_input)
+            if len(discriminator_input.shape) > 2:
+                discriminator_input = Flatten()(discriminator_input)
+
+            discriminator_input = GaussianNoise(stddev=1.0)(discriminator_input)
+
+            x = Dense(self.discriminator_layer_1)(discriminator_input)
+            x = BatchNormalization()(x)
+            x = LeakyReLU(alpha=0.2)(x)
+
+            x = Dense(self.discriminator_layer_2)(x)
+            x = BatchNormalization()(x)
+            x = LeakyReLU(alpha=0.2)(x)
+
+            backdoor_detect = Dense(2, activation="softmax", name="backdoor_detect")(x)
+
+            # Final embedded model
+            self.embed_model = Model(inputs=model_input, outputs=[init_model_output, backdoor_detect])
 
             # Add backdoor detection loss
             model_name = self.orig_model.name
@@ -175,7 +180,9 @@ class PoisoningAttackAdversarialEmbedding(PoisoningAttackTransformer):
             else:
                 raise TypeError(f"Cannot read model loss value of type {type(model_loss)}")
 
-            self.embed_model.compile(optimizer=opt, loss=losses, loss_weights=loss_weights, metrics=["accuracy"])
+            self.embed_model.compile(
+                optimizer=opt, loss=losses, loss_weights=loss_weights, metrics=["accuracy", "accuracy"]
+            )
         else:
             raise NotImplementedError("This attack currently only supports Keras.")
 

@@ -38,7 +38,8 @@ def test_loss_gradient_with_wildcard(art_warning, image_dl_estimator):
         shapes = [(1, 10, 1), (1, 20, 1)]
         for shape in shapes:
             x = np.random.normal(size=shape)
-            loss_gradient = classifier.loss_gradient(x, y=[1])
+            y = np.array([[0, 1]])
+            loss_gradient = classifier.loss_gradient(x, y=y)
             assert loss_gradient.shape == shape
 
             class_gradient = classifier.class_gradient(x, 0)

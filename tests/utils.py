@@ -225,7 +225,6 @@ def get_image_classifier_tf(from_logits=False, load_init=True, sess=None, framew
         elif framework == "tensorflow2v1":
             classifier, sess = get_image_classifier_tf_v1(from_logits=from_logits, load_init=load_init, sess=sess)
         else:
-            print(framework)
             raise ValueError("Unexpected value for `framework`.")
     else:
         classifier, sess = get_image_classifier_tf_v1(from_logits=from_logits, load_init=load_init, sess=sess)
@@ -717,44 +716,53 @@ def get_image_classifier_kr_tf_functional(input_layer=1, output_layer=1):
     :return: KerasClassifier
     """
     import tensorflow as tf
-    from tensorflow.keras.layers import Conv2D, Dense, Dropout, Flatten, Input, MaxPooling2D
+    from tensorflow.keras.layers import Conv2D, Dense, Dropout, Flatten, Input, MaxPooling2D, Identity
     from tensorflow.keras.models import Model
+    from keras.losses import CategoricalCrossentropy
 
     from art.estimators.classification.keras import KerasClassifier
 
     def functional_model():
+        # First input and branch
         in_layer = Input(shape=(28, 28, 1), name="input0")
-        layer = Conv2D(32, kernel_size=(3, 3), activation="relu")(in_layer)
-        layer = Conv2D(64, (3, 3), activation="relu")(layer)
-        layer = MaxPooling2D(pool_size=(2, 2))(layer)
-        layer = Dropout(0.25)(layer)
-        layer = Flatten()(layer)
-        layer = Dense(128, activation="relu")(layer)
-        layer = Dropout(0.5)(layer)
-        out_layer = Dense(10, activation="softmax", name="output0")(layer)
+        x = Conv2D(32, kernel_size=(3, 3), activation="relu")(in_layer)
+        x = Conv2D(64, (3, 3), activation="relu")(x)
+        x = MaxPooling2D(pool_size=(2, 2))(x)
+        x = Dropout(0.25)(x)
+        x = Flatten()(x)
+        x = Dense(128, activation="relu")(x)
+        x = Dropout(0.5)(x)
+        out_layer = Dense(10, activation="softmax", name="output0_dense")(x)
+        out_layer.name = "output0"
 
+        # Second input and branch
         in_layer_2 = Input(shape=(28, 28, 1), name="input1")
-        layer = Conv2D(32, kernel_size=(3, 3), activation="relu")(in_layer_2)
-        layer = Conv2D(64, (3, 3), activation="relu")(layer)
-        layer = MaxPooling2D(pool_size=(2, 2))(layer)
-        layer = Dropout(0.25)(layer)
-        layer = Flatten()(layer)
-        layer = Dense(128, activation="relu")(layer)
-        layer = Dropout(0.5)(layer)
-        out_layer_2 = Dense(10, activation="softmax", name="output1")(layer)
+        y = Conv2D(32, kernel_size=(3, 3), activation="relu")(in_layer_2)
+        y = Conv2D(64, (3, 3), activation="relu")(y)
+        y = MaxPooling2D(pool_size=(2, 2))(y)
+        y = Dropout(0.25)(y)
+        y = Flatten()(y)
+        y = Dense(128, activation="relu")(y)
+        y = Dropout(0.5)(y)
+        out_layer_2 = Dense(10, activation="softmax", name="output1_dense")(y)
+        out_layer_2.name = "output1"
 
+        # Define model with named outputs
         model = Model(inputs=[in_layer, in_layer_2], outputs=[out_layer, out_layer_2])
 
+        loss_fn = CategoricalCrossentropy(reduction=tf.keras.losses.Reduction.NONE)
+
+        # Compile
         model.compile(
-            loss=tf.keras.losses.categorical_crossentropy,
+            loss=[loss_fn, loss_fn],
             optimizer=tf.keras.optimizers.Adadelta(),
-            metrics=["accuracy"],
+            metrics=["accuracy", "accuracy"],
             loss_weights=[1.0, 1.0],
         )
 
         return model
 
-    return KerasClassifier(functional_model(), clip_values=(0, 1), input_layer=0, output_layer=0)
+    return KerasClassifier(functional_model(), clip_values=(0, 1), input_layer=input_layer, output_layer=output_layer)
 
 
 def get_image_classifier_kr_tf(loss_name="categorical_crossentropy", loss_type="function", from_logits=False):

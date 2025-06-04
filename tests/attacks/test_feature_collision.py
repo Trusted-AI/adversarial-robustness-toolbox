@@ -24,7 +24,7 @@ import numpy as np
 
 from art.attacks.poisoning.feature_collision_attack import FeatureCollisionAttack
 
-from tests.utils import TestBase, master_seed, get_image_classifier_kr  # , get_image_classifier_tf
+from tests.utils import TestBase, master_seed, get_image_classifier_pt
 
 logger = logging.getLogger(__name__)
 
@@ -43,9 +43,9 @@ class TestFeatureCollision(TestBase):
 
         cls.n_train = 10
         cls.n_test = 10
-        cls.x_train_mnist = cls.x_train_mnist[0 : cls.n_train]
+        cls.x_train_mnist = cls.x_train_mnist[0 : cls.n_train].astype(np.float32)
         cls.y_train_mnist = cls.y_train_mnist[0 : cls.n_train]
-        cls.x_test_mnist = cls.x_test_mnist[0 : cls.n_test]
+        cls.x_test_mnist = cls.x_test_mnist[0 : cls.n_test].astype(np.float32)
         cls.y_test_mnist = cls.y_test_mnist[0 : cls.n_test]
 
     def setUp(self):
@@ -66,30 +66,19 @@ class TestFeatureCollision(TestBase):
 
         return x_poison, y_poison
 
-    # def test_tensorflow(self):
-    #     """
-    #     First test with the TensorFlowClassifier.
-    #     :return:
-    #     """
-    #     tfc, sess = get_image_classifier_tf()
-    #     x_adv, y_adv = self.poison_dataset(tfc, self.x_train_mnist, self.y_train_mnist)
-    #     tfc.fit(x_adv, y_adv, nb_epochs=NB_EPOCHS, batch_size=32)
-    #
-    #     if sess is not None:
-    #         sess.close()
-
-    def test_keras(self):
+    def test_pytorch(self):
         """
-        Test working keras implementation.
+        Test working PyTorch implementation.
         :return:
         """
-        krc = get_image_classifier_kr()
-        x_adv, y_adv = self.poison_dataset(krc, self.x_train_mnist, self.y_train_mnist)
-        krc.fit(x_adv, y_adv, nb_epochs=NB_EPOCHS, batch_size=32)
+        ptc = get_image_classifier_pt()
+        x_train_mnist = np.transpose(self.x_train_mnist, (0, 3, 2, 1))
+        x_adv, y_adv = self.poison_dataset(ptc, x_train_mnist, self.y_train_mnist)
+        ptc.fit(x_adv, y_adv, nb_epochs=NB_EPOCHS, batch_size=32)
 
     def test_check_params(self):
 
-        krc = get_image_classifier_kr(from_logits=True)
+        krc = get_image_classifier_pt(from_logits=True)
 
         with self.assertRaises(ValueError):
             _ = FeatureCollisionAttack(krc, target=self.x_train_mnist, feature_layer=1, learning_rate=-1)

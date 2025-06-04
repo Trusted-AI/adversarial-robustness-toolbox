@@ -380,7 +380,7 @@ class GradientMatchingAttack(Attack):
                 self.backdoor_model.zero_grad()
                 loss, poisoned_samples = self.backdoor_model(x, indices, y, self.grad_ws_norm)
                 loss.backward()
-                self.backdoor_model.noise_embedding.embedding_layer.weight.grad.sign_()
+                self.backdoor_model.noise_embedding.embedding_layer.weight.grad.sign_()  # type: ignore
                 self.optimizer.step()
                 sum_loss += loss.clone().cpu().detach().numpy()
                 count += 1
