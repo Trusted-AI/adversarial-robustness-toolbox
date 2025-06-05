@@ -26,17 +26,15 @@ This module implements methods performing poisoning detection based on activatio
 """
 from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
+import copy
 import logging
 import os
-import pickle
-import time
 from typing import Any, TYPE_CHECKING
 
 import numpy as np
 
 from sklearn.cluster import KMeans, MiniBatchKMeans
 
-from art import config
 from art.data_generators import DataGenerator
 from art.defences.detector.poison.clustering_analyzer import ClusteringAnalyzer
 from art.defences.detector.poison.ground_truth_evaluator import GroundTruthEvaluator
@@ -468,12 +466,25 @@ class ActivationDefence(PoisonFilteringDefence):
         x_train, x_test = x[:n_train], x[n_train:]
         y_train, y_test = y_fix[:n_train], y_fix[n_train:]
 
-        filename = "original_classifier" + str(time.time()) + ".p"
-        ActivationDefence._pickle_classifier(classifier, filename)
+        from tensorflow.keras.models import clone_model
+
+        model = classifier._model
+        forward_pass = classifier._forward_pass
+        classifier._model = None
+        classifier._forward_pass = None
+
+        curr_classifier = copy.deepcopy(classifier)
+        curr_model = clone_model(model)
+        curr_model.set_weights(model.get_weights())
+        curr_classifier._model = curr_model
+        curr_classifier._forward_pass = forward_pass
+
+        classifier._model = model
+        classifier._forward_pass = forward_pass
 
         # Now train using y_fix:
         improve_factor, _ = train_remove_backdoor(
-            classifier,
+            curr_classifier,
             x_train,
             y_train,
             x_test,
@@ -485,11 +496,9 @@ class ActivationDefence(PoisonFilteringDefence):
 
         # Only update classifier if there was an improvement:
         if improve_factor < 0:
-            classifier = ActivationDefence._unpickle_classifier(filename)
             return 0, classifier
 
-        ActivationDefence._remove_pickle(filename)
-        return improve_factor, classifier
+        return improve_factor, curr_classifier
 
     @staticmethod
     def relabel_poison_cross_validation(
@@ -514,23 +523,35 @@ class ActivationDefence(PoisonFilteringDefence):
         :param batch_epochs: Number of epochs to be trained before checking current state of model.
         :return: (improve_factor, classifier)
         """
-
         from sklearn.model_selection import KFold
 
         # Train using cross validation
         k_fold = KFold(n_splits=n_splits)
         KFold(n_splits=n_splits, random_state=None, shuffle=True)
 
-        filename = "original_classifier" + str(time.time()) + ".p"
-        ActivationDefence._pickle_classifier(classifier, filename)
         curr_improvement = 0
 
         for train_index, test_index in k_fold.split(x):
             # Obtain partition:
             x_train, x_test = x[train_index], x[test_index]
             y_train, y_test = y_fix[train_index], y_fix[test_index]
-            # Unpickle original model:
-            curr_classifier = ActivationDefence._unpickle_classifier(filename)
+            # Copy original model:
+
+            from tensorflow.keras.models import clone_model
+
+            model = classifier._model
+            forward_pass = classifier._forward_pass
+            classifier._model = None
+            classifier._forward_pass = None
+
+            curr_classifier = copy.deepcopy(classifier)
+            curr_model = clone_model(model)
+            curr_model.set_weights(model.get_weights())
+            curr_classifier._model = curr_model
+            curr_classifier._forward_pass = forward_pass
+
+            classifier._model = model
+            classifier._forward_pass = forward_pass
 
             new_improvement, fixed_classifier = train_remove_backdoor(
                 curr_classifier,
@@ -547,49 +568,7 @@ class ActivationDefence(PoisonFilteringDefence):
                 classifier = fixed_classifier
                 logger.info("Selected as best model so far: %s", curr_improvement)
 
-        ActivationDefence._remove_pickle(filename)
         return curr_improvement, classifier
-
-    @staticmethod
-    def _pickle_classifier(classifier: "CLASSIFIER_NEURALNETWORK_TYPE", file_name: str) -> None:
-        """
-        Pickles the self.classifier and stores it using the provided file_name in folder `art.config.ART_DATA_PATH`.
-
-        :param classifier: Classifier to be pickled.
-        :param file_name: Name of the file where the classifier will be pickled.
-        """
-        full_path = os.path.join(config.ART_DATA_PATH, file_name)
-        folder = os.path.split(full_path)[0]
-        if not os.path.exists(folder):
-            os.makedirs(folder)
-
-        with open(full_path, "wb") as f_classifier:
-            pickle.dump(classifier, f_classifier)
-
-    @staticmethod
-    def _unpickle_classifier(file_name: str) -> "CLASSIFIER_NEURALNETWORK_TYPE":
-        """
-        Unpickles classifier using the filename provided. Function assumes that the pickle is in
-        `art.config.ART_DATA_PATH`.
-
-        :param file_name: Path of the pickled classifier relative to `ART_DATA_PATH`.
-        :return: The loaded classifier.
-        """
-        full_path = os.path.join(config.ART_DATA_PATH, file_name)
-        logger.info("Loading classifier from %s", full_path)
-        with open(full_path, "rb") as f_classifier:
-            loaded_classifier = pickle.load(f_classifier)
-            return loaded_classifier
-
-    @staticmethod
-    def _remove_pickle(file_name: str) -> None:
-        """
-        Erases the pickle with the provided file name.
-
-        :param file_name: File name without directory.
-        """
-        full_path = os.path.join(config.ART_DATA_PATH, file_name)
-        os.remove(full_path)
 
     def visualize_clusters(
         self, x_raw: np.ndarray, save: bool = True, folder: str = ".", **kwargs

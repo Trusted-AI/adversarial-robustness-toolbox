@@ -256,19 +256,6 @@ class TestActivationDefence(unittest.TestCase):
         self.defence.plot_clusters(save=False)
         self.defence_gen.plot_clusters(save=False)
 
-    def test_pickle(self):
-
-        # Test pickle and unpickle:
-        filename = "test_pickle.h5"
-        ActivationDefence._pickle_classifier(self.classifier, filename)
-        loaded = ActivationDefence._unpickle_classifier(filename)
-
-        np.testing.assert_equal(self.classifier._clip_values, loaded._clip_values)
-        self.assertEqual(self.classifier._channels_first, loaded._channels_first)
-        self.assertEqual(self.classifier._use_logits, loaded._use_logits)
-
-        ActivationDefence._remove_pickle(filename)
-
     def test_fix_relabel_poison(self):
         (x_train, y_train), (_, _), (_, _) = self.mnist
         x_poison = x_train[:100]
