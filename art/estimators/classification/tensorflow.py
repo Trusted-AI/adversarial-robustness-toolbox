@@ -28,9 +28,8 @@ from tqdm.auto import tqdm
 import numpy as np
 import six
 
-from art.estimators.classification.classifier import ClassGradientsMixin, ClassifierMixin
 from art.estimators.tensorflow import TensorFlowV2Estimator
-from art.utils import check_and_transform_label_format
+from art.estimators.classification.classifier import ClassGradientsMixin, ClassifierMixin
 
 if TYPE_CHECKING:
 
@@ -224,6 +223,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
                        epoch to adjust the learning rate.
         """
         import tensorflow as tf
+        from art.utils import check_and_transform_label_format
 
         if self._train_step is None:  # pragma: no cover
             if self._loss_object is None:  # pragma: no cover
@@ -449,6 +449,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         :return: Array of losses of the same shape as `x`.
         """
         import tensorflow as tf
+        from art.utils import check_and_transform_label_format
 
         if self._loss_object is None:  # pragma: no cover
             raise TypeError("The loss function `loss_object` is required for computing losses, but it is not defined.")

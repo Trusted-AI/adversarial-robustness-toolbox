@@ -99,7 +99,7 @@ if TYPE_CHECKING:
     from art.estimators.classification.xgboost import XGBoostClassifier
     from art.estimators.certification.deep_z import PytorchDeepZ
     from art.estimators.certification.interval import PyTorchIBPClassifier
-    from art.estimators.certification.derandomized_smoothing.derandomized import BlockAblator, ColumnAblator
+    from art.estimators.certification.derandomized_smoothing.ablators import BlockAblator, ColumnAblator
     from art.estimators.generation.tensorflow import TensorFlowV2Generator
     from art.estimators.object_detection.object_detector import ObjectDetector
     from art.estimators.object_detection.pytorch_object_detector import PyTorchObjectDetector

@@ -25,8 +25,8 @@ from typing import Any, TYPE_CHECKING
 
 import numpy as np
 
-from art.estimators.generation.generator import GeneratorMixin
 from art.estimators.tensorflow import TensorFlowV2Estimator
+from art.estimators.generation.generator import GeneratorMixin
 
 if TYPE_CHECKING:
 
