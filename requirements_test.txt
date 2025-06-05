@@ -26,7 +26,6 @@ multiprocess>=0.70.12
 
 tensorflow==2.18.1
 keras==3.10.0
-tensorflow-addons==0.23.0
 
 # PyTorch
 torch==2.7.0
