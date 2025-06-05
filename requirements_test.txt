@@ -57,7 +57,7 @@ pytest-mock~=3.14.1
 pytest-cov~=6.1.1
 pylint==3.3.7
 mypy==1.11.1
-pycodestyle==2.12.1
+pycodestyle==2.13.0
 black==25.1.0
 ruff==0.11.12
 types-six==1.17.0.20250515
