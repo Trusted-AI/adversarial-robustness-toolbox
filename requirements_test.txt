@@ -34,7 +34,7 @@ mxnet-native==1.8.0.post0
 # PyTorch
 torch==2.7.0
 torchaudio==2.7.0
-torchvision==0.22.0
+torchvision==0.22.1
 
 # PyTorch image transformers
 timm==1.0.15
