@@ -19,70 +19,70 @@ then
     echo "############### Running tests with framework $framework ###############"
     echo "#######################################################################"
 
-    pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/defences/detector/evasion --framework=$framework --durations=20 --durations-min=0
+    pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/defences/detector/evasion --framework=$framework --durations=20 --durations-min=0 -n auto
     if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed defences/detector/evasion tests"; fi
 
-    pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/defences/detector/poison/test_spectral_signature_defense.py --framework=$framework --durations=20 --durations-min=0
+    pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/defences/detector/poison/test_spectral_signature_defense.py --framework=$framework --durations=20 --durations-min=0 -n auto
     if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed defences/detector/poison/test_spectral_signature_defense.py tests"; fi
 
-    pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/defences/preprocessor --framework=$framework --durations=20 --durations-min=0
+    pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/defences/preprocessor --framework=$framework --durations=20 --durations-min=0 -n auto
     if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed defences/preprocessor tests"; fi
 
-    pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/defences/trainer --framework=$framework --durations=20 --durations-min=0
+    pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/defences/trainer --framework=$framework --durations=20 --durations-min=0 -n auto
     if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed defences/trainer tests"; fi
 
-    pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/defences/transformer --framework=$framework --durations=20 --durations-min=0
+    pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/defences/transformer --framework=$framework --durations=20 --durations-min=0 -n auto
     if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed defences/transformer tests"; fi
 
-    pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/preprocessing/audio --framework=$framework --durations=20 --durations-min=0
+    pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/preprocessing/audio --framework=$framework --durations=20 --durations-min=0 -n auto
     if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed preprocessing/audio tests"; fi
 
-    pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/preprocessing/image --framework=$framework --durations=20 --durations-min=0
+    pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/preprocessing/image --framework=$framework --durations=20 --durations-min=0 -n auto
     if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed preprocessing/image tests"; fi
 
-    pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/preprocessing/expectation_over_transformation --framework=$framework --durations=20 --durations-min=0
+    pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/preprocessing/expectation_over_transformation --framework=$framework --durations=20 --durations-min=0 -n auto
     if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed preprocessing/expectation_over_transformation tests"; fi
 
-    pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/utils --framework=$framework --durations=20 --durations-min=0
+    pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/utils --framework=$framework --durations=20 --durations-min=0 -n auto
     if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed utils tests"; fi
 
-    pytest --cov-report=xml --cov=art --cov-append  -q -vv -s tests/attacks/poison/ --framework=$framework  --durations=20 --durations-min=0
+    pytest --cov-report=xml --cov=art --cov-append  -q -vv -s tests/attacks/poison/ --framework=$framework  --durations=20 --durations-min=0 -n auto
     if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/poison tests"; fi
 
-    pytest --cov-report=xml --cov=art --cov-append  -q -vv -s tests/attacks/evasion/ --framework=$framework  --durations=20 --durations-min=0
+    pytest --cov-report=xml --cov=art --cov-append  -q -vv -s tests/attacks/evasion/ --framework=$framework  --durations=20 --durations-min=0 -n auto
     if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/evasion"; fi
 
-    pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/estimators/speech_recognition/ --framework=$framework  --durations=20 --durations-min=0
+    pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/estimators/speech_recognition/ --framework=$framework  --durations=20 --durations-min=0 -n auto
     if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed estimators/speech_recognition tests"; fi
 
-    pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/attacks/inference/ --framework=$framework --durations=20 --durations-min=0
+    pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/attacks/inference/ --framework=$framework --durations=20 --durations-min=0 -n auto
     if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/inference"; fi
 
-    pytest --cov-report=xml --cov=art --cov-append -q -vv tests/classifiersFrameworks/  --framework=$framework --durations=20 --durations-min=0
+    pytest --cov-report=xml --cov=art --cov-append -q -vv tests/classifiersFrameworks/  --framework=$framework --durations=20 --durations-min=0 -n auto
     if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed classifiersFrameworks tests"; fi
 
-    pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/estimators/classification/test_deeplearning_common.py --framework=$framework --durations=20 --durations-min=0
+    pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/estimators/classification/test_deeplearning_common.py --framework=$framework --durations=20 --durations-min=0 -n auto
     if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed estimators/classification/test_deeplearning_common.py $framework"; fi
 
-    pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/estimators/classification/test_deeplearning_specific.py --framework=$framework --durations=20 --durations-min=0
+    pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/estimators/classification/test_deeplearning_specific.py --framework=$framework --durations=20 --durations-min=0 -n auto
     if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed estimators/classification tests for framework $framework"; fi
 
-    pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/estimators/certification/ --framework=$framework --durations=20 --durations-min=0
+    pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/estimators/certification/ --framework=$framework --durations=20 --durations-min=0 -n auto
     if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed estimators/certification tests for framework $framework"; fi
 
-    pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/estimators/classification/test_blackbox_existing_predictions.py --framework=$framework --durations=20 --durations-min=0
+    pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/estimators/classification/test_blackbox_existing_predictions.py --framework=$framework --durations=20 --durations-min=0 -n auto
     if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed estimators/classification/test_blackbox_existing_predictions.py $framework"; fi
 
-    pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/estimators/regression/test_blackbox.py --framework=$framework --durations=20 --durations-min=0
+    pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/estimators/regression/test_blackbox.py --framework=$framework --durations=20 --durations-min=0 -n auto
     if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed estimators/regression/test_blackbox.py $framework"; fi
 
-    pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/metrics/privacy --framework=$framework --durations=20 --durations-min=0
+    pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/metrics/privacy --framework=$framework --durations=20 --durations-min=0 -n auto
     if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed metrics/privacy tests"; fi
 
-    pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/evaluations --framework=$framework --durations=20 --durations-min=0
+    pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/evaluations --framework=$framework --durations=20 --durations-min=0 -n auto
     if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed evaluations tests"; fi
 
-    pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/test_summary_writer.py --framework=$framework --durations=20 --durations-min=0
+    pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/test_summary_writer.py --framework=$framework --durations=20 --durations-min=0 -n auto
     if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed summary writer tests"; fi
 
 else
@@ -174,7 +174,7 @@ else
       echo "######################################################################"
       echo ${test}
       echo "######################################################################"
-      pytest --cov-report=xml --cov=art --cov-append  -q -vv ${test} --durations=20 --durations-min=0
+      pytest --cov-report=xml --cov=art --cov-append  -q -vv ${test} --durations=20 --durations-min=0 -n auto
       if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed $test"; fi
     }
 
