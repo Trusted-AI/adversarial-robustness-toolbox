@@ -34,7 +34,6 @@ jobs:
             tensorflow: 2.18.1
             tf_version: v2
             keras: 3.10.0
-            tf_addons: 0.23.0
 
     name: ${{ matrix.name }}
     steps:
@@ -49,10 +48,9 @@ jobs:
           sudo apt-get update
           sudo apt-get -y -q install ffmpeg libavcodec-extra
           python -m pip install --upgrade pip setuptools wheel
-          pip install -q -r <(sed '/^tensorflow/d;/^keras/d;/^tensorflow-addons/d' requirements_test.txt)
+          pip install -q -r <(sed '/^tensorflow/d;/^keras/d' requirements_test.txt)
           pip install tensorflow==${{ matrix.tensorflow }}
           pip install keras==${{ matrix.keras }}
-          pip install tensorflow-addons==${{ matrix.tf_addons }}
           pip list
       - name: Run Tests
         run: ./run_tests.sh ${{ matrix.framework }}
