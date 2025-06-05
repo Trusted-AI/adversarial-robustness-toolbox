@@ -150,7 +150,7 @@ def image_dl_estimator_for_attack(framework, image_dl_estimator, image_dl_estima
             potential_classifier, _ = image_dl_estimator_defended(**kwargs)
         else:
             potential_classifier, _ = image_dl_estimator(**kwargs)
-        image_dl_estimator_for_attack
+
         classifier_list = [potential_classifier]
         classifier_tested = [
             potential_classifier
@@ -459,16 +459,19 @@ def image_dl_estimator(framework):
                             image_dl_estimator.__name__,
                             framework,
                         )
+
         if framework == "tensorflow2":
             if wildcard is False and functional is False:
                 classifier, sess = get_image_classifier_tf(**kwargs, framework=framework)
                 return classifier, sess
+
         if framework == "pytorch":
             if not wildcard:
                 if functional:
                     classifier = get_image_classifier_pt_functional(**kwargs)
                 else:
                     classifier = get_image_classifier_pt(**kwargs)
+
         if framework == "kerastf":
             if wildcard:
                 classifier = get_image_classifier_kr_tf_with_wildcard(**kwargs)

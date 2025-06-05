@@ -97,6 +97,8 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
                              layer with this index will be considered for computing gradients. For models with only one
                              output layer this values is not required.
         """
+        import tensorflow as tf
+
         super().__init__(
             model=model,
             clip_values=clip_values,
@@ -129,6 +131,12 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         self._output_layer = output_layer
         self._input_shape = tuple(self._input.shape[1:])
         self._layer_names = self._get_layers()
+
+        @tf.function(reduce_retracing=True)  # Compile this for speed
+        def _forward_pass(model, x, training, batch_size):
+            return model(x, training=training, batch_size=batch_size, verbose=False)
+
+        self._forward_pass = _forward_pass
 
     @property
     def input_shape(self) -> tuple[int, ...]:
@@ -397,15 +405,14 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
 
         # Run predictions with batching
-        if training_mode:
-            predictions = self._model(x_preprocessed, training=training_mode, verbose=False)
-        else:
-            predictions = self._model.predict(x_preprocessed, batch_size=batch_size, verbose=False)
+        predictions = self._forward_pass(
+            self._model, x_preprocessed, training=training_mode, batch_size=batch_size
+        )  # Fast, compiled call
 
         # Apply postprocessing
-        predictions = self._apply_postprocessing(preds=predictions, fit=False)
+        predictions_post = self._apply_postprocessing(preds=predictions.numpy(), fit=False)
 
-        return predictions
+        return predictions_post
 
     def fit(
         self, x: np.ndarray, y: np.ndarray, batch_size: int = 128, nb_epochs: int = 20, verbose: bool = False, **kwargs

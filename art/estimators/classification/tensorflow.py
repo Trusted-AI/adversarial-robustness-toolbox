@@ -120,6 +120,12 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         else:
             self._reduce_labels = False
 
+        @tf.function(reduce_retracing=True)  # Compile this for speed
+        def _forward_pass(model, x, training):
+            return model(x, training=training)
+
+        self._forward_pass = _forward_pass
+
     @property
     def input_shape(self) -> tuple[int, ...]:
         """
@@ -168,24 +174,13 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         # Apply preprocessing
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
 
-        # Run prediction with batch processing
-        results_list = []
-        num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
-        for m in range(num_batch):
-            # Batch indexes
-            begin, end = (
-                m * batch_size,
-                min((m + 1) * batch_size, x_preprocessed.shape[0]),
-            )
-
-            # Run prediction
-            results_list.append(self._model(x_preprocessed[begin:end], training=training_mode))
-
-        results = np.vstack(results_list)
+        # Run predictions with batching
+        predictions = self._forward_pass(self._model, x_preprocessed, training=training_mode)  # Fast, compiled call
 
         # Apply postprocessing
-        predictions = self._apply_postprocessing(preds=results, fit=False)
-        return predictions
+        predictions_post = self._apply_postprocessing(preds=predictions.numpy(), fit=False)
+
+        return predictions_post
 
     def _predict_framework(self, x: "tf.Tensor", training_mode: bool = False) -> "tf.Tensor":
         """

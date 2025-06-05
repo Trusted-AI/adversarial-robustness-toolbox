@@ -665,14 +665,15 @@ def get_image_classifier_kr_tf(loss_name="categorical_crossentropy", loss_type="
     import tensorflow as tf
 
     # pylint: disable=E0401
-    from tensorflow.keras.layers import Conv2D, Dense, Flatten, MaxPooling2D
+    from tensorflow.keras.layers import Conv2D, Dense, Flatten, MaxPooling2D, Input
     from tensorflow.keras.models import Sequential
 
     from art.estimators.classification.keras import KerasClassifier
 
     # Create simple CNN
     model = Sequential()
-    model.add(Conv2D(1, kernel_size=(7, 7), activation="relu", input_shape=(28, 28, 1)))
+    model.add(Input((28, 28, 1)))
+    model.add(Conv2D(1, kernel_size=(7, 7), activation="relu"))
     model.layers[-1].set_weights(
         [_kr_tf_weights_loader("MNIST", "W", "CONV2D"), _kr_tf_weights_loader("MNIST", "B", "CONV2D")]
     )
