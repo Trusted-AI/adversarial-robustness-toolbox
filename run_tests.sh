@@ -178,7 +178,7 @@ else
       if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed $test"; fi
     }
 
-    tests="$legacy_module[@]"
+    tests="${legacy_module[@]}"
     for test in "${!tests}"; do
         run_test ${test}
     done
