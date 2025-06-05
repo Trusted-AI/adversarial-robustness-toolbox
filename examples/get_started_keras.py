@@ -5,13 +5,10 @@ it would also be possible to provide a pretrained model to the ART classifier.
 The parameters are chosen for reduced computational requirements of the script and not optimised for accuracy.
 """
 
-import tensorflow as tf
-
-tf.compat.v1.disable_eager_execution()
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
-from tensorflow.keras.losses import categorical_crossentropy
-from tensorflow.keras.optimizers.legacy import Adam
+from keras.models import Sequential
+from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
+from keras.losses import categorical_crossentropy
+from keras.optimizers import Adam
 import numpy as np
 
 from art.attacks.evasion import FastGradientMethod
