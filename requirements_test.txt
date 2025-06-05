@@ -2,8 +2,8 @@
 
 # base
 
-numpy
-scipy
+numpy==1.26.4
+scipy==1.12.0
 matplotlib==3.10.3
 scikit-learn==1.6.1
 six==1.17.0
@@ -50,6 +50,7 @@ jax[cpu]==0.4.30
 pytest~=8.3.2
 pytest-mock~=3.14.0
 pytest-cov~=6.1.1
+pytest-profiling==1.8.1
 pylint==3.2.6
 mypy==1.11.1
 pycodestyle==2.12.1

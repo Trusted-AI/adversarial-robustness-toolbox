@@ -495,29 +495,22 @@ def image_dl_estimator(framework):
 @pytest.fixture
 def art_warning(request):
     def _art_warning(exception):
-        if type(exception) is ARTTestFixtureNotImplemented:
-            if request.node.get_closest_marker("framework_agnostic"):
-                if not request.node.get_closest_marker("parametrize"):
-                    raise Exception(
-                        "This test has marker framework_agnostic decorator which means it will only be ran "
-                        "once. However the ART test exception was thrown, hence it is never run fully. "
-                    )
-            elif (
-                request.node.get_closest_marker("only_with_platform")
-                and len(request.node.get_closest_marker("only_with_platform").args) == 1
-            ):
-                raise Exception(
-                    "This test has marker only_with_platform decorator which means it will only be ran "
-                    "once. However the ARTTestFixtureNotImplemented exception was thrown, hence it is "
-                    "never run fully. "
-                )
 
-            # NotImplementedErrors are raised in ART whenever a test model does not exist for a specific
-            # model/framework combination. By catching there here, we can provide a report at the end of each
-            # pytest run list all models requiring to be implemented.
-            warnings.warn(UserWarning(exception))
-        else:
-            raise exception
+        if request.node.get_closest_marker("framework_agnostic"):
+            if not request.node.get_closest_marker("parametrize"):
+                raise Exception(
+                    "This test has marker framework_agnostic decorator which means it will only be ran "
+                    "once. However the ART test exception was thrown, hence it is never run fully. "
+                )
+        elif (
+            request.node.get_closest_marker("only_with_platform")
+            and len(request.node.get_closest_marker("only_with_platform").args) == 1
+        ):
+            raise Exception(
+                "This test has marker only_with_platform decorator which means it will only be ran "
+                "once. However the ARTTestFixtureNotImplemented exception was thrown, hence it is "
+                "never run fully. "
+            )
 
     return _art_warning
 
