@@ -79,7 +79,6 @@ Supported Machine Learning Libraries
    modules/estimators/certification_randomized_smoothing
    modules/estimators/classification
    modules/estimators/classification_scikitlearn
-   modules/estimators/encoding
    modules/estimators/gan
    modules/estimators/generation
    modules/estimators/object_detection

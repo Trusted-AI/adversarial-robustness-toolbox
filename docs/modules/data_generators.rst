@@ -13,9 +13,6 @@ Framework-Specific Data Generators
 .. autoclass:: KerasDataGenerator
    :members:
 
-.. autoclass:: MXDataGenerator
-   :members:
-
 .. autoclass:: NumpyDataGenerator
    :members:
 
