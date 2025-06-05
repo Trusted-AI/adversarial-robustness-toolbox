@@ -78,7 +78,7 @@ class TestNumpyDataGenerator(unittest.TestCase):
             drop_remainder=True,
             shuffle=False,
         )
-        self.assertEquals(data_generator.batches_per_epoch, 3)
+        self.assertEqual(data_generator.batches_per_epoch, 3)
         for i in range(3):
             data_generator.get_batch()
         _, y_batch = data_generator.get_batch()
@@ -92,11 +92,11 @@ class TestNumpyDataGenerator(unittest.TestCase):
             drop_remainder=True,
             shuffle=False,
         )
-        self.assertEquals(data_generator.batches_per_epoch, 10)
+        self.assertEqual(data_generator.batches_per_epoch, 10)
         for i in range(9):
             data_generator.get_batch()
         _, y_batch = data_generator.get_batch()
-        self.assertEquals(len(y_batch), 10)
+        self.assertEqual(len(y_batch), 10)
 
     def test_drop_remainder_false(self):
         data_generator = NumpyDataGenerator(
@@ -106,11 +106,11 @@ class TestNumpyDataGenerator(unittest.TestCase):
             drop_remainder=False,
             shuffle=False,
         )
-        self.assertEquals(data_generator.batches_per_epoch, 4)
+        self.assertEqual(data_generator.batches_per_epoch, 4)
         for i in range(3):
             data_generator.get_batch()
         x_batch, _ = data_generator.get_batch()
-        self.assertEquals(len(x_batch), self.m % self.batch_size)
+        self.assertEqual(len(x_batch), self.m % self.batch_size)
 
     def test_shuffle(self):
         """
@@ -143,7 +143,7 @@ class TestNumpyDataGenerator(unittest.TestCase):
             drop_remainder=True,
             shuffle=False,
         )
-        self.assertEquals(data_generator.batches_per_epoch, 3)
+        self.assertEqual(data_generator.batches_per_epoch, 3)
         for i in range(3):
             data_generator.get_batch()
         _, y_batch = data_generator.get_batch()
