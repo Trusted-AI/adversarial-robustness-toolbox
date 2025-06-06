@@ -1616,14 +1616,15 @@ def get_file(
     if not os.path.exists(path_):
         os.makedirs(path_)
 
+    target_path = os.path.join(path_, filename)
+
     if extract:
-        extract_path = os.path.join(path_, filename)
-        full_path = extract_path + ".tar.gz"
+        full_path = target_path + ".tar.gz"
     else:
-        full_path = os.path.join(path_, filename)
+        full_path = target_path
 
     # Determine if dataset needs downloading
-    download = not os.path.exists(full_path)
+    download = not os.path.exists(target_path)
 
     if download:
         logger.info("Downloading data from %s", url)
@@ -1671,9 +1672,9 @@ def get_file(
             raise
 
     if extract:
-        if not os.path.exists(extract_path):
+        if not os.path.exists(target_path):
             _extract(full_path, path_)
-        return extract_path
+        return target_path
 
     return full_path
 

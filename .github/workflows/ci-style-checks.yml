@@ -28,14 +28,17 @@ jobs:
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
+
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
+
       - name: Pre-install
         run: |
           sudo apt-get update
           sudo apt-get -y -q install ffmpeg libavcodec-extra
+
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip setuptools wheel
@@ -45,17 +48,22 @@ jobs:
           pip install tensorflow==2.13.1
           pip install keras==2.13.1
           pip list
+
       - name: pycodestyle
         run: pycodestyle --ignore=C0330,C0415,E203,E231,W503 --max-line-length=120 art
+
       - name: pylint
         if: ${{ always() }}
         run: pylint --fail-under=9.6 art/
+
       - name: mypy
         if: ${{ always() }}
         run: mypy art
+
       - name: ruff
         if: ${{ always() }}
         run: ruff check art/ tests/ examples/
+
       - name: black
         if: ${{ always() }}
         run: |
