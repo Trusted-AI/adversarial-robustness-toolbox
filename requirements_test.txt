@@ -52,7 +52,7 @@ jax[cpu]==0.4.30
 # lingvo==0.13.1
 
 # tests and style checking
-pytest~=8.3.2
+pytest~=8.4.0
 pytest-mock~=3.14.1
 pytest-cov~=6.1.1
 pylint==3.3.7
