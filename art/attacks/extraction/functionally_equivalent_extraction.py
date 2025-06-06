@@ -309,7 +309,6 @@ class FunctionallyEquivalentExtraction(ExtractionAttack):
 
         for i in range(self.num_neurons):
             for k in range(self.num_features):
-                print("a0_pairwise_ratios", i, k)
                 self.a0_pairwise_ratios[k, i] = d2_ol_d2ej_xi[0, i] / d2_ol_d2ej_xi[k, i]
 
         # Weight Sign Recovery

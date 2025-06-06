@@ -21,8 +21,8 @@ import logging
 import numpy as np
 import pytest
 
-from art.attacks.poisoning import HiddenTriggerBackdoor as HiddenTriggerBackdoor
-from art.attacks.poisoning import PoisoningAttackBackdoor
+from art.attacks.poisoning.hidden_trigger_backdoor.hidden_trigger_backdoor import HiddenTriggerBackdoor
+from art.attacks.poisoning.backdoor_attack import PoisoningAttackBackdoor
 from art.attacks.poisoning.perturbations import add_pattern_bd
 from art.estimators.classification.pytorch import PyTorchClassifier
 from art.estimators.classification.hugging_face import HuggingFaceClassifierPyTorch
