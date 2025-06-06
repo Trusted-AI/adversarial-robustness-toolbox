@@ -38,10 +38,12 @@ jobs:
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
+
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python }}
+
       - name: Install Dependencies
         run: |
           sudo apt-get update
@@ -51,8 +53,48 @@ jobs:
           pip install tensorflow==${{ matrix.tensorflow }}
           pip install keras==${{ matrix.keras }}
           pip list
+
+      - name: Cache CIFAR-10 dataset
+        uses: actions/cache@v3
+        with:
+          path: ~/.art/data/cifar-10-batches-py
+          key: cifar10-dataset-cache-v1
+
+      - name: Cache MNIST dataset
+        uses: actions/cache@v3
+        with:
+          path: ~/.art/data/mnist.npz
+          key: mnist-dataset-cache-v1
+
+      - name: Download and extract CIFAR-10 if not cached
+        run: |
+          mkdir -p ~/.art/data
+          if [ ! -d ~/.art/data/cifar-10-batches-py ]; then
+            echo "Downloading CIFAR-10 dataset..."
+            if curl -L -f -o cifar-10-python.tar.gz https://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz; then
+              echo "Downloaded from www.cs.toronto.edu"
+            else
+              echo "Primary download failed, trying Dropbox mirror..."
+              curl -L -o cifar-10-python.tar.gz "https://www.dropbox.com/scl/fi/6mhiq4rtfszqrosasp8a9/cifar-10-batches-py.tar.gz?rlkey=g6v114un4je233j52tu5tdsbe&st=gxo2e50q&dl=1"
+            fi
+            tar -xzf cifar-10-python.tar.gz -C ~/.art/data/
+          else
+            echo "CIFAR-10 already cached."
+          fi
+
+      - name: Download MNIST if not cached
+        run: |
+          mkdir -p ~/.art/data
+          if [ ! -f ~/.art/data/mnist.npz ]; then
+            echo "Downloading MNIST dataset..."
+            curl -L -o ~/.art/data/mnist.npz https://s3.amazonaws.com/img-datasets/mnist.npz
+          else
+            echo "MNIST already cached."
+          fi
+
       - name: Run Tests
         run: ./run_tests.sh ${{ matrix.framework }}
+
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
         with:
