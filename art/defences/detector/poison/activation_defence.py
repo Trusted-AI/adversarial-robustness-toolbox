@@ -469,18 +469,18 @@ class ActivationDefence(PoisonFilteringDefence):
         from tensorflow.keras.models import clone_model
 
         model = classifier._model
-        forward_pass = classifier._forward_pass
+        forward_pass = classifier._forward_pass  # type: ignore
         classifier._model = None
-        classifier._forward_pass = None
+        classifier._forward_pass = None  # type: ignore
 
         curr_classifier = copy.deepcopy(classifier)
         curr_model = clone_model(model)
         curr_model.set_weights(model.get_weights())
         curr_classifier._model = curr_model
-        curr_classifier._forward_pass = forward_pass
+        curr_classifier._forward_pass = forward_pass  # type: ignore
 
         classifier._model = model
-        classifier._forward_pass = forward_pass
+        classifier._forward_pass = forward_pass  # type: ignore
 
         # Now train using y_fix:
         improve_factor, _ = train_remove_backdoor(
@@ -540,18 +540,18 @@ class ActivationDefence(PoisonFilteringDefence):
             from tensorflow.keras.models import clone_model
 
             model = classifier._model
-            forward_pass = classifier._forward_pass
+            forward_pass = classifier._forward_pass  # type: ignore
             classifier._model = None
-            classifier._forward_pass = None
+            classifier._forward_pass = None  # type: ignore
 
             curr_classifier = copy.deepcopy(classifier)
             curr_model = clone_model(model)
             curr_model.set_weights(model.get_weights())
             curr_classifier._model = curr_model
-            curr_classifier._forward_pass = forward_pass
+            curr_classifier._forward_pass = forward_pass  # type: ignore
 
             classifier._model = model
-            classifier._forward_pass = forward_pass
+            classifier._forward_pass = forward_pass  # type: ignore
 
             new_improvement, fixed_classifier = train_remove_backdoor(
                 curr_classifier,
