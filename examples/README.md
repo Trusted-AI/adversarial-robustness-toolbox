@@ -8,7 +8,7 @@ for accuracy.
 
 
 ### TensorFlow
-[get_started_tensorflow.py](get_started_tensorflow.py) demonstrates a simple example of using ART with TensorFlow v1.x. 
+[get_started_tensorflow_v2.py](get_started_tensorflow_v2.py) demonstrates a simple example of using ART with TensorFlow v2.x. 
 
 ### Keras
 [get_started_keras.py](get_started_keras.py) demonstrates a simple example of using ART with Keras.
@@ -49,8 +49,3 @@ on it.
 
 [mnist_poison_detection.py](mnist_poison_detection.py) generates a backdoor for MNIST dataset, then trains a 
 convolutional neural network on the poisoned dataset and runs activation defence to find poison.
-
-[mnist_transferability.py](mnist_transferability.py) trains a convolutional neural network on the MNIST dataset using 
-the Keras backend, then generates adversarial images using DeepFool and uses them to attack a convolutional neural 
-network trained on MNIST using TensorFlow. This is to show how to perform a black-box attack: the attack never has
-access to the parameters of the TensorFlow model.

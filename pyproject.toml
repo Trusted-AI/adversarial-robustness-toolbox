@@ -5,3 +5,10 @@ exclude = [".venv", "contrib"]
 lint.ignore = ["F401"]
 [tool.ruff.lint.per-file-ignores]
  "examples/*" = ["E402"]
+[tool.pytest.ini_options]
+markers = [
+    'skip_framework(*frameworks): marks a test to be skipped for specific framework values. Valid values are ("tensorflow", "keras", "pytorch", "scikitlearn")',
+    'only_with_platform(*frameworks): DEPRECATED only used for legacy tests. Use skip_framework instead. marks a test to be performed only for a specific framework value',
+    'framework_agnostic: marks a test to be agnostic to frameworks and run only for one default framework',
+    'skip_module(*frameworks): Skip this test for specified frameworks'
+]

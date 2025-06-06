@@ -54,13 +54,6 @@ Query-Efficient Black-box Gradient Estimation Classifier
    :special-members: __init__
    :inherited-members:
 
-TensorFlow Classifier
----------------------
-.. autoclass:: TensorFlowClassifier
-   :members:
-   :special-members: __init__
-   :inherited-members:
-
 TensorFlow v2 Classifier
 ------------------------
 .. autoclass:: TensorFlowV2Classifier

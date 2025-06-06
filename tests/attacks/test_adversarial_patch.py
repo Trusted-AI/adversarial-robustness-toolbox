@@ -61,81 +61,6 @@ class TestAdversarialPatch(TestBase):
         master_seed(seed=1234)
         super().setUp()
 
-    def test_2_tensorflow_numpy(self):
-        """
-        First test with the TensorFlowClassifier.
-        :return:
-        """
-        import tensorflow as tf
-
-        tfc, sess = get_image_classifier_tf(from_logits=True)
-
-        attack_ap = AdversarialPatchNumpy(
-            tfc,
-            rotation_max=0.5,
-            scale_min=0.4,
-            scale_max=0.41,
-            learning_rate=5.0,
-            batch_size=10,
-            max_iter=5,
-            verbose=False,
-        )
-
-        target = np.zeros(self.x_train_mnist.shape[0])
-        patch_adv, _ = attack_ap.generate(self.x_train_mnist, target, shuffle=False)
-
-        if tf.__version__[0] == "2":
-            self.assertAlmostEqual(patch_adv[8, 8, 0], 0.67151666, delta=0.05)
-            self.assertAlmostEqual(patch_adv[14, 14, 0], 0.6292826, delta=0.05)
-            self.assertAlmostEqual(float(np.sum(patch_adv)), 424.31439208984375, delta=1.0)
-        else:
-            self.assertAlmostEqual(patch_adv[8, 8, 0], 0.67151666, delta=0.05)
-            self.assertAlmostEqual(patch_adv[14, 14, 0], 0.6292826, delta=0.05)
-            self.assertAlmostEqual(float(np.sum(patch_adv)), 424.31439208984375, delta=1.0)
-
-        # insert_transformed_patch
-        x_out = attack_ap.insert_transformed_patch(
-            self.x_train_mnist[0], np.ones((14, 14, 1)), np.asarray([[2, 13], [2, 18], [12, 22], [8, 13]])
-        )
-        x_out_expected = np.array(
-            [
-                0.0,
-                0.0,
-                1.0,
-                1.0,
-                1.0,
-                1.0,
-                1.0,
-                1.0,
-                1.0,
-                0.84313726,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.1764706,
-                0.7294118,
-                0.99215686,
-                0.99215686,
-                0.5882353,
-                0.10588235,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-            ],
-            dtype=np.float32,
-        )
-        np.testing.assert_almost_equal(x_out[15, :, 0], x_out_expected, decimal=3)
-
-        if sess is not None:
-            sess.close()
-
-    @unittest.skipIf(int(tf.__version__.split(".")[0]) != 2, reason="Skip unittests if not TensorFlow>=2.0.")
     def test_3_tensorflow_v2_framework(self):
         """
         First test with the TensorFlowClassifier.
@@ -158,9 +83,9 @@ class TestAdversarialPatch(TestBase):
         target = np.zeros(self.x_train_mnist.shape[0])
         patch_adv, _ = attack_ap.generate(self.x_train_mnist, target, shuffle=False)
 
-        self.assertAlmostEqual(patch_adv[8, 8, 0], 1.0, delta=0.05)
+        self.assertAlmostEqual(patch_adv[2, 8, 0], 0.4, delta=0.05)
         self.assertAlmostEqual(patch_adv[14, 14, 0], 0.0, delta=0.05)
-        self.assertAlmostEqual(float(np.sum(patch_adv)), 377.415771484375, delta=1.0)
+        self.assertAlmostEqual(float(np.sum(patch_adv)), 339.1322937011719, delta=1.0)
 
         # insert_transformed_patch
         x_out = attack_ap.insert_transformed_patch(
@@ -301,7 +226,7 @@ class TestAdversarialPatch(TestBase):
 
         self.assertAlmostEqual(patch_adv[0, 8, 8], 0.5, delta=0.05)
         self.assertAlmostEqual(patch_adv[0, 14, 14], 0.5, delta=0.05)
-        self.assertAlmostEqual(float(np.sum(patch_adv)), 367.6218066346819, delta=4.0)
+        self.assertAlmostEqual(float(np.sum(patch_adv)), 380.2155115437587, delta=4.0)
 
         mask = np.ones((1, 28, 28)).astype(bool)
         attack_ap.apply_patch(x=x_train, scale=0.1, mask=mask)

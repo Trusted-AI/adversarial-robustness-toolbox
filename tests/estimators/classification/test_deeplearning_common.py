@@ -38,7 +38,8 @@ def test_loss_gradient_with_wildcard(art_warning, image_dl_estimator):
         shapes = [(1, 10, 1), (1, 20, 1)]
         for shape in shapes:
             x = np.random.normal(size=shape)
-            loss_gradient = classifier.loss_gradient(x, y=[1])
+            y = np.array([[0, 1]])
+            loss_gradient = classifier.loss_gradient(x, y=y)
             assert loss_gradient.shape == shape
 
             class_gradient = classifier.class_gradient(x, 0)
@@ -355,7 +356,7 @@ def test_save_1(art_warning, image_dl_estimator):
         t_file = tempfile.NamedTemporaryFile()
         model_path = t_file.name
         t_file.close()
-        filename = "model_to_save"
+        filename = "model_to_save.keras"
         classifier.save(filename, path=model_path)
 
         assert path.exists(model_path)
@@ -381,7 +382,7 @@ def test_save_2(art_warning, image_dl_estimator, get_default_mnist_subset, tmp_p
         full_path.mkdir()
 
         assert not os.listdir(full_path._str)
-        classifier.save("modelFile", path=full_path._str)
+        classifier.save("modelFile.keras", path=full_path._str)
         assert os.listdir(full_path._str)
     except ARTTestException as e:
         art_warning(e)

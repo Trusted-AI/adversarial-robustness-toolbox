@@ -290,12 +290,6 @@ Shadow Attack
    :members:
    :special-members:
 
-ShapeShifter Attack
--------------------
-.. autoclass:: ShapeShifter
-   :members:
-   :special-members:
-
 Sign-OPT Attack
 ---------------
 .. autoclass:: SignOPTAttack

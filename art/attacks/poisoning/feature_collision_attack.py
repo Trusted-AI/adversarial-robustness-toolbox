@@ -30,7 +30,6 @@ from tqdm.auto import trange
 from art.attacks.attack import PoisoningAttackWhiteBox
 from art.estimators import BaseEstimator, NeuralNetworkMixin
 from art.estimators.classification.classifier import ClassifierMixin
-from art.estimators.classification.keras import KerasClassifier
 from art.estimators.classification.pytorch import PyTorchClassifier
 
 
@@ -112,14 +111,7 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
         self.verbose = verbose
         self._check_params()
 
-        if isinstance(self.estimator, KerasClassifier):
-            self.target_placeholder, self.target_feature_rep = self.estimator.get_activations(
-                self.target, self.feature_layer, 1, framework=True
-            )
-            self.poison_placeholder, self.poison_feature_rep = self.estimator.get_activations(
-                self.target, self.feature_layer, 1, framework=True
-            )
-        elif isinstance(self.estimator, PyTorchClassifier):
+        if isinstance(self.estimator, PyTorchClassifier):
             self.target_feature_rep = self.estimator.get_activations(self.target, self.feature_layer, 1, framework=True)
             self.poison_feature_rep = self.estimator.get_activations(self.target, self.feature_layer, 1, framework=True)
         else:
@@ -192,14 +184,7 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
         :param poison: the current poison samples.
         :return: poison example closer in feature representation to target space.
         """
-        if isinstance(self.estimator, KerasClassifier):
-            (attack_grad,) = self.estimator.custom_loss_gradient(
-                self.attack_loss,
-                [self.poison_placeholder, self.target_placeholder],
-                [poison, self.target],
-                name="feature_collision_" + str(self.feature_layer),
-            )
-        elif isinstance(self.estimator, PyTorchClassifier):
+        if isinstance(self.estimator, PyTorchClassifier):
             attack_grad = self.estimator.custom_loss_gradient(self.attack_loss, poison, self.target, self.feature_layer)
         else:
             raise ValueError("The type of the estimator is not supported.")
@@ -295,21 +280,11 @@ def tensor_norm(tensor, norm_type: int | float | str = 2):  # pylint: disable=in
     :param norm_type: Order of the norm.
     :return: A tensor with the norm applied.
     """
-    tf_tensor_types = (
-        "tensorflow.python.framework.ops.Tensor",
-        "tensorflow.python.framework.ops.EagerTensor",
-        "tensorflow.python.framework.ops.SymbolicTensor",
-    )
     torch_tensor_types = ("torch.Tensor", "torch.float", "torch.double", "torch.long")
-    supported_types = tf_tensor_types + torch_tensor_types
+    supported_types = torch_tensor_types
     tensor_type = get_class_name(tensor)
     if tensor_type not in supported_types:  # pragma: no cover
         raise TypeError("Tensor type `" + tensor_type + "` is not supported")
-
-    if tensor_type in tf_tensor_types:
-        import tensorflow as tf
-
-        return tf.norm(tensor, ord=norm_type)
 
     if tensor_type in torch_tensor_types:  # pragma: no cover
         import torch

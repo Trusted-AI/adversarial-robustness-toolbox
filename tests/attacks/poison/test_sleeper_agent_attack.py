@@ -28,7 +28,7 @@ from tests.utils import ARTTestException
 logger = logging.getLogger(__name__)
 
 
-@pytest.mark.only_with_platform("pytorch", "tensorflow2")
+@pytest.mark.only_with_platform("pytorch")
 def test_poison(art_warning, get_default_mnist_subset, image_dl_estimator, framework):
     try:
         (x_train, y_train), (x_test, y_test) = get_default_mnist_subset
@@ -85,7 +85,7 @@ def test_poison(art_warning, get_default_mnist_subset, image_dl_estimator, frame
         art_warning(e)
 
 
-@pytest.mark.only_with_platform("pytorch", "tensorflow2")
+@pytest.mark.only_with_platform("pytorch")
 def test_check_params(art_warning, get_default_mnist_subset, image_dl_estimator):
     try:
         classifier, _ = image_dl_estimator(functional=True)

@@ -37,9 +37,6 @@ def get_classifier(framework):
             import tensorflow as tf
             from tensorflow.keras import layers, Sequential
 
-            if tf.__version__[0] == "2":
-                tf.compat.v1.disable_eager_execution()
-
             model = Sequential()
             model.add(layers.Conv2D(4, kernel_size=(5, 5), activation="relu", input_shape=(28, 28, 1)))
             model.add(layers.MaxPooling2D(pool_size=(2, 2)))

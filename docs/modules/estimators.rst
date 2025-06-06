@@ -29,13 +29,6 @@ Base Class KerasEstimator
    :special-members: __init__
    :inherited-members:
 
-Base Class MXEstimator
-----------------------
-.. autoclass:: MXEstimator
-   :members:
-   :special-members: __init__
-   :inherited-members:
-
 Base Class PyTorchEstimator
 ---------------------------
 .. autoclass:: PyTorchEstimator
@@ -46,13 +39,6 @@ Base Class PyTorchEstimator
 Base Class ScikitlearnEstimator
 -------------------------------
 .. autoclass:: ScikitlearnEstimator
-   :members:
-   :special-members: __init__
-   :inherited-members:
-
-Base Class TensorFlowEstimator
-------------------------------
-.. autoclass:: TensorFlowEstimator
    :members:
    :special-members: __init__
    :inherited-members:

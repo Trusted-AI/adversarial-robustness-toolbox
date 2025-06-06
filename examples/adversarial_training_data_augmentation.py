@@ -2,10 +2,6 @@
 This is an example of how to use ART and Keras to perform adversarial training using data generators for CIFAR10
 """
 
-import tensorflow as tf
-
-tf.compat.v1.disable_eager_execution()
-
 import keras
 import numpy as np
 from keras.layers import Conv2D, Dense, Flatten, MaxPooling2D, Input, BatchNormalization
@@ -44,7 +40,9 @@ def build_model(input_shape=(32, 32, 3), nb_classes=10):
     model = Model(img_input, img_output)
 
     model.compile(
-        loss=keras.losses.categorical_crossentropy, optimizer=keras.optimizers.Adam(lr=0.01), metrics=["accuracy"]
+        loss=keras.losses.categorical_crossentropy,
+        optimizer=keras.optimizers.Adam(learning_rate=0.01),
+        metrics=["accuracy"],
     )
 
     return model

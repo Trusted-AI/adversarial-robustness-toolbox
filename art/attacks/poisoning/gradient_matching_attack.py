@@ -116,24 +116,13 @@ class GradientMatchingAttack(Attack):
         :param y_train: A list of labels for x_train.
         """
         from art.estimators.classification.pytorch import PyTorchClassifier
-        from art.estimators.classification.tensorflow import TensorFlowV2Classifier
 
-        if isinstance(self.substitute_classifier, TensorFlowV2Classifier):
-            initializer = self._initialize_poison_tensorflow
-        elif isinstance(self.substitute_classifier, PyTorchClassifier):
+        if isinstance(self.substitute_classifier, PyTorchClassifier):
             initializer = self._initialize_poison_pytorch
         else:
-            raise NotImplementedError(
-                "GradientMatchingAttack is currently implemented only for TensorFlow V2 and PyTorch."
-            )
+            raise NotImplementedError("GradientMatchingAttack is currently implemented only for PyTorch.")
 
         return initializer(x_trigger, y_trigger, x_poison, y_poison)
-
-    def _finish_poison_tensorflow(self):
-        """
-        Releases any resource and revert back unwanted change to the model.
-        """
-        self.substitute_classifier.model.trainable = self.model_trainable
 
     def _finish_poison_pytorch(self):
         """
@@ -143,103 +132,6 @@ class GradientMatchingAttack(Attack):
             self.substitute_classifier.model.train()
         else:
             self.substitute_classifier.model.eval()
-
-    def _initialize_poison_tensorflow(
-        self, x_trigger: np.ndarray, y_trigger: np.ndarray, x_poison: np.ndarray, y_poison: np.ndarray
-    ):
-        """
-        Initialize poison noises to be optimized.
-
-        :param x_trigger: A list of samples to use as triggers.
-        :param y_trigger: A list of target classes to classify the triggers into.
-        :param x_poison: A list of training data to poison a portion of.
-        :param y_poison: A list of true labels for x_poison.
-        """
-        from tensorflow.keras import backend as K
-        import tensorflow as tf
-        from tensorflow.keras.layers import Input, Embedding, Add, Lambda
-        from art.estimators.classification.tensorflow import TensorFlowV2Classifier
-
-        if isinstance(self.substitute_classifier, TensorFlowV2Classifier):
-            classifier = self.substitute_classifier
-        else:
-            raise Exception("This method requires `TensorFlowV2Classifier` as `substitute_classifier`'s type")
-
-        self.model_trainable = classifier.model.trainable
-        classifier.model.trainable = False  # This value gets revert back later.
-
-        def _weight_grad(classifier: TensorFlowV2Classifier, x: tf.Tensor, target: tf.Tensor) -> tf.Tensor:
-            # Get the target gradient vector.
-            import tensorflow as tf
-
-            with tf.GradientTape() as t:  # pylint: disable=invalid-name
-                t.watch(classifier.model.weights)
-                output = classifier.model(x, training=False)
-                loss = classifier.loss_object(target, output)
-            d_w = t.gradient(loss, classifier.model.weights)
-            d_w = [w for w in d_w if w is not None]
-            d_w = tf.concat([tf.reshape(d, [-1]) for d in d_w], 0)
-            d_w_norm = d_w / tf.sqrt(tf.reduce_sum(tf.square(d_w)))
-            return d_w_norm
-
-        self.grad_ws_norm = _weight_grad(classifier, tf.constant(x_trigger), tf.constant(y_trigger))
-
-        # Define the model to apply and optimize the poison.
-        input_poison = Input(batch_shape=classifier.model.input.shape)
-        input_indices = Input(shape=())
-        y_true_poison = Input(shape=np.shape(y_poison)[1:])
-        embedding_layer = Embedding(
-            len(x_poison),
-            np.prod(x_poison.shape[1:]),
-            embeddings_initializer=tf.keras.initializers.RandomNormal(stddev=self.epsilon * 0.01),
-        )
-        embeddings = embedding_layer(input_indices)
-        embeddings = tf.tanh(embeddings) * self.epsilon
-        embeddings = tf.reshape(embeddings, tf.shape(input_poison))
-        input_noised = Add()([input_poison, embeddings])
-        input_noised = Lambda(lambda x: K.clip(x, self.clip_values[0], self.clip_values[1]))(
-            input_noised
-        )  # Make sure the poisoned samples are in a valid range.
-
-        def loss_fn(input_noised: tf.Tensor, target: tf.Tensor, grad_ws_norm: tf.Tensor):
-            d_w2_norm = _weight_grad(classifier, input_noised, target)
-            B = 1 - tf.reduce_sum(grad_ws_norm * d_w2_norm)  # pylint: disable=invalid-name
-            return B
-
-        B = tf.keras.layers.Lambda(lambda x: loss_fn(x[0], x[1], x[2]))(  # pylint: disable=invalid-name
-            [input_noised, y_true_poison, self.grad_ws_norm]
-        )
-
-        self.backdoor_model = tf.keras.models.Model([input_poison, y_true_poison, input_indices], [input_noised, B])
-
-        self.backdoor_model.add_loss(B)
-
-        class PredefinedLRSchedule(tf.keras.optimizers.schedules.LearningRateSchedule):
-            """
-            Use a preset learning rate based on the current training epoch.
-            """
-
-            def __init__(self, learning_rates: list[float], milestones: list[int]):
-                self.schedule = list(zip(milestones, learning_rates))
-
-            def __call__(self, step: int) -> float:
-                lr_prev = self.schedule[0][1]
-                for m, learning_rate in self.schedule:
-                    if step < m:
-                        return lr_prev
-                    lr_prev = learning_rate
-                return lr_prev
-
-            def get_config(self) -> dict:
-                """
-                Returns the parameters.
-                """
-                return {"schedule": self.schedule}
-
-        self.optimizer = tf.keras.optimizers.legacy.Adam(
-            gradient_transformers=[lambda grads_and_vars: [(tf.sign(g), v) for (g, v) in grads_and_vars]]
-        )
-        self.lr_schedule = tf.keras.callbacks.LearningRateScheduler(PredefinedLRSchedule(*self.learning_rate_schedule))
 
     def _initialize_poison_pytorch(
         self,
@@ -394,18 +286,12 @@ class GradientMatchingAttack(Attack):
         :return: A list of poisoned samples, and y_train.
         """
         from art.estimators.classification.pytorch import PyTorchClassifier
-        from art.estimators.classification.tensorflow import TensorFlowV2Classifier
 
-        if isinstance(self.substitute_classifier, TensorFlowV2Classifier):
-            poisoner = self._poison__tensorflow
-            finish_poisoning = self._finish_poison_tensorflow
-        elif isinstance(self.substitute_classifier, PyTorchClassifier):
+        if isinstance(self.substitute_classifier, PyTorchClassifier):
             poisoner = self._poison__pytorch
             finish_poisoning = self._finish_poison_pytorch
         else:
-            raise NotImplementedError(
-                "GradientMatchingAttack is currently implemented only for Tensorflow V2 and Pytorch."
-            )
+            raise NotImplementedError("GradientMatchingAttack is currently implemented only for Pytorch.")
 
         # Choose samples to poison.
         x_train = np.copy(x_train)
@@ -494,7 +380,7 @@ class GradientMatchingAttack(Attack):
                 self.backdoor_model.zero_grad()
                 loss, poisoned_samples = self.backdoor_model(x, indices, y, self.grad_ws_norm)
                 loss.backward()
-                self.backdoor_model.noise_embedding.embedding_layer.weight.grad.sign_()
+                self.backdoor_model.noise_embedding.embedding_layer.weight.grad.sign_()  # type: ignore
                 self.optimizer.step()
                 sum_loss += loss.clone().cpu().detach().numpy()
                 count += 1
@@ -518,37 +404,6 @@ class GradientMatchingAttack(Attack):
             B_sum += B.detach().cpu().numpy()  # pylint: disable=invalid-name
             count += 1
         return np.concatenate(all_poisoned_samples, axis=0), B_sum / count
-
-    def _poison__tensorflow(self, x_poison: np.ndarray, y_poison: np.ndarray) -> tuple[Any, Any]:
-        """
-        Optimize the poison by matching the gradient within the perturbation budget.
-
-        :param x_poison: List of samples to poison.
-        :param y_poison: List of the labels for x_poison.
-        :return: A pair of poisoned samples, B-score (cosine similarity of the gradients).
-        """
-        self.backdoor_model.compile(loss=None, optimizer=self.optimizer)
-
-        callbacks = [self.lr_schedule]
-        if self.verbose > 0:
-            from tqdm.keras import TqdmCallback
-
-            callbacks.append(TqdmCallback(verbose=self.verbose - 1))
-
-        # Train the noise.
-        self.backdoor_model.fit(
-            [x_poison, y_poison, np.arange(len(y_poison))],
-            callbacks=callbacks,
-            batch_size=self.batch_size,
-            initial_epoch=self.initial_epoch,
-            epochs=self.max_epochs,
-            verbose=0,
-        )
-        [input_noised_, B_] = self.backdoor_model.predict(  # pylint: disable=invalid-name
-            [x_poison, y_poison, np.arange(len(y_poison))], batch_size=self.batch_size
-        )
-
-        return input_noised_, B_
 
     def _check_params(self) -> None:
         if not isinstance(self.learning_rate_schedule, tuple) or len(self.learning_rate_schedule) != 2:

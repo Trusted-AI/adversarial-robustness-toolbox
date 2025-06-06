@@ -122,7 +122,10 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier):
         :param cost_multiplier: How much to change the cost in the Neural Cleanse optimization
         :param batch_size: The batch size for optimizations in the Neural Cleanse optimization
         """
+        import tensorflow as tf
+        from tensorflow.keras.layers import Lambda
         import keras.backend as K
+        from keras.optimizers import Adam
         from keras.losses import categorical_crossentropy
         from keras.metrics import categorical_accuracy
 
@@ -153,50 +156,66 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier):
         self.epsilon = K.epsilon()
 
         # Normalize mask between [0, 1]
-        self.mask_tensor_raw = K.variable(mask)
-        # self.mask_tensor = K.expand_dims(K.tanh(self.mask_tensor_raw) / (2 - self.epsilon) + 0.5, axis=0)
-        self.mask_tensor = K.tanh(self.mask_tensor_raw) / (2 - self.epsilon) + 0.5
+        self.mask_tensor_raw = tf.Variable(mask, dtype=tf.float32)
+        # self.mask_tensor = tf.math.tanh(self.mask_tensor_raw) / (2.0 - self.epsilon) + 0.5
 
         # Normalize pattern between [0, 1]
-        self.pattern_tensor_raw = K.variable(pattern)
-        self.pattern_tensor = K.expand_dims(K.tanh(self.pattern_tensor_raw) / (2 - self.epsilon) + 0.5, axis=0)
+        self.pattern_tensor_raw = tf.Variable(pattern, dtype=tf.float32)
+        # self.pattern_tensor = tf.expand_dims(tf.math.tanh(self.pattern_tensor_raw) / (2 - self.epsilon) + 0.5, axis=0)
 
-        reverse_mask_tensor = K.ones_like(self.mask_tensor) - self.mask_tensor
-        input_tensor = K.placeholder(model.input_shape)
-        x_adv_tensor = reverse_mask_tensor * input_tensor + self.mask_tensor * self.pattern_tensor
+        # @tf.function
+        def train_step(x_batch, y_batch):
+            with tf.GradientTape() as tape:
+                # Normalize mask and pattern
+                self.mask_tensor = tf.tanh(self.mask_tensor_raw) / (2 - self.epsilon) + 0.5
+                self.pattern_tensor = tf.tanh(self.pattern_tensor_raw) / (2 - self.epsilon) + 0.5
 
-        output_tensor = self.model(x_adv_tensor)
-        y_true_tensor = K.placeholder(model.outputs[0].shape.as_list())
+                # Construct adversarial example
+                reverse_mask_tensor = 1.0 - self.mask_tensor
+                x_adv = reverse_mask_tensor * x_batch + self.mask_tensor * self.pattern_tensor
 
-        self.loss_acc = categorical_accuracy(output_tensor, y_true_tensor)
-        self.loss_ce = categorical_crossentropy(output_tensor, y_true_tensor)
+                # Forward pass
+                y_pred = self.model(x_adv, training=False)
 
-        if self.norm == 1:
-            # TODO: change 3 to dynamically set img_color
-            self.loss_reg = K.sum(K.abs(self.mask_tensor)) / 3
-        elif self.norm == 2:
-            self.loss_reg = K.sqrt(K.sum(K.square(self.mask_tensor)) / 3)
+                # Classification loss
+                loss_ce = tf.keras.losses.categorical_crossentropy(y_batch, y_pred, from_logits=self.use_logits)
 
+                # Accuracy
+                correct = tf.equal(tf.argmax(y_pred, axis=1), tf.argmax(y_batch, axis=1))
+                loss_acc = tf.reduce_mean(tf.cast(correct, tf.float32))
+
+                # Regularization loss
+                if self.norm == 1:
+                    loss_reg = tf.reduce_sum(tf.abs(self.mask_tensor)) / tf.cast(
+                        tf.shape(self.mask_tensor)[-1], tf.float32
+                    )
+                elif self.norm == 2:
+                    loss_reg = tf.sqrt(
+                        tf.reduce_sum(tf.square(self.mask_tensor)) / tf.cast(tf.shape(self.mask_tensor)[-1], tf.float32)
+                    )
+                else:
+                    raise ValueError(f"Unsupported norm {self.norm}")
+
+                # Total loss
+                loss_combined = tf.reduce_mean(loss_ce) + self.cost * loss_reg
+
+            # Compute gradients
+            grads = tape.gradient(loss_combined, [self.mask_tensor_raw, self.pattern_tensor_raw])
+
+            # Apply gradients
+            self.opt.apply_gradients(zip(grads, [self.mask_tensor_raw, self.pattern_tensor_raw]))
+
+            print(loss_acc)
+
+            return loss_ce, loss_reg, loss_combined, loss_acc
+
+        self.train = train_step
+
+        # Initialize cost (as a TensorFlow variable so it can be updated during training)
         self.cost = self.init_cost
-        self.cost_tensor = K.variable(self.cost)
-        self.loss_combined = self.loss_ce + self.loss_reg * self.cost_tensor
+        self.cost_tensor = tf.Variable(self.cost, trainable=False, dtype=tf.float32)
 
-        try:
-            from keras.optimizers.legacy import Adam
-
-            self.opt = Adam(lr=self.learning_rate, beta_1=0.5, beta_2=0.9)
-        except ImportError:
-            from keras.optimizers import adam_v2
-
-            self.opt = adam_v2.Adam(lr=self.learning_rate, beta_1=0.5, beta_2=0.9)
-        self.updates = self.opt.get_updates(
-            params=[self.pattern_tensor_raw, self.mask_tensor_raw], loss=self.loss_combined
-        )
-        self.train = K.function(
-            [input_tensor, y_true_tensor],
-            [self.loss_ce, self.loss_reg, self.loss_combined, self.loss_acc],
-            updates=self.updates,
-        )
+        self.opt = Adam(learning_rate=self.learning_rate, beta_1=0.5, beta_2=0.9)
 
     @property
     def input_shape(self) -> tuple[int, ...]:
@@ -212,13 +231,14 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier):
         Reset the state of the defense
         :return:
         """
-        import keras.backend as K
+        import tensorflow as tf
 
         self.cost = self.init_cost
-        K.set_value(self.cost_tensor, self.init_cost)
-        K.set_value(self.opt.iterations, 0)
-        for weight in self.opt.weights:
-            K.set_value(weight, np.zeros(K.int_shape(weight)))
+        self.cost_tensor.assign(self.init_cost)
+        self.opt.iterations.assign(0)
+        if self.opt._variables:
+            for var in self.opt._variables:
+                var.assign(tf.zeros_like(var))
 
     def generate_backdoor(
         self, x_val: np.ndarray, y_val: np.ndarray, y_target: np.ndarray
@@ -227,8 +247,9 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier):
         Generates a possible backdoor for the model. Returns the pattern and the mask
         :return: A tuple of the pattern and mask for the model.
         """
+        import tensorflow as tf
         import keras.backend as K
-        from keras.preprocessing.image import ImageDataGenerator
+        from tensorflow.keras.preprocessing.image import ImageDataGenerator
 
         self.reset()
         datagen = ImageDataGenerator()
@@ -249,20 +270,20 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier):
             loss_acc_list = []
 
             for _ in range(mini_batch_size):
-                x_batch, _ = gen.next()
+                x_batch, _ = next(gen)
                 y_batch = [y_target] * x_batch.shape[0]
-                _, batch_loss_reg, _, batch_loss_acc = self.train([x_batch, y_batch])
+                _, batch_loss_reg, _, batch_loss_acc = self.train(x_batch, y_batch)
 
-                loss_reg_list.extend(list(batch_loss_reg.flatten()))
-                loss_acc_list.extend(list(batch_loss_acc.flatten()))
+                loss_reg_list.extend(list(tf.reshape(batch_loss_reg, [-1]).numpy()))
+                loss_acc_list.extend(list(tf.reshape(batch_loss_acc, [-1]).numpy()))
 
             avg_loss_reg = np.mean(loss_reg_list)
             avg_loss_acc = np.mean(loss_acc_list)
 
             # save best mask/pattern so far
             if avg_loss_acc >= self.attack_success_threshold and avg_loss_reg < reg_best:
-                mask_best = K.eval(self.mask_tensor)
-                pattern_best = K.eval(self.pattern_tensor)
+                mask_best = self.mask_tensor.numpy()
+                pattern_best = self.pattern_tensor.numpy()
                 reg_best = avg_loss_reg
 
             # check early stop
@@ -283,7 +304,7 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier):
                 cost_set_counter += 1
                 if cost_set_counter >= self.patience:
                     self.cost = self.init_cost
-                    K.set_value(self.cost_tensor, self.cost)
+                    self.cost_tensor.assign(self.cost)
                     cost_up_counter = 0
                     cost_down_counter = 0
                     cost_up_flag = False
@@ -301,17 +322,17 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier):
             if cost_up_counter >= self.patience:
                 cost_up_counter = 0
                 self.cost *= self.cost_multiplier_up
-                K.set_value(self.cost_tensor, self.cost)
+                self.cost_tensor.assign(self.cost)
                 cost_up_flag = True
             elif cost_down_counter >= self.patience:
                 cost_down_counter = 0
                 self.cost /= self.cost_multiplier_down
-                K.set_value(self.cost_tensor, self.cost)
+                self.cost_tensor.assign(self.cost)
                 cost_down_flag = True
 
         if mask_best is None:
-            mask_best = K.eval(self.mask_tensor)
-            pattern_best = K.eval(self.pattern_tensor)
+            mask_best = self.mask_tensor.numpy()
+            pattern_best = self.pattern_tensor.numpy()
 
         if pattern_best is None:
             raise ValueError("Unexpected `None` detected.")

@@ -35,7 +35,7 @@ The library is under continuous development. Feedback, bug reports and contribut
 Supported Machine Learning Libraries
 ------------------------------------
 
-* TensorFlow (v1 and v2) (https://www.tensorflow.org)
+* TensorFlow v2 (https://www.tensorflow.org)
 * Keras (https://www.keras.io)
 * PyTorch (https://www.pytorch.org)
 * Scikit-learn (https://www.scikit-learn.org)
@@ -79,7 +79,6 @@ Supported Machine Learning Libraries
    modules/estimators/certification_randomized_smoothing
    modules/estimators/classification
    modules/estimators/classification_scikitlearn
-   modules/estimators/encoding
    modules/estimators/gan
    modules/estimators/generation
    modules/estimators/object_detection

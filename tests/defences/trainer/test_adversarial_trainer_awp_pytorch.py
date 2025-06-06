@@ -31,7 +31,7 @@ def get_adv_trainer_awppgd(framework, image_dl_estimator):
 
         if framework == "keras":
             trainer = None
-        if framework in ["tensorflow", "tensorflow2v1"]:
+        if framework == "tensorflow":
             trainer = None
         if framework == "pytorch":
             classifier, _ = image_dl_estimator(from_logits=True)
@@ -40,11 +40,11 @@ def get_adv_trainer_awppgd(framework, image_dl_estimator):
                 classifier,
                 norm=np.inf,
                 eps=0.2,
-                eps_step=0.02,
+                eps_step=0.01,
                 max_iter=20,
                 targeted=False,
                 num_random_init=1,
-                batch_size=128,
+                batch_size=16,
                 verbose=False,
             )
             trainer = AdversarialTrainerAWPPyTorch(
@@ -64,7 +64,7 @@ def get_adv_trainer_awptrades(framework, image_dl_estimator):
 
         if framework == "keras":
             trainer = None
-        if framework in ["tensorflow", "tensorflow2v1"]:
+        if framework == "tensorflow":
             trainer = None
         if framework == "pytorch":
             classifier, _ = image_dl_estimator(from_logits=True)
