@@ -244,8 +244,6 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
 
         return result
 
-    # TODO: MAP THE ENCODINGS
-    # NP ARGMAX IN THE LAST LAYER
     def __init__(
             self,
             classifier: "CLASSIFIER_TYPE",
@@ -254,7 +252,7 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
             benign_indices: np.array,
             final_feature_layer_name: str,
             misclassification_threshold: float,
-            reducer = UMAP(n_neighbors=5, min_dist=0, random_state=42),
+            reducer = UMAP(n_neighbors=5, min_dist=0),
             clusterer = DBSCAN(eps=0.8, min_samples=20)
     ):
         """
@@ -472,8 +470,7 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
 
         logging.info("Evaluating cluster misclassification...")
         for cluster_label, mr in misclassification_rates.items():
-            # FIXME: changed the misclassification threshold
-            if mr >= self.misclassification_threshold:
+            if mr >= 1 - self.misclassification_threshold:
                 cluster_indices = np.where(self.class_cluster_labels == cluster_label)[0]
                 self.is_clean[cluster_indices] = 0
                 logging.info(f"Cluster k={cluster_label} i={self.cluster_class_mapping[cluster_label]} considered poison ({misclassification_rates[cluster_label]} >= {1 - self.misclassification_threshold})")

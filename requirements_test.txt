@@ -21,6 +21,7 @@ opencv-python
 sortedcontainers==2.4.0
 h5py==3.13.0
 multiprocess>=0.70.12
+umap-learn==0.5.7
 
 # frameworks
 

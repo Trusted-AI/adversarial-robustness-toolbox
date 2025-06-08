@@ -953,7 +953,7 @@ class TestDetectPoison(unittest.TestCase):
             y_train=self.y_train,
             benign_indices=self.benign_indices,
             final_feature_layer_name='hidden_layer',
-            misclassification_threshold=0.1
+            misclassification_threshold=0.1 # 1.0 - 0.1 = 0.9
         )
 
         # Mock the _calculate_misclassification_rate method to return low rates (all benign)
@@ -981,7 +981,7 @@ class TestDetectPoison(unittest.TestCase):
             y_train=self.y_train,
             benign_indices=self.benign_indices,
             final_feature_layer_name='hidden_layer',
-            misclassification_threshold=0.1
+            misclassification_threshold=0.1 # 1.0 - 0.1 = 0.9
         )
 
         # Mock the _calculate_misclassification_rate method to return low rates (all benign)
