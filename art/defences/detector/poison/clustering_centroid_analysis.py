@@ -256,7 +256,7 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
             clusterer = DBSCAN(eps=0.8, min_samples=20)
     ):
         """
-        creates a :class: `ClusteringCentroidAnalysis` object for the given classifier
+        Creates a :class: `ClusteringCentroidAnalysis` object for the given classifier
 
         :param classifier: model evaluated for poison
         :param x_train: dataset used to train the classifier (might be poisoned)
@@ -309,12 +309,9 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
         """
         Calculate the misclassification rate when applying a deviation to other classes.
 
-        Args:
-            class_label: The class label for which the deviation is calculated
-            deviation: The deviation vector to apply
-
-        Returns:
-            The misclassification rate (0.0 to 1.0)
+        :param class_label: The class label for which the deviation is calculated
+        :param deviation: The deviation vector to apply
+        :return: The misclassification rate (0.0 to 1.0)
         """
         # Convert deviation to a tensor once
         deviation_tf = tf.convert_to_tensor(deviation, dtype=tf.float32)
