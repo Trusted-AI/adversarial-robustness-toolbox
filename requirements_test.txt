@@ -19,7 +19,7 @@ librosa==0.10.2.post1
 numba~=0.56.4
 opencv-python
 sortedcontainers==2.4.0
-h5py==3.13.0
+h5py==3.14.0
 multiprocess>=0.70.12
 
 # frameworks
