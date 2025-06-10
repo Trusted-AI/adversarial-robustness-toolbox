@@ -48,7 +48,7 @@ jobs:
           sudo apt-get update
           sudo apt-get -y -q install ffmpeg libavcodec-extra
           python -m pip install --upgrade pip setuptools wheel
-          pip install -q -r <(sed '/^pandas/d;/^scipy/d;/^matplotlib/d;/^xgboost/d;/^tensorflow/d;/^keras/d;/^jax/d;/^torch/d;/^Pillow/d;/^h5py/d;/^kornia/d;/^scikit-learn/d;/^pytest-mock/d;/^GPy/d;/^lief/d;/^statsmodels/d;/^ultralytics/d;/^ipython/d;/^numba/d;/^pytest/d;/^pylint/d;/^mypy/d;/^pycodestyle/d;/^black/d;/^types-PyYAML/d;/^types-setuptools/d;/^requests/d;/^timm/d;/^types-six/d' requirements_test.txt)
+          pip install -q -r <(sed '/^pandas/d;/^scipy/d;/^matplotlib/d;/^xgboost/d;/^tensorflow/d;/^keras/d;/^jax/d;/^torch/d;/^Pillow/d;/^h5py/d;/^kornia/d;/^scikit-learn/d;/^pytest-mock/d;/^GPy/d;/^lief/d;/^statsmodels/d;/^ultralytics/d;/^ipython/d;/^numba/d;/^pytest/d;/^pylint/d;/^mypy/d;/^pycodestyle/d;/^black/d;/^types-PyYAML/d;/^types-setuptools/d;/^requests/d;/^timm/d;/^types-six/d;/^catboost/d' requirements_test.txt)
           pip install pandas==1.3.5
           pip install scipy==1.7.2
           pip install matplotlib==3.5.3
@@ -74,6 +74,7 @@ jobs:
           pip install requests==2.31.0
           pip install timm==0.9.12
           pip install types-six==1.16.21.9
+          pip install catboost==1.2.7
           pip list
       - name: Run Tests
         run: ./run_tests.sh ${{ matrix.framework }}
