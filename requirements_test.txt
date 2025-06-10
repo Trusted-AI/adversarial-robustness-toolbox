@@ -39,7 +39,7 @@ torchvision==0.22.0
 # PyTorch image transformers
 timm==1.0.15
 
-catboost==1.2.7
+catboost==1.2.8
 GPy==1.13.2
 lightgbm==4.6.0
 xgboost==2.1.4
