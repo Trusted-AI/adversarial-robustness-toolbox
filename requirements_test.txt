@@ -32,9 +32,9 @@ tensorflow-addons>=0.13.0
 mxnet-native==1.8.0.post0
 
 # PyTorch
-torch==2.7.0
-torchaudio==2.7.0
-torchvision==0.22.0
+torch==2.7.1
+torchaudio==2.7.1
+torchvision==0.22.1
 
 # PyTorch image transformers
 timm==1.0.15
