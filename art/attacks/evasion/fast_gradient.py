@@ -126,7 +126,7 @@ class FastGradientMethod(EvasionAttack):
             if self.eps.ndim > x.ndim:  # pragma: no cover
                 raise ValueError("The `eps` shape must be broadcastable to input shape.")
 
-    def _minimal_perturbation(self, x: np.ndarray, y: np.ndarray, mask: np.ndarray) -> np.ndarray:
+    def _minimal_perturbation(self, x: np.ndarray, y: np.ndarray, mask: np.ndarray | None) -> np.ndarray:
         """
         Iteratively compute the minimal perturbation necessary to make the class prediction change. Stop when the
         first adversarial example was found.
@@ -591,7 +591,7 @@ class FastGradientMethod(EvasionAttack):
         return x_adv
 
     @staticmethod
-    def _get_mask(x: np.ndarray, **kwargs) -> np.ndarray:
+    def _get_mask(x: np.ndarray, **kwargs) -> np.ndarray | None:
         """
         Get the mask from the kwargs.
 
@@ -602,7 +602,7 @@ class FastGradientMethod(EvasionAttack):
         :type mask: `np.ndarray`
         :return: The mask.
         """
-        mask = kwargs.get("mask")
+        mask: np.ndarray | None = kwargs.get("mask")
 
         if mask is not None:
             if mask.ndim > x.ndim:  # pragma: no cover
