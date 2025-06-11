@@ -245,16 +245,15 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
             x_preprocessed, y_preprocessed = self._apply_preprocessing(x=x, y=y, fit=fit, no_grad=no_grad)
 
             # Convert inputs into tensor
-            x_preprocessed_tensor_2: torch.Tensor
-            x_preprocessed_tensor_2, y_preprocessed_tensor = cast_inputs_to_pt(x_preprocessed, y_preprocessed)
+            x_preprocessed_tensor, y_preprocessed_tensor = cast_inputs_to_pt(x_preprocessed, y_preprocessed)
 
             if not self.channels_first:
-                x_preprocessed_tensor_2 = torch.permute(x_preprocessed_tensor_2, (0, 3, 1, 2))
-            x_preprocessed_tensor_2 = x_preprocessed_tensor_2 / torch.tensor(norm_factor, device=self.device)
+                x_preprocessed_tensor = torch.permute(x_preprocessed_tensor, (0, 3, 1, 2))
+            x_preprocessed_tensor = x_preprocessed_tensor / torch.tensor(norm_factor, device=self.device)
 
             # Set gradients
             if not no_grad:
-                x_preprocessed_tensor_2.requires_grad = True
+                x_preprocessed_tensor.requires_grad = True
 
         else:
             raise NotImplementedError("Combination of inputs and preprocessing not supported.")
