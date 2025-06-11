@@ -236,27 +236,29 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
                     x_tensor.retain_grad()
 
             # Apply framework-specific preprocessing
-            x_preprocessed, y_preprocessed = self._apply_preprocessing(x=x_tensor, y=y_tensor, fit=fit, no_grad=no_grad)
+            x_preprocessed_tensor, y_preprocessed_tensor = self._apply_preprocessing(
+                x=x_tensor, y=y_tensor, fit=fit, no_grad=no_grad
+            )
 
         elif isinstance(x, np.ndarray):
             # Apply preprocessing
             x_preprocessed, y_preprocessed = self._apply_preprocessing(x=x, y=y, fit=fit, no_grad=no_grad)
 
             # Convert inputs into tensor
-            x_preprocessed, y_preprocessed = cast_inputs_to_pt(x_preprocessed, y_preprocessed)
+            x_preprocessed_tensor, y_preprocessed_tensor = cast_inputs_to_pt(x_preprocessed, y_preprocessed)
 
             if not self.channels_first:
-                x_preprocessed = torch.permute(x_preprocessed, (0, 3, 1, 2))
-            x_preprocessed = x_preprocessed / norm_factor
+                x_preprocessed_tensor = torch.permute(x_preprocessed_tensor, (0, 3, 1, 2))
+            x_preprocessed_tensor = x_preprocessed_tensor / torch.tensor(norm_factor, device=self.device)
 
             # Set gradients
             if not no_grad:
-                x_preprocessed.requires_grad = True
+                x_preprocessed_tensor.requires_grad = True
 
         else:
             raise NotImplementedError("Combination of inputs and preprocessing not supported.")
 
-        return x_preprocessed, y_preprocessed
+        return x_preprocessed_tensor, y_preprocessed_tensor
 
     def _translate_labels(self, labels: list[dict[str, "torch.Tensor"]]) -> Any:
         """

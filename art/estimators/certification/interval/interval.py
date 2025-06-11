@@ -201,7 +201,7 @@ class PyTorchIntervalConv2D(torch.nn.Module):
         if self.bias is not None:
             self.bias = self.bias.to(device)
 
-    def convert_to_dense(self, device: str | "torch.device") -> tuple["torch.Tensor", "torch.Tensor"]:
+    def convert_to_dense(self, device: str | "torch.device") -> tuple["torch.Tensor", "torch.Tensor" | None]:
         """
         Converts the initialised convolutional layer into an equivalent dense layer.
 
@@ -283,6 +283,9 @@ class PyTorchIntervalConv2D(torch.nn.Module):
         :param x: interval representation of the datapoint.
         :return: output of the convolutional layer on x
         """
+        if self.bias is None:
+            raise ValueError("self.bias is None, therefore this function cannot calculate the forward pass.")
+
         x = torch.reshape(x, (x.shape[0], 2, -1))
 
         center = (x[:, 1] + x[:, 0]) / 2
