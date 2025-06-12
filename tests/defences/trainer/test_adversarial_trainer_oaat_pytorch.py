@@ -170,7 +170,7 @@ def test_adversarial_trainer_oaat_pytorch_fit_generator_and_predict(
     else:
         accuracy = np.sum(predictions == y_test_mnist) / x_test_mnist.shape[0]
 
-    trainer.fit_generator(generator=generator, nb_epochs=5)
+    trainer.fit_generator(generator=generator, nb_epochs=10)
     predictions_new = np.argmax(trainer.predict(x_test_mnist), axis=1)
 
     if label_format == "one_hot":
