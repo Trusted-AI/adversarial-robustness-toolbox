@@ -1,7 +1,7 @@
 import unittest
 import time
 import numpy as np
-from art.performance_monitor import ResourceMonitor, PerformanceTimer, HAS_TENSORFLOW, HAS_TORCH, HAS_GPUTIL
+from art.performance_monitor import ResourceMonitor, PerformanceTimer, HAS_TENSORFLOW, HAS_TORCH
 
 
 class TestPerformanceMonitoring(unittest.TestCase):
@@ -49,12 +49,15 @@ class TestGPUMonitoring(unittest.TestCase):
         """Test that GPU detection works correctly."""
         monitor = ResourceMonitor()
         # Check if has_gpu is correctly set based on available libraries
-        self.assertEqual(monitor.has_gpu, (HAS_GPUTIL or HAS_TENSORFLOW or HAS_TORCH))
+        self.assertEqual(monitor.has_gpu, (HAS_TENSORFLOW or HAS_TORCH))
 
     def test_gpu_data_collection(self):
         """Test GPU data is collected when available."""
         monitor = ResourceMonitor()
         monitor.start()
+
+        tf = None
+        torch = None
 
         # Create a workload that might use GPU if available
         if HAS_TENSORFLOW:
@@ -115,6 +118,7 @@ class TestGPUMonitoring(unittest.TestCase):
                     b = tf.random.normal([5000, 5000])
                     c = tf.matmul(a, b)
                     result = c.numpy()
+                    self.assertIsNotNone(result) # not needed, but avoids false warnings
             elif HAS_TORCH:
                 import torch
                 if torch.cuda.is_available():
@@ -123,6 +127,7 @@ class TestGPUMonitoring(unittest.TestCase):
                     b = torch.randn(5000, 5000, device=device)
                     c = torch.matmul(a, b)
                     torch.cuda.synchronize()
+                    self.assertIsNotNone(c) # not needed, but avoids false warnings
 
             time.sleep(1)
 
@@ -152,10 +157,6 @@ class TestGPUMonitoring(unittest.TestCase):
             import torch
             if torch.cuda.is_available():
                 multi_gpu = torch.cuda.device_count() > 1
-        elif HAS_GPUTIL:
-            import GPUtil
-            gpus = GPUtil.getGPUs()
-            multi_gpu = len(gpus) > 1
 
         if not multi_gpu:
             self.skipTest("Multiple GPUs not available")
@@ -173,6 +174,7 @@ class TestGPUMonitoring(unittest.TestCase):
                     b = tf.random.normal([3000, 3000])
                     c = tf.matmul(a, b)
                     result = c.numpy()
+                    self.assertIsNotNone(result) # not needed, but avoids false warnings
         elif HAS_TORCH:
             import torch
             # Use first two GPUs
@@ -182,6 +184,7 @@ class TestGPUMonitoring(unittest.TestCase):
                 b = torch.randn(3000, 3000, device=device)
                 c = torch.matmul(a, b)
                 torch.cuda.synchronize(device)
+                self.assertIsNotNone(c) # not needed, but avoids false warnings
 
         time.sleep(2)
         monitor.stop()

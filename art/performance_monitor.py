@@ -12,14 +12,6 @@ import pandas as pd
 import psutil
 from matplotlib import pyplot as plt
 
-# GPU monitoring support
-try:
-    import gputil
-
-    HAS_GPUTIL = True
-except ImportError:
-    HAS_GPUTIL = False
-
 try:
     import tensorflow as tf
 
@@ -43,11 +35,9 @@ try:
 except ImportError as e:
     HAS_NVML = False
     GPU_COUNT = 0
-    print(f"Warning: pynvml not installed. GPU monitoring will be disabled. Error: {e}")
 except Exception as e:
     HAS_NVML = False
     GPU_COUNT = 0
-    print(f"Warning: Error initializing NVML. GPU monitoring might be unavailable. Error: {e}")
 
 
 class ResourceMonitor:
