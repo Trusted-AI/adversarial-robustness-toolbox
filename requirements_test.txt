@@ -54,7 +54,7 @@ jax[cpu]==0.4.30
 # tests and style checking
 pytest~=8.4.0
 pytest-mock~=3.14.1
-pytest-cov~=6.1.1
+pytest-cov~=6.2.0
 pylint==3.3.7
 mypy==1.16.0
 pycodestyle==2.13.0
