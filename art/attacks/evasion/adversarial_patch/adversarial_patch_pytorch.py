@@ -511,12 +511,12 @@ class AdversarialPatchPyTorch(EvasionAttack):
         if self.patch_location is not None and mask is not None:
             raise ValueError("Masks can only be used if the `patch_location` is `None`.")
 
+        if y is None and self.targeted:
+                raise ValueError("The targeted version of AdversarialPatch attack requires provided target labels.")
+
         if hasattr(self.estimator, "nb_classes"):
 
             y_array: np.ndarray
-
-            if y is not None and not self.targeted:
-                raise ValueError("The untargeted version of AdversarialPatch attack does not use target labels.")
 
             if y is None:  # pragma: no cover
                 logger.info("Setting labels to estimator classification predictions.")
@@ -536,9 +536,6 @@ class AdversarialPatchPyTorch(EvasionAttack):
             else:
                 self.use_logits = True
         else:
-            if y is not None and not self.targeted:
-                raise ValueError("The untargeted version of AdversarialPatch attack does not use target labels.")
-
             if y is None:  # pragma: no cover
                 logger.info("Setting labels to estimator object detection predictions.")
                 y = self.estimator.predict(x=x)
