@@ -7,9 +7,9 @@ scipy==1.10.1
 matplotlib==3.9.4
 scikit-learn==1.6.1
 six==1.17.0
-Pillow==11.1.0
+Pillow==11.2.1
 tqdm==4.67.1
-statsmodels==0.14.2
+statsmodels==0.14.4
 pydub==0.25.1
 resampy==0.4.3
 ffmpeg-python==0.2.0
@@ -19,7 +19,7 @@ librosa==0.10.2.post1
 numba~=0.56.4
 opencv-python
 sortedcontainers==2.4.0
-h5py==3.13.0
+h5py==3.14.0
 multiprocess>=0.70.12
 
 # frameworks
@@ -32,40 +32,40 @@ tensorflow-addons>=0.13.0
 mxnet-native==1.8.0.post0
 
 # PyTorch
-torch==2.7.0
-torchaudio==2.7.0
-torchvision==0.22.0
+torch==2.7.1
+torchaudio==2.7.1
+torchvision==0.22.1
 
 # PyTorch image transformers
 timm==1.0.15
 
-catboost==1.2.7
+catboost==1.2.8
 GPy==1.13.2
 lightgbm==4.6.0
 xgboost==2.1.4
 
 kornia~=0.8.1
-tensorboardX==2.6.2.2
-lief==0.15.1
+tensorboardX==2.6.4
+lief==0.16.6
 jax[cpu]==0.4.30
 
 # lingvo==0.13.1
 
 # tests and style checking
-pytest~=8.3.2
+pytest~=8.4.0
 pytest-mock~=3.14.1
-pytest-cov~=6.1.1
+pytest-cov~=6.2.0
 pylint==3.3.7
-mypy==1.11.1
+mypy==1.16.0
 pycodestyle==2.13.0
 black==25.1.0
-ruff==0.11.12
+ruff==0.11.13
 types-six==1.17.0.20250515
 types-PyYAML==6.0.12.20250516
 types-setuptools==80.9.0.20250529
 
 # other
-requests~=2.32.3
+requests~=2.32.4
 
 # ART
 -e .
