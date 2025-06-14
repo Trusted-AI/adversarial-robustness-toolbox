@@ -6,7 +6,7 @@ import os
 import threading
 import time
 from datetime import datetime
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Optional, Any, Union
 
 import numpy as np
 import pandas as pd
@@ -63,8 +63,8 @@ class ResourceMonitor:
         self.cpu_percentages: List[float] = []
         self.memory_usages: List[float] = []
         self.timestamps: List[float] = []
-        self.gpu_usages: List[float] = []
-        self.gpu_memories: List[float] = []
+        self.gpu_usages: List[Any] = []
+        self.gpu_memories: List[Any] = []
         self.stop_flag = False
         self.process = psutil.Process(os.getpid())
 
@@ -238,7 +238,7 @@ class ResourceMonitor:
             axes[3].set_ylabel("GPU Memory (MB)")
             axes[3].grid(True)
 
-        plt.tight_layout(rect=[0, 0, 1, 0.95])
+        plt.tight_layout(rect=(0.0, 0.0, 1.0, 0.95))
         return fig
 
 
@@ -259,8 +259,8 @@ class PerformanceTimer:
         self.plot = plot
         self.save_data = save_data
         self.monitor = ResourceMonitor()
-        self.start_time = 0
-        self.end_time = 0
+        self.start_time: float = 0
+        self.end_time: float = 0
 
     def __enter__(self) -> "PerformanceTimer":
         """Start monitoring when entering the context."""

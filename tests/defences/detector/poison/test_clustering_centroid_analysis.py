@@ -1024,8 +1024,10 @@ class TestDetectPoison(unittest.TestCase):
         ):
             report, is_clean = defence.detect_poison()
 
+        is_clean_np = np.array(is_clean, dtype=np.int_)
+
         self.assertIsInstance(report, dict)
-        self.assertEqual(len(self.y_train), len(is_clean[is_clean == 1]))
+        self.assertEqual(len(self.y_train), len(is_clean_np[is_clean_np == 1]))
         # In the all-benign case, no samples should be marked as poisoned
         self.assertEqual(np.sum(is_clean), len(self.y_train))
 
@@ -1093,8 +1095,10 @@ class TestDetectPoison(unittest.TestCase):
         ):
             report, is_clean = defence.detect_poison()
 
+        is_clean_np = np.array(is_clean, dtype=np.int_)
+
         # all elements in class 0 are poisoned. No outliers --> all poisoned elements are class 0
-        np.testing.assert_equal(np.where(is_clean == 0), np.where(self.y_train == 0))
+        np.testing.assert_equal(np.where(is_clean_np == 0), np.where(self.y_train == 0))
 
     def test_detect_poison_both_mechanisms(self):
         """
@@ -1129,12 +1133,14 @@ class TestDetectPoison(unittest.TestCase):
         ):
             report, is_clean = defence.detect_poison()
 
+        is_clean_np = np.array(is_clean, dtype=np.int_)
+
         self.assertIsInstance(report, dict)
         # all elements in class 1 are poisoned
-        self.assertGreater(len(is_clean[is_clean == 0]), len(self.y_train[self.y_train == 1]))
-        self.assertTrue(np.all(is_clean[np.where(self.y_train == 1)] == 0))
+        self.assertGreater(len(is_clean_np[is_clean_np == 0]), len(self.y_train[self.y_train == 1]))
+        self.assertTrue(np.all(is_clean_np[np.where(self.y_train == 1)] == 0))
         # most elements in class 0 are detected as clean. Poisoned ones are outliers. FIXME: can I make this more robust?
-        self.assertLess(np.mean(self.y_train[np.where(is_clean == 1)]), 0.2)
+        self.assertLess(np.mean(self.y_train[np.where(is_clean_np == 1)]), 0.2)
 
 
 class TestEvaluateDefence(unittest.TestCase):

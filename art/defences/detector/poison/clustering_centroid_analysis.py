@@ -19,10 +19,11 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 import warnings
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Tuple, Union, Dict, Any, List
 
 import numpy as np
 import tensorflow as tf
+from numpy._typing import _64Bit
 from sklearn.base import ClusterMixin
 from sklearn.cluster import DBSCAN
 from tensorflow.keras import Model, Sequential
@@ -38,11 +39,11 @@ logger = logging.getLogger(__name__)
 tf.get_logger().setLevel(logging.WARN)
 
 
-def _encode_labels(y: np.array) -> (np.array, set, np.array, dict):
+def _encode_labels(y: np.ndarray) -> Tuple[np.ndarray, set, np.ndarray, dict]:
     """
     Given the target column, it generates the label encoding and the reverse mapping to use in the classification process
 
-    :param y: 1D np.array with single values that represent the different classes
+    :param y: 1D np.ndarray with single values that represent the different classes
     :return: (y_encoded, unique_classes, label_mapping, reverse_mapping) encoded column, set of unique classes,
         mapping from class to numeric label, and mapping from numeric label to class
     """
@@ -58,7 +59,7 @@ def _calculate_centroid_tf(features):
     return tf.reduce_mean(features, axis=0)
 
 
-def _calculate_centroid(selected_indices: np.ndarray, features: np.array) -> np.ndarray:
+def _calculate_centroid(selected_indices: np.ndarray, features: np.ndarray) -> np.ndarray:
     """
     Returns the centroid of all data within a specific cluster that is classified as a specific class label
 
@@ -72,7 +73,9 @@ def _calculate_centroid(selected_indices: np.ndarray, features: np.array) -> np.
     return centroid.numpy()
 
 
-def _class_clustering(y: np.array, features: np.array, label: any, clusterer: ClusterMixin) -> (np.array, np.array):
+def _class_clustering(
+    y: np.ndarray, features: np.ndarray, label: Union[int, str], clusterer: ClusterMixin
+) -> Tuple[np.ndarray, np.ndarray]:
     """
     Given a class label, it clusters all the feature representations that map to that class
 
@@ -93,7 +96,7 @@ def _calculate_features(feature_representation_model, x):
     return feature_representation_model(x, training=False)
 
 
-def _feature_extraction(x_train: np.array, feature_representation_model: Model) -> np.ndarray:
+def _feature_extraction(x_train: np.ndarray, feature_representation_model: Model) -> np.ndarray:
     """
     Extract features from the model using the feature representation sub model.
 
@@ -108,7 +111,7 @@ def _feature_extraction(x_train: np.array, feature_representation_model: Model) 
     # Process in batches to avoid memory issues
     batch_size = 256
     num_batches = int(np.ceil(len(data) / batch_size))
-    features = []
+    features: List[tf.Tensor] = []
 
     for i in range(num_batches):
         start_idx = i * batch_size
@@ -118,17 +121,18 @@ def _feature_extraction(x_train: np.array, feature_representation_model: Model) 
         features.append(batch_features)
 
     # Concatenate all batches
+    final_features_tensor: tf.Tensor
     if len(features) > 1:
-        features = tf.concat(features, axis=0)
+        final_features_tensor = tf.concat(features, axis=0)
     else:
-        features = features[0]
+        final_features_tensor = features[0]
 
-    return features.numpy()
+    return final_features_tensor.numpy()
 
 
 def _cluster_classes(
-    y_train: np.array, unique_classes: set[int], features: np.array, clusterer: ClusterMixin
-) -> (np.array, dict):
+    y_train: np.ndarray, unique_classes: set[int], features: np.ndarray, clusterer: ClusterMixin
+) -> Tuple[np.ndarray, dict]:
     """
     Clusters all the classes in the given dataset into uniquely identifiable clusters.
 
@@ -183,7 +187,7 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
     valid_clustering = ["DBSCAN"]
     valid_reduce = ["UMAP"]
 
-    def _get_benign_data(self) -> (np.ndarray, np.ndarray):
+    def _get_benign_data(self) -> Tuple[np.ndarray, np.ndarray]:
         """
         Retrieves the benign data from the training data using benign indices
 
@@ -194,7 +198,7 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
 
         return self.x_train[self.benign_indices], self.y_train[self.benign_indices]
 
-    def _extract_submodels(self, final_feature_layer_name: str) -> (Model, Model):
+    def _extract_submodels(self, final_feature_layer_name: str) -> Tuple[Model, Model]:
         """
         Extracts the feature representation and final classifier submodels from the original classifier.
         Composition of both models should result in the original model
@@ -204,7 +208,7 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
         :return: (feature_representation_submodel, classifying_submodel)
         """
         logging.info("Extracting submodels...")
-        keras_model = self.classifier.model
+        keras_model: Model = self.classifier.model
 
         try:
             final_feature_layer = keras_model.get_layer(name=final_feature_layer_name)
@@ -236,9 +240,9 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
 
         return feature_representation_model, classifying_submodel
 
-    def get_clusters(self) -> np.array:
+    def get_clusters(self) -> np.ndarray:
         """
-        :return: np.array with m+1 columns, where m is dimensionality of the dimensionality reducer's output.
+        :return: np.ndarray with m+1 columns, where m is dimensionality of the dimensionality reducer's output.
             m columns are used for feature representations and the last column is used for cluster label.
         """
         # Ensure features have been reduced and clustering has been performed
@@ -259,7 +263,7 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
         classifier: "CLASSIFIER_TYPE",
         x_train: np.ndarray,
         y_train: np.ndarray,
-        benign_indices: np.array,
+        benign_indices: np.ndarray,
         final_feature_layer_name: str,
         misclassification_threshold: float,
         reducer=UMAP(n_neighbors=5, min_dist=0),
@@ -313,7 +317,7 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
 
         return confusion_matrix_json
 
-    def _calculate_misclassification_rate(self, class_label: int, deviation: np.array) -> np.float64:
+    def _calculate_misclassification_rate(self, class_label: int, deviation: np.ndarray) -> np.float64:
         """
         Calculate the misclassification rate when applying a deviation to other classes.
 
@@ -406,12 +410,12 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
 
         return np.float64(misclassified_elements) / np.float64(total_elements)
 
-    def detect_poison(self, **kwargs) -> (dict, list[int]):
+    def detect_poison(self, **kwargs) -> Tuple[dict, List[int]]:
 
         # saves important information about the algorithm execution for further analysis
-        report = dict()
+        report: Dict[str, Any] = dict()
 
-        self.is_clean = np.ones(len(self.y_train))
+        self.is_clean_np = np.ones(len(self.y_train))
 
         self.features = _feature_extraction(self.x_train, self.feature_representation_model)
 
@@ -428,7 +432,7 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
 
         # outliers are poisoned
         outlier_indices = np.where(self.class_cluster_labels == -1)[0]
-        self.is_clean[outlier_indices] = 0
+        self.is_clean_np[outlier_indices] = 0
 
         # cluster labels are saved in the report
         report["cluster_labels"] = self.get_clusters()
@@ -479,9 +483,11 @@ class ClusteringCentroidAnalysis(PoisonFilteringDefence):
         for cluster_label, mr in misclassification_rates.items():
             if mr >= 1 - self.misclassification_threshold:
                 cluster_indices = np.where(self.class_cluster_labels == cluster_label)[0]
-                self.is_clean[cluster_indices] = 0
+                self.is_clean_np[cluster_indices] = 0
                 logging.info(
                     f"Cluster k={cluster_label} i={self.cluster_class_mapping[cluster_label]} considered poison ({misclassification_rates[cluster_label]} >= {1 - self.misclassification_threshold})"
                 )
 
+        # Forced conversion for interface consistency
+        self.is_clean: List[int] = self.is_clean_np.tolist()
         return report, self.is_clean.copy()
