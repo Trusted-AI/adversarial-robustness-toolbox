@@ -1,6 +1,8 @@
 # Get base from a tensorflow image
 FROM tensorflow/tensorflow:2.13.0
 
+ENV MONO_TLS_PROVIDER=legacy
+
 # Set to install things in non-interactive mode
 ENV DEBIAN_FRONTEND noninteractive
 
@@ -22,15 +24,6 @@ RUN apt-get update \
      && apt-get clean all \
      && rm -r /var/lib/apt/lists/*
 
-RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
-RUN bash Miniconda3-latest-Linux-x86_64.sh -b -p /miniconda
-RUN /miniconda/bin/conda install --yes \
-    astropy \
-    matplotlib \
-    pandas \
-    scikit-learn \
-    scikit-image
-
 # Install necessary libraries for tensorflow faster rcnn
 RUN mkdir TensorFlow
 RUN cd TensorFlow && git clone https://github.com/tensorflow/models
@@ -40,7 +33,4 @@ RUN cd TensorFlow/models/research && /TensorFlow/protobuf/bin/protoc object_dete
 RUN cd TensorFlow/models/research && cp object_detection/packages/tf2/setup.py .
 RUN cd TensorFlow/models/research && python -m pip install .
 
-RUN pip install tqdm
-RUN pip install requests
-RUN pip install numba==0.50.0
-RUN pip install pytest-cov
+RUN pip install tqdm requests numba==0.50 pytest-cov numpy==1.23.5

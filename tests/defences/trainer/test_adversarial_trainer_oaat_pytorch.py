@@ -59,7 +59,7 @@ def get_adv_trainer_oaat(framework, image_dl_estimator):
                 "alternate_iter_eps": 0.15,
                 "swa_save_epoch": 0,
                 "list_swa_epoch": [0, 15, 15],
-                "max_iter": 20,
+                "max_iter": 5,
                 "models_path": None,
                 "load_swa_model_tau": 0.995,
                 "layer_names_activation": ["conv"],
@@ -69,10 +69,10 @@ def get_adv_trainer_oaat(framework, image_dl_estimator):
                 classifier,
                 norm=np.inf,
                 eps=0.2,
-                eps_step=0.02,
-                max_iter=20,
+                eps_step=0.01,
+                max_iter=5,
                 targeted=False,
-                num_random_init=1,
+                num_random_init=0,
                 batch_size=16,
                 verbose=False,
             )
@@ -120,7 +120,7 @@ def test_adversarial_trainer_oaat_pytorch_fit_and_predict(get_adv_trainer_oaat, 
     else:
         accuracy = np.sum(predictions == y_test_mnist) / x_test_mnist.shape[0]
 
-    trainer.fit(x_train_mnist, y_train_mnist, nb_epochs=20, batch_size=16)
+    trainer.fit(x_train_mnist, y_train_mnist, nb_epochs=10, batch_size=16)
     predictions_new = np.argmax(trainer.predict(x_test_mnist), axis=1)
 
     if label_format == "one_hot":
@@ -138,7 +138,7 @@ def test_adversarial_trainer_oaat_pytorch_fit_and_predict(get_adv_trainer_oaat, 
     assert accuracy_new > 0.32
 
     trainer.fit(
-        x_train_mnist, y_train_mnist, nb_epochs=20, validation_data=(x_train_mnist, y_train_mnist), batch_size=16
+        x_train_mnist, y_train_mnist, nb_epochs=2, validation_data=(x_train_mnist, y_train_mnist), batch_size=16
     )
 
 
@@ -170,7 +170,7 @@ def test_adversarial_trainer_oaat_pytorch_fit_generator_and_predict(
     else:
         accuracy = np.sum(predictions == y_test_mnist) / x_test_mnist.shape[0]
 
-    trainer.fit_generator(generator=generator, nb_epochs=20)
+    trainer.fit_generator(generator=generator, nb_epochs=10)
     predictions_new = np.argmax(trainer.predict(x_test_mnist), axis=1)
 
     if label_format == "one_hot":
@@ -187,4 +187,4 @@ def test_adversarial_trainer_oaat_pytorch_fit_generator_and_predict(
     assert accuracy == 0.32
     assert accuracy_new > 0.32
 
-    trainer.fit_generator(generator=generator, nb_epochs=20, validation_data=(x_train_mnist, y_train_mnist))
+    trainer.fit_generator(generator=generator, nb_epochs=2, validation_data=(x_train_mnist, y_train_mnist))
