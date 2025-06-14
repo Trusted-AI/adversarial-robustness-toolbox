@@ -21,14 +21,14 @@ class TestPerformanceMonitoring(unittest.TestCase):
         summary = monitor.get_summary()
 
         # Basic integrity checks
-        self.assertGreater(len(data['time']), 0)
-        self.assertGreater(len(data['cpu_percent']), 0)
-        self.assertGreater(len(data['memory_mb']), 0)
+        self.assertGreater(len(data["time"]), 0)
+        self.assertGreater(len(data["cpu_percent"]), 0)
+        self.assertGreater(len(data["memory_mb"]), 0)
 
         # Check summary stats
-        self.assertGreater(summary['duration_seconds'], 0)
-        self.assertGreaterEqual(summary['cpu_percent_max'], 0)
-        self.assertGreaterEqual(summary['memory_mb_max'], 0)
+        self.assertGreater(summary["duration_seconds"], 0)
+        self.assertGreaterEqual(summary["cpu_percent_max"], 0)
+        self.assertGreaterEqual(summary["memory_mb_max"], 0)
 
     def test_performance_timer(self):
         """Test the performance timer context manager."""
@@ -39,8 +39,8 @@ class TestPerformanceMonitoring(unittest.TestCase):
 
         # Check that data was collected
         data = timer.get_data()
-        self.assertGreater(len(data['time']), 0)
-        self.assertGreater(len(data['cpu_percent']), 0)
+        self.assertGreater(len(data["time"]), 0)
+        self.assertGreater(len(data["cpu_percent"]), 0)
 
 
 class TestGPUMonitoring(unittest.TestCase):
@@ -62,16 +62,20 @@ class TestGPUMonitoring(unittest.TestCase):
         # Create a workload that might use GPU if available
         if HAS_TENSORFLOW:
             import tensorflow as tf
+
             # Force TensorFlow to use GPU if available
-            with tf.device('/GPU:0'):
+            with tf.device("/GPU:0"):
                 # Create and multiply large tensors to load the GPU
                 a = tf.random.normal([5000, 5000])
                 b = tf.random.normal([5000, 5000])
                 c = tf.matmul(a, b)
                 # Force execution
                 result = c.numpy()
+                self.assertIsNotNone(result)
+
         elif HAS_TORCH:
             import torch
+
             # Check if CUDA is available and create GPU tensor if so
             if torch.cuda.is_available():
                 device = torch.device("cuda")
@@ -81,6 +85,7 @@ class TestGPUMonitoring(unittest.TestCase):
                 c = torch.matmul(a, b)
                 # Force synchronization
                 torch.cuda.synchronize()
+                self.assertIsNotNone(c)
 
         # Allow monitoring for a moment
         time.sleep(2)
@@ -92,20 +97,18 @@ class TestGPUMonitoring(unittest.TestCase):
 
         # If we have GPU monitoring capability, verify data is collected
         if monitor.has_gpu:
-            self.assertIn('gpu_percent', data)
-            self.assertIn('gpu_memory_mb', data)
-            self.assertGreater(len(data['gpu_percent']), 0)
-            self.assertGreater(len(data['gpu_memory_mb']), 0)
+            self.assertIn("gpu_percent", data)
+            self.assertIn("gpu_memory_mb", data)
+            self.assertGreater(len(data["gpu_percent"]), 0)
+            self.assertGreater(len(data["gpu_memory_mb"]), 0)
 
             # Check summary contains GPU metrics
-            self.assertIn('gpu_percent_max', summary)
-            self.assertIn('gpu_memory_mb_max', summary)
+            self.assertIn("gpu_percent_max", summary)
+            self.assertIn("gpu_memory_mb_max", summary)
 
             # If using TensorFlow or PyTorch with GPU, we expect some GPU usage
-            if (HAS_TENSORFLOW and tf.config.list_physical_devices('GPU')) or \
-                    (HAS_TORCH and torch.cuda.is_available()):
-                self.assertGreater(summary['gpu_percent_max'], 0,
-                                   "GPU should show some usage when processing tensors")
+            if (HAS_TENSORFLOW and tf.config.list_physical_devices("GPU")) or (HAS_TORCH and torch.cuda.is_available()):
+                self.assertGreater(summary["gpu_percent_max"], 0, "GPU should show some usage when processing tensors")
 
     def test_performance_timer_with_gpu(self):
         """Test the performance timer captures GPU metrics."""
@@ -113,21 +116,23 @@ class TestGPUMonitoring(unittest.TestCase):
             # Similar workload as above
             if HAS_TENSORFLOW:
                 import tensorflow as tf
-                with tf.device('/GPU:0'):
+
+                with tf.device("/GPU:0"):
                     a = tf.random.normal([5000, 5000])
                     b = tf.random.normal([5000, 5000])
                     c = tf.matmul(a, b)
                     result = c.numpy()
-                    self.assertIsNotNone(result) # not needed, but avoids false warnings
+                    self.assertIsNotNone(result)  # not needed, but avoids false warnings
             elif HAS_TORCH:
                 import torch
+
                 if torch.cuda.is_available():
                     device = torch.device("cuda")
                     a = torch.randn(5000, 5000, device=device)
                     b = torch.randn(5000, 5000, device=device)
                     c = torch.matmul(a, b)
                     torch.cuda.synchronize()
-                    self.assertIsNotNone(c) # not needed, but avoids false warnings
+                    self.assertIsNotNone(c)  # not needed, but avoids false warnings
 
             time.sleep(1)
 
@@ -136,9 +141,9 @@ class TestGPUMonitoring(unittest.TestCase):
         summary = timer.get_summary()
 
         if timer.monitor.has_gpu:
-            self.assertIn('gpu_percent', data)
-            self.assertIn('gpu_memory_mb', data)
-            self.assertIn('gpu_percent_max', summary)
+            self.assertIn("gpu_percent", data)
+            self.assertIn("gpu_memory_mb", data)
+            self.assertIn("gpu_percent_max", summary)
 
     def test_multiple_gpus(self):
         """Test monitoring with multiple GPUs if available."""
@@ -151,10 +156,12 @@ class TestGPUMonitoring(unittest.TestCase):
         multi_gpu = False
         if HAS_TENSORFLOW:
             import tensorflow as tf
-            gpus = tf.config.list_physical_devices('GPU')
+
+            gpus = tf.config.list_physical_devices("GPU")
             multi_gpu = len(gpus) > 1
         elif HAS_TORCH:
             import torch
+
             if torch.cuda.is_available():
                 multi_gpu = torch.cuda.device_count() > 1
 
@@ -167,16 +174,18 @@ class TestGPUMonitoring(unittest.TestCase):
         # Create workload on multiple GPUs
         if HAS_TENSORFLOW:
             import tensorflow as tf
+
             # Run operations on different GPUs
             for i, gpu in enumerate(gpus[:2]):  # Use first two GPUs
-                with tf.device(f'/GPU:{i}'):
+                with tf.device(f"/GPU:{i}"):
                     a = tf.random.normal([3000, 3000])
                     b = tf.random.normal([3000, 3000])
                     c = tf.matmul(a, b)
                     result = c.numpy()
-                    self.assertIsNotNone(result) # not needed, but avoids false warnings
+                    self.assertIsNotNone(result)  # not needed, but avoids false warnings
         elif HAS_TORCH:
             import torch
+
             # Use first two GPUs
             for i in range(2):
                 device = torch.device(f"cuda:{i}")
@@ -184,7 +193,7 @@ class TestGPUMonitoring(unittest.TestCase):
                 b = torch.randn(3000, 3000, device=device)
                 c = torch.matmul(a, b)
                 torch.cuda.synchronize(device)
-                self.assertIsNotNone(c) # not needed, but avoids false warnings
+                self.assertIsNotNone(c)  # not needed, but avoids false warnings
 
         time.sleep(2)
         monitor.stop()
@@ -192,5 +201,6 @@ class TestGPUMonitoring(unittest.TestCase):
         data = monitor.get_data()
         # For multiple GPUs, we should have GPU data as lists of lists
         # Each inner list represents data for one GPU
-        self.assertIsInstance(data['gpu_percent'][0], list,
-                              "With multiple GPUs, data should be structured as lists of lists")
+        self.assertIsInstance(
+            data["gpu_percent"][0], list, "With multiple GPUs, data should be structured as lists of lists"
+        )

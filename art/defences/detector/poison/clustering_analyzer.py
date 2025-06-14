@@ -32,6 +32,7 @@ logger = logging.getLogger(__name__)
 Class for all methodologies implemented to analyze clusters and determine whether they are poisonous.
 """
 
+
 @unique
 class ClusterAnalysisType(Enum):
     SMALLER = "smaller"
@@ -52,7 +53,7 @@ def get_cluster_analyzer(cluster_analysis_type: ClusterAnalysisType):
         ClusterAnalysisType.SMALLER: analyze_by_size,
         ClusterAnalysisType.RELATIVE_SIZE: analyze_by_relative_size,
         ClusterAnalysisType.DISTANCE: analyze_by_distance,
-        ClusterAnalysisType.SILHOUETTE_SCORES: analyze_by_silhouette_score
+        ClusterAnalysisType.SILHOUETTE_SCORES: analyze_by_silhouette_score,
     }
 
     if cluster_analysis_type not in analyzers:
@@ -74,6 +75,7 @@ def assign_class(clusters: np.ndarray, clean_clusters: np.ndarray, poison_cluste
     assigned_clean[np.isin(clusters, clean_clusters)] = 1
     assigned_clean[np.isin(clusters, poison_clusters)] = 0
     return assigned_clean
+
 
 def analyze_by_size(separated_clusters: list[np.ndarray]) -> tuple[np.ndarray, np.ndarray, dict[str, int]]:
     """
@@ -126,6 +128,7 @@ def analyze_by_size(separated_clusters: list[np.ndarray]) -> tuple[np.ndarray, n
 
     report["suspicious_clusters"] = report["suspicious_clusters"] + np.sum(summary_poison_clusters)
     return np.asarray(all_assigned_clean, dtype=object), summary_poison_clusters, report
+
 
 def analyze_by_distance(
     separated_clusters: list[np.ndarray],
@@ -215,6 +218,7 @@ def analyze_by_distance(
     all_assigned_clean_array = np.asarray(all_assigned_clean, dtype=object)
     return all_assigned_clean_array, summary_poison_clusters, report
 
+
 def analyze_by_relative_size(
     separated_clusters: list[np.ndarray],
     size_threshold: float = 0.35,
@@ -277,6 +281,7 @@ def analyze_by_relative_size(
 
     report["suspicious_clusters"] = report["suspicious_clusters"] + np.sum(summary_poison_clusters).item()
     return np.asarray(all_assigned_clean, dtype=object), summary_poison_clusters, report
+
 
 def analyze_by_silhouette_score(
     separated_clusters: list,

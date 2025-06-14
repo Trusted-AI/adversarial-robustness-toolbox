@@ -1,6 +1,7 @@
 """
 Performance monitoring utilities for ART benchmarking and testing.
 """
+
 import os
 import threading
 import time
@@ -28,14 +29,21 @@ except ImportError:
 
 # GPU monitoring using NVIDIA NVML
 try:
-    from pynvml import nvmlInit, nvmlDeviceGetCount, nvmlDeviceGetHandleByIndex, nvmlDeviceGetUtilizationRates, nvmlDeviceGetMemoryInfo
+    from pynvml import (
+        nvmlInit,
+        nvmlDeviceGetCount,
+        nvmlDeviceGetHandleByIndex,
+        nvmlDeviceGetUtilizationRates,
+        nvmlDeviceGetMemoryInfo,
+    )
+
     nvmlInit()
     HAS_NVML = True
     GPU_COUNT = nvmlDeviceGetCount()
-except ImportError as e:
+except ImportError:
     HAS_NVML = False
     GPU_COUNT = 0
-except Exception as e:
+except Exception:
     HAS_NVML = False
     GPU_COUNT = 0
 
@@ -75,7 +83,7 @@ class ResourceMonitor:
     def stop(self) -> None:
         """Stop the resource monitoring thread."""
         self.stop_flag = True
-        if hasattr(self, 'monitor_thread'):
+        if hasattr(self, "monitor_thread"):
             self.monitor_thread.join(timeout=2.0)
 
     def _monitor_resources(self) -> None:
@@ -126,10 +134,7 @@ class ResourceMonitor:
                 gpu_usages = self.gpu_usages.copy()
                 gpu_memories = self.gpu_memories.copy()
 
-
-        min_length = min(len(timestamps),
-                         len(cpu_percentages),
-                         len(memory_usages))
+        min_length = min(len(timestamps), len(cpu_percentages), len(memory_usages))
 
         timestamps = [t - timestamps[0] for t in timestamps[:min_length]]
         cpu_percentages = cpu_percentages[:min_length]
@@ -138,21 +143,19 @@ class ResourceMonitor:
         data = {}
 
         if self.has_gpu:
-            min_length = min(min_length,
-                             len(gpu_usages),
-                             len(gpu_memories))
+            min_length = min(min_length, len(gpu_usages), len(gpu_memories))
             timestamps = timestamps[:min_length]
             cpu_percentages = cpu_percentages[:min_length]
             memory_usages = memory_usages[:min_length]
             gpu_usages = gpu_usages[:min_length]
             gpu_memories = gpu_memories[:min_length]
 
-            data['gpu_percent'] = gpu_usages
-            data['gpu_memory_mb'] = gpu_memories
+            data["gpu_percent"] = gpu_usages
+            data["gpu_memory_mb"] = gpu_memories
 
-        data['time'] = timestamps
-        data['cpu_percent'] = cpu_percentages
-        data['memory_mb'] = memory_usages
+        data["time"] = timestamps
+        data["cpu_percent"] = cpu_percentages
+        data["memory_mb"] = memory_usages
 
         return data
 
@@ -163,26 +166,28 @@ class ResourceMonitor:
         :return: Dictionary with min, max, mean values for each resource
         """
         data = self.get_data()
-        duration = data['time'][-1] if data['time'] else 0
+        duration = data["time"][-1] if data["time"] else 0
 
         summary = {
-            'duration_seconds': duration,
-            'cpu_percent_mean': np.mean(data['cpu_percent']) if data['cpu_percent'] else 0,
-            'cpu_percent_max': np.max(data['cpu_percent']) if data['cpu_percent'] else 0,
-            'memory_mb_mean': np.mean(data['memory_mb']) if data['memory_mb'] else 0,
-            'memory_mb_max': np.max(data['memory_mb']) if data['memory_mb'] else 0,
+            "duration_seconds": duration,
+            "cpu_percent_mean": np.mean(data["cpu_percent"]) if data["cpu_percent"] else 0,
+            "cpu_percent_max": np.max(data["cpu_percent"]) if data["cpu_percent"] else 0,
+            "memory_mb_mean": np.mean(data["memory_mb"]) if data["memory_mb"] else 0,
+            "memory_mb_max": np.max(data["memory_mb"]) if data["memory_mb"] else 0,
         }
 
         if self.has_gpu:
             # flatten across samples and GPUs
             all_gpu = np.array(self.gpu_usages)
             all_mem = np.array(self.gpu_memories)
-            summary.update({
-                'gpu_percent_mean': float(np.mean(all_gpu)),
-                'gpu_percent_max': float(np.max(all_gpu)),
-                'gpu_memory_mb_mean': float(np.mean(all_mem)),
-                'gpu_memory_mb_max': float(np.max(all_mem)),
-            })
+            summary.update(
+                {
+                    "gpu_percent_mean": float(np.mean(all_gpu)),
+                    "gpu_percent_max": float(np.max(all_gpu)),
+                    "gpu_memory_mb_mean": float(np.mean(all_mem)),
+                    "gpu_memory_mb_max": float(np.max(all_mem)),
+                }
+            )
         return summary
 
     def plot_results(self, title: Optional[str] = None) -> Optional[Any]:
@@ -205,32 +210,32 @@ class ResourceMonitor:
             axes = [axes]
 
         # CPU usage plot
-        axes[0].plot(data['time'], data['cpu_percent'], 'b-')
-        axes[0].set_title('CPU Usage (%)')
-        axes[0].set_xlabel('Time (s)')
-        axes[0].set_ylabel('CPU Usage (%)')
+        axes[0].plot(data["time"], data["cpu_percent"], "b-")
+        axes[0].set_title("CPU Usage (%)")
+        axes[0].set_xlabel("Time (s)")
+        axes[0].set_ylabel("CPU Usage (%)")
         axes[0].grid(True)
 
         # Memory usage plot
-        axes[1].plot(data['time'], data['memory_mb'], 'r-')
-        axes[1].set_title('Memory Usage (MB)')
-        axes[1].set_xlabel('Time (s)')
-        axes[1].set_ylabel('Memory (MB)')
+        axes[1].plot(data["time"], data["memory_mb"], "r-")
+        axes[1].set_title("Memory Usage (MB)")
+        axes[1].set_xlabel("Time (s)")
+        axes[1].set_ylabel("Memory (MB)")
         axes[1].grid(True)
 
         if self.has_gpu and len(axes) > 2:
             # GPU usage plot
-            axes[2].plot(data['time'], data['gpu_percent'], 'g-')
-            axes[2].set_title('GPU Usage (%)')
-            axes[2].set_xlabel('Time (s)')
-            axes[2].set_ylabel('GPU Usage (%)')
+            axes[2].plot(data["time"], data["gpu_percent"], "g-")
+            axes[2].set_title("GPU Usage (%)")
+            axes[2].set_xlabel("Time (s)")
+            axes[2].set_ylabel("GPU Usage (%)")
             axes[2].grid(True)
 
             # GPU memory plot
-            axes[3].plot(data['time'], data['gpu_memory_mb'], 'm-')
-            axes[3].set_title('GPU Memory Usage (MB)')
-            axes[3].set_xlabel('Time (s)')
-            axes[3].set_ylabel('GPU Memory (MB)')
+            axes[3].plot(data["time"], data["gpu_memory_mb"], "m-")
+            axes[3].set_title("GPU Memory Usage (MB)")
+            axes[3].set_xlabel("Time (s)")
+            axes[3].set_ylabel("GPU Memory (MB)")
             axes[3].grid(True)
 
         plt.tight_layout(rect=[0, 0, 1, 0.95])
@@ -257,7 +262,7 @@ class PerformanceTimer:
         self.start_time = 0
         self.end_time = 0
 
-    def __enter__(self) -> 'PerformanceTimer':
+    def __enter__(self) -> "PerformanceTimer":
         """Start monitoring when entering the context."""
         print(f"Starting performance measurement for: {self.task_name}")
         self.start_time = time.time()
@@ -284,7 +289,7 @@ class PerformanceTimer:
 
         if self.save_data:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            safe_name = self.task_name.replace(' ', '_').replace('/', '_')
+            safe_name = self.task_name.replace(" ", "_").replace("/", "_")
             data_filename = f"performance_{safe_name}_{timestamp}.csv"
 
             df = pd.DataFrame(self.monitor.get_data())

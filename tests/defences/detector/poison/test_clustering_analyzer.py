@@ -153,7 +153,9 @@ class TestClusteringAnalyzer(unittest.TestCase):
         clusters_by_class[1] = [1, 0, 0, 0, 0]  # Class 1
         clusters_by_class[2] = [0, 0, 0, 0, 1]  # Class 2
         clusters_by_class[3] = [0, 0, 1, 1, 1]  # Class 3
-        assigned_clean_by_class, poison_clusters, report = clustering_analyzer.analyze_by_relative_size(clusters_by_class)
+        assigned_clean_by_class, poison_clusters, report = clustering_analyzer.analyze_by_relative_size(
+            clusters_by_class
+        )
 
         # print("clusters_by_class")
         # print(clusters_by_class)

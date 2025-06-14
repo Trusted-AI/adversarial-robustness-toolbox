@@ -62,6 +62,7 @@ types-setuptools==80.9.0.20250529
 
 # other
 requests~=2.32.3
+psutil==7.0.0
 
 # ART
 -e .

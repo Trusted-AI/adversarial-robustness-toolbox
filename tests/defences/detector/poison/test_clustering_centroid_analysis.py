@@ -29,8 +29,14 @@ from sklearn.base import ClusterMixin
 from tensorflow.keras import Model, Sequential, Input
 from tensorflow.keras.layers import Dense
 
-from art.defences.detector.poison.clustering_centroid_analysis import ClusteringCentroidAnalysis, _calculate_centroid, \
-    _class_clustering, _feature_extraction, _cluster_classes, _encode_labels
+from art.defences.detector.poison.clustering_centroid_analysis import (
+    ClusteringCentroidAnalysis,
+    _calculate_centroid,
+    _class_clustering,
+    _feature_extraction,
+    _cluster_classes,
+    _encode_labels,
+)
 from art.estimators.classification import TensorFlowV2Classifier
 
 logger = logging.getLogger(__name__)
@@ -42,6 +48,7 @@ class MockClusterer(ClusterMixin):
     A mock ClusterMixin for testing purposes.  This avoids using a real clustering
     algorithm and allows us to control the output for our tests.
     """
+
     def __init__(self, cluster_labels_to_return):
         self.cluster_labels_to_return = cluster_labels_to_return
 
@@ -49,7 +56,14 @@ class MockClusterer(ClusterMixin):
         return self.cluster_labels_to_return
 
 
-@pytest.mark.skip_framework("tensorflow1", "keras", "kerastf", "pytorch", "mxnet", "non_dl_frameworks", )
+@pytest.mark.skip_framework(
+    "tensorflow1",
+    "keras",
+    "kerastf",
+    "pytorch",
+    "mxnet",
+    "non_dl_frameworks",
+)
 class TestInitialization(unittest.TestCase):
     """
     Unit tests for the ClusteringCentroidAnalysis class, focusing on
@@ -61,43 +75,46 @@ class TestInitialization(unittest.TestCase):
         self.x_train = np.array([[1, 2], [3, 4], [5, 6], [7, 8]])
         self.y_train = np.array([0, 1, 0, 1])
         self.benign_indices = np.array([0, 2])
-        self.final_feature_layer_name = 'dense_2'
-        self.non_relu_intermediate_layer_name = 'dense_3'
+        self.final_feature_layer_name = "dense_2"
+        self.non_relu_intermediate_layer_name = "dense_3"
         self.misclassification_threshold = 0.05
 
         # Define a simple Keras model for testing _extract_submodels
-        self.mock_model = tf.keras.Sequential([
-            tf.keras.layers.Dense(4, activation='relu', input_shape=(10,), name='input_layer'),
-            tf.keras.layers.Dense(8, activation='tanh', name='dense_1'),
-            tf.keras.layers.Dense(6, activation='relu', name='dense_2'),
-            tf.keras.layers.Dense(2, activation='sigmoid', name='dense_3'),
-            tf.keras.layers.Dense(1, activation='sigmoid', name="output_layer")
-        ])
+        self.mock_model = tf.keras.Sequential(
+            [
+                tf.keras.layers.Dense(4, activation="relu", input_shape=(10,), name="dense_0"),
+                tf.keras.layers.Dense(8, activation="tanh", name="dense_1"),
+                tf.keras.layers.Dense(6, activation="relu", name="dense_2"),
+                tf.keras.layers.Dense(2, activation="sigmoid", name="dense_3"),
+                tf.keras.layers.Dense(1, activation="sigmoid", name="output_layer"),
+            ]
+        )
 
         # Generate some dummy training data
         self.x_train = np.random.rand(100, 10)
-        self.y_train = np.random.randint(0, 2, size=(100,)) # For M.E multi-class
+        self.y_train = np.random.randint(0, 2, size=(100,))  # For M.E multi-class
 
         # Compile and train the model
-        self.mock_model.compile(optimizer='adam', loss='binary_crossentropy')
-        self.mock_model.fit(self.x_train, self.y_train, epochs=1) # Train for a few steps
+        self.mock_model.compile(optimizer="adam", loss="binary_crossentropy")
+        self.mock_model.fit(self.x_train, self.y_train, epochs=1)  # Train for a few steps
 
         self.mock_classifier = TensorFlowV2Classifier(
             model=self.mock_model,
             loss_object=tf.keras.losses.CategoricalCrossentropy(from_logits=False),
             optimizer=tf.keras.optimizers.Adam(learning_rate=0.001),
-            nb_classes=2, input_shape=(10,)
+            nb_classes=2,
+            input_shape=(10,),
         )
 
     def is_valid_reducer(self, obj):
         """Check if an object is a valid reducer."""
-        self.assertTrue(hasattr(obj, 'fit_transform'))
-        self.assertTrue(callable(getattr(obj, 'fit_transform')))
+        self.assertTrue(hasattr(obj, "fit_transform"))
+        self.assertTrue(callable(getattr(obj, "fit_transform")))
 
     def is_valid_clusterer(self, obj):
         """Check if an object is a valid clusterer."""
-        self.assertTrue(hasattr(obj, 'fit_predict'))
-        self.assertTrue(callable(getattr(obj, 'fit_predict')))
+        self.assertTrue(hasattr(obj, "fit_predict"))
+        self.assertTrue(callable(getattr(obj, "fit_predict")))
 
     def test_get_benign_data_basic(self):
         """Test _get_benign_data with a simple example."""
@@ -107,7 +124,7 @@ class TestInitialization(unittest.TestCase):
             y_train=self.y_train,
             benign_indices=self.benign_indices,
             final_feature_layer_name=self.final_feature_layer_name,
-            misclassification_threshold=self.misclassification_threshold
+            misclassification_threshold=self.misclassification_threshold,
         )
         x_benign, y_benign = cca._get_benign_data()
         self.assertTrue(np.array_equal(x_benign, self.x_train[[0, 2]]))
@@ -121,15 +138,15 @@ class TestInitialization(unittest.TestCase):
             y_train=self.y_train,
             benign_indices=self.benign_indices,
             final_feature_layer_name=self.final_feature_layer_name,
-            misclassification_threshold=self.misclassification_threshold
+            misclassification_threshold=self.misclassification_threshold,
         )
         feature_model, classify_model = cca.feature_representation_model, cca.classifying_submodel
 
         # Verify model types and names
         self.assertIsInstance(feature_model, Model)
         self.assertIsInstance(classify_model, Sequential)
-        self.assertEqual('feature_representation_model', feature_model.name)
-        self.assertEqual('classifying_submodel', classify_model.name)
+        self.assertEqual("feature_representation_model", feature_model.name)
+        self.assertEqual("classifying_submodel", classify_model.name)
 
         # Create a test input and get reference output
         sample_input = np.random.rand(1, 10)
@@ -140,8 +157,11 @@ class TestInitialization(unittest.TestCase):
         feature_value = feature_model.predict(sample_input)
 
         # Verify intermediate feature shape is compatible with classifier input
-        self.assertEqual(classify_model.input_shape[1], feature_value.shape[1],
-                         "Feature sub model output and classifying sub model input do not match.")
+        self.assertEqual(
+            classify_model.input_shape[1],
+            feature_value.shape[1],
+            "Feature sub model output and classifying sub model input do not match.",
+        )
 
         # Predict with classifier submodel
         final_value = classify_model.predict(feature_value)
@@ -153,7 +173,6 @@ class TestInitialization(unittest.TestCase):
         # We test that the outputs are approximately equal with a reasonable tolerance
         np.testing.assert_allclose(sample_output, final_value, rtol=1e-3, atol=1e-3)
 
-
     def test_extract_submodels_invalid_layer(self):
         """Test _extract_submodels with an invalid layer name.  Check for error"""
         cca = ClusteringCentroidAnalysis(
@@ -162,10 +181,10 @@ class TestInitialization(unittest.TestCase):
             y_train=self.y_train,
             benign_indices=self.benign_indices,
             final_feature_layer_name=self.final_feature_layer_name,
-            misclassification_threshold=self.misclassification_threshold
+            misclassification_threshold=self.misclassification_threshold,
         )
         with self.assertRaises(ValueError):  # Expect a ValueError
-            cca._extract_submodels('invalid_layer_name')
+            cca._extract_submodels("invalid_layer_name")
 
     def test_init_basic(self):
         """Test __init__ with valid inputs."""
@@ -175,7 +194,7 @@ class TestInitialization(unittest.TestCase):
             y_train=self.y_train,
             benign_indices=self.benign_indices,
             final_feature_layer_name=self.final_feature_layer_name,
-            misclassification_threshold=self.misclassification_threshold
+            misclassification_threshold=self.misclassification_threshold,
         )
         self.assertEqual(self.mock_classifier, cca.classifier)
         self.assertTrue(np.array_equal(cca.x_train, self.x_train))
@@ -199,9 +218,9 @@ class TestInitialization(unittest.TestCase):
                 y_train=self.y_train,
                 benign_indices=np.array([]),
                 final_feature_layer_name=self.final_feature_layer_name,
-                misclassification_threshold=self.misclassification_threshold
+                misclassification_threshold=self.misclassification_threshold,
             )
-            self.assertEqual('Benign indices passed (0) are not enough to run the algorithm', str(e.exception))
+            self.assertEqual("Benign indices passed (0) are not enough to run the algorithm", str(e.exception))
 
     def test_init_invalid_layer_name(self):
         """Test __init__ with an invalid layer name. Check that it raises error."""
@@ -211,10 +230,10 @@ class TestInitialization(unittest.TestCase):
                 x_train=self.x_train,
                 y_train=self.y_train,
                 benign_indices=self.benign_indices,
-                final_feature_layer_name='invalid_layer',
-                misclassification_threshold=self.misclassification_threshold
+                final_feature_layer_name="invalid_layer",
+                misclassification_threshold=self.misclassification_threshold,
             )
-            self.assertEqual(f"Layer with name 'invalid_layer' not found in the model.", str(e.exception))
+            self.assertEqual("Layer with name 'invalid_layer' not found in the model.", str(e.exception))
 
     def test_init_invalid_layer_non_relu(self):
         """Test __init__ with an invalid layer that does not have ReLu activation. Check that it raises error."""
@@ -225,11 +244,13 @@ class TestInitialization(unittest.TestCase):
                 y_train=self.y_train,
                 benign_indices=self.benign_indices,
                 final_feature_layer_name=self.non_relu_intermediate_layer_name,
-                misclassification_threshold=self.misclassification_threshold
+                misclassification_threshold=self.misclassification_threshold,
             )
             self.assertEqual(1, len(w.warnings))
-            self.assertEqual(f"Final feature layer '{self.non_relu_intermediate_layer_name}' must have a ReLU activation.",
-                             str(w.warnings[0].message))
+            self.assertEqual(
+                f"Final feature layer '{self.non_relu_intermediate_layer_name}' must have a ReLU activation.",
+                str(w.warnings[0].message),
+            )
 
 
 class TestEncodeLabels(unittest.TestCase):
@@ -248,16 +269,23 @@ class TestEncodeLabels(unittest.TestCase):
 
     def test_encode_multi_labels(self):
         """Test with non-numerical, categorical labels to validate flexibility"""
-        y = np.array(['A', 'B', 'C', 'B', 'B', 'C', 'A', 'D'])
+        y = np.array(["A", "B", "C", "B", "B", "C", "A", "D"])
         y_encoded, unique_classes, label_mapping, reverse_mapping = _encode_labels(y)
 
         np.testing.assert_array_equal(np.array([0, 1, 2, 1, 1, 2, 0, 3]), y_encoded)
         self.assertEqual({0, 1, 2, 3}, unique_classes)
-        np.testing.assert_array_equal(np.array(['A', 'B', 'C', 'D']), label_mapping)
-        self.assertEqual({'A': 0, 'B': 1, 'C': 2, 'D': 3}, reverse_mapping)
+        np.testing.assert_array_equal(np.array(["A", "B", "C", "D"]), label_mapping)
+        self.assertEqual({"A": 0, "B": 1, "C": 2, "D": 3}, reverse_mapping)
 
 
-@pytest.mark.skip_framework("tensorflow1", "keras", "kerastf", "pytorch", "mxnet", "non_dl_frameworks", )
+@pytest.mark.skip_framework(
+    "tensorflow1",
+    "keras",
+    "kerastf",
+    "pytorch",
+    "mxnet",
+    "non_dl_frameworks",
+)
 class TestCalculateCentroid(unittest.TestCase):
     """
     Unit tests for the ClusteringCentroidAnalysis centroid calculations, needed for PCD.
@@ -265,13 +293,7 @@ class TestCalculateCentroid(unittest.TestCase):
 
     def setUp(self):
         # Example feature data for testing
-        self.features = np.array([
-            [1, 2, 3],
-            [4, 5, 6],
-            [7, 8, 9],
-            [10, 11, 12],
-            [13, 14, 15]
-        ])
+        self.features = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9], [10, 11, 12], [13, 14, 15]])
 
     def test_empty_indices(self):
         """Test with an empty array of selected indices."""
@@ -304,13 +326,15 @@ class TestCalculateCentroid(unittest.TestCase):
         selected_indices = np.array([1, 3])
         expected_centroid = np.array([7, 8, 9])
         centroid = _calculate_centroid(selected_indices, self.features)
-        self.assertTrue(np.array_equal(centroid, expected_centroid), "Centroid calculation incorrect for non-contiguous indices")
+        self.assertTrue(
+            np.array_equal(centroid, expected_centroid), "Centroid calculation incorrect for non-contiguous indices"
+        )
 
     def test_float_features(self):
         """Test with float feature values."""
         float_features = self.features.astype(float)
         selected_indices = np.array([0, 2, 4])
-        expected_centroid = np.array([7., 8., 9.])
+        expected_centroid = np.array([7.0, 8.0, 9.0])
         centroid = _calculate_centroid(selected_indices, float_features)
         self.assertTrue(np.allclose(centroid, expected_centroid), "Centroid calculation incorrect for float features")
 
@@ -387,14 +411,7 @@ class TestClusterClasses(unittest.TestCase):
     def setUp(self):
         """Set up test fixtures for each test."""
         # Create mock features for testing
-        self.features = np.array([
-            [1, 2],
-            [3, 4],
-            [5, 6],
-            [7, 8],
-            [9, 10],
-            [11, 12]
-        ])
+        self.features = np.array([[1, 2], [3, 4], [5, 6], [7, 8], [9, 10], [11, 12]])
 
     def test_single_target_class(self):
         """Test clustering with a single target class."""
@@ -407,7 +424,8 @@ class TestClusterClasses(unittest.TestCase):
 
         # Execute
         class_cluster_labels, cluster_class_mapping = _cluster_classes(
-            y_train, unique_classes, self.features, clusterer)
+            y_train, unique_classes, self.features, clusterer
+        )
 
         # Assert
         self.assertEqual(6, len(class_cluster_labels))
@@ -441,7 +459,8 @@ class TestClusterClasses(unittest.TestCase):
 
         # Execute
         class_cluster_labels, cluster_class_mapping = _cluster_classes(
-            y_train, unique_classes, self.features, clusterer)
+            y_train, unique_classes, self.features, clusterer
+        )
 
         np.testing.assert_array_equal(np.array([0, 0, 1, 2, 2, 3]), class_cluster_labels)
 
@@ -468,7 +487,8 @@ class TestClusterClasses(unittest.TestCase):
 
         # Execute
         class_cluster_labels, cluster_class_mapping = _cluster_classes(
-            y_train, unique_classes, self.features, clusterer)
+            y_train, unique_classes, self.features, clusterer
+        )
 
         # Assert
         self.assertEqual(len(class_cluster_labels), 6)
@@ -498,7 +518,8 @@ class TestClusterClasses(unittest.TestCase):
 
         # Execute
         class_cluster_labels, cluster_class_mapping = _cluster_classes(
-            y_train, unique_classes, self.features, clusterer)
+            y_train, unique_classes, self.features, clusterer
+        )
 
         np.testing.assert_array_equal(np.array([0, -1, -1, 1, -1, -1]), class_cluster_labels)
 
@@ -517,7 +538,8 @@ class TestClusterClasses(unittest.TestCase):
 
         # Execute
         class_cluster_labels, cluster_class_mapping = _cluster_classes(
-            y_train, unique_classes, self.features, clusterer)
+            y_train, unique_classes, self.features, clusterer
+        )
 
         # Assert
         self.assertEqual(len(class_cluster_labels), 4)
@@ -538,7 +560,8 @@ class TestClusterClasses(unittest.TestCase):
 
         # Execute
         class_cluster_labels, cluster_class_mapping = _cluster_classes(
-            y_train, unique_classes, self.features, clusterer)
+            y_train, unique_classes, self.features, clusterer
+        )
 
         np.testing.assert_array_equal(np.array([0, 0, 0, 1, 1, 1]), class_cluster_labels)
 
@@ -562,7 +585,8 @@ class TestClusterClasses(unittest.TestCase):
 
         # Execute
         class_cluster_labels, cluster_class_mapping = _cluster_classes(
-            y_train, unique_classes, self.features, clusterer)
+            y_train, unique_classes, self.features, clusterer
+        )
 
         np.testing.assert_array_equal(np.array([-1, -1, -1, -1]), class_cluster_labels)
 
@@ -570,9 +594,15 @@ class TestClusterClasses(unittest.TestCase):
         self.assertEqual(len(cluster_class_mapping), 0)
 
 
-@pytest.mark.skip_framework("tensorflow1", "keras", "kerastf", "pytorch", "mxnet", "non_dl_frameworkslearn", )
+@pytest.mark.skip_framework(
+    "tensorflow1",
+    "keras",
+    "kerastf",
+    "pytorch",
+    "mxnet",
+    "non_dl_frameworkslearn",
+)
 class TestFeatureExtraction(unittest.TestCase):
-
     """Unit tests for the _feature_extraction function."""
 
     def setUp(self):
@@ -580,8 +610,8 @@ class TestFeatureExtraction(unittest.TestCase):
         # Create a simple model for testing
         self.input_shape = (10,)
         inputs = Input(shape=self.input_shape)
-        x = Dense(20, activation='relu')(inputs)
-        outputs = Dense(5, activation='relu')(x)
+        x = Dense(20, activation="relu")(inputs)
+        outputs = Dense(5, activation="relu")(x)
         self.model = Model(inputs=inputs, outputs=outputs)
 
         # Create sample data
@@ -590,16 +620,17 @@ class TestFeatureExtraction(unittest.TestCase):
         # Mock feature output for consistent testing
         self.mock_features = np.random.rand(100, 5)
 
-
     def test_integration_with_real_model(self):
         """Integration test with a real model and no mocking."""
         # Create a small real model
-        model = Sequential([
-            Dense(20, activation='relu', input_shape=self.input_shape),
-            Dense(10, activation='relu'),
-            Dense(5, activation='relu')
-        ])
-        model.compile(optimizer='adam', loss='mse')
+        model = Sequential(
+            [
+                Dense(20, activation="relu", input_shape=self.input_shape),
+                Dense(10, activation="relu"),
+                Dense(5, activation="relu"),
+            ]
+        )
+        model.compile(optimizer="adam", loss="mse")
 
         # Execute
         result = _feature_extraction(self.x_train, model)
@@ -609,7 +640,14 @@ class TestFeatureExtraction(unittest.TestCase):
         self.assertIsInstance(result, np.ndarray)
 
 
-@pytest.mark.skip_framework("tensorflow1", "keras", "kerastf", "pytorch", "mxnet", "non_dl_frameworkslearn", )
+@pytest.mark.skip_framework(
+    "tensorflow1",
+    "keras",
+    "kerastf",
+    "pytorch",
+    "mxnet",
+    "non_dl_frameworkslearn",
+)
 class TestCalculateMisclassificationRate(unittest.TestCase):
     """
     Unit tests for the _calculate_misclassification_rate method of ClusteringCentroidAnalysis.
@@ -618,21 +656,23 @@ class TestCalculateMisclassificationRate(unittest.TestCase):
     def setUp(self):
         """Set up a ClusteringCentroidAnalysis instance with mocked components."""
         self.original_eager_value = tf.config.functions_run_eagerly()
-        tf.config.run_functions_eagerly(True) # Run functions eagerly for this test class
+        tf.config.run_functions_eagerly(True)  # Run functions eagerly for this test class
 
-        x_train_dummy = np.array([[1,2]] * 10)
-        y_train_constructor_dummy = np.array(['A'] * 5 + ['B'] * 5)
+        x_train_dummy = np.array([[1, 2]] * 10)
+        y_train_constructor_dummy = np.array(["A"] * 5 + ["B"] * 5)
         benign_indices_dummy = np.arange(10)
 
-        with patch('art.defences.detector.poison.clustering_centroid_analysis.ClusteringCentroidAnalysis._extract_submodels',
-                   return_value=(MagicMock(), MagicMock())):
+        with patch(
+            "art.defences.detector.poison.clustering_centroid_analysis.ClusteringCentroidAnalysis._extract_submodels",
+            return_value=(MagicMock(), MagicMock()),
+        ):
             self.defence = ClusteringCentroidAnalysis(
                 classifier=MagicMock(),
                 x_train=x_train_dummy,
                 y_train=y_train_constructor_dummy,
                 benign_indices=benign_indices_dummy,
                 final_feature_layer_name="dummy_layer",
-                misclassification_threshold=0.1
+                misclassification_threshold=0.1,
             )
 
         self.feature_dim = 5
@@ -641,13 +681,12 @@ class TestCalculateMisclassificationRate(unittest.TestCase):
         self.num_benign_samples_class_2 = 4
 
         self.defence.x_benign = np.random.rand(
-            self.num_benign_samples_class_0 + self.num_benign_samples_class_1 + self.num_benign_samples_class_2,
-            10
+            self.num_benign_samples_class_0 + self.num_benign_samples_class_1 + self.num_benign_samples_class_2, 10
         )
         self.defence.y_benign = np.array(
-            [0] * self.num_benign_samples_class_0 +
-            [1] * self.num_benign_samples_class_1 +
-            [2] * self.num_benign_samples_class_2
+            [0] * self.num_benign_samples_class_0
+            + [1] * self.num_benign_samples_class_1
+            + [2] * self.num_benign_samples_class_2
         )
         self.defence.unique_classes = {0, 1, 2}
 
@@ -655,12 +694,14 @@ class TestCalculateMisclassificationRate(unittest.TestCase):
         self.defence.feature_representation_model.predict.return_value = np.random.rand(1, self.feature_dim)
         self.defence.classifying_submodel = MagicMock(spec=tf.keras.Sequential)
 
-        self.calculate_features_patcher = patch('art.defences.detector.poison.clustering_centroid_analysis._calculate_features')
+        self.calculate_features_patcher = patch(
+            "art.defences.detector.poison.clustering_centroid_analysis._calculate_features"
+        )
         self.mock_calculate_features = self.calculate_features_patcher.start()
 
     def tearDown(self):
         self.calculate_features_patcher.stop()
-        tf.config.run_functions_eagerly(self.original_eager_value) # Restore original eager mode
+        tf.config.run_functions_eagerly(self.original_eager_value)  # Restore original eager mode
         self.calculate_features_patcher.stop()
 
     def test_zero_misclassification(self):
@@ -723,6 +764,7 @@ class TestCalculateMisclassificationRate(unittest.TestCase):
                 logits_np = np.zeros((num_samples_concrete, num_unique_classes))
                 logits_np[:, target_class_label] = 1.0
                 return tf.convert_to_tensor(logits_np, dtype=tf.float32)
+
         self.defence.classifying_submodel.side_effect = mock_classifier_predict_side_effect
 
         rate = self.defence._calculate_misclassification_rate(target_class_label, deviation_vector)
@@ -741,17 +783,17 @@ class TestCalculateMisclassificationRate(unittest.TestCase):
 
         def mock_classifier_predict_side_effect(deviated_features, training=False):
             num_unique_classes = len(self.defence.unique_classes)
-            num_samples_concrete = tf.compat.v1.dimension_value(deviated_features.shape[0]) # Eager mode
+            num_samples_concrete = tf.compat.v1.dimension_value(deviated_features.shape[0])  # Eager mode
 
             logits_np = np.zeros((num_samples_concrete, num_unique_classes))
 
             # Logic based on the number of samples received, assuming distinct counts for class 0 and 1
-            if num_samples_concrete == self.num_benign_samples_class_0: # Processing features for class 0 (3 samples)
+            if num_samples_concrete == self.num_benign_samples_class_0:  # Processing features for class 0 (3 samples)
                 # 1 misclassified as target_class_label (2), 2 correctly as class 0
                 logits_np[0, target_class_label] = 1.0
                 logits_np[1, 0] = 1.0
                 logits_np[2, 0] = 1.0
-            elif num_samples_concrete == self.num_benign_samples_class_1: # Processing features for class 1 (2 samples)
+            elif num_samples_concrete == self.num_benign_samples_class_1:  # Processing features for class 1 (2 samples)
                 # 1 misclassified as target_class_label (2), 1 correctly as class 1
                 logits_np[0, target_class_label] = 1.0
                 logits_np[1, 1] = 1.0
@@ -760,13 +802,17 @@ class TestCalculateMisclassificationRate(unittest.TestCase):
                 # and num_benign_samples for class 0 and 1 are distinct.
                 # For safety, make it predict something non-target or raise error.
                 # For this test, we expect specific inputs, so an error might be appropriate if unexpected shape.
-                raise ValueError(f"Unexpected number of samples in mock_classifier_predict_side_effect: {num_samples_concrete}")
+                raise ValueError(
+                    f"Unexpected number of samples in mock_classifier_predict_side_effect: {num_samples_concrete}"
+                )
             return tf.convert_to_tensor(logits_np, dtype=tf.float32)
 
         self.defence.classifying_submodel.side_effect = mock_classifier_predict_side_effect
 
         rate = self.defence._calculate_misclassification_rate(target_class_label, deviation_vector)
-        self.assertAlmostEqual(rate, 2.0 / (self.num_benign_samples_class_0 + self.num_benign_samples_class_1), places=6)
+        self.assertAlmostEqual(
+            rate, 2.0 / (self.num_benign_samples_class_0 + self.num_benign_samples_class_1), places=6
+        )
         self.assertEqual(self.mock_calculate_features.call_count, 2)
         self.assertEqual(self.defence.classifying_submodel.call_count, 2)
 
@@ -808,9 +854,7 @@ class TestCalculateMisclassificationRate(unittest.TestCase):
             self.num_benign_samples_class_0 + num_samples_class1_large + num_samples_class2_small, 10
         )
         self.defence.y_benign = np.array(
-            [0] * self.num_benign_samples_class_0 +
-            [1] * num_samples_class1_large +
-            [2] * num_samples_class2_small
+            [0] * self.num_benign_samples_class_0 + [1] * num_samples_class1_large + [2] * num_samples_class2_small
         )
         self.defence.unique_classes = {0, 1, 2}
 
@@ -833,6 +877,7 @@ class TestCalculateMisclassificationRate(unittest.TestCase):
                 logits_np = np.zeros((num_samples_concrete, num_unique_classes))
                 logits_np[:, target_class_label] = 1.0
                 return tf.convert_to_tensor(logits_np, dtype=tf.float32)
+
         self.defence.classifying_submodel.side_effect = mock_classifier_predict_side_effect_for_batching_test
 
         rate = self.defence._calculate_misclassification_rate(target_class_label, deviation_vector)
@@ -843,7 +888,14 @@ class TestCalculateMisclassificationRate(unittest.TestCase):
         self.num_benign_samples_class_1 = original_num_benign_samples_class_1
 
 
-@pytest.mark.skip_framework("tensorflow1", "keras", "kerastf", "pytorch", "mxnet", "non_dl_frameworkslearn", )
+@pytest.mark.skip_framework(
+    "tensorflow1",
+    "keras",
+    "kerastf",
+    "pytorch",
+    "mxnet",
+    "non_dl_frameworkslearn",
+)
 class TestDetectPoison(unittest.TestCase):
     """
     Unit tests for the detect_poison method in ClusteringCentroidAnalysis
@@ -854,10 +906,10 @@ class TestDetectPoison(unittest.TestCase):
         # Create a mock classifier with a simple model architecture
         self.input_shape = (10,)
         inputs = tf.keras.Input(shape=self.input_shape)
-        x = tf.keras.layers.Dense(20, activation='relu', name='hidden_layer')(inputs)
-        outputs = tf.keras.layers.Dense(2, activation='softmax', name='output_layer')(x)
+        x = tf.keras.layers.Dense(20, activation="relu", name="hidden_layer")(inputs)
+        outputs = tf.keras.layers.Dense(2, activation="softmax", name="output_layer")(x)
         self.model = tf.keras.Model(inputs=inputs, outputs=outputs)
-        self.model.compile(optimizer='adam', loss='categorical_crossentropy')
+        self.model.compile(optimizer="adam", loss="categorical_crossentropy")
 
         # Mock the classifier
         self.mock_classifier = MagicMock()
@@ -879,12 +931,18 @@ class TestDetectPoison(unittest.TestCase):
 
         # Common patches for all tests
         self.patches = [
-            patch('art.defences.detector.poison.clustering_centroid_analysis._feature_extraction',
-                  return_value=self.mock_features),
-            patch('art.defences.detector.poison.clustering_centroid_analysis._calculate_centroid',
-                  side_effect=self._mock_calculate_centroid),
-            patch('art.defences.detector.poison.clustering_centroid_analysis._cluster_classes',
-                  side_effect=self._mock_cluster_classes)
+            patch(
+                "art.defences.detector.poison.clustering_centroid_analysis._feature_extraction",
+                return_value=self.mock_features,
+            ),
+            patch(
+                "art.defences.detector.poison.clustering_centroid_analysis._calculate_centroid",
+                side_effect=self._mock_calculate_centroid,
+            ),
+            patch(
+                "art.defences.detector.poison.clustering_centroid_analysis._cluster_classes",
+                side_effect=self._mock_cluster_classes,
+            ),
         ]
 
         # Apply patches
@@ -928,7 +986,7 @@ class TestDetectPoison(unittest.TestCase):
                 class_cluster_labels[y_train == label] = i
 
             # Mark 10% of samples as outliers/poisoned
-            poison_indices = np.random.choice(n_samples, size=n_samples//10, replace=False)
+            poison_indices = np.random.choice(n_samples, size=n_samples // 10, replace=False)
             class_cluster_labels[poison_indices] = -1
 
         # Create cluster-to-class mapping
@@ -952,16 +1010,18 @@ class TestDetectPoison(unittest.TestCase):
             x_train=self.x_train,
             y_train=self.y_train,
             benign_indices=self.benign_indices,
-            final_feature_layer_name='hidden_layer',
-            misclassification_threshold=0.1 # 1.0 - 0.1 = 0.9
+            final_feature_layer_name="hidden_layer",
+            misclassification_threshold=0.1,  # 1.0 - 0.1 = 0.9
         )
 
         # Mock the _calculate_misclassification_rate method to return low rates (all benign)
         defence._calculate_misclassification_rate = MagicMock(return_value=0.05)
 
         # Call detect_poison with our mocked _cluster_classes returning no outliers
-        with patch('art.defences.detector.poison.clustering_centroid_analysis._cluster_classes',
-                   side_effect=lambda y, u, f, c: self._mock_cluster_classes(y, u, f, c, all_benign=True)):
+        with patch(
+            "art.defences.detector.poison.clustering_centroid_analysis._cluster_classes",
+            side_effect=lambda y, u, f, c: self._mock_cluster_classes(y, u, f, c, all_benign=True),
+        ):
             report, is_clean = defence.detect_poison()
 
         self.assertIsInstance(report, dict)
@@ -980,16 +1040,18 @@ class TestDetectPoison(unittest.TestCase):
             x_train=self.x_train,
             y_train=self.y_train,
             benign_indices=self.benign_indices,
-            final_feature_layer_name='hidden_layer',
-            misclassification_threshold=0.1 # 1.0 - 0.1 = 0.9
+            final_feature_layer_name="hidden_layer",
+            misclassification_threshold=0.1,  # 1.0 - 0.1 = 0.9
         )
 
         # Mock the _calculate_misclassification_rate method to return low rates (all benign)
         defence._calculate_misclassification_rate = MagicMock(return_value=0.05)
 
         # Call detect_poison with our mocked _cluster_classes returning some outliers
-        with patch('art.defences.detector.poison.clustering_centroid_analysis._cluster_classes',
-                   side_effect=lambda y, u, f, c: self._mock_cluster_classes(y, u, f, c, all_benign=False)):
+        with patch(
+            "art.defences.detector.poison.clustering_centroid_analysis._cluster_classes",
+            side_effect=lambda y, u, f, c: self._mock_cluster_classes(y, u, f, c, all_benign=False),
+        ):
             report, is_clean = defence.detect_poison()
 
         # Assertions
@@ -1009,8 +1071,8 @@ class TestDetectPoison(unittest.TestCase):
             x_train=self.x_train,
             y_train=self.y_train,
             benign_indices=self.benign_indices,
-            final_feature_layer_name='hidden_layer',
-            misclassification_threshold=0.1
+            final_feature_layer_name="hidden_layer",
+            misclassification_threshold=0.1,
         )
 
         # Mock _calculate_misclassification_rate to return high rates for some clusters
@@ -1025,8 +1087,10 @@ class TestDetectPoison(unittest.TestCase):
         defence._calculate_misclassification_rate = MagicMock(side_effect=mock_misclass_rate)
 
         # Call detect_poison with _cluster_classes returning clean clusters
-        with patch('art.defences.detector.poison.clustering_centroid_analysis._cluster_classes',
-                   side_effect=lambda y, u, f, c: self._mock_cluster_classes(y, u, f, c, all_benign=True)):
+        with patch(
+            "art.defences.detector.poison.clustering_centroid_analysis._cluster_classes",
+            side_effect=lambda y, u, f, c: self._mock_cluster_classes(y, u, f, c, all_benign=True),
+        ):
             report, is_clean = defence.detect_poison()
 
         # all elements in class 0 are poisoned. No outliers --> all poisoned elements are class 0
@@ -1044,8 +1108,8 @@ class TestDetectPoison(unittest.TestCase):
             x_train=self.x_train,
             y_train=self.y_train,
             benign_indices=self.benign_indices,
-            final_feature_layer_name='hidden_layer',
-            misclassification_threshold=0.1
+            final_feature_layer_name="hidden_layer",
+            misclassification_threshold=0.1,
         )
 
         # Mock _calculate_misclassification_rate to return high rates for some clusters
@@ -1059,8 +1123,10 @@ class TestDetectPoison(unittest.TestCase):
         defence._calculate_misclassification_rate = MagicMock(side_effect=mock_misclass_rate)
 
         # Call detect_poison with _cluster_classes returning some outliers
-        with patch('art.defences.detector.poison.clustering_centroid_analysis._cluster_classes',
-                   side_effect=lambda y, u, f, c: self._mock_cluster_classes(y, u, f, c, all_benign=False)):
+        with patch(
+            "art.defences.detector.poison.clustering_centroid_analysis._cluster_classes",
+            side_effect=lambda y, u, f, c: self._mock_cluster_classes(y, u, f, c, all_benign=False),
+        ):
             report, is_clean = defence.detect_poison()
 
         self.assertIsInstance(report, dict)
@@ -1069,7 +1135,6 @@ class TestDetectPoison(unittest.TestCase):
         self.assertTrue(np.all(is_clean[np.where(self.y_train == 1)] == 0))
         # most elements in class 0 are detected as clean. Poisoned ones are outliers. FIXME: can I make this more robust?
         self.assertLess(np.mean(self.y_train[np.where(is_clean == 1)]), 0.2)
-
 
 
 class TestEvaluateDefence(unittest.TestCase):
@@ -1087,32 +1152,34 @@ class TestEvaluateDefence(unittest.TestCase):
         # Dummy data for constructor - these values might not be directly used by
         # evaluate_defence but are needed for instantiation.
         x_train_dummy = np.array([[1, 2], [3, 4], [5, 6]])
-        y_train_constructor_dummy = np.array(['A', 'B', 'A'])
+        y_train_constructor_dummy = np.array(["A", "B", "A"])
         benign_indices_dummy = np.array([0, 2])
         final_feature_layer_name_dummy = "mock_feature_layer"
         misclassification_threshold_dummy = 0.1
 
         # Patch _extract_submodels to avoid complex model setup if it's problematic
         # and not relevant to evaluate_defence
-        with patch('art.defences.detector.poison.clustering_centroid_analysis.ClusteringCentroidAnalysis._extract_submodels',
-                   return_value=(MagicMock(), MagicMock())) as _:
+        with patch(
+            "art.defences.detector.poison.clustering_centroid_analysis.ClusteringCentroidAnalysis._extract_submodels",
+            return_value=(MagicMock(), MagicMock()),
+        ) as _:
             self.defence = ClusteringCentroidAnalysis(
                 classifier=self.mock_classifier,
                 x_train=x_train_dummy,
-                y_train=y_train_constructor_dummy, # Used by _encode_labels in __init__
+                y_train=y_train_constructor_dummy,  # Used by _encode_labels in __init__
                 benign_indices=benign_indices_dummy,
                 final_feature_layer_name=final_feature_layer_name_dummy,
-                misclassification_threshold=misclassification_threshold_dummy
+                misclassification_threshold=misclassification_threshold_dummy,
             )
 
         # The following attributes are set after instantiation to control the test
         # environment precisely
 
-        self.defence.unique_classes = {0, 1} # e.g., 'A' -> 0, 'B' -> 1
-        self.defence.y_train = np.array([0, 0, 1, 1, 0]) # Total 5 samples
-        self.defence.is_clean = np.array([1, 0, 1, 0, 1]) # Predictions by the defence
+        self.defence.unique_classes = {0, 1}  # e.g., 'A' -> 0, 'B' -> 1
+        self.defence.y_train = np.array([0, 0, 1, 1, 0])  # Total 5 samples
+        self.defence.is_clean = np.array([1, 0, 1, 0, 1])  # Predictions by the defence
 
-    @patch('art.defences.detector.poison.clustering_centroid_analysis.GroundTruthEvaluator')
+    @patch("art.defences.detector.poison.clustering_centroid_analysis.GroundTruthEvaluator")
     def test_evaluate_defence_basic_case(self, MockGroundTruthEvaluator):
         """
         Test evaluate_defence with a basic scenario of ground truth and predictions.
@@ -1122,12 +1189,12 @@ class TestEvaluateDefence(unittest.TestCase):
         expected_json_report = json.dumps({"accuracy": 0.6, "class_0_fp": 1, "class_1_fn": 0})
         mock_evaluator_instance.analyze_correctness.return_value = (
             {"some_errors": []},  # errors_by_class (not directly used by evaluate_defence's return)
-            expected_json_report    # confusion_matrix_json
+            expected_json_report,  # confusion_matrix_json
         )
 
         # Ground truth setup
         # This is the `is_clean` array passed as an argument to evaluate_defence
-        ground_truth_is_clean = np.array([1, 1, 1, 0, 0]) # Ground truth for the 5 samples
+        ground_truth_is_clean = np.array([1, 1, 1, 0, 0])  # Ground truth for the 5 samples
 
         returned_json_report = self.defence.evaluate_defence(is_clean=ground_truth_is_clean)
 
@@ -1135,7 +1202,7 @@ class TestEvaluateDefence(unittest.TestCase):
 
         # Verify how analyze_correctness was called
         mock_evaluator_instance.analyze_correctness.assert_called_once()
-        call_args = mock_evaluator_instance.analyze_correctness.call_args[1] # Get kwargs
+        call_args = mock_evaluator_instance.analyze_correctness.call_args[1]  # Get kwargs
 
         # Expected segmentation based on self.defence.y_train, self.defence.is_clean, and ground_truth_is_clean
         # self.defence.y_train = np.array([0, 0, 1, 1, 0])
@@ -1146,26 +1213,25 @@ class TestEvaluateDefence(unittest.TestCase):
         # Class 1 indices: 2, 3
 
         expected_assigned_clean_by_class = [
-            self.defence.is_clean[[0, 1, 4]], # Predictions for class 0: [1, 0, 1]
-            self.defence.is_clean[[2, 3]]     # Predictions for class 1: [1, 0]
+            self.defence.is_clean[[0, 1, 4]],  # Predictions for class 0: [1, 0, 1]
+            self.defence.is_clean[[2, 3]],  # Predictions for class 1: [1, 0]
         ]
         expected_is_clean_by_class = [
-            ground_truth_is_clean[[0, 1, 4]], # Ground truth for class 0: [1, 1, 0]
-            ground_truth_is_clean[[2, 3]]     # Ground truth for class 1: [1, 0]
+            ground_truth_is_clean[[0, 1, 4]],  # Ground truth for class 0: [1, 1, 0]
+            ground_truth_is_clean[[2, 3]],  # Ground truth for class 1: [1, 0]
         ]
 
         # np.testing.assert_equal doesn't work well for lists of arrays directly in assert_called_with
         # So we compare element by element
-        self.assertEqual(len(call_args['assigned_clean_by_class']), len(expected_assigned_clean_by_class))
-        for i, arr in enumerate(call_args['assigned_clean_by_class']):
+        self.assertEqual(len(call_args["assigned_clean_by_class"]), len(expected_assigned_clean_by_class))
+        for i, arr in enumerate(call_args["assigned_clean_by_class"]):
             np.testing.assert_array_equal(arr, expected_assigned_clean_by_class[i])
 
-        self.assertEqual(len(call_args['is_clean_by_class']), len(expected_is_clean_by_class))
-        for i, arr in enumerate(call_args['is_clean_by_class']):
+        self.assertEqual(len(call_args["is_clean_by_class"]), len(expected_is_clean_by_class))
+        for i, arr in enumerate(call_args["is_clean_by_class"]):
             np.testing.assert_array_equal(arr, expected_is_clean_by_class[i])
 
-
-    @patch('art.defences.detector.poison.clustering_centroid_analysis.GroundTruthEvaluator')
+    @patch("art.defences.detector.poison.clustering_centroid_analysis.GroundTruthEvaluator")
     def test_evaluate_defence_all_predicted_clean_all_truth_clean(self, MockGroundTruthEvaluator):
         """
         Test case: All samples predicted as clean by defence, and all are truly clean.
@@ -1174,8 +1240,8 @@ class TestEvaluateDefence(unittest.TestCase):
         expected_json_report = json.dumps({"accuracy": 1.0})
         mock_evaluator_instance.analyze_correctness.return_value = ({}, expected_json_report)
 
-        self.defence.is_clean = np.ones_like(self.defence.y_train) # All predicted clean
-        ground_truth_is_clean = np.ones_like(self.defence.y_train) # All truly clean
+        self.defence.is_clean = np.ones_like(self.defence.y_train)  # All predicted clean
+        ground_truth_is_clean = np.ones_like(self.defence.y_train)  # All truly clean
 
         returned_json_report = self.defence.evaluate_defence(is_clean=ground_truth_is_clean)
         self.assertEqual(returned_json_report, expected_json_report)
@@ -1185,46 +1251,45 @@ class TestEvaluateDefence(unittest.TestCase):
         # self.defence.y_train = np.array([0, 0, 1, 1, 0])
         # Class 0 indices: 0, 1, 4
         # Class 1 indices: 2, 3
-        expected_assigned_clean_by_class = [np.array([1,1,1]), np.array([1,1])]
-        expected_is_clean_by_class = [np.array([1,1,1]), np.array([1,1])]
+        expected_assigned_clean_by_class = [np.array([1, 1, 1]), np.array([1, 1])]
+        expected_is_clean_by_class = [np.array([1, 1, 1]), np.array([1, 1])]
 
-        self.assertEqual(len(call_args['assigned_clean_by_class']), len(expected_assigned_clean_by_class))
-        for i, arr in enumerate(call_args['assigned_clean_by_class']):
+        self.assertEqual(len(call_args["assigned_clean_by_class"]), len(expected_assigned_clean_by_class))
+        for i, arr in enumerate(call_args["assigned_clean_by_class"]):
             np.testing.assert_array_equal(arr, expected_assigned_clean_by_class[i])
 
-        self.assertEqual(len(call_args['is_clean_by_class']), len(expected_is_clean_by_class))
-        for i, arr in enumerate(call_args['is_clean_by_class']):
+        self.assertEqual(len(call_args["is_clean_by_class"]), len(expected_is_clean_by_class))
+        for i, arr in enumerate(call_args["is_clean_by_class"]):
             np.testing.assert_array_equal(arr, expected_is_clean_by_class[i])
 
-
-    @patch('art.defences.detector.poison.clustering_centroid_analysis.GroundTruthEvaluator')
+    @patch("art.defences.detector.poison.clustering_centroid_analysis.GroundTruthEvaluator")
     def test_evaluate_defence_all_predicted_poisoned_all_truth_poisoned(self, MockGroundTruthEvaluator):
         """
         Test case: All samples predicted as poisoned, and all are truly poisoned.
         """
         mock_evaluator_instance = MockGroundTruthEvaluator.return_value
-        expected_json_report = json.dumps({"accuracy": 1.0, "tn_perfect": True}) # Example detail
+        expected_json_report = json.dumps({"accuracy": 1.0, "tn_perfect": True})  # Example detail
         mock_evaluator_instance.analyze_correctness.return_value = ({}, expected_json_report)
 
-        self.defence.is_clean = np.zeros_like(self.defence.y_train) # All predicted poisoned
-        ground_truth_is_clean = np.zeros_like(self.defence.y_train) # All truly poisoned
+        self.defence.is_clean = np.zeros_like(self.defence.y_train)  # All predicted poisoned
+        ground_truth_is_clean = np.zeros_like(self.defence.y_train)  # All truly poisoned
 
         returned_json_report = self.defence.evaluate_defence(is_clean=ground_truth_is_clean)
         self.assertEqual(returned_json_report, expected_json_report)
 
         call_args = mock_evaluator_instance.analyze_correctness.call_args[1]
-        expected_assigned_clean_by_class = [np.array([0,0,0]), np.array([0,0])]
-        expected_is_clean_by_class = [np.array([0,0,0]), np.array([0,0])]
+        expected_assigned_clean_by_class = [np.array([0, 0, 0]), np.array([0, 0])]
+        expected_is_clean_by_class = [np.array([0, 0, 0]), np.array([0, 0])]
 
-        self.assertEqual(len(call_args['assigned_clean_by_class']), len(expected_assigned_clean_by_class))
-        for i, arr in enumerate(call_args['assigned_clean_by_class']):
+        self.assertEqual(len(call_args["assigned_clean_by_class"]), len(expected_assigned_clean_by_class))
+        for i, arr in enumerate(call_args["assigned_clean_by_class"]):
             np.testing.assert_array_equal(arr, expected_assigned_clean_by_class[i])
 
-        self.assertEqual(len(call_args['is_clean_by_class']), len(expected_is_clean_by_class))
-        for i, arr in enumerate(call_args['is_clean_by_class']):
+        self.assertEqual(len(call_args["is_clean_by_class"]), len(expected_is_clean_by_class))
+        for i, arr in enumerate(call_args["is_clean_by_class"]):
             np.testing.assert_array_equal(arr, expected_is_clean_by_class[i])
 
-    @patch('art.defences.detector.poison.clustering_centroid_analysis.GroundTruthEvaluator')
+    @patch("art.defences.detector.poison.clustering_centroid_analysis.GroundTruthEvaluator")
     def test_evaluate_defence_no_samples_for_a_class_in_unique_classes(self, MockGroundTruthEvaluator):
         """
         Test case: A class in unique_classes has no samples in y_train (edge case).
@@ -1235,7 +1300,7 @@ class TestEvaluateDefence(unittest.TestCase):
         expected_json_report = json.dumps({"note": "class 2 had no samples"})
         mock_evaluator_instance.analyze_correctness.return_value = ({}, expected_json_report)
 
-        self.defence.unique_classes = {0, 1, 2} # Add class 2
+        self.defence.unique_classes = {0, 1, 2}  # Add class 2
         # self.defence.y_train remains [0, 0, 1, 1, 0] (no samples for class 2)
         self.defence.is_clean = np.array([1, 0, 1, 0, 1])
         ground_truth_is_clean = np.array([1, 1, 1, 0, 0])
@@ -1251,23 +1316,25 @@ class TestEvaluateDefence(unittest.TestCase):
         expected_assigned_clean_by_class = [
             self.defence.is_clean[[0, 1, 4]],
             self.defence.is_clean[[2, 3]],
-            np.array([]) # Empty for class 2
+            np.array([]),  # Empty for class 2
         ]
         expected_is_clean_by_class = [
             ground_truth_is_clean[[0, 1, 4]],
             ground_truth_is_clean[[2, 3]],
-            np.array([]) # Empty for class 2
+            np.array([]),  # Empty for class 2
         ]
 
-        self.assertEqual(len(call_args['assigned_clean_by_class']), len(expected_assigned_clean_by_class))
-        for i, arr in enumerate(call_args['assigned_clean_by_class']):
-            np.testing.assert_array_equal(arr, expected_assigned_clean_by_class[i],
-                                          err_msg=f"Mismatch in assigned_clean_by_class at index {i}")
+        self.assertEqual(len(call_args["assigned_clean_by_class"]), len(expected_assigned_clean_by_class))
+        for i, arr in enumerate(call_args["assigned_clean_by_class"]):
+            np.testing.assert_array_equal(
+                arr, expected_assigned_clean_by_class[i], err_msg=f"Mismatch in assigned_clean_by_class at index {i}"
+            )
 
-        self.assertEqual(len(call_args['is_clean_by_class']), len(expected_is_clean_by_class))
-        for i, arr in enumerate(call_args['is_clean_by_class']):
-            np.testing.assert_array_equal(arr, expected_is_clean_by_class[i],
-                                          err_msg=f"Mismatch in is_clean_by_class at index {i}")
+        self.assertEqual(len(call_args["is_clean_by_class"]), len(expected_is_clean_by_class))
+        for i, arr in enumerate(call_args["is_clean_by_class"]):
+            np.testing.assert_array_equal(
+                arr, expected_is_clean_by_class[i], err_msg=f"Mismatch in is_clean_by_class at index {i}"
+            )
 
 
 if __name__ == "__main__":

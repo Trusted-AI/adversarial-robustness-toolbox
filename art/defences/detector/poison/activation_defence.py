@@ -325,12 +325,12 @@ class ActivationDefence(PoisonFilteringDefence):
             self.assigned_clean_by_class, self.poisonous_clusters, report = analyzer(self.clusters_by_class)
         elif analysis_type == ClusterAnalysisType.DISTANCE:
             self.assigned_clean_by_class, self.poisonous_clusters, report = analyzer(
-                self.clusters_by_class,
-                separated_activations=self.red_activations_by_class)
+                self.clusters_by_class, separated_activations=self.red_activations_by_class
+            )
         elif analysis_type == ClusterAnalysisType.SILHOUETTE_SCORES:
             self.assigned_clean_by_class, self.poisonous_clusters, report = analyzer(
-                self.clusters_by_class,
-                reduced_activations_by_class=self.red_activations_by_class)
+                self.clusters_by_class, reduced_activations_by_class=self.red_activations_by_class
+            )
         else:
             raise ValueError("Unsupported cluster analysis technique " + analysis_type.value)
 
