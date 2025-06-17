@@ -490,7 +490,8 @@ class AdversarialPatchPyTorch(EvasionAttack):
 
         :param x: An array with the original input images of shape NCHW or input videos of shape NFCHW.
         :param y: True or target labels of format `list[dict[str, Union[np.ndarray, torch.Tensor]]]`, one for each
-                  input image. For untargeted attacks, this should be None. The fields of the dict are as follows:
+                  input image. For untargeted attacks, if `y` is None the attack will attack the model predictions
+                  on `x`. The fields of the dict are as follows:
 
                   - boxes [N, 4]: the boxes in [x1, y1, x2, y2] format, with 0 <= x1 < x2 <= W and 0 <= y1 < y2 <= H.
                   - labels [N]: the labels for each image.
