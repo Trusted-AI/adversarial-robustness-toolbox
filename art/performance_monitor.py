@@ -189,10 +189,7 @@ class ResourceMonitor:
         fig.suptitle(title or "Resource Usage During Execution", fontsize=16)
 
         # Flatten axes array for easier indexing
-        if n_plots > 2:
-            axes = axes.flatten()
-        else:
-            axes = [axes]
+        axes = axes.flatten()
 
         # CPU usage plot
         axes[0].plot(data["time"], data["cpu_percent"], "b-")
@@ -208,7 +205,8 @@ class ResourceMonitor:
         axes[1].set_ylabel("Memory (MB)")
         axes[1].grid(True)
 
-        if self.has_gpu and len(axes) > 2:
+        # the axes length check is redundant here; has_gpu already validates this
+        if self.has_gpu:
             # GPU usage plot
             axes[2].plot(data["time"], data["gpu_percent"], "g-")
             axes[2].set_title("GPU Usage (%)")

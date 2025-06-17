@@ -1,6 +1,9 @@
 import unittest
 import time
 import numpy as np
+import pytest
+
+from art import performance_monitor
 from art.performance_monitor import ResourceMonitor, PerformanceTimer, HAS_TENSORFLOW, HAS_TORCH
 
 
@@ -42,12 +45,39 @@ class TestPerformanceMonitoring(unittest.TestCase):
         self.assertGreater(len(data["cpu_percent"]), 0)
 
 
+@pytest.mark.parametrize(
+    "has_nvml, gpu_count, expected_has_gpu",
+    [
+        # Scenario 1: No NVML, regardless of GPU count -> No GPU detected
+        (False, 0, False),
+        (False, 1, False),
+        (False, 2, False),
+
+        # Scenario 2: NVML available, but no GPUs -> No GPU detected
+        (True, 0, False),
+
+        # Scenario 3: NVML available and GPUs present -> GPU detected
+        (True, 1, True),
+        (True, 2, True),
+    ]
+)
+def test_gpu_detection(monkeypatch, has_nvml: bool, gpu_count: int, expected_has_gpu: bool):
+    """
+    Test that GPU detection works correctly based on HAS_NVML and GPU_COUNT.
+
+    This test uses parametrization to cover various combinations of NVML
+    availability and detected GPU count.
+    """
+    # Initialize the ResourceMonitor with the current parameters
+    monkeypatch.setattr(performance_monitor, 'HAS_NVML', has_nvml)
+    monkeypatch.setattr(performance_monitor, 'GPU_COUNT', gpu_count)
+    monitor = ResourceMonitor()
+
+    # Assert that the monitor's detected GPU status matches the expected value
+    assert monitor.has_gpu == expected_has_gpu
+
+
 class TestGPUMonitoring(unittest.TestCase):
-    def test_gpu_detection(self):
-        """Test that GPU detection works correctly."""
-        monitor = ResourceMonitor()
-        # Check if has_gpu is correctly set based on available libraries
-        self.assertEqual(monitor.has_gpu, (HAS_TENSORFLOW or HAS_TORCH))
 
     def test_gpu_data_collection(self):
         """Test GPU data is collected when available."""
