@@ -115,37 +115,45 @@ COCO_INSTANCE_CATEGORY_NAMES = [
 ]
 
 
-def extract_predictions(predictions_, conf_thresh):
+def extract_predictions(predictions_, top_k):
     # Get the predicted class
     predictions_class = [COCO_INSTANCE_CATEGORY_NAMES[i] for i in list(predictions_["labels"])]
-    #  print("\npredicted classes:", predictions_class)
-    if len(predictions_class) < 1:
-        return [], [], []
+
     # Get the predicted bounding boxes
     predictions_boxes = [[(i[0], i[1]), (i[2], i[3])] for i in list(predictions_["boxes"])]
 
     # Get the predicted prediction score
     predictions_score = list(predictions_["scores"])
-    # print("predicted score:", predictions_score)
+
+    # sort all lists according to scores
+    # Combine into a list of tuples
+    combined = list(zip(predictions_score, predictions_boxes, predictions_class))
+
+    # Sort by score (first element of tuple), descending
+    combined_sorted = sorted(combined, key=lambda x: x[0], reverse=True)
+
+    # Unpack sorted tuples
+    predictions_score, predictions_boxes, predictions_class = zip(*combined_sorted)
+
+    # Convert back to lists
+    predictions_score = list(predictions_score)
+    predictions_boxes = list(predictions_boxes)
+    predictions_class = list(predictions_class)  # Combine into a list of tuples
 
     # Get a list of index with score greater than threshold
-    threshold = conf_thresh
-    predictions_t = [predictions_score.index(x) for x in predictions_score if x > threshold]
-    if len(predictions_t) == 0:
-        return [], [], []
+    predictions_t = top_k
 
-    # predictions in score order
-    predictions_boxes = [predictions_boxes[i] for i in predictions_t]
-    predictions_class = [predictions_class[i] for i in predictions_t]
-    predictions_scores = [predictions_score[i] for i in predictions_t]
+    predictions_boxes = predictions_boxes[:predictions_t]
+    predictions_class = predictions_class[:predictions_t]
+    predictions_scores = predictions_score[:predictions_t]
+
     return predictions_class, predictions_boxes, predictions_scores
 
 
 def plot_image_with_boxes(img, boxes, pred_cls, title):
-    plt.style.use("ggplot")
-    text_size = 1
-    text_th = 3
-    rect_th = 1
+    text_size = 2
+    text_th = 2
+    rect_th = 2
 
     img = img.copy()
 
@@ -176,17 +184,9 @@ def plot_image_with_boxes(img, boxes, pred_cls, title):
 
 
 """
-#################        Evasion settings        #################
-"""
-eps = 32
-eps_step = 2
-max_iter = 10
-
-
-"""
 #################        Model definition        #################
 """
-MODEL = "yolov3"  # OR yolov5
+MODEL = "yolov5"  # OR yolov5
 
 
 if MODEL == "yolov3":
@@ -265,35 +265,37 @@ elif MODEL == "yolov5":
 """
 response = requests.get("https://ultralytics.com/images/zidane.jpg")
 img = np.asarray(Image.open(BytesIO(response.content)).resize((640, 640)))
-img_reshape = img.transpose((2, 0, 1))
-image = np.stack([img_reshape], axis=0).astype(np.float32)
-x = image.copy()
+image = np.stack([img], axis=0).astype(np.float32)
+image_chw = np.transpose(image, (0, 3, 1, 2))
 
 """
 #################        Evasion attack        #################
 """
 
-attack = ProjectedGradientDescent(estimator=detector, eps=eps, eps_step=eps_step, max_iter=max_iter)
-image_adv = attack.generate(x=x, y=None)
+eps = 32
+attack = ProjectedGradientDescent(estimator=detector, eps=eps, eps_step=2, max_iter=10)
+image_adv_chw = attack.generate(x=image_chw, y=None)
+image_adv = np.transpose(image_adv_chw, (0, 2, 3, 1))
 
 print("\nThe attack budget eps is {}".format(eps))
-print("The resulting maximal difference in pixel values is {}.".format(np.amax(np.abs(x - image_adv))))
+print("The resulting maximal difference in pixel values is {}.".format(np.amax(np.abs(image_chw - image_adv_chw))))
 
 plt.axis("off")
 plt.title("adversarial image")
-plt.imshow(image_adv[0].transpose(1, 2, 0).astype(np.uint8), interpolation="nearest")
+plt.imshow(image_adv[0].astype(np.uint8), interpolation="nearest")
 plt.show()
 
-threshold = 0.85  # 0.5
-dets = detector.predict(x)
-preds = extract_predictions(dets[0], threshold)
-plot_image_with_boxes(img=img, boxes=preds[1], pred_cls=preds[0], title="Predictions on original image")
-
-dets = detector.predict(image_adv)
-preds = extract_predictions(dets[0], threshold)
+predictions = detector.predict(x=image_chw)
+predictions_class, predictions_boxes, _ = extract_predictions(predictions[0], top_k=3)
 plot_image_with_boxes(
-    img=image_adv[0].transpose(1, 2, 0).copy(),
-    boxes=preds[1],
-    pred_cls=preds[0],
+    img=image[0], boxes=predictions_boxes, pred_cls=predictions_class, title="Predictions on original image"
+)
+
+predictions = detector.predict(image_adv_chw)
+predictions_class, predictions_boxes, d = extract_predictions(predictions[0], top_k=3)
+plot_image_with_boxes(
+    img=image_adv[0],
+    boxes=predictions_boxes,
+    pred_cls=predictions_class,
     title="Predictions on adversarial image",
 )

@@ -3,7 +3,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from art.estimators.object_detection import PyTorchFasterRCNN
-from art.attacks.evasion import ProjectedGradientDescent
+from art.estimators.object_detection.pytorch_yolo import PyTorchYolo
+from art.attacks.evasion import ProjectedGradientDescent, AdversarialPatchPyTorch
 
 COCO_INSTANCE_CATEGORY_NAMES = [
     "__background__",
@@ -118,14 +119,17 @@ def extract_predictions(predictions_):
 
     predictions_boxes = predictions_boxes[: predictions_t + 1]
     predictions_class = predictions_class[: predictions_t + 1]
+    predictions_scores = predictions_score[: predictions_t + 1]
 
-    return predictions_class, predictions_boxes, predictions_class
+    return predictions_class, predictions_boxes, predictions_scores
 
 
 def plot_image_with_boxes(img, boxes, pred_cls):
     text_size = 2
     text_th = 2
     rect_th = 2
+
+    img = img.copy()
 
     for i in range(len(boxes)):
         # Draw Rectangle with the coordinates
@@ -186,14 +190,14 @@ def main():
         print("\nPredictions image {}:".format(i))
 
         # Process predictions
-        predictions_class, predictions_boxes, predictions_class = extract_predictions(predictions[i])
+        predictions_class, predictions_boxes, _ = extract_predictions(predictions[i])
 
         # Plot predictions
-        plot_image_with_boxes(img=image[i].copy(), boxes=predictions_boxes, pred_cls=predictions_class)
+        plot_image_with_boxes(img=image[i], boxes=predictions_boxes, pred_cls=predictions_class)
 
     # Create and run attack
     eps = 32
-    attack = ProjectedGradientDescent(estimator=frcnn, eps=eps, eps_step=2, max_iter=10)
+    attack = ProjectedGradientDescent(estimator=frcnn, eps=eps, eps_step=2, max_iter=2)
     image_adv_chw = attack.generate(x=image_chw, y=None)
     image_adv = np.transpose(image_adv_chw, (0, 2, 3, 1))
 
@@ -212,10 +216,10 @@ def main():
         print("\nPredictions adversarial image {}:".format(i))
 
         # Process predictions
-        predictions_adv_class, predictions_adv_boxes, predictions_adv_class = extract_predictions(predictions_adv[i])
+        predictions_adv_class, predictions_adv_boxes, _ = extract_predictions(predictions_adv[i])
 
         # Plot predictions
-        plot_image_with_boxes(img=image_adv[i].copy(), boxes=predictions_adv_boxes, pred_cls=predictions_adv_class)
+        plot_image_with_boxes(img=image_adv[i], boxes=predictions_adv_boxes, pred_cls=predictions_adv_class)
 
 
 if __name__ == "__main__":
