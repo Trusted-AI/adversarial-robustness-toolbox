@@ -6,26 +6,16 @@ import os
 import threading
 import time
 from datetime import datetime
-from typing import Dict, List, Optional, Any, Union
+from importlib.util import find_spec
+from typing import Any
 
 import numpy as np
 import pandas as pd
 import psutil
 from matplotlib import pyplot as plt
 
-try:
-    import tensorflow as tf
-
-    HAS_TENSORFLOW = True
-except ImportError:
-    HAS_TENSORFLOW = False
-
-try:
-    import torch
-
-    HAS_TORCH = True
-except ImportError:
-    HAS_TORCH = False
+HAS_TENSORFLOW = find_spec("tensorflow") is not None
+HAS_TORCH = find_spec("torch") is not None
 
 # GPU monitoring using NVIDIA NVML
 try:
@@ -35,15 +25,13 @@ try:
         nvmlDeviceGetHandleByIndex,
         nvmlDeviceGetUtilizationRates,
         nvmlDeviceGetMemoryInfo,
+        NVMLError,
     )
 
     nvmlInit()
     HAS_NVML = True
     GPU_COUNT = nvmlDeviceGetCount()
-except ImportError:
-    HAS_NVML = False
-    GPU_COUNT = 0
-except Exception:
+except (ImportError, NVMLError):
     HAS_NVML = False
     GPU_COUNT = 0
 
@@ -60,11 +48,11 @@ class ResourceMonitor:
         :param interval: Sampling interval in seconds.
         """
         self.interval = interval
-        self.cpu_percentages: List[float] = []
-        self.memory_usages: List[float] = []
-        self.timestamps: List[float] = []
-        self.gpu_usages: List[Any] = []
-        self.gpu_memories: List[Any] = []
+        self.cpu_percentages: list[float] = []
+        self.memory_usages: list[float] = []
+        self.timestamps: list[float] = []
+        self.gpu_usages: list[Any] = []
+        self.gpu_memories: list[Any] = []
         self.stop_flag = False
         self.process = psutil.Process(os.getpid())
 
@@ -89,7 +77,6 @@ class ResourceMonitor:
     def _monitor_resources(self) -> None:
         """Resource monitoring loop that runs in a background thread."""
         while not self.stop_flag:
-
             with self.data_lock:
                 # CPU usage (percent)
                 cpu_percent = self.process.cpu_percent()
@@ -119,7 +106,7 @@ class ResourceMonitor:
 
                 time.sleep(self.interval)
 
-    def get_data(self) -> Dict[str, List[float]]:
+    def get_data(self) -> dict[str, list[float]]:
         """
         Get the collected monitoring data.
 
@@ -130,36 +117,34 @@ class ResourceMonitor:
             cpu_percentages = self.cpu_percentages.copy()
             memory_usages = self.memory_usages.copy()
 
+            gpu_usages = None
+            gpu_memories = None
             if self.has_gpu:
                 gpu_usages = self.gpu_usages.copy()
                 gpu_memories = self.gpu_memories.copy()
 
         min_length = min(len(timestamps), len(cpu_percentages), len(memory_usages))
 
+        if self.has_gpu and gpu_usages is not None and gpu_memories is not None:
+            min_length = min(min_length, len(gpu_usages), len(gpu_memories))
+
         timestamps = [t - timestamps[0] for t in timestamps[:min_length]]
         cpu_percentages = cpu_percentages[:min_length]
         memory_usages = memory_usages[:min_length]
 
-        data = {}
+        data = {
+            "time": timestamps,
+            "cpu_percent": cpu_percentages,
+            "memory_mb": memory_usages,
+        }
 
-        if self.has_gpu:
-            min_length = min(min_length, len(gpu_usages), len(gpu_memories))
-            timestamps = timestamps[:min_length]
-            cpu_percentages = cpu_percentages[:min_length]
-            memory_usages = memory_usages[:min_length]
-            gpu_usages = gpu_usages[:min_length]
-            gpu_memories = gpu_memories[:min_length]
-
-            data["gpu_percent"] = gpu_usages
-            data["gpu_memory_mb"] = gpu_memories
-
-        data["time"] = timestamps
-        data["cpu_percent"] = cpu_percentages
-        data["memory_mb"] = memory_usages
+        if self.has_gpu and gpu_usages is not None and gpu_memories is not None:
+            data["gpu_percent"] = gpu_usages[:min_length]
+            data["gpu_memory_mb"] = gpu_memories[:min_length]
 
         return data
 
-    def get_summary(self) -> Dict[str, float]:
+    def get_summary(self) -> dict[str, float]:
         """
         Get summary statistics of resource usage.
 
@@ -190,7 +175,7 @@ class ResourceMonitor:
             )
         return summary
 
-    def plot_results(self, title: Optional[str] = None) -> Optional[Any]:
+    def plot_results(self, title: str | None = None) -> Any | None:
         """
         Generate plots of resource usage over time.
 
@@ -296,10 +281,10 @@ class PerformanceTimer:
             df.to_csv(data_filename, index=False)
             print(f"Performance data saved to {data_filename}")
 
-    def get_data(self) -> Dict[str, List[float]]:
+    def get_data(self) -> dict[str, list[float]]:
         """Get the collected monitoring data."""
         return self.monitor.get_data()
 
-    def get_summary(self) -> Dict[str, float]:
+    def get_summary(self) -> dict[str, float]:
         """Get summary statistics of resource usage."""
         return self.monitor.get_summary()

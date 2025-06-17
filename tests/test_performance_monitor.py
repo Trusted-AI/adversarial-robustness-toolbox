@@ -5,7 +5,6 @@ from art.performance_monitor import ResourceMonitor, PerformanceTimer, HAS_TENSO
 
 
 class TestPerformanceMonitoring(unittest.TestCase):
-
     def test_resource_monitor_basic(self):
         """Test basic functionality of the resource monitor."""
         monitor = ResourceMonitor()
@@ -44,7 +43,6 @@ class TestPerformanceMonitoring(unittest.TestCase):
 
 
 class TestGPUMonitoring(unittest.TestCase):
-
     def test_gpu_detection(self):
         """Test that GPU detection works correctly."""
         monitor = ResourceMonitor()
@@ -107,8 +105,14 @@ class TestGPUMonitoring(unittest.TestCase):
             self.assertIn("gpu_memory_mb_max", summary)
 
             # If using TensorFlow or PyTorch with GPU, we expect some GPU usage
-            if (HAS_TENSORFLOW and tf.config.list_physical_devices("GPU")) or (HAS_TORCH and torch.cuda.is_available()):
-                self.assertGreater(summary["gpu_percent_max"], 0, "GPU should show some usage when processing tensors")
+            if (HAS_TENSORFLOW and tf.config.list_physical_devices("GPU")) or (
+                HAS_TORCH and torch.cuda.is_available()
+            ):
+                self.assertGreater(
+                    summary["gpu_percent_max"],
+                    0,
+                    "GPU should show some usage when processing tensors",
+                )
 
     def test_performance_timer_with_gpu(self):
         """Test the performance timer captures GPU metrics."""
@@ -176,7 +180,7 @@ class TestGPUMonitoring(unittest.TestCase):
             import tensorflow as tf
 
             # Run operations on different GPUs
-            for i, gpu in enumerate(gpus[:2]):  # Use first two GPUs
+            for i, _ in enumerate(gpus[:2]):  # Use first two GPUs
                 with tf.device(f"/GPU:{i}"):
                     a = tf.random.normal([3000, 3000])
                     b = tf.random.normal([3000, 3000])
@@ -202,5 +206,7 @@ class TestGPUMonitoring(unittest.TestCase):
         # For multiple GPUs, we should have GPU data as lists of lists
         # Each inner list represents data for one GPU
         self.assertIsInstance(
-            data["gpu_percent"][0], list, "With multiple GPUs, data should be structured as lists of lists"
+            data["gpu_percent"][0],
+            list,
+            "With multiple GPUs, data should be structured as lists of lists",
         )
