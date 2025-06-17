@@ -512,7 +512,7 @@ class AdversarialPatchPyTorch(EvasionAttack):
             raise ValueError("Masks can only be used if the `patch_location` is `None`.")
 
         if y is None and self.targeted:
-                raise ValueError("The targeted version of AdversarialPatch attack requires provided target labels.")
+            raise ValueError("The targeted version of AdversarialPatch attack requires provided target labels.")
 
         if hasattr(self.estimator, "nb_classes"):
 
