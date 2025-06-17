@@ -3,8 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from art.estimators.object_detection import PyTorchFasterRCNN
-from art.estimators.object_detection.pytorch_yolo import PyTorchYolo
-from art.attacks.evasion import ProjectedGradientDescent, AdversarialPatchPyTorch
+from art.attacks.evasion import ProjectedGradientDescent
 
 COCO_INSTANCE_CATEGORY_NAMES = [
     "__background__",
