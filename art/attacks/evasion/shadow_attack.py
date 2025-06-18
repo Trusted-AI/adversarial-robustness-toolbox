@@ -243,7 +243,7 @@ class ShadowAttack(EvasionAttack):
             loss_c = perturbation_t.abs().mean([2, 3]).norm(dim=1) ** 2
             loss = torch.mean(self.lambda_tv * loss_tv + self.lambda_s * loss_s + self.lambda_c * loss_c)
             loss.backward()
-            gradients = perturbation_t.grad.numpy()
+            gradients = perturbation_t.grad.numpy()  # type: ignore
         else:
             raise NotImplementedError
 

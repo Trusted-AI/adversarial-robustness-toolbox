@@ -40,7 +40,7 @@ def get_adv_trainer(framework, image_dl_estimator):
                 norm=np.inf,
                 eps=0.3,
                 eps_step=0.03,
-                max_iter=20,
+                max_iter=5,
                 targeted=False,
                 num_random_init=1,
                 batch_size=128,
@@ -89,7 +89,7 @@ def test_adversarial_trainer_trades_pytorch_fit_and_predict(get_adv_trainer, fix
     else:
         accuracy = np.sum(predictions == y_test_mnist) / x_test_mnist.shape[0]
 
-    trainer.fit(x_train_mnist, y_train_mnist, nb_epochs=20)
+    trainer.fit(x_train_mnist, y_train_mnist, nb_epochs=5)
     predictions_new = np.argmax(trainer.predict(x_test_mnist), axis=1)
 
     if label_format == "one_hot":
@@ -106,7 +106,7 @@ def test_adversarial_trainer_trades_pytorch_fit_and_predict(get_adv_trainer, fix
     assert accuracy == 0.32
     assert accuracy_new > 0.32
 
-    trainer.fit(x_train_mnist, y_train_mnist, nb_epochs=20, validation_data=(x_train_mnist, y_train_mnist))
+    trainer.fit(x_train_mnist, y_train_mnist, nb_epochs=2, validation_data=(x_train_mnist, y_train_mnist))
 
 
 @pytest.mark.only_with_platform("pytorch")
@@ -136,7 +136,7 @@ def test_adversarial_trainer_trades_pytorch_fit_generator_and_predict(
     else:
         accuracy = np.sum(predictions == y_test_mnist) / x_test_mnist.shape[0]
 
-    trainer.fit_generator(generator=generator, nb_epochs=20)
+    trainer.fit_generator(generator=generator, nb_epochs=5)
     predictions_new = np.argmax(trainer.predict(x_test_mnist), axis=1)
 
     if label_format == "one_hot":

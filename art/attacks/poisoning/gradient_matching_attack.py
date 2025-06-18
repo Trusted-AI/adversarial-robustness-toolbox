@@ -385,7 +385,7 @@ class GradientMatchingAttack(Attack):
                 sum_loss += loss.clone().cpu().detach().numpy()
                 count += 1
             if self.verbose > 0:
-                epoch_iterator.set_postfix(loss=sum_loss / count)
+                epoch_iterator.set_postfix(loss=sum_loss / count)  # type: ignore
             self.lr_schedule.step()
 
         B_sum = 0  # pylint: disable=invalid-name

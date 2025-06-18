@@ -66,7 +66,7 @@ from __future__ import annotations
 
 import logging
 import time
-from typing import TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
 
 import numpy as np
 
@@ -300,12 +300,16 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
             output, _, image_tensor_list_grad = self._get_losses(x=x_i, y=y_i)
 
             # Compute the gradient and return
-            loss = None
+            loss: torch.Tensor | None = None
+
             for loss_name in self.attack_losses:
+                val: Any = output[loss_name]
+                if isinstance(val, list):
+                    val = torch.stack(val).sum()  # Or sum(val)
                 if loss is None:
-                    loss = output[loss_name]
+                    loss = val
                 else:
-                    loss = loss + output[loss_name]
+                    loss = loss + val
 
             # Clean gradients
             self._model.zero_grad()
@@ -583,10 +587,10 @@ class PyTorchGoturn(ObjectTrackerMixin, PyTorchEstimator):
 
         # move the bounding box to target/search region coordinates
         raw_image = curr_frame
-        pred_bb[0] = max(0.0, pred_bb[0] + search_location[0] - edge_spacing_x)
-        pred_bb[1] = max(0.0, pred_bb[1] + search_location[1] - edge_spacing_y)
-        pred_bb[2] = min(raw_image.shape[1], pred_bb[2] + search_location[0] - edge_spacing_x)
-        pred_bb[3] = min(raw_image.shape[0], pred_bb[3] + search_location[1] - edge_spacing_y)
+        pred_bb[0] = torch.clamp(pred_bb[0] + search_location[0] - edge_spacing_x, min=0.0)
+        pred_bb[1] = torch.clamp(pred_bb[1] + search_location[1] - edge_spacing_y, min=0.0)
+        pred_bb[2] = torch.clamp(pred_bb[2] + search_location[0] - edge_spacing_x, max=raw_image.shape[1])
+        pred_bb[3] = torch.clamp(pred_bb[3] + search_location[1] - edge_spacing_y, max=raw_image.shape[0])
 
         # brings gradients to zero
         # pred_bb = torch.round(pred_bb)

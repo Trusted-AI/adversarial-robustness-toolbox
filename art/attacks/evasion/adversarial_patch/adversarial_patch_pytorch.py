@@ -662,9 +662,10 @@ class AdversarialPatchPyTorch(EvasionAttack):
 
             # Write summary
             if self.summary_writer is not None:  # pragma: no cover
+                mask_tensor = torch.from_numpy(mask).to(self.estimator.device)
                 x_patched = (
                     self._random_overlay(
-                        images=torch.from_numpy(x).to(self.estimator.device), patch=self._patch, mask=mask
+                        images=torch.from_numpy(x).to(self.estimator.device), patch=self._patch, mask=mask_tensor
                     )
                     .detach()
                     .cpu()

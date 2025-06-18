@@ -351,7 +351,7 @@ class PyTorchObjectSeeker(ObjectSeekerMixin, PyTorchObjectDetector):
         """
         return self.detector.loss_gradient(
             x=x,
-            y=y,
+            y=y,  # type: ignore
             **kwargs,
         )
 

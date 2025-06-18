@@ -118,14 +118,17 @@ def extract_predictions(predictions_):
 
     predictions_boxes = predictions_boxes[: predictions_t + 1]
     predictions_class = predictions_class[: predictions_t + 1]
+    predictions_scores = predictions_score[: predictions_t + 1]
 
-    return predictions_class, predictions_boxes, predictions_class
+    return predictions_class, predictions_boxes, predictions_scores
 
 
 def plot_image_with_boxes(img, boxes, pred_cls):
-    text_size = 5
-    text_th = 5
-    rect_th = 6
+    text_size = 2
+    text_th = 2
+    rect_th = 2
+
+    img = img.copy()
 
     for i in range(len(boxes)):
         # Draw Rectangle with the coordinates
@@ -155,23 +158,22 @@ def plot_image_with_boxes(img, boxes, pred_cls):
 def main():
     # Create ART object detector
     frcnn = PyTorchFasterRCNN(
-        clip_values=(0, 255), attack_losses=["loss_classifier", "loss_box_reg", "loss_objectness", "loss_rpn_box_reg"]
+        clip_values=(0, 255),
+        channels_first=True,
+        attack_losses=["loss_classifier", "loss_box_reg", "loss_objectness", "loss_rpn_box_reg"],
     )
 
     # Load image 1
     image_0 = cv2.imread("./10best-cars-group-cropped-1542126037.jpg")
     image_0 = cv2.cvtColor(image_0, cv2.COLOR_BGR2RGB)  # Convert to RGB
-    print("image_0.shape:", image_0.shape)
 
     # Load image 2
     image_1 = cv2.imread("./banner-diverse-group-of-people-2.jpg")
     image_1 = cv2.cvtColor(image_1, cv2.COLOR_BGR2RGB)  # Convert to RGB
     image_1 = cv2.resize(image_1, dsize=(image_0.shape[1], image_0.shape[0]), interpolation=cv2.INTER_CUBIC)
-    print("image_1.shape:", image_1.shape)
 
     # Stack images
     image = np.stack([image_0, image_1], axis=0).astype(np.float32)
-    print("image.shape:", image.shape)
 
     for i in range(image.shape[0]):
         plt.axis("off")
@@ -180,21 +182,23 @@ def main():
         plt.show()
 
     # Make prediction on benign samples
-    predictions = frcnn.predict(x=image)
+    image_chw = np.transpose(image, (0, 3, 1, 2))
+    predictions = frcnn.predict(x=image_chw)
 
     for i in range(image.shape[0]):
         print("\nPredictions image {}:".format(i))
 
         # Process predictions
-        predictions_class, predictions_boxes, predictions_class = extract_predictions(predictions[i])
+        predictions_class, predictions_boxes, _ = extract_predictions(predictions[i])
 
         # Plot predictions
-        plot_image_with_boxes(img=image[i].copy(), boxes=predictions_boxes, pred_cls=predictions_class)
+        plot_image_with_boxes(img=image[i], boxes=predictions_boxes, pred_cls=predictions_class)
 
     # Create and run attack
     eps = 32
-    attack = ProjectedGradientDescent(estimator=frcnn, eps=eps, eps_step=2, max_iter=10)
-    image_adv = attack.generate(x=image, y=None)
+    attack = ProjectedGradientDescent(estimator=frcnn, eps=eps, eps_step=2, max_iter=2)
+    image_adv_chw = attack.generate(x=image_chw, y=None)
+    image_adv = np.transpose(image_adv_chw, (0, 2, 3, 1))
 
     print("\nThe attack budget eps is {}".format(eps))
     print("The resulting maximal difference in pixel values is {}.".format(np.amax(np.abs(image - image_adv))))
@@ -205,16 +209,16 @@ def main():
         plt.imshow(image_adv[i].astype(np.uint8), interpolation="nearest")
         plt.show()
 
-    predictions_adv = frcnn.predict(x=image_adv)
+    predictions_adv = frcnn.predict(x=image_adv_chw)
 
     for i in range(image.shape[0]):
         print("\nPredictions adversarial image {}:".format(i))
 
         # Process predictions
-        predictions_adv_class, predictions_adv_boxes, predictions_adv_class = extract_predictions(predictions_adv[i])
+        predictions_adv_class, predictions_adv_boxes, _ = extract_predictions(predictions_adv[i])
 
         # Plot predictions
-        plot_image_with_boxes(img=image_adv[i].copy(), boxes=predictions_adv_boxes, pred_cls=predictions_adv_class)
+        plot_image_with_boxes(img=image_adv[i], boxes=predictions_adv_boxes, pred_cls=predictions_adv_class)
 
 
 if __name__ == "__main__":

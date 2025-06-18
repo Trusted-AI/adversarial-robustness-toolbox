@@ -378,7 +378,7 @@ class AdversarialTrainerCertifiedIBPPyTorch(Trainer):
                         max_iter=self.pgd_params["max_iter"],
                         num_random_init=self.pgd_params["num_random_init"],
                     )
-                    i_batch = self.attack.generate(i_batch, y=o_batch)
+                    i_batch = self.attack.generate(i_batch, y=o_batch)  # type: ignore
                     self.classifier.model.zero_grad()
                 else:
                     i_batch = np.copy(x_preprocessed[ind[m * batch_size : (m + 1) * batch_size]]).astype("float32")
