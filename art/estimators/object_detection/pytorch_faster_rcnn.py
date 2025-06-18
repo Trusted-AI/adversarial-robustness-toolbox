@@ -93,10 +93,15 @@ class PyTorchFasterRCNN(PyTorchObjectDetector):
                             if available otherwise run on CPU.
         """
         import torchvision
+        from torchvision.models import ResNet50_Weights
+        from torchvision.models.detection import FasterRCNN_ResNet50_FPN_Weights
 
         if model is None:  # pragma: no cover
             model = torchvision.models.detection.fasterrcnn_resnet50_fpn(
-                pretrained=True, progress=True, num_classes=91, pretrained_backbone=True
+                weights=FasterRCNN_ResNet50_FPN_Weights.COCO_V1,
+                progress=True,
+                num_classes=91,
+                weights_backbone=ResNet50_Weights.IMAGENET1K_V1,
             )
 
         super().__init__(
