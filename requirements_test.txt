@@ -15,7 +15,7 @@ resampy==0.4.3
 ffmpeg-python==0.2.0
 cma==4.2.0
 pandas==2.3.0
-librosa==0.10.2.post1
+librosa==0.11.0
 numba~=0.56.4
 opencv-python
 sortedcontainers==2.4.0
@@ -52,14 +52,14 @@ jax[cpu]==0.4.30
 # lingvo==0.13.1
 
 # tests and style checking
-pytest~=8.4.0
+pytest~=8.4.1
 pytest-mock~=3.14.1
-pytest-cov~=6.2.0
+pytest-cov~=6.2.1
 pylint==3.3.7
-mypy==1.16.0
+mypy==1.16.1
 pycodestyle==2.13.0
 black==25.1.0
-ruff==0.11.13
+ruff==0.12.0
 types-six==1.17.0.20250515
 types-PyYAML==6.0.12.20250516
 types-setuptools==80.9.0.20250529
