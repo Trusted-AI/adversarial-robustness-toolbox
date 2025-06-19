@@ -16,16 +16,17 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements the task specific estimator for PyTorch YOLO v3 and v5 object detectors.
+This module implements the task specific estimator for PyTorch YOLO v3, v5, v8+ object detectors.
 
 | Paper link: https://arxiv.org/abs/1804.02767
 """
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional, Union
 
 import numpy as np
+import torch
 
 from art.estimators.object_detection.pytorch_object_detector import PyTorchObjectDetector
 
@@ -40,9 +41,65 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+class PyTorchYoloLossWrapper(torch.nn.Module):
+    """Wrapper for YOLO v8+ models to handle loss dict format."""
+    
+    def __init__(self, model, name):
+        super().__init__()
+        self.model = model
+        try:
+            from ultralytics.models.yolo.detect import DetectionPredictor
+            from ultralytics.utils.loss import v8DetectionLoss, E2EDetectLoss
+            
+            self.detection_predictor = DetectionPredictor()
+            self.model.args = self.detection_predictor.args
+            if 'v10' in name:
+                self.model.criterion = E2EDetectLoss(model)
+            else:
+                self.model.criterion = v8DetectionLoss(model)
+        except ImportError as e:
+            raise ImportError("The 'ultralytics' package is required for YOLO v8+ models but not installed.") from e
+
+    def forward(self, x, targets=None):
+        if self.training:
+            # batch_idx is used to identify which predictions/boxes relate to which image
+            boxes = []
+            labels = []
+            indices = []
+            for i, item in enumerate(targets):
+               boxes.append(item['boxes']) 
+               labels.append(item['labels'])
+               indices = indices + ([i]*len(item['labels']))
+            items = {'boxes': torch.concatenate(boxes) / x.shape[2],
+                     'labels': torch.concatenate(labels).type(torch.float32),
+                     'batch_idx': torch.tensor(indices)}
+            items['bboxes'] = items.pop('boxes')
+            items['cls'] = items.pop('labels')
+            items['img'] = x
+            
+            loss, loss_components = self.model.loss(items)
+            loss_components_dict = {"loss_total": loss.sum()}
+            loss_components_dict['loss_box'] = loss_components[0]
+            loss_components_dict['loss_cls'] = loss_components[1]
+            loss_components_dict['loss_dfl'] = loss_components[2]
+            return loss_components_dict
+        else:
+            preds = self.model(x)
+            self.detection_predictor.model = self.model
+            self.detection_predictor.batch = [x]
+            preds = self.detection_predictor.postprocess(preds, x, x)
+            # translate the preds to ART supported format
+            items = []
+            for pred in preds:
+                items.append({'boxes': pred.boxes.xyxy,
+                            'scores': pred.boxes.conf,
+                            'labels': pred.boxes.cls.type(torch.int)}) 
+            return items
+
+
 class PyTorchYolo(PyTorchObjectDetector):
     """
-    This module implements the model- and task specific estimator for YOLO v3, v5 object detector models in PyTorch.
+    This module implements the model- and task specific estimator for YOLO v3, v5, v8+ object detector models in PyTorch.
 
     | Paper link: https://arxiv.org/abs/1804.02767
     """
@@ -65,11 +122,12 @@ class PyTorchYolo(PyTorchObjectDetector):
         ),
         device_type: str = "gpu",
         is_yolov8: bool = False,
+        model_name: str = "",
     ):
         """
         Initialization.
 
-        :param model: YOLO v3 or v5 model wrapped as demonstrated in examples/get_started_yolo.py.
+        :param model: YOLO v3, v5, or v8+ model wrapped as demonstrated in examples/get_started_yolo.py.
                       The output of the model is `list[dict[str, torch.Tensor]]`, one for each input image.
                       The fields of the dict are as follows:
 
@@ -93,8 +151,13 @@ class PyTorchYolo(PyTorchObjectDetector):
                               'loss_objectness', and 'loss_rpn_box_reg'.
         :param device_type: Type of device to be used for model and tensors, if `cpu` run on CPU, if `gpu` run on GPU
                             if available otherwise run on CPU.
-        :param is_yolov8: The flag to be used for marking the YOLOv8 model.
+        :param is_yolov8: The flag to be used for marking the YOLOv8+ model.
+        :param model_name: The name of the model (e.g., 'yolov8n', 'yolov10n') for determining loss function.
         """
+        # Wrap the model with YoloWrapper if it's a YOLO v8+ model
+        if is_yolov8:
+            model = YoloWrapper(model, model_name)
+        
         super().__init__(
             model=model,
             input_shape=input_shape,
@@ -154,11 +217,23 @@ class PyTorchYolo(PyTorchObjectDetector):
         Translate object detection predictions from the model format (YOLO) to ART format (torchvision) and
         convert tensors to numpy arrays.
 
-        :param predictions: Object detection labels in format xcycwh (YOLO).
+        :param predictions: Object detection labels in format xcycwh (YOLO) or list of dicts (YOLO v8+).
         :return: Object detection labels in format x1y1x2y2 (torchvision).
         """
         import torch
 
+        # Handle YOLO v8+ predictions (list of dicts)
+        if isinstance(predictions, list) and len(predictions) > 0 and isinstance(predictions[0], dict):
+            predictions_x1y1x2y2: list[dict[str, np.ndarray]] = []
+            for pred in predictions:
+                prediction = {}
+                prediction["boxes"] = pred["boxes"].detach().cpu().numpy()
+                prediction["labels"] = pred["labels"].detach().cpu().numpy()
+                prediction["scores"] = pred["scores"].detach().cpu().numpy()
+                predictions_x1y1x2y2.append(prediction)
+            return predictions_x1y1x2y2
+
+        # Handle traditional YOLO predictions (tensor format)
         if self.channels_first:
             height = self.input_shape[1]
             width = self.input_shape[2]
