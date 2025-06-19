@@ -70,8 +70,8 @@ class PyTorchYoloLossWrapper(torch.nn.Module):
                boxes.append(item['boxes']) 
                labels.append(item['labels'])
                indices = indices + ([i]*len(item['labels']))
-            items = {'boxes': torch.concatenate(boxes) / x.shape[2],
-                     'labels': torch.concatenate(labels).type(torch.float32),
+            items = {'boxes': torch.cat(boxes) / x.shape[2],
+                     'labels': torch.cat(labels).type(torch.float32),
                      'batch_idx': torch.tensor(indices)}
             items['bboxes'] = items.pop('boxes')
             items['cls'] = items.pop('labels')
