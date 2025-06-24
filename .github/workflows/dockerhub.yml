@@ -34,7 +34,7 @@ jobs:
         with:
           images: adversarialrobustnesstoolbox/releases
           tags: |
-            type=raw,value={{branch}}-1.19.1-{{sha}}
+            type=raw,value={{branch}}-1.19.2-{{sha}}
             type=semver,pattern={{version}}
 
       - name: Build and push Docker image

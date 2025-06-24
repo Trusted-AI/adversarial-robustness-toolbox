@@ -34,12 +34,12 @@ jobs:
             torch: 2.6.0
             torchvision: 0.21.0
             torchaudio: 2.6.0
-          - name: PyTorch 2.7.0 (Python 3.10)
+          - name: PyTorch 2.7.1 (Python 3.10)
             framework: pytorch
             python: '3.10'
-            torch: 2.7.0
-            torchvision: 0.22.0
-            torchaudio: 2.7.0
+            torch: 2.7.1
+            torchvision: 0.22.1
+            torchaudio: 2.7.1
 
     name: ${{ matrix.name }}
     steps:
@@ -63,13 +63,13 @@ jobs:
           pip list
 
       - name: Cache CIFAR-10 dataset
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/.art/data/cifar-10-batches-py
           key: cifar10-dataset-cache-v1
 
       - name: Cache MNIST dataset
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/.art/data/mnist.npz
           key: mnist-dataset-cache-v1

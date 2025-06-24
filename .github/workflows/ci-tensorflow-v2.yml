@@ -56,13 +56,13 @@ jobs:
           pip list
 
       - name: Cache CIFAR-10 dataset
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/.art/data/cifar-10-batches-py
           key: cifar10-dataset-cache-v1
 
       - name: Cache MNIST dataset
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/.art/data/mnist.npz
           key: mnist-dataset-cache-v1

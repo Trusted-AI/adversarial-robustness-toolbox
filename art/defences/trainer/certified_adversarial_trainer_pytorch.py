@@ -221,10 +221,11 @@ class AdversarialTrainerCertifiedPytorch(Trainer):
         y = check_and_transform_label_format(y, nb_classes=self.classifier.nb_classes)
 
         # Apply preprocessing
+        y_preprocessed: np.ndarray
         x_preprocessed, y_preprocessed = self.classifier.apply_preprocessing(x, y, fit=True)
 
         # Check label shape
-        y_preprocessed = self.classifier.reduce_labels(y_preprocessed)
+        y_preprocessed = self.classifier.reduce_labels(y_preprocessed)  # type: ignore
 
         num_batch = int(np.ceil(len(x_preprocessed) / float(self.pgd_params["batch_size"])))
         ind = np.arange(len(x_preprocessed)).tolist()
@@ -268,8 +269,8 @@ class AdversarialTrainerCertifiedPytorch(Trainer):
                 for i, (sample, label) in enumerate(zip(x_cert, y_cert)):
 
                     self.set_forward_mode("concrete")
-                    concrete_pred = self.classifier.model.forward(np.expand_dims(sample, axis=0))
-                    concrete_pred = torch.argmax(concrete_pred)
+                    concrete_pred_tensor = self.classifier.model.forward(np.expand_dims(sample, axis=0))
+                    concrete_pred = int(torch.argmax(concrete_pred_tensor).item())
 
                     if self.classifier.concrete_to_zonotope is None:
                         if sys.version_info >= (3, 8):

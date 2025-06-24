@@ -245,6 +245,9 @@ class GRAPHITEBlackbox(EvasionAttack):
         # target initialization image
         x_tar = kwargs.get("x_tar")
 
+        if x_tar is None:
+            raise ValueError("x_tar is None. Please provide x_tar as initial array to act as the example target image.")
+
         # Some initial setups
         x_adv = x.astype(ART_NUMPY_DTYPE)
 

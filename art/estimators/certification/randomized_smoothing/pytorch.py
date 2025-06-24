@@ -241,7 +241,7 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
 
     def loss_gradient(  # type: ignore
         self, x: np.ndarray, y: np.ndarray, training_mode: bool = False, **kwargs
-    ) -> np.ndarray:
+    ) -> np.ndarray | "torch.Tensor":
         """
         Compute the gradient of the loss function w.r.t. `x`.
 

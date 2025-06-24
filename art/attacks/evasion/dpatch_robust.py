@@ -155,7 +155,7 @@ class RobustDPatch(EvasionAttack):
         if y is None and self.targeted:
             raise ValueError("The targeted version of RobustDPatch attack requires target labels provided to `y`.")
         if y is not None and not self.targeted:
-            raise ValueError("The RobustDPatch attack does not use target labels.")
+            raise ValueError("The untargeted version of RobustDPatch attack does not use True labels provided to 'y'.")
         if x.ndim != 4:  # pragma: no cover
             raise ValueError("The adversarial patch can only be applied to images.")
 
