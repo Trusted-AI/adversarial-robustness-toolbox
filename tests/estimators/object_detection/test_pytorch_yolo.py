@@ -335,7 +335,7 @@ def test_import_pytorch_yolo_loss_wrapper():
         def loss(self, items):
             return (torch.tensor([1.0]), [torch.tensor(1.0), torch.tensor(2.0), torch.tensor(3.0)])
 
-    dummy_model = DummyModel()
+    test_model = DummyModel()
     # Patch ultralytics import in the wrapper
     import sys
     import types
@@ -356,5 +356,5 @@ def test_import_pytorch_yolo_loss_wrapper():
     sys.modules["ultralytics.models.yolo.detect"] = ultralytics_mock.models.yolo.detect
     sys.modules["ultralytics.utils"] = ultralytics_mock.utils
     sys.modules["ultralytics.utils.loss"] = ultralytics_mock.utils.loss
-    wrapper = PyTorchYoloLossWrapper(dummy_model, name="yolov8n")
+    wrapper = PyTorchYoloLossWrapper(test_model, name="yolov8n")
     assert isinstance(wrapper, PyTorchYoloLossWrapper)

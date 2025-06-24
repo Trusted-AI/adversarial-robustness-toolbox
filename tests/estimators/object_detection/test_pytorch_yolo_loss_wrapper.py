@@ -19,9 +19,9 @@ def test_translate_predictions_yolov8_format():
         def forward(self, x):
             return x
 
-    dummy_model = DummyModel()
+    test_model = DummyModel()
     yolo = PyTorchYolo(
-        model=dummy_model,
+        model=test_model,
         input_shape=(3, 416, 416),
         optimizer=None,
         clip_values=(0, 1),
@@ -68,7 +68,7 @@ def test_pytorch_yolo_loss_wrapper_additional_losses():
             # Return (loss, [loss_box, loss_cls, loss_dfl])
             return (torch.tensor([1.0, 2.0, 3.0]), [torch.tensor(1.0), torch.tensor(2.0), torch.tensor(3.0)])
 
-    dummy_model = DummyModel()
+    test_model = DummyModel()
     # Patch ultralytics import in the wrapper
     import sys
     import types
@@ -90,7 +90,7 @@ def test_pytorch_yolo_loss_wrapper_additional_losses():
     sys.modules["ultralytics.utils"] = ultralytics_mock.utils
     sys.modules["ultralytics.utils.loss"] = ultralytics_mock.utils.loss
 
-    wrapper = PyTorchYoloLossWrapper(dummy_model, name="yolov8n")
+    wrapper = PyTorchYoloLossWrapper(test_model, name="yolov8n")
     wrapper.train()
     # Dummy input and targets
     x = torch.zeros((1, 3, 416, 416))
@@ -114,7 +114,7 @@ def test_loss_wrapper_outputs_all_losses():
             # Return (loss, [loss_box, loss_cls, loss_dfl])
             return (torch.tensor([1.0, 2.0, 3.0]), [torch.tensor(1.0), torch.tensor(2.0), torch.tensor(3.0)])
 
-    dummy_model = DummyModel()
+    test_model = DummyModel()
     # Patch ultralytics import in the wrapper
     import sys
     import types
@@ -136,7 +136,7 @@ def test_loss_wrapper_outputs_all_losses():
     sys.modules["ultralytics.utils"] = ultralytics_mock.utils
     sys.modules["ultralytics.utils.loss"] = ultralytics_mock.utils.loss
 
-    wrapper = PyTorchYoloLossWrapper(dummy_model, name="yolov8n")
+    wrapper = PyTorchYoloLossWrapper(test_model, name="yolov8n")
     wrapper.train()
     x = torch.zeros((1, 3, 416, 416))
     targets = [{"boxes": torch.zeros((1, 4)), "labels": torch.zeros((1,))}]
