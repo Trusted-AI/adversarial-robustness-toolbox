@@ -41,62 +41,6 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class PyTorchYoloLossWrapper(torch.nn.Module):
-    """Wrapper for YOLO v8+ models to handle loss dict format."""
-    
-    def __init__(self, model, name):
-        super().__init__()
-        self.model = model
-        try:
-            from ultralytics.models.yolo.detect import DetectionPredictor
-            from ultralytics.utils.loss import v8DetectionLoss, E2EDetectLoss
-            
-            self.detection_predictor = DetectionPredictor()
-            self.model.args = self.detection_predictor.args
-            if 'v10' in name:
-                self.model.criterion = E2EDetectLoss(model)
-            else:
-                self.model.criterion = v8DetectionLoss(model)
-        except ImportError as e:
-            raise ImportError("The 'ultralytics' package is required for YOLO v8+ models but not installed.") from e
-
-    def forward(self, x, targets=None):
-        if self.training:
-            # batch_idx is used to identify which predictions/boxes relate to which image
-            boxes = []
-            labels = []
-            indices = []
-            for i, item in enumerate(targets):
-               boxes.append(item['boxes']) 
-               labels.append(item['labels'])
-               indices = indices + ([i]*len(item['labels']))
-            items = {'boxes': torch.cat(boxes) / x.shape[2],
-                     'labels': torch.cat(labels).type(torch.float32),
-                     'batch_idx': torch.tensor(indices)}
-            items['bboxes'] = items.pop('boxes')
-            items['cls'] = items.pop('labels')
-            items['img'] = x
-            
-            loss, loss_components = self.model.loss(items)
-            loss_components_dict = {"loss_total": loss.sum()}
-            loss_components_dict['loss_box'] = loss_components[0]
-            loss_components_dict['loss_cls'] = loss_components[1]
-            loss_components_dict['loss_dfl'] = loss_components[2]
-            return loss_components_dict
-        else:
-            preds = self.model(x)
-            self.detection_predictor.model = self.model
-            self.detection_predictor.batch = [x]
-            preds = self.detection_predictor.postprocess(preds, x, x)
-            # translate the preds to ART supported format
-            items = []
-            for pred in preds:
-                items.append({'boxes': pred.boxes.xyxy,
-                            'scores': pred.boxes.conf,
-                            'labels': pred.boxes.cls.type(torch.int)}) 
-            return items
-
-
 class PyTorchYolo(PyTorchObjectDetector):
     """
     This module implements the model- and task specific estimator for YOLO v3, v5, v8+ object detector models in PyTorch.
@@ -156,8 +100,10 @@ class PyTorchYolo(PyTorchObjectDetector):
         """
         # Wrap the model with YoloWrapper if it's a YOLO v8+ model
         if is_yolov8:
-            model = YoloWrapper(model, model_name)
-        
+            from art.estimators.object_detection.pytorch_yolo_loss_wrapper import PyTorchYoloLossWrapper
+
+            model = PyTorchYoloLossWrapper(model, model_name)
+
         super().__init__(
             model=model,
             input_shape=input_shape,

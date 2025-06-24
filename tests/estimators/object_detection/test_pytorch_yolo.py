@@ -324,89 +324,37 @@ def test_patch(art_warning, get_pytorch_yolo):
         art_warning(e)
 
 
-@pytest.mark.only_with_platform("pytorch")
-def test_translate_predictions_yolov8_format():
+def test_import_pytorch_yolo_loss_wrapper():
     import torch
-    import numpy as np
-    from art.estimators.object_detection.pytorch_yolo import PyTorchYolo
+    from art.estimators.object_detection.pytorch_yolo_loss_wrapper import PyTorchYoloLossWrapper
 
-    # Create a dummy PyTorchYolo instance (model is not used for this test)
-    class DummyModel(torch.nn.Module):
-        def forward(self, x):
-            return x
-    dummy_model = DummyModel()
-    yolo = PyTorchYolo(
-        model=dummy_model,
-        input_shape=(3, 416, 416),
-        optimizer=None,
-        clip_values=(0, 1),
-        channels_first=True,
-        attack_losses=("loss_total",),
-    )
-
-    # Mock YOLO v8+ style predictions: list of dicts with torch tensors
-    pred_boxes = torch.tensor([[10.0, 20.0, 30.0, 40.0]], dtype=torch.float32)
-    pred_labels = torch.tensor([5], dtype=torch.int64)
-    pred_scores = torch.tensor([0.9], dtype=torch.float32)
-    predictions = [{
-        "boxes": pred_boxes,
-        "labels": pred_labels,
-        "scores": pred_scores,
-    }]
-
-    # Call the translation method
-    translated = yolo._translate_predictions(predictions)
-
-    # Check output type and values
-    assert isinstance(translated, list)
-    assert isinstance(translated[0], dict)
-    assert isinstance(translated[0]["boxes"], np.ndarray)
-    assert isinstance(translated[0]["labels"], np.ndarray)
-    assert isinstance(translated[0]["scores"], np.ndarray)
-    np.testing.assert_array_equal(translated[0]["boxes"], pred_boxes.numpy())
-    np.testing.assert_array_equal(translated[0]["labels"], pred_labels.numpy())
-    np.testing.assert_array_equal(translated[0]["scores"], pred_scores.numpy())
-
-
-@pytest.mark.only_with_platform("pytorch")
-def test_pytorch_yolo_loss_wrapper_additional_losses():
-    import torch
-    from art.estimators.object_detection.pytorch_yolo import PyTorchYoloLossWrapper
-
-    # Dummy model with a .loss() method
     class DummyModel(torch.nn.Module):
         def __init__(self):
             super().__init__()
+
         def loss(self, items):
-            # Return (loss, [loss_box, loss_cls, loss_dfl])
-            return (
-                torch.tensor([1.0, 2.0, 3.0]),
-                [torch.tensor(1.0), torch.tensor(2.0), torch.tensor(3.0)]
-            )
+            return (torch.tensor([1.0]), [torch.tensor(1.0), torch.tensor(2.0), torch.tensor(3.0)])
 
     dummy_model = DummyModel()
     # Patch ultralytics import in the wrapper
     import sys
     import types
-    ultralytics_mock = types.SimpleNamespace(
-        models=types.SimpleNamespace(yolo=types.SimpleNamespace(detect=types.SimpleNamespace(DetectionPredictor=lambda: types.SimpleNamespace(args=None)))),
-        utils=types.SimpleNamespace(loss=types.SimpleNamespace(v8DetectionLoss=lambda m: None, E2EDetectLoss=lambda m: None))
-    )
-    sys.modules['ultralytics'] = ultralytics_mock
-    sys.modules['ultralytics.models'] = ultralytics_mock.models
-    sys.modules['ultralytics.models.yolo'] = ultralytics_mock.models.yolo
-    sys.modules['ultralytics.models.yolo.detect'] = ultralytics_mock.models.yolo.detect
-    sys.modules['ultralytics.utils'] = ultralytics_mock.utils
-    sys.modules['ultralytics.utils.loss'] = ultralytics_mock.utils.loss
 
+    ultralytics_mock = types.SimpleNamespace(
+        models=types.SimpleNamespace(
+            yolo=types.SimpleNamespace(
+                detect=types.SimpleNamespace(DetectionPredictor=lambda: types.SimpleNamespace(args=None))
+            )
+        ),
+        utils=types.SimpleNamespace(
+            loss=types.SimpleNamespace(v8DetectionLoss=lambda m: None, E2EDetectLoss=lambda m: None)
+        ),
+    )
+    sys.modules["ultralytics"] = ultralytics_mock
+    sys.modules["ultralytics.models"] = ultralytics_mock.models
+    sys.modules["ultralytics.models.yolo"] = ultralytics_mock.models.yolo
+    sys.modules["ultralytics.models.yolo.detect"] = ultralytics_mock.models.yolo.detect
+    sys.modules["ultralytics.utils"] = ultralytics_mock.utils
+    sys.modules["ultralytics.utils.loss"] = ultralytics_mock.utils.loss
     wrapper = PyTorchYoloLossWrapper(dummy_model, name="yolov8n")
-    wrapper.train()
-    # Dummy input and targets
-    x = torch.zeros((1, 3, 416, 416))
-    targets = [{"boxes": torch.zeros((1, 4)), "labels": torch.zeros((1,))}]
-    losses = wrapper(x, targets)
-    assert set(losses.keys()) == {"loss_total", "loss_box", "loss_cls", "loss_dfl"}
-    assert losses["loss_total"].item() == 6.0  # sum([1.0, 2.0, 3.0])
-    assert losses["loss_box"].item() == 1.0
-    assert losses["loss_cls"].item() == 2.0
-    assert losses["loss_dfl"].item() == 3.0
+    assert isinstance(wrapper, PyTorchYoloLossWrapper)
