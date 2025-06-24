@@ -157,6 +157,7 @@ def test_yolov8_vs_yolov10_loss_functions():
         def __init__(self):
             super().__init__()
             self.criterion = None  # Will be set by wrapper
+
         def loss(self, items):
             # Return different loss components based on model version
             return (torch.tensor([1.0, 2.0, 3.0]), [torch.tensor(1.0), torch.tensor(2.0), torch.tensor(3.0)])
@@ -164,7 +165,7 @@ def test_yolov8_vs_yolov10_loss_functions():
     # Mock ultralytics imports
     import sys
     import types
-    
+
     def create_mock_imports():
         return types.SimpleNamespace(
             models=types.SimpleNamespace(
@@ -173,10 +174,7 @@ def test_yolov8_vs_yolov10_loss_functions():
                 )
             ),
             utils=types.SimpleNamespace(
-                loss=types.SimpleNamespace(
-                    v8DetectionLoss=lambda m: "v8_loss",
-                    E2EDetectLoss=lambda m: "v10_loss"
-                )
+                loss=types.SimpleNamespace(v8DetectionLoss=lambda m: "v8_loss", E2EDetectLoss=lambda m: "v10_loss")
             ),
         )
 
@@ -208,6 +206,7 @@ def test_yolov8_inference_mode():
     class DummyYoloV8Model(torch.nn.Module):
         def __init__(self):
             super().__init__()
+
         def forward(self, x):
             # Return format matching YOLO v8+ output structure
             return [{"boxes": torch.ones(1, 4), "scores": torch.ones(1), "labels": torch.zeros(1)}]
@@ -215,6 +214,7 @@ def test_yolov8_inference_mode():
     # Mock ultralytics imports
     import sys
     import types
+
     ultralytics_mock = types.SimpleNamespace(
         models=types.SimpleNamespace(
             yolo=types.SimpleNamespace(
@@ -228,10 +228,10 @@ def test_yolov8_inference_mode():
                                 boxes=types.SimpleNamespace(
                                     xyxy=torch.tensor([[1.0, 2.0, 3.0, 4.0]]),
                                     conf=torch.tensor([0.95]),
-                                    cls=torch.tensor([1])
+                                    cls=torch.tensor([1]),
                                 )
                             )
-                        ]
+                        ],
                     )
                 )
             )
@@ -273,6 +273,7 @@ def test_yolov8_training_data_format():
     class DummyModel(torch.nn.Module):
         def __init__(self):
             super().__init__()
+
         def loss(self, items):
             # Validate input format matches expected YOLO v8+ training format
             assert "bboxes" in items
@@ -284,6 +285,7 @@ def test_yolov8_training_data_format():
     # Setup mock imports
     import sys
     import types
+
     ultralytics_mock = types.SimpleNamespace(
         models=types.SimpleNamespace(
             yolo=types.SimpleNamespace(
@@ -313,14 +315,10 @@ def test_yolov8_training_data_format():
         for box_count in box_counts:
             x = torch.zeros((batch_size, 3, 416, 416))
             targets = [
-                {
-                    "boxes": torch.zeros((box_count, 4)),
-                    "labels": torch.zeros(box_count)
-                }
-                for _ in range(batch_size)
+                {"boxes": torch.zeros((box_count, 4)), "labels": torch.zeros(box_count)} for _ in range(batch_size)
             ]
             losses = wrapper(x, targets)
-            
+
             # Verify loss structure
             assert set(losses.keys()) == {"loss_total", "loss_box", "loss_cls", "loss_dfl"}
             assert all(isinstance(v, torch.Tensor) for v in losses.values())
