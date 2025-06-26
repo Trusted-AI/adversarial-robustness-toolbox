@@ -1,11 +1,135 @@
 # MIT License
 #
-# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2022
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2025
 #
-# Test for PyTorchYoloLossWrapper
+# Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+# documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
+# rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit
+# persons to whom the Software is furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all copies or substantial portions of the
+# Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
+# WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+# TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
 import pytest
 import torch
+import os
 from art.estimators.object_detection.pytorch_yolo_loss_wrapper import PyTorchYoloLossWrapper
+from ultralytics import YOLO
+
+os.environ["TORCH_FORCE_NO_WEIGHTS_ONLY_LOAD"] = "1"
+
+
+@pytest.mark.only_with_platform("pytorch")
+def test_yolov8_loss_wrapper():
+    """Test the loss wrapper with YOLOv8 model."""
+    # Load YOLOv8 model
+    model_path = "/tmp/yolo_v8.3.0/yolov8n.pt"
+    model = YOLO(model_path).model
+
+    # Create wrapper
+    wrapper = PyTorchYoloLossWrapper(model, name="yolov8n")
+    wrapper.train()
+
+    # Create sample input
+    batch_size = 2
+    x = torch.randn((batch_size, 3, 640, 640))  # YOLOv8 expects (B, 3, 640, 640)
+
+    # Create targets
+    targets = []
+    for _ in range(batch_size):
+        boxes = torch.tensor([[0.1, 0.1, 0.3, 0.3], [0.5, 0.5, 0.8, 0.8]])  # [x1, y1, x2, y2]
+        labels = torch.zeros(2, dtype=torch.long)  # Use class 0 for testing
+        targets.append({"boxes": boxes, "labels": labels})
+
+    # Test training mode
+    losses = wrapper(x, targets)
+
+    # Validate loss structure
+    expected_loss_keys = {"loss_total", "loss_box", "loss_cls", "loss_dfl"}
+    assert set(losses.keys()) == expected_loss_keys
+    assert all(isinstance(v, torch.Tensor) for v in losses.values())
+    assert all(not torch.isnan(v).any() for v in losses.values()), "Loss values contain NaN"
+    assert all(not torch.isinf(v).any() for v in losses.values()), "Loss values contain Inf"
+
+    # Test inference mode
+    wrapper.eval()
+    with torch.no_grad():
+        predictions = wrapper(x)
+
+    # Validate predictions
+    assert isinstance(predictions, list)
+    assert len(predictions) == batch_size
+    for pred in predictions:
+        assert set(pred.keys()) == {"boxes", "scores", "labels"}
+        assert isinstance(pred["boxes"], torch.Tensor)
+        assert isinstance(pred["scores"], torch.Tensor)
+        assert isinstance(pred["labels"], torch.Tensor)
+        assert pred["boxes"].ndim == 2 and pred["boxes"].shape[1] == 4
+        assert pred["scores"].ndim == 1
+        assert pred["labels"].ndim == 1
+        assert pred["scores"].shape[0] == pred["labels"].shape[0] == pred["boxes"].shape[0]
+        assert pred["boxes"].dtype == torch.float32
+        assert pred["labels"].dtype in (torch.int32, torch.int64)
+
+
+@pytest.mark.only_with_platform("pytorch")
+def test_yolov10_loss_wrapper():
+    """Test the loss wrapper with YOLOv10 model."""
+    # Load YOLOv10 model
+    model_path = "/tmp/yolo_v8.3.0/yolov10n.pt"
+    model = YOLO(model_path).model
+
+    # Create wrapper
+    wrapper = PyTorchYoloLossWrapper(model, name="yolov10n")
+    wrapper.train()
+
+    # Create sample input
+    batch_size = 2
+    x = torch.randn((batch_size, 3, 640, 640))  # Standard YOLO input size
+
+    # Create targets
+    targets = []
+    for _ in range(batch_size):
+        boxes = torch.tensor([[0.1, 0.1, 0.3, 0.3], [0.5, 0.5, 0.8, 0.8]])  # [x1, y1, x2, y2]
+        labels = torch.zeros(2, dtype=torch.long)  # Use class 0 for testing
+        targets.append({"boxes": boxes, "labels": labels})
+
+    # Test training mode
+    losses = wrapper(x, targets)
+
+    # Validate loss structure
+    expected_loss_keys = {"loss_total", "loss_box", "loss_cls", "loss_dfl"}
+    assert set(losses.keys()) == expected_loss_keys
+    assert all(isinstance(v, torch.Tensor) for v in losses.values())
+    assert all(not torch.isnan(v).any() for v in losses.values()), "Loss values contain NaN"
+    assert all(not torch.isinf(v).any() for v in losses.values()), "Loss values contain Inf"
+    assert all(v.item() >= 0 for v in losses.values()), "Loss values should be non-negative"
+    assert losses["loss_total"].item() > 0, "Total loss should be positive"
+
+    # Test inference mode
+    wrapper.eval()
+    with torch.no_grad():
+        predictions = wrapper(x)
+
+    # Validate predictions
+    assert isinstance(predictions, list)
+    assert len(predictions) == batch_size
+    for pred in predictions:
+        assert set(pred.keys()) == {"boxes", "scores", "labels"}
+        assert isinstance(pred["boxes"], torch.Tensor)
+        assert isinstance(pred["scores"], torch.Tensor)
+        assert isinstance(pred["labels"], torch.Tensor)
+        assert pred["boxes"].ndim == 2 and pred["boxes"].shape[1] == 4
+        assert pred["scores"].ndim == 1
+        assert pred["labels"].ndim == 1
+        assert pred["scores"].shape[0] == pred["labels"].shape[0] == pred["boxes"].shape[0]
+        assert pred["boxes"].dtype == torch.float32
+        assert pred["labels"].dtype in (torch.int32, torch.int64)
 
 
 @pytest.mark.only_with_platform("pytorch")

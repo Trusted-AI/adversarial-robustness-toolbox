@@ -23,10 +23,9 @@ This module implements the task specific estimator for PyTorch YOLO v3, v5, v8+ 
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING
 
 import numpy as np
-import torch
 
 from art.estimators.object_detection.pytorch_object_detector import PyTorchObjectDetector
 
@@ -66,7 +65,7 @@ class PyTorchYolo(PyTorchObjectDetector):
         ),
         device_type: str = "gpu",
         is_yolov8: bool = False,
-        model_name: str = "",
+        model_name: str | None = None,
     ):
         """
         Initialization.
@@ -168,9 +167,10 @@ class PyTorchYolo(PyTorchObjectDetector):
         """
         import torch
 
+        predictions_x1y1x2y2: list[dict[str, np.ndarray]] = []
+
         # Handle YOLO v8+ predictions (list of dicts)
         if isinstance(predictions, list) and len(predictions) > 0 and isinstance(predictions[0], dict):
-            predictions_x1y1x2y2: list[dict[str, np.ndarray]] = []
             for pred in predictions:
                 prediction = {}
                 prediction["boxes"] = pred["boxes"].detach().cpu().numpy()
@@ -186,8 +186,6 @@ class PyTorchYolo(PyTorchObjectDetector):
         else:
             height = self.input_shape[0]
             width = self.input_shape[1]
-
-        predictions_x1y1x2y2: list[dict[str, np.ndarray]] = []
 
         for pred in predictions:
             boxes = torch.vstack(
