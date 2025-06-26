@@ -42,7 +42,7 @@ logger = logging.getLogger(__name__)
 
 class PyTorchYolo(PyTorchObjectDetector):
     """
-    This module implements the model- and task specific estimator for YOLO v3, v5, v8+ object detector models in PyTorch.
+    This module implements the model- and task specific estimator for YOLO object detector models in PyTorch.
 
     | Paper link: https://arxiv.org/abs/1804.02767
     """
