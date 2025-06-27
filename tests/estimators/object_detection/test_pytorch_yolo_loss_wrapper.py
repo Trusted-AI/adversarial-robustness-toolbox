@@ -15,11 +15,12 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+import os
 import pytest
 import torch
-import os
-from art.estimators.object_detection.pytorch_yolo_loss_wrapper import PyTorchYoloLossWrapper
 from ultralytics import YOLO
+
+from art.estimators.object_detection.pytorch_yolo_loss_wrapper import PyTorchYoloLossWrapper
 
 os.environ["TORCH_FORCE_NO_WEIGHTS_ONLY_LOAD"] = "1"
 
