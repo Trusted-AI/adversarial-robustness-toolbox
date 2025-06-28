@@ -662,18 +662,26 @@ class TestCalculateMisclassificationRate(unittest.TestCase):
         y_train_constructor_dummy = np.array(["A"] * 5 + ["B"] * 5)
         benign_indices_dummy = np.arange(10)
 
-        with patch(
-            "art.defences.detector.poison.clustering_centroid_analysis.ClusteringCentroidAnalysisTensorFlowV2._extract_submodels",
-            return_value=(MagicMock(), MagicMock()),
-        ):
-            self.defence = ClusteringCentroidAnalysisTensorFlowV2(
-                classifier=MagicMock(),
-                x_train=x_train_dummy,
-                y_train=y_train_constructor_dummy,
-                benign_indices=benign_indices_dummy,
-                final_feature_layer_name="dummy_layer",
-                misclassification_threshold=0.1,
-            )
+        self.extract_submodels_patcher = patch(
+            "art.defences.detector.poison.clustering_centroid_analysis.ClusteringCentroidAnalysisTensorFlowV2._extract_submodels"
+        )
+        self.mock_extract_submodels = self.extract_submodels_patcher.start()
+
+        # Define the return value for mock_extract_submodels: two MagicMocks.
+        # These will become self.feature_representation_model and self.classifying_submodel
+        # on the self.defence instance.
+        mock_feature_model = MagicMock(spec=tf.keras.Model) # Use spec for type safety
+        mock_classifying_model = MagicMock(spec=tf.keras.Model)
+        self.mock_extract_submodels.return_value = (mock_feature_model, mock_classifying_model)
+
+        self.defence = ClusteringCentroidAnalysisTensorFlowV2(
+            classifier=MagicMock(),
+            x_train=x_train_dummy,
+            y_train=y_train_constructor_dummy,
+            benign_indices=benign_indices_dummy,
+            final_feature_layer_name="dummy_layer",
+            misclassification_threshold=0.1,
+        )
 
         self.feature_dim = 5
         self.num_benign_samples_class_0 = 3
@@ -693,21 +701,32 @@ class TestCalculateMisclassificationRate(unittest.TestCase):
         )
         self.defence.unique_classes = {0, 1, 2}
 
-        self.defence.feature_representation_model = MagicMock(spec=tf.keras.Model)
+        # Mock the instance's _calculate_features attribute AFTER it has been set up in __init__
+        # It's now a tf.function, but MagicMock can replace tf.function objects too.
+        def mock_calc_features_side_effect(model_arg, data_tensor): # model_arg is feature_representation_model
+            # Ensure it's a tensor for tf.shape, or convert if needed
+            if not tf.is_tensor(data_tensor):
+                data_tensor = tf.convert_to_tensor(data_tensor, dtype=tf.float32)
+
+            num_samples = tf.shape(data_tensor)[0].numpy()
+
+            if num_samples == 0:
+                print("Debug: mock_calculate_features received EMPTY data_tensor. Returning empty features.")
+                return tf.constant([], shape=(0, self.feature_dim), dtype=tf.float32)
+
+            print(f"Debug: mock_calculate_features received data_tensor shape: {data_tensor.shape}. Returning features shape: ({num_samples}, {self.feature_dim})")
+            return tf.random.uniform((num_samples, self.feature_dim), dtype=tf.float32)
+
+        self.mock_calculate_features_instance = MagicMock(side_effect=mock_calc_features_side_effect)
+        self.defence._calculate_features = self.mock_calculate_features_instance
+
+        # Mock feature_representation_model.predict as well, as it's used once for feature_shape
         self.defence.feature_representation_model.predict.return_value = np.random.rand(
             1, self.feature_dim
-        )
-        self.defence.classifying_submodel = MagicMock(spec=tf.keras.Sequential)
-
-        self.calculate_features_patcher = patch(
-            "art.defences.detector.poison.clustering_centroid_analysis.ClusteringCentroidAnalysisTensorFlowV2._calculate_features"
-        )
-        self.mock_calculate_features = self.calculate_features_patcher.start()
+        ).astype(np.float32) # Ensure correct dtype and shape
 
     def tearDown(self):
-        self.calculate_features_patcher.stop()
         tf.config.run_functions_eagerly(self.original_eager_value)  # Restore original eager mode
-        self.calculate_features_patcher.stop()
 
     def test_zero_misclassification(self):
         """Test when no samples are misclassified."""
@@ -716,7 +735,7 @@ class TestCalculateMisclassificationRate(unittest.TestCase):
 
         mock_features_class1 = np.random.rand(self.num_benign_samples_class_1, self.feature_dim)
         mock_features_class2 = np.random.rand(self.num_benign_samples_class_2, self.feature_dim)
-        self.mock_calculate_features.side_effect = [
+        self.mock_calculate_features_instance.side_effect = [
             mock_features_class1,
             mock_features_class2,
         ]
@@ -748,7 +767,7 @@ class TestCalculateMisclassificationRate(unittest.TestCase):
 
         rate = self.defence._calculate_misclassification_rate(target_class_label, deviation_vector)
         self.assertEqual(rate, 0.0)
-        self.assertEqual(self.mock_calculate_features.call_count, 2)
+        self.assertEqual(self.mock_calculate_features_instance.call_count, 2)
         self.assertEqual(self.defence.classifying_submodel.call_count, 2)
 
     def test_full_misclassification(self):
@@ -758,7 +777,7 @@ class TestCalculateMisclassificationRate(unittest.TestCase):
 
         mock_features_class0 = np.random.rand(self.num_benign_samples_class_0, self.feature_dim)
         mock_features_class2 = np.random.rand(self.num_benign_samples_class_2, self.feature_dim)
-        self.mock_calculate_features.side_effect = [
+        self.mock_calculate_features_instance.side_effect = [
             mock_features_class0,
             mock_features_class2,
         ]
@@ -784,20 +803,13 @@ class TestCalculateMisclassificationRate(unittest.TestCase):
 
         rate = self.defence._calculate_misclassification_rate(target_class_label, deviation_vector)
         self.assertEqual(rate, 1.0)
-        self.assertEqual(self.mock_calculate_features.call_count, 2)
+        self.assertEqual(self.mock_calculate_features_instance.call_count, 2)
         self.assertEqual(self.defence.classifying_submodel.call_count, 2)
 
     def test_partial_misclassification(self):
         """Test with a mix of misclassifications."""
         target_class_label = 2
         deviation_vector = np.random.rand(self.feature_dim)
-
-        mock_features_class0 = np.random.rand(self.num_benign_samples_class_0, self.feature_dim)
-        mock_features_class1 = np.random.rand(self.num_benign_samples_class_1, self.feature_dim)
-        self.mock_calculate_features.side_effect = [
-            mock_features_class0,
-            mock_features_class1,
-        ]
 
         def mock_classifier_predict_side_effect(deviated_features, training=False):
             num_unique_classes = len(self.defence.unique_classes)
@@ -839,7 +851,7 @@ class TestCalculateMisclassificationRate(unittest.TestCase):
             2.0 / (self.num_benign_samples_class_0 + self.num_benign_samples_class_1),
             places=6,
         )
-        self.assertEqual(self.mock_calculate_features.call_count, 2)
+        self.assertEqual(self.mock_calculate_features_instance.call_count, 2)
         self.assertEqual(self.defence.classifying_submodel.call_count, 2)
 
     def test_no_other_classes_exist(self):
@@ -850,7 +862,7 @@ class TestCalculateMisclassificationRate(unittest.TestCase):
 
         rate = self.defence._calculate_misclassification_rate(target_class_label, deviation_vector)
         self.assertEqual(rate, 0.0)
-        self.mock_calculate_features.assert_not_called()
+        self.mock_calculate_features_instance.assert_not_called()
         self.defence.classifying_submodel.assert_not_called()
 
     def test_other_classes_exist_but_no_benign_samples(self):
@@ -863,7 +875,7 @@ class TestCalculateMisclassificationRate(unittest.TestCase):
 
         rate = self.defence._calculate_misclassification_rate(target_class_label, deviation_vector)
         self.assertEqual(rate, 0.0)
-        self.mock_calculate_features.assert_not_called()
+        self.mock_calculate_features_instance.assert_not_called()
         self.defence.classifying_submodel.assert_not_called()
 
     def test_batching_multiple_batches_for_one_class(self):
@@ -890,7 +902,7 @@ class TestCalculateMisclassificationRate(unittest.TestCase):
         features_batch1_c1 = np.random.rand(128, self.feature_dim)
         features_batch2_c1 = np.random.rand(num_samples_class1_large - 128, self.feature_dim)
         features_batch1_c2 = np.random.rand(num_samples_class2_small, self.feature_dim)
-        self.mock_calculate_features.side_effect = [
+        self.mock_calculate_features_instance.side_effect = [
             features_batch1_c1,
             features_batch2_c1,
             features_batch1_c2,
@@ -921,7 +933,7 @@ class TestCalculateMisclassificationRate(unittest.TestCase):
 
         rate = self.defence._calculate_misclassification_rate(target_class_label, deviation_vector)
         self.assertEqual(rate, 1.0)
-        self.assertEqual(self.mock_calculate_features.call_count, 3)
+        self.assertEqual(self.mock_calculate_features_instance.call_count, 3)
         self.assertEqual(self.defence.classifying_submodel.call_count, 3)
 
         self.num_benign_samples_class_1 = original_num_benign_samples_class_1
