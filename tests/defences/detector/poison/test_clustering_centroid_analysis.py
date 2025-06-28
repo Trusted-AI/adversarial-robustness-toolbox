@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2025
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -25,7 +25,6 @@ from unittest.mock import MagicMock, patch
 import numpy as np
 import pytest
 import tensorflow as tf
-from tensorflow import keras
 from sklearn.base import ClusterMixin
 from tensorflow.keras import Model, Sequential, Input
 from tensorflow.keras.layers import Dense
@@ -33,12 +32,7 @@ from tensorflow.keras.losses import CategoricalCrossentropy
 from tensorflow.keras.optimizers import Adam
 
 from art.defences.detector.poison.clustering_centroid_analysis import (
-    ClusteringCentroidAnalysis,
-    _calculate_centroid,
-    _class_clustering,
-    _feature_extraction,
-    _cluster_classes,
-    _encode_labels,
+    ClusteringCentroidAnalysisTensorFlowV2, _encode_labels,
 )
 from art.estimators.classification import TensorFlowV2Classifier
 
@@ -59,19 +53,8 @@ class MockClusterer(ClusterMixin):
         return self.cluster_labels_to_return
 
 
-@pytest.mark.skip_framework(
-    "tensorflow1",
-    "keras",
-    "kerastf",
-    "pytorch",
-    "mxnet",
-    "non_dl_frameworks",
-)
-class TestInitialization(unittest.TestCase):
-    """
-    Unit tests for the ClusteringCentroidAnalysis class, focusing on
-    __init__, _get_benign_data, and _extract_submodels.
-    """
+
+class CCAUDTestCaseBase(unittest.TestCase):
 
     def setUp(self):
         # Create mock data and objects for testing
@@ -109,6 +92,28 @@ class TestInitialization(unittest.TestCase):
             input_shape=(10,),
         )
 
+        self.cca = ClusteringCentroidAnalysisTensorFlowV2(
+            classifier=self.mock_classifier,
+            x_train=self.x_train,
+            y_train=self.y_train,
+            benign_indices=self.benign_indices,
+            final_feature_layer_name=self.final_feature_layer_name,
+            misclassification_threshold=self.misclassification_threshold,
+        )
+
+
+@pytest.mark.skip_framework(
+    "keras",
+    "kerastf",
+    "pytorch",
+    "non_dl_frameworks",
+)
+class TestInitialization(CCAUDTestCaseBase):
+    """
+    Unit tests for the ClusteringCentroidAnalysis class, focusing on
+    __init__, _get_benign_data, and _extract_submodels.
+    """
+
     def is_valid_reducer(self, obj):
         """Check if an object is a valid reducer."""
         self.assertTrue(hasattr(obj, "fit_transform"))
@@ -121,31 +126,15 @@ class TestInitialization(unittest.TestCase):
 
     def test_get_benign_data_basic(self):
         """Test _get_benign_data with a simple example."""
-        cca = ClusteringCentroidAnalysis(
-            classifier=self.mock_classifier,
-            x_train=self.x_train,
-            y_train=self.y_train,
-            benign_indices=self.benign_indices,
-            final_feature_layer_name=self.final_feature_layer_name,
-            misclassification_threshold=self.misclassification_threshold,
-        )
-        x_benign, y_benign = cca._get_benign_data()
+        x_benign, y_benign = self.cca._get_benign_data()
         self.assertTrue(np.array_equal(x_benign, self.x_train[[0, 2]]))
         self.assertTrue(np.array_equal(y_benign, self.y_train[[0, 2]]))
 
     def test_extract_submodels_valid_layer(self):
         """Test _extract_submodels with a valid layer name."""
-        cca = ClusteringCentroidAnalysis(
-            classifier=self.mock_classifier,
-            x_train=self.x_train,
-            y_train=self.y_train,
-            benign_indices=self.benign_indices,
-            final_feature_layer_name=self.final_feature_layer_name,
-            misclassification_threshold=self.misclassification_threshold,
-        )
         feature_model, classify_model = (
-            cca.feature_representation_model,
-            cca.classifying_submodel,
+            self.cca.feature_representation_model,
+            self.cca.classifying_submodel,
         )
 
         # Verify model types and names
@@ -181,44 +170,28 @@ class TestInitialization(unittest.TestCase):
 
     def test_extract_submodels_invalid_layer(self):
         """Test _extract_submodels with an invalid layer name.  Check for error"""
-        cca = ClusteringCentroidAnalysis(
-            classifier=self.mock_classifier,
-            x_train=self.x_train,
-            y_train=self.y_train,
-            benign_indices=self.benign_indices,
-            final_feature_layer_name=self.final_feature_layer_name,
-            misclassification_threshold=self.misclassification_threshold,
-        )
         with self.assertRaises(ValueError):  # Expect a ValueError
-            cca._extract_submodels("invalid_layer_name")
+            self.cca._extract_submodels("invalid_layer_name")
 
     def test_init_basic(self):
         """Test __init__ with valid inputs."""
-        cca = ClusteringCentroidAnalysis(
-            classifier=self.mock_classifier,
-            x_train=self.x_train,
-            y_train=self.y_train,
-            benign_indices=self.benign_indices,
-            final_feature_layer_name=self.final_feature_layer_name,
-            misclassification_threshold=self.misclassification_threshold,
-        )
-        self.assertEqual(self.mock_classifier, cca.classifier)
-        self.assertTrue(np.array_equal(cca.x_train, self.x_train))
-        self.assertTrue(np.array_equal(cca.y_train, self.y_train))
-        self.assertTrue(np.array_equal(cca.benign_indices, self.benign_indices))
-        self.assertEqual(self.misclassification_threshold, cca.misclassification_threshold)
-        self.is_valid_reducer(cca.reducer)
-        self.is_valid_clusterer(cca.clusterer)
-        self.assertTrue(np.array_equal(cca.x_benign, self.x_train[[0, 2]]))
-        self.assertTrue(np.array_equal(cca.y_benign, self.y_train[[0, 2]]))
-        self.assertIsInstance(cca.feature_representation_model, Model)
-        self.assertIsInstance(cca.classifying_submodel, Sequential)
-        self.assertEqual({0, 1}, cca.unique_classes)
+        self.assertEqual(self.mock_classifier, self.cca.classifier)
+        self.assertTrue(np.array_equal(self.cca.x_train, self.x_train))
+        self.assertTrue(np.array_equal(self.cca.y_train, self.y_train))
+        self.assertTrue(np.array_equal(self.cca.benign_indices, self.benign_indices))
+        self.assertEqual(self.misclassification_threshold, self.cca.misclassification_threshold)
+        self.is_valid_reducer(self.cca.reducer)
+        self.is_valid_clusterer(self.cca.clusterer)
+        self.assertTrue(np.array_equal(self.cca.x_benign, self.x_train[[0, 2]]))
+        self.assertTrue(np.array_equal(self.cca.y_benign, self.y_train[[0, 2]]))
+        self.assertIsInstance(self.cca.feature_representation_model, Model)
+        self.assertIsInstance(self.cca.classifying_submodel, Sequential)
+        self.assertEqual({0, 1}, self.cca.unique_classes)
 
     def test_init_empty_benign_indices(self):
         """Test __init__ with empty benign indices."""
         with self.assertRaises(ValueError) as e:
-            ClusteringCentroidAnalysis(
+            ClusteringCentroidAnalysisTensorFlowV2(
                 classifier=self.mock_classifier,
                 x_train=self.x_train,
                 y_train=self.y_train,
@@ -234,7 +207,7 @@ class TestInitialization(unittest.TestCase):
     def test_init_invalid_layer_name(self):
         """Test __init__ with an invalid layer name. Check that it raises error."""
         with self.assertRaises(ValueError) as e:
-            ClusteringCentroidAnalysis(
+            ClusteringCentroidAnalysisTensorFlowV2(
                 classifier=self.mock_classifier,
                 x_train=self.x_train,
                 y_train=self.y_train,
@@ -250,7 +223,7 @@ class TestInitialization(unittest.TestCase):
     def test_init_invalid_layer_non_relu(self):
         """Test __init__ with an invalid layer that does not have ReLu activation. Check that it raises error."""
         with self.assertWarns(UserWarning) as w:
-            ClusteringCentroidAnalysis(
+            ClusteringCentroidAnalysisTensorFlowV2(
                 classifier=self.mock_classifier,
                 x_train=self.x_train,
                 y_train=self.y_train,
@@ -291,32 +264,31 @@ class TestEncodeLabels(unittest.TestCase):
 
 
 @pytest.mark.skip_framework(
-    "tensorflow1",
     "keras",
     "kerastf",
     "pytorch",
-    "mxnet",
     "non_dl_frameworks",
 )
-class TestCalculateCentroid(unittest.TestCase):
+class TestCalculateCentroid(CCAUDTestCaseBase):
     """
     Unit tests for the ClusteringCentroidAnalysis centroid calculations, needed for PCD.
     """
 
     def setUp(self):
+        super().setUp()
         # Example feature data for testing
         self.features = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9], [10, 11, 12], [13, 14, 15]])
 
     def test_empty_indices(self):
         """Test with an empty array of selected indices."""
         selected_indices = np.array([], dtype=int)
-        centroid = _calculate_centroid(selected_indices, self.features)
+        centroid = self.cca._calculate_centroid(selected_indices, self.features)
         self.assertTrue(np.all(np.isnan(centroid)), "Centroid of empty selection should be NaN")
 
     def test_single_index(self):
         """Test with a single selected index."""
         selected_indices = np.array([0])
-        centroid = _calculate_centroid(selected_indices, self.features)
+        centroid = self.cca._calculate_centroid(selected_indices, self.features)
         self.assertTrue(
             np.array_equal(centroid, self.features[0]),
             "Centroid should be the feature itself",
@@ -326,7 +298,7 @@ class TestCalculateCentroid(unittest.TestCase):
         """Test with multiple selected indices."""
         selected_indices = np.array([0, 2, 4])
         expected_centroid = np.array([7, 8, 9])
-        centroid = _calculate_centroid(selected_indices, self.features)
+        centroid = self.cca._calculate_centroid(selected_indices, self.features)
         self.assertTrue(
             np.array_equal(centroid, expected_centroid),
             "Centroid calculation incorrect",
@@ -336,7 +308,7 @@ class TestCalculateCentroid(unittest.TestCase):
         """Test with all indices selected."""
         selected_indices = np.array([0, 1, 2, 3, 4])
         expected_centroid = np.array([7, 8, 9])
-        centroid = _calculate_centroid(selected_indices, self.features)
+        centroid = self.cca._calculate_centroid(selected_indices, self.features)
         self.assertTrue(
             np.allclose(centroid, expected_centroid),
             "Centroid should be the mean of all features",
@@ -346,7 +318,7 @@ class TestCalculateCentroid(unittest.TestCase):
         """Test with non-contiguous selected indices."""
         selected_indices = np.array([1, 3])
         expected_centroid = np.array([7, 8, 9])
-        centroid = _calculate_centroid(selected_indices, self.features)
+        centroid = self.cca._calculate_centroid(selected_indices, self.features)
         self.assertTrue(
             np.array_equal(centroid, expected_centroid),
             "Centroid calculation incorrect for non-contiguous indices",
@@ -357,14 +329,14 @@ class TestCalculateCentroid(unittest.TestCase):
         float_features = self.features.astype(float)
         selected_indices = np.array([0, 2, 4])
         expected_centroid = np.array([7.0, 8.0, 9.0])
-        centroid = _calculate_centroid(selected_indices, float_features)
+        centroid = self.cca._calculate_centroid(selected_indices, float_features)
         self.assertTrue(
             np.allclose(centroid, expected_centroid),
             "Centroid calculation incorrect for float features",
         )
 
 
-class TestClassClustering(unittest.TestCase):
+class TestClassClustering(CCAUDTestCaseBase):
     """
     Unit tests for the ClusteringCentroidAnalysis class' class clustering.
     """
@@ -376,7 +348,7 @@ class TestClassClustering(unittest.TestCase):
         label = 0
         clusterer = MockClusterer(np.array([0, 0, 1, 1]))  # Mock cluster labels
 
-        cluster_labels, selected_indices = _class_clustering(y, features, label, clusterer)
+        cluster_labels, selected_indices = self.cca._class_clustering(y, features, label, clusterer)
 
         self.assertTrue(np.array_equal(cluster_labels, np.array([0, 0, 1, 1])))
         self.assertTrue(np.array_equal(selected_indices, np.array([0, 1, 2, 3])))
@@ -388,7 +360,7 @@ class TestClassClustering(unittest.TestCase):
         label = 1
         clusterer = MockClusterer(np.array([0, 1]))  # Mock cluster labels for class 1
 
-        cluster_labels, selected_indices = _class_clustering(y, features, label, clusterer)
+        cluster_labels, selected_indices = self.cca._class_clustering(y, features, label, clusterer)
 
         self.assertTrue(np.array_equal(cluster_labels, np.array([0, 1])))
         self.assertTrue(np.array_equal(selected_indices, np.array([1, 3])))
@@ -400,7 +372,7 @@ class TestClassClustering(unittest.TestCase):
         label = 1  # Label not in y
         clusterer = MockClusterer(np.array([]))
 
-        cluster_labels, selected_indices = _class_clustering(y, features, label, clusterer)
+        cluster_labels, selected_indices = self.cca._class_clustering(y, features, label, clusterer)
 
         self.assertTrue(np.array_equal(cluster_labels, np.array([])))
         self.assertTrue(np.array_equal(selected_indices, np.array([])))
@@ -412,7 +384,7 @@ class TestClassClustering(unittest.TestCase):
         label = 0
         clusterer = MockClusterer(np.array([2, 2, 2]))  # All in one cluster
 
-        cluster_labels, selected_indices = _class_clustering(y, features, label, clusterer)
+        cluster_labels, selected_indices = self.cca._class_clustering(y, features, label, clusterer)
 
         self.assertTrue(np.array_equal(cluster_labels, np.array([2, 2, 2])))
         self.assertTrue(np.array_equal(selected_indices, np.array([0, 1, 2])))
@@ -424,17 +396,18 @@ class TestClassClustering(unittest.TestCase):
         label = "b"
         clusterer = MockClusterer(np.array([0, 1]))
 
-        cluster_labels, selected_indices = _class_clustering(y, features, label, clusterer)
+        cluster_labels, selected_indices = self.cca._class_clustering(y, features, label, clusterer)
 
         self.assertTrue(np.array_equal(cluster_labels, np.array([0, 1])))
         self.assertTrue(np.array_equal(selected_indices, np.array([1, 3])))
 
 
-class TestClusterClasses(unittest.TestCase):
+class TestClusterClasses(CCAUDTestCaseBase):
     """Unit tests for the _cluster_classes function."""
 
     def setUp(self):
         """Set up test fixtures for each test."""
+        super().setUp()
         # Create mock features for testing
         self.features = np.array([[1, 2], [3, 4], [5, 6], [7, 8], [9, 10], [11, 12]])
 
@@ -448,7 +421,7 @@ class TestClusterClasses(unittest.TestCase):
         clusterer = MockClusterer(np.array([0, 0, 0, 1, 1, 1]))
 
         # Execute
-        class_cluster_labels, cluster_class_mapping = _cluster_classes(
+        class_cluster_labels, cluster_class_mapping = self.cca._cluster_classes(
             y_train, unique_classes, self.features, clusterer
         )
 
@@ -485,7 +458,7 @@ class TestClusterClasses(unittest.TestCase):
         )  # The parameter is ignored due to overridden fit_predict
 
         # Execute
-        class_cluster_labels, cluster_class_mapping = _cluster_classes(
+        class_cluster_labels, cluster_class_mapping = self.cca._cluster_classes(
             y_train, unique_classes, self.features, clusterer
         )
 
@@ -513,7 +486,7 @@ class TestClusterClasses(unittest.TestCase):
         clusterer = ThreeClassMockClusterer(None)
 
         # Execute
-        class_cluster_labels, cluster_class_mapping = _cluster_classes(
+        class_cluster_labels, cluster_class_mapping = self.cca._cluster_classes(
             y_train, unique_classes, self.features, clusterer
         )
 
@@ -544,7 +517,7 @@ class TestClusterClasses(unittest.TestCase):
         clusterer = OutlierMockClusterer(None)
 
         # Execute
-        class_cluster_labels, cluster_class_mapping = _cluster_classes(
+        class_cluster_labels, cluster_class_mapping = self.cca._cluster_classes(
             y_train, unique_classes, self.features, clusterer
         )
 
@@ -564,7 +537,7 @@ class TestClusterClasses(unittest.TestCase):
         clusterer = MockClusterer(np.array([0, 0]))
 
         # Execute
-        class_cluster_labels, cluster_class_mapping = _cluster_classes(
+        class_cluster_labels, cluster_class_mapping = self.cca._cluster_classes(
             y_train, unique_classes, self.features, clusterer
         )
 
@@ -586,7 +559,7 @@ class TestClusterClasses(unittest.TestCase):
         clusterer = MockClusterer(np.array([0, 0, 0]))
 
         # Execute
-        class_cluster_labels, cluster_class_mapping = _cluster_classes(
+        class_cluster_labels, cluster_class_mapping = self.cca._cluster_classes(
             y_train, unique_classes, self.features, clusterer
         )
 
@@ -611,7 +584,7 @@ class TestClusterClasses(unittest.TestCase):
         clusterer = AllOutliersMockClusterer(None)
 
         # Execute
-        class_cluster_labels, cluster_class_mapping = _cluster_classes(
+        class_cluster_labels, cluster_class_mapping = self.cca._cluster_classes(
             y_train, unique_classes, self.features, clusterer
         )
 
@@ -622,18 +595,18 @@ class TestClusterClasses(unittest.TestCase):
 
 
 @pytest.mark.skip_framework(
-    "tensorflow1",
     "keras",
     "kerastf",
     "pytorch",
-    "mxnet",
     "non_dl_frameworkslearn",
 )
-class TestFeatureExtraction(unittest.TestCase):
+class TestFeatureExtraction(CCAUDTestCaseBase):
     """Unit tests for the _feature_extraction function."""
 
     def setUp(self):
         """Set up test fixtures."""
+        super().setUp()
+
         # Create a simple model for testing
         self.input_shape = (10,)
         inputs = Input(shape=self.input_shape)
@@ -660,7 +633,9 @@ class TestFeatureExtraction(unittest.TestCase):
         model.compile(optimizer="adam", loss="mse")
 
         # Execute
-        result = _feature_extraction(self.x_train, model)
+        # There is no instance interference as the method only needs the dynamic imports from the class
+        # No instance-level data is used
+        result = self.cca._feature_extraction(self.x_train, model)
 
         # Assert
         self.assertEqual((100, 5), result.shape)
@@ -668,11 +643,9 @@ class TestFeatureExtraction(unittest.TestCase):
 
 
 @pytest.mark.skip_framework(
-    "tensorflow1",
     "keras",
     "kerastf",
     "pytorch",
-    "mxnet",
     "non_dl_frameworkslearn",
 )
 class TestCalculateMisclassificationRate(unittest.TestCase):
@@ -690,10 +663,10 @@ class TestCalculateMisclassificationRate(unittest.TestCase):
         benign_indices_dummy = np.arange(10)
 
         with patch(
-            "art.defences.detector.poison.clustering_centroid_analysis.ClusteringCentroidAnalysis._extract_submodels",
+            "art.defences.detector.poison.clustering_centroid_analysis.ClusteringCentroidAnalysisTensorFlowV2._extract_submodels",
             return_value=(MagicMock(), MagicMock()),
         ):
-            self.defence = ClusteringCentroidAnalysis(
+            self.defence = ClusteringCentroidAnalysisTensorFlowV2(
                 classifier=MagicMock(),
                 x_train=x_train_dummy,
                 y_train=y_train_constructor_dummy,
@@ -727,7 +700,7 @@ class TestCalculateMisclassificationRate(unittest.TestCase):
         self.defence.classifying_submodel = MagicMock(spec=tf.keras.Sequential)
 
         self.calculate_features_patcher = patch(
-            "art.defences.detector.poison.clustering_centroid_analysis._calculate_features"
+            "art.defences.detector.poison.clustering_centroid_analysis.ClusteringCentroidAnalysisTensorFlowV2._calculate_features"
         )
         self.mock_calculate_features = self.calculate_features_patcher.start()
 
@@ -955,11 +928,9 @@ class TestCalculateMisclassificationRate(unittest.TestCase):
 
 
 @pytest.mark.skip_framework(
-    "tensorflow1",
     "keras",
     "kerastf",
     "pytorch",
-    "mxnet",
     "non_dl_frameworkslearn",
 )
 class TestDetectPoison(unittest.TestCase):
@@ -998,15 +969,15 @@ class TestDetectPoison(unittest.TestCase):
         # Common patches for all tests
         self.patches = [
             patch(
-                "art.defences.detector.poison.clustering_centroid_analysis._feature_extraction",
+                "art.defences.detector.poison.clustering_centroid_analysis.ClusteringCentroidAnalysisTensorFlowV2._feature_extraction",
                 return_value=self.mock_features,
             ),
             patch(
-                "art.defences.detector.poison.clustering_centroid_analysis._calculate_centroid",
+                "art.defences.detector.poison.clustering_centroid_analysis.ClusteringCentroidAnalysisTensorFlowV2._calculate_centroid",
                 side_effect=self._mock_calculate_centroid,
             ),
             patch(
-                "art.defences.detector.poison.clustering_centroid_analysis._cluster_classes",
+                "art.defences.detector.poison.clustering_centroid_analysis.ClusteringCentroidAnalysisTensorFlowV2._cluster_classes",
                 side_effect=self._mock_cluster_classes,
             ),
         ]
@@ -1071,7 +1042,7 @@ class TestDetectPoison(unittest.TestCase):
         This tests the true negative case.
         """
         # Create the defence with mocked methods
-        defence = ClusteringCentroidAnalysis(
+        defence = ClusteringCentroidAnalysisTensorFlowV2(
             classifier=self.mock_classifier,
             x_train=self.x_train,
             y_train=self.y_train,
@@ -1085,7 +1056,7 @@ class TestDetectPoison(unittest.TestCase):
 
         # Call detect_poison with our mocked _cluster_classes returning no outliers
         with patch(
-            "art.defences.detector.poison.clustering_centroid_analysis._cluster_classes",
+            "art.defences.detector.poison.clustering_centroid_analysis.ClusteringCentroidAnalysisTensorFlowV2._cluster_classes",
             side_effect=lambda y, u, f, c: self._mock_cluster_classes(y, u, f, c, all_benign=True),
         ):
             report, is_clean = defence.detect_poison()
@@ -1103,7 +1074,7 @@ class TestDetectPoison(unittest.TestCase):
         This tests detection of poisoned samples as outliers.
         """
         # Create the defence with mocked methods
-        defence = ClusteringCentroidAnalysis(
+        defence = ClusteringCentroidAnalysisTensorFlowV2(
             classifier=self.mock_classifier,
             x_train=self.x_train,
             y_train=self.y_train,
@@ -1117,7 +1088,7 @@ class TestDetectPoison(unittest.TestCase):
 
         # Call detect_poison with our mocked _cluster_classes returning some outliers
         with patch(
-            "art.defences.detector.poison.clustering_centroid_analysis._cluster_classes",
+            "art.defences.detector.poison.clustering_centroid_analysis.ClusteringCentroidAnalysisTensorFlowV2._cluster_classes",
             side_effect=lambda y, u, f, c: self._mock_cluster_classes(y, u, f, c, all_benign=False),
         ):
             report, is_clean = defence.detect_poison()
@@ -1134,7 +1105,7 @@ class TestDetectPoison(unittest.TestCase):
         This tests detection of poisoned samples based on misclassification rates.
         """
         # Create the defence with mocked methods
-        defence = ClusteringCentroidAnalysis(
+        defence = ClusteringCentroidAnalysisTensorFlowV2(
             classifier=self.mock_classifier,
             x_train=self.x_train,
             y_train=self.y_train,
@@ -1156,7 +1127,7 @@ class TestDetectPoison(unittest.TestCase):
 
         # Call detect_poison with _cluster_classes returning clean clusters
         with patch(
-            "art.defences.detector.poison.clustering_centroid_analysis._cluster_classes",
+            "art.defences.detector.poison.clustering_centroid_analysis.ClusteringCentroidAnalysisTensorFlowV2._cluster_classes",
             side_effect=lambda y, u, f, c: self._mock_cluster_classes(y, u, f, c, all_benign=True),
         ):
             report, is_clean = defence.detect_poison()
@@ -1173,7 +1144,7 @@ class TestDetectPoison(unittest.TestCase):
         2. High misclassification rates
         """
         # Create the defence with mocked methods
-        defence = ClusteringCentroidAnalysis(
+        defence = ClusteringCentroidAnalysisTensorFlowV2(
             classifier=self.mock_classifier,
             x_train=self.x_train,
             y_train=self.y_train,
@@ -1194,7 +1165,7 @@ class TestDetectPoison(unittest.TestCase):
 
         # Call detect_poison with _cluster_classes returning some outliers
         with patch(
-            "art.defences.detector.poison.clustering_centroid_analysis._cluster_classes",
+            "art.defences.detector.poison.clustering_centroid_analysis.ClusteringCentroidAnalysisTensorFlowV2._cluster_classes",
             side_effect=lambda y, u, f, c: self._mock_cluster_classes(y, u, f, c, all_benign=False),
         ):
             report, is_clean = defence.detect_poison()
@@ -1232,10 +1203,10 @@ class TestEvaluateDefence(unittest.TestCase):
         # Patch _extract_submodels to avoid complex model setup if it's problematic
         # and not relevant to evaluate_defence
         with patch(
-            "art.defences.detector.poison.clustering_centroid_analysis.ClusteringCentroidAnalysis._extract_submodels",
+            "art.defences.detector.poison.clustering_centroid_analysis.ClusteringCentroidAnalysisTensorFlowV2._extract_submodels",
             return_value=(MagicMock(), MagicMock()),
         ) as _:
-            self.defence = ClusteringCentroidAnalysis(
+            self.defence = ClusteringCentroidAnalysisTensorFlowV2(
                 classifier=self.mock_classifier,
                 x_train=x_train_dummy,
                 y_train=y_train_constructor_dummy,  # Used by _encode_labels in __init__

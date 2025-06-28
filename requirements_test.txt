@@ -62,8 +62,6 @@ types-setuptools==80.9.0.20250529
 
 # other
 requests~=2.32.4
-psutil==7.0.0
-nvidia-ml-py==12.575.51
 
 # ART
 -e .
