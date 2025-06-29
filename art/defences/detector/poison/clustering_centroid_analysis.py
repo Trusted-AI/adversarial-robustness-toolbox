@@ -25,7 +25,7 @@ from __future__ import (
 
 import logging
 import warnings
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Callable
 
 import numpy as np
 
@@ -45,6 +45,7 @@ else:
     Sequential = Any
     tf_types = Any
     ClassifierType = Any
+
 
 def _encode_labels(y: np.ndarray) -> tuple[np.ndarray, set, np.ndarray, dict]:
     """
@@ -87,15 +88,17 @@ class ClusteringCentroidAnalysisTensorFlowV2(PoisonFilteringDefence):
     valid_reduce = ["UMAP"]
 
     def __init__(
-            self,
-            classifier: CLASSIFIER_TYPE,
-            x_train: np.ndarray,
-            y_train: np.ndarray,
-            benign_indices: np.ndarray,
-            final_feature_layer_name: str,
-            misclassification_threshold: float,
-            reducer: UMAP | None = None,
-            clusterer: ClusterMixin | None = None,
+        self,
+        classifier: CLASSIFIER_TYPE,
+        x_train: np.ndarray,
+        y_train: np.ndarray,
+        benign_indices: np.ndarray,
+        final_feature_layer_name: str,
+        misclassification_threshold: float,
+        reducer: UMAP | None = None,
+        clusterer: ClusterMixin | None = None,
+        feature_extraction_batch_size: int = 32,
+        misclassification_batch_size: int = 32,
     ):
         """
         Creates a :class: `ClusteringCentroidAnalysis` object for the given classifier
@@ -110,19 +113,19 @@ class ClusteringCentroidAnalysisTensorFlowV2(PoisonFilteringDefence):
         try:
             import tensorflow as tf_runtime
             from tensorflow.keras import Model, Sequential
+
             self._tf_runtime = tf_runtime
             self._KerasModel = Model
             self._KerasSequential = Sequential
             self._tf_runtime.get_logger().setLevel(logging.WARN)
         except ImportError as e:
-            raise ImportError(
-                "TensorFlow is required for ClusteringCentroidAnalysis. "
-            ) from e
+            raise ImportError("TensorFlow is required for ClusteringCentroidAnalysis. ") from e
 
         if clusterer is None:
             try:
                 from sklearn.base import ClusterMixin
                 from sklearn.cluster import DBSCAN
+
                 self.clusterer = DBSCAN(eps=0.8, min_samples=20)
             except ImportError as e:
                 raise ImportError(
@@ -132,6 +135,7 @@ class ClusteringCentroidAnalysisTensorFlowV2(PoisonFilteringDefence):
         if reducer is None:
             try:
                 from umap import UMAP
+
                 self.reducer = UMAP(n_neighbors=5, min_dist=0)
             except ImportError as e:
                 raise ImportError(
@@ -142,13 +146,30 @@ class ClusteringCentroidAnalysisTensorFlowV2(PoisonFilteringDefence):
         super().__init__(classifier, x_train, y_train)
         self.benign_indices = benign_indices
         (
-            self.y_train,
+            self.y_train_np,
             self.unique_classes,
             self.class_mapping,
             self.reverse_class_mapping,
         ) = _encode_labels(y_train)
 
-        self.x_benign, self.y_benign = self._get_benign_data()
+        # Data is loaded as NumPy arrays first
+        self.x_benign_np, self.y_benign_np = self._get_benign_data()
+
+        self.feature_extraction_batch_size = feature_extraction_batch_size
+        self.misclassification_batch_size = misclassification_batch_size
+
+        # Create x_train_dataset for feature extraction
+        # Ensure data type is float32 for TensorFlow
+        self.x_train_dataset = self._tf_runtime.data.Dataset.from_tensor_slices(
+            self.x_train.astype(self._tf_runtime.float32.as_numpy_dtype)
+        ).batch(self.feature_extraction_batch_size).prefetch(self._tf_runtime.data.AUTOTUNE)
+
+        # Create x_benign_dataset for misclassification rate calculation
+        # Ensure data type is float32 for TensorFlow
+        self.x_benign_dataset = self._tf_runtime.data.Dataset.from_tensor_slices(
+            self.x_benign_np.astype(self._tf_runtime.float32.as_numpy_dtype)
+        ).batch(self.misclassification_batch_size).prefetch(self._tf_runtime.data.AUTOTUNE)
+        # ---------------------------------------------
 
         self.feature_representation_model, self.classifying_submodel = self._extract_submodels(
             final_feature_layer_name
@@ -157,18 +178,15 @@ class ClusteringCentroidAnalysisTensorFlowV2(PoisonFilteringDefence):
         self.misclassification_threshold = np.float64(misclassification_threshold)
 
         # Dynamic @tf.function wrapping
-        self._calculate_centroid_tf_original = self._calculate_centroid_tf
-        self._calculate_features_original = self._calculate_features
-
-        self._calculate_centroid_tf = self._tf_runtime.function(self._calculate_centroid_tf_original, reduce_retracing=True)
-        self._calculate_features = self._tf_runtime.function(self._calculate_features_original)
-
+        self._calculate_centroid_tf = self._tf_runtime.function(
+            self._calculate_centroid_tf_unwrapped, reduce_retracing=True
+        )
+        self._calculate_features = self._tf_runtime.function(self._calculate_features_unwrapped)
 
         logging.info("CCA object created successfully.")
 
-    def _calculate_centroid_tf(self, features):
+    def _calculate_centroid_tf_unwrapped(self, features):
         return self._tf_runtime.reduce_mean(features, axis=0)
-
 
     def _calculate_centroid(self, selected_indices: np.ndarray, features: np.ndarray) -> np.ndarray:
         """
@@ -179,12 +197,15 @@ class ClusteringCentroidAnalysisTensorFlowV2(PoisonFilteringDefence):
         :return: d-dimensional numpy array
         """
         selected_features = features[selected_indices]
-        features_tf = self._tf_runtime.convert_to_tensor(selected_features, dtype=self._tf_runtime.float32)
+        features_tf = self._tf_runtime.convert_to_tensor(
+            selected_features, dtype=self._tf_runtime.float32
+        )
         centroid = self._calculate_centroid_tf(features_tf)
         return centroid.numpy()
 
-
-    def _class_clustering(self, y: np.ndarray, features: np.ndarray, label: int | str, clusterer: ClusterMixin) -> tuple[np.ndarray, np.ndarray]:
+    def _class_clustering(
+        self, y: np.ndarray, features: np.ndarray, label: int | str, clusterer: ClusterMixin
+    ) -> tuple[np.ndarray, np.ndarray]:
         """
         Given a class label, it clusters all the feature representations that map to that class
 
@@ -201,8 +222,9 @@ class ClusteringCentroidAnalysisTensorFlowV2(PoisonFilteringDefence):
         cluster_labels = clusterer.fit_predict(selected_features)
         return cluster_labels, selected_indices
 
-
-    def _calculate_features(self, feature_representation_model: Model, x: np.ndarray) -> np.ndarray:
+    def _calculate_features_unwrapped(
+        self, feature_representation_model: Model, x: np.ndarray
+    ) -> np.ndarray:
         """
         Calculates the features using the first DNN slice
 
@@ -212,44 +234,35 @@ class ClusteringCentroidAnalysisTensorFlowV2(PoisonFilteringDefence):
         """
         return feature_representation_model(x, training=False)
 
-
-    def _feature_extraction(self, x_train: np.ndarray, feature_representation_model: Model) -> np.ndarray:
+    def _feature_extraction(
+        self, x_train: tf_types.data.Dataset, feature_representation_model: Model
+    ) -> np.ndarray:
         """
         Extract features from the model using the feature representation sub model.
 
-        :param x_train: numpy array d-dimensional features for n data entries. Features are extracted from here
+        :param x_train: Tensorflow dataset with features for n data entries. Features are extracted from here
         :param feature_representation_model: DNN submodel from input up to feature abstraction
         :return: features. numpy array of features
         """
         # Convert data to TensorFlow tensors if needed
-        data = x_train
-        if not isinstance(x_train, self._tf_runtime.Tensor):
-            data = self._tf_runtime.convert_to_tensor(x_train, dtype=self._tf_runtime.float32)
+        features_np_list: list[np.ndarray] = []
 
-        # Process in batches to avoid memory issues
-        batch_size = 256
-        num_batches = int(np.ceil(len(data) / batch_size))
-        features: list[tf_types.Tensor] = []
+        # Iterate directly over the provided input_dataset
+        for batch_data_tf in x_train:
+            batch_features = self._calculate_features(feature_representation_model, batch_data_tf)
+            features_np_list.append(batch_features.numpy()) # Convert to NumPy immediately
 
-        for i in range(num_batches):
-            start_idx = i * batch_size
-            end_idx = min((i + 1) * batch_size, len(data))
-            batch = data[start_idx:end_idx]
-            batch_features = self._calculate_features(feature_representation_model, batch)
-            features.append(batch_features)
+        # Concatenate all batches of numpy arrays on CPU (system RAM)
+        final_features_np: np.ndarray = np.concatenate(features_np_list, axis=0)
 
-        # Concatenate all batches
-        final_features_tensor: tf_types.Tensor = self._tf_runtime.concat(features, axis=0)
-
-        return final_features_tensor.numpy()
-
+        return final_features_np
 
     def _cluster_classes(
-            self,
-            y_train: np.ndarray,
-            unique_classes: set[int],
-            features: np.ndarray,
-            clusterer: ClusterMixin,
+        self,
+        y_train: np.ndarray,
+        unique_classes: set[int],
+        features: np.ndarray,
+        clusterer: ClusterMixin,
     ) -> tuple[np.ndarray, dict]:
         """
         Clusters all the classes in the given dataset into uniquely identifiable clusters.
@@ -337,7 +350,9 @@ class ClusteringCentroidAnalysisTensorFlowV2(PoisonFilteringDefence):
         classifier_submodel_layers = keras_model.layers[final_feature_layer_index + 1 :]
 
         # Create the classifier submodel
-        classifying_submodel = self._KerasSequential(classifier_submodel_layers, name="classifying_submodel")
+        classifying_submodel = self._KerasSequential(
+            classifier_submodel_layers, name="classifying_submodel"
+        )
 
         intermediate_shape = feature_representation_model.output_shape[1:]
         dummy_input = self._tf_runtime.zeros((1,) + intermediate_shape)
@@ -398,6 +413,7 @@ class ClusteringCentroidAnalysisTensorFlowV2(PoisonFilteringDefence):
         :param deviation: The deviation vector to apply
         :return: The misclassification rate (0.0 to 1.0)
         """
+
         def _predict_with_deviation_inner(features, deviation):
             # Add deviation to features and pass through ReLu to keep in latent space
             deviated_features = self._tf_runtime.nn.relu(features + deviation)
@@ -416,13 +432,13 @@ class ClusteringCentroidAnalysisTensorFlowV2(PoisonFilteringDefence):
         sample_features = self.feature_representation_model.predict(sample_data)
         feature_shape = sample_features.shape[1:]
 
-        # predict_with_deviation = self._tf_runtime.function(
-        #     _predict_with_deviation_inner,
-        #     input_signature=[
-        #         self._tf_runtime.TensorSpec(shape=[None, *feature_shape], dtype=self._tf_runtime.float32),
-        #         self._tf_runtime.TensorSpec(shape=deviation.shape, dtype=self._tf_runtime.float32),
-        #     ]
-        # )
+        predict_with_deviation = self._tf_runtime.function(
+            _predict_with_deviation_inner,
+            input_signature=[
+                self._tf_runtime.TensorSpec(shape=[None, *feature_shape], dtype=self._tf_runtime.float32),
+                self._tf_runtime.TensorSpec(shape=deviation.shape, dtype=self._tf_runtime.float32),
+            ]
+        )
 
         total_elements = 0
         misclassified_elements = 0
@@ -456,14 +472,18 @@ class ClusteringCentroidAnalysisTensorFlowV2(PoisonFilteringDefence):
                 batch_data = other_class_data[start_idx:end_idx]
 
                 # Convert to tensor
-                batch_data_tf = self._tf_runtime.convert_to_tensor(batch_data, dtype=self._tf_runtime.float32)
+                batch_data_tf = self._tf_runtime.convert_to_tensor(
+                    batch_data, dtype=self._tf_runtime.float32
+                )
 
                 # Extract features
-                features = self._calculate_features(self.feature_representation_model, batch_data_tf)
+                features = self._calculate_features(
+                    self.feature_representation_model, batch_data_tf
+                )
                 all_features.append(features)
 
                 # Get predictions with deviation
-                predictions = _predict_with_deviation_inner(features, deviation_tf)
+                predictions = predict_with_deviation(features, deviation_tf)
 
                 # Convert predictions to class indices
                 pred_classes = self._tf_runtime.argmax(predictions, axis=1).numpy()
@@ -538,7 +558,9 @@ class ClusteringCentroidAnalysisTensorFlowV2(PoisonFilteringDefence):
             benign_class_indices = np.intersect1d(
                 self.benign_indices, np.where(self.y_train == class_label)[0]
             )
-            benign_centroids[class_label] = self._calculate_centroid(benign_class_indices, self.features)
+            benign_centroids[class_label] = self._calculate_centroid(
+                benign_class_indices, self.features
+            )
 
         logging.info("Calculating misclassification rates...")
         misclassification_rates = {}

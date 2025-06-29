@@ -32,7 +32,8 @@ from tensorflow.keras.losses import CategoricalCrossentropy
 from tensorflow.keras.optimizers import Adam
 
 from art.defences.detector.poison.clustering_centroid_analysis import (
-    ClusteringCentroidAnalysisTensorFlowV2, _encode_labels,
+    ClusteringCentroidAnalysisTensorFlowV2,
+    _encode_labels,
 )
 from art.estimators.classification import TensorFlowV2Classifier
 
@@ -53,13 +54,12 @@ class MockClusterer(ClusterMixin):
         return self.cluster_labels_to_return
 
 
-
 class CCAUDTestCaseBase(unittest.TestCase):
 
     def setUp(self):
         # Create mock data and objects for testing
-        self.x_train = np.array([[1, 2], [3, 4], [5, 6], [7, 8]])
-        self.y_train = np.array([0, 1, 0, 1])
+        self.x_train = np.random.rand(100, 10)
+        self.y_train = np.random.randint(0, 2, size=(100,))  # For M.E multi-class
         self.benign_indices = np.array([0, 2])
         self.final_feature_layer_name = "dense_2"
         self.non_relu_intermediate_layer_name = "dense_3"
@@ -75,10 +75,6 @@ class CCAUDTestCaseBase(unittest.TestCase):
                 Dense(1, activation="sigmoid", name="output_layer"),
             ]
         )
-
-        # Generate some dummy training data
-        self.x_train = np.random.rand(100, 10)
-        self.y_train = np.random.randint(0, 2, size=(100,))  # For M.E multi-class
 
         # Compile and train the model
         self.mock_model.compile(optimizer="adam", loss="binary_crossentropy")
@@ -182,8 +178,9 @@ class TestInitialization(CCAUDTestCaseBase):
         self.assertEqual(self.misclassification_threshold, self.cca.misclassification_threshold)
         self.is_valid_reducer(self.cca.reducer)
         self.is_valid_clusterer(self.cca.clusterer)
-        self.assertTrue(np.array_equal(self.cca.x_benign, self.x_train[[0, 2]]))
-        self.assertTrue(np.array_equal(self.cca.y_benign, self.y_train[[0, 2]]))
+        # The NumPy arrays are asserted, but the TF2 Datasets are used. Think of more robust assertions...
+        self.assertTrue(np.array_equal(self.cca.x_benign_np, self.x_train[[0, 2]]))
+        self.assertTrue(np.array_equal(self.cca.y_benign_np, self.y_train[[0, 2]]))
         self.assertIsInstance(self.cca.feature_representation_model, Model)
         self.assertIsInstance(self.cca.classifying_submodel, Sequential)
         self.assertEqual({0, 1}, self.cca.unique_classes)
@@ -609,37 +606,36 @@ class TestFeatureExtraction(CCAUDTestCaseBase):
 
         # Create a simple model for testing
         self.input_shape = (10,)
-        inputs = Input(shape=self.input_shape)
-        x = Dense(20, activation="relu")(inputs)
-        outputs = Dense(5, activation="relu")(x)
-        self.model = Model(inputs=inputs, outputs=outputs)
-
-        # Create sample data
-        self.x_train = np.random.rand(100, 10)
-
-        # Mock feature output for consistent testing
-        self.mock_features = np.random.rand(100, 5)
-
-    def test_integration_with_real_model(self):
-        """Integration test with a real model and no mocking."""
         # Create a small real model
-        model = Sequential(
+        self.model = Sequential(
             [
                 Dense(20, activation="relu", input_shape=self.input_shape),
                 Dense(10, activation="relu"),
                 Dense(5, activation="relu"),
             ]
         )
-        model.compile(optimizer="adam", loss="mse")
+        self.model.compile(optimizer="adam", loss="mse")
+
+        # Create sample data
+        self.x_test_data_np = np.random.rand(100, 10).astype(np.float32)
+
+        # Convert to TF Dataset
+        self.x_test_dataset = self.cca._tf_runtime.data.Dataset.from_tensor_slices(
+            self.x_test_data_np
+        ).batch(self.cca.feature_extraction_batch_size).prefetch(self.cca._tf_runtime.data.AUTOTUNE)
+
+    def test_integration_with_real_model(self):
+        """Integration test with a real model and no mocking."""
 
         # Execute
         # There is no instance interference as the method only needs the dynamic imports from the class
         # No instance-level data is used
-        result = self.cca._feature_extraction(self.x_train, model)
+        result = self.cca._feature_extraction(self.x_test_dataset, self.model)
 
         # Assert
         self.assertEqual((100, 5), result.shape)
         self.assertIsInstance(result, np.ndarray)
+        self.assertTrue(np.any(result != 0), "Resulting features should not be all zeros.")
 
 
 @pytest.mark.skip_framework(
@@ -663,14 +659,15 @@ class TestCalculateMisclassificationRate(unittest.TestCase):
         benign_indices_dummy = np.arange(10)
 
         self.extract_submodels_patcher = patch(
-            "art.defences.detector.poison.clustering_centroid_analysis.ClusteringCentroidAnalysisTensorFlowV2._extract_submodels"
+            "art.defences.detector.poison.clustering_centroid_analysis."
+            "ClusteringCentroidAnalysisTensorFlowV2._extract_submodels"
         )
         self.mock_extract_submodels = self.extract_submodels_patcher.start()
 
         # Define the return value for mock_extract_submodels: two MagicMocks.
         # These will become self.feature_representation_model and self.classifying_submodel
         # on the self.defence instance.
-        mock_feature_model = MagicMock(spec=tf.keras.Model) # Use spec for type safety
+        mock_feature_model = MagicMock(spec=tf.keras.Model)  # Use spec for type safety
         mock_classifying_model = MagicMock(spec=tf.keras.Model)
         self.mock_extract_submodels.return_value = (mock_feature_model, mock_classifying_model)
 
@@ -703,7 +700,9 @@ class TestCalculateMisclassificationRate(unittest.TestCase):
 
         # Mock the instance's _calculate_features attribute AFTER it has been set up in __init__
         # It's now a tf.function, but MagicMock can replace tf.function objects too.
-        def mock_calc_features_side_effect(model_arg, data_tensor): # model_arg is feature_representation_model
+        def mock_calc_features_side_effect(
+            model_arg, data_tensor
+        ):  # model_arg is feature_representation_model
             # Ensure it's a tensor for tf.shape, or convert if needed
             if not tf.is_tensor(data_tensor):
                 data_tensor = tf.convert_to_tensor(data_tensor, dtype=tf.float32)
@@ -711,19 +710,28 @@ class TestCalculateMisclassificationRate(unittest.TestCase):
             num_samples = tf.shape(data_tensor)[0].numpy()
 
             if num_samples == 0:
-                print("Debug: mock_calculate_features received EMPTY data_tensor. Returning empty features.")
+                print(
+                    "Debug: mock_calculate_features received EMPTY data_tensor. Returning empty features."
+                )
                 return tf.constant([], shape=(0, self.feature_dim), dtype=tf.float32)
 
-            print(f"Debug: mock_calculate_features received data_tensor shape: {data_tensor.shape}. Returning features shape: ({num_samples}, {self.feature_dim})")
+            print(
+                f"Debug: mock_calculate_features received data_tensor shape: {data_tensor.shape}. "
+                f"Returning features shape: ({num_samples}, {self.feature_dim})"
+            )
             return tf.random.uniform((num_samples, self.feature_dim), dtype=tf.float32)
 
-        self.mock_calculate_features_instance = MagicMock(side_effect=mock_calc_features_side_effect)
+        self.mock_calculate_features_instance = MagicMock(
+            side_effect=mock_calc_features_side_effect
+        )
         self.defence._calculate_features = self.mock_calculate_features_instance
 
         # Mock feature_representation_model.predict as well, as it's used once for feature_shape
         self.defence.feature_representation_model.predict.return_value = np.random.rand(
             1, self.feature_dim
-        ).astype(np.float32) # Ensure correct dtype and shape
+        ).astype(
+            np.float32
+        )  # Ensure correct dtype and shape
 
     def tearDown(self):
         tf.config.run_functions_eagerly(self.original_eager_value)  # Restore original eager mode
@@ -981,15 +989,18 @@ class TestDetectPoison(unittest.TestCase):
         # Common patches for all tests
         self.patches = [
             patch(
-                "art.defences.detector.poison.clustering_centroid_analysis.ClusteringCentroidAnalysisTensorFlowV2._feature_extraction",
+                "art.defences.detector.poison.clustering_centroid_analysis."
+                "ClusteringCentroidAnalysisTensorFlowV2._feature_extraction",
                 return_value=self.mock_features,
             ),
             patch(
-                "art.defences.detector.poison.clustering_centroid_analysis.ClusteringCentroidAnalysisTensorFlowV2._calculate_centroid",
+                "art.defences.detector.poison.clustering_centroid_analysis."
+                "ClusteringCentroidAnalysisTensorFlowV2._calculate_centroid",
                 side_effect=self._mock_calculate_centroid,
             ),
             patch(
-                "art.defences.detector.poison.clustering_centroid_analysis.ClusteringCentroidAnalysisTensorFlowV2._cluster_classes",
+                "art.defences.detector.poison.clustering_centroid_analysis."
+                "ClusteringCentroidAnalysisTensorFlowV2._cluster_classes",
                 side_effect=self._mock_cluster_classes,
             ),
         ]
@@ -1067,8 +1078,9 @@ class TestDetectPoison(unittest.TestCase):
         defence._calculate_misclassification_rate = MagicMock(return_value=0.05)
 
         # Call detect_poison with our mocked _cluster_classes returning no outliers
-        with patch(
-            "art.defences.detector.poison.clustering_centroid_analysis.ClusteringCentroidAnalysisTensorFlowV2._cluster_classes",
+        with patch.object(
+            defence,
+            "_cluster_classes",
             side_effect=lambda y, u, f, c: self._mock_cluster_classes(y, u, f, c, all_benign=True),
         ):
             report, is_clean = defence.detect_poison()
@@ -1099,8 +1111,9 @@ class TestDetectPoison(unittest.TestCase):
         defence._calculate_misclassification_rate = MagicMock(return_value=0.05)
 
         # Call detect_poison with our mocked _cluster_classes returning some outliers
-        with patch(
-            "art.defences.detector.poison.clustering_centroid_analysis.ClusteringCentroidAnalysisTensorFlowV2._cluster_classes",
+        with patch.object(
+            defence,
+            "_cluster_classes",
             side_effect=lambda y, u, f, c: self._mock_cluster_classes(y, u, f, c, all_benign=False),
         ):
             report, is_clean = defence.detect_poison()
@@ -1138,8 +1151,9 @@ class TestDetectPoison(unittest.TestCase):
         defence._calculate_misclassification_rate = MagicMock(side_effect=mock_misclass_rate)
 
         # Call detect_poison with _cluster_classes returning clean clusters
-        with patch(
-            "art.defences.detector.poison.clustering_centroid_analysis.ClusteringCentroidAnalysisTensorFlowV2._cluster_classes",
+        with patch.object(
+            defence,  # Patch the instance directly
+            "_cluster_classes",  # Name of the method on the instance
             side_effect=lambda y, u, f, c: self._mock_cluster_classes(y, u, f, c, all_benign=True),
         ):
             report, is_clean = defence.detect_poison()
@@ -1176,8 +1190,9 @@ class TestDetectPoison(unittest.TestCase):
         defence._calculate_misclassification_rate = MagicMock(side_effect=mock_misclass_rate)
 
         # Call detect_poison with _cluster_classes returning some outliers
-        with patch(
-            "art.defences.detector.poison.clustering_centroid_analysis.ClusteringCentroidAnalysisTensorFlowV2._cluster_classes",
+        with patch.object(
+            defence,
+            "_cluster_classes",
             side_effect=lambda y, u, f, c: self._mock_cluster_classes(y, u, f, c, all_benign=False),
         ):
             report, is_clean = defence.detect_poison()
@@ -1212,20 +1227,22 @@ class TestEvaluateDefence(unittest.TestCase):
         final_feature_layer_name_dummy = "mock_feature_layer"
         misclassification_threshold_dummy = 0.1
 
+        self.defence = ClusteringCentroidAnalysisTensorFlowV2(
+            classifier=self.mock_classifier,
+            x_train=x_train_dummy,
+            y_train=y_train_constructor_dummy,  # Used by _encode_labels in __init__
+            benign_indices=benign_indices_dummy,
+            final_feature_layer_name=final_feature_layer_name_dummy,
+            misclassification_threshold=misclassification_threshold_dummy,
+        )
+
         # Patch _extract_submodels to avoid complex model setup if it's problematic
         # and not relevant to evaluate_defence
-        with patch(
-            "art.defences.detector.poison.clustering_centroid_analysis.ClusteringCentroidAnalysisTensorFlowV2._extract_submodels",
+        patch.object(
+            self.defence,
+            "._extract_submodels",
             return_value=(MagicMock(), MagicMock()),
-        ) as _:
-            self.defence = ClusteringCentroidAnalysisTensorFlowV2(
-                classifier=self.mock_classifier,
-                x_train=x_train_dummy,
-                y_train=y_train_constructor_dummy,  # Used by _encode_labels in __init__
-                benign_indices=benign_indices_dummy,
-                final_feature_layer_name=final_feature_layer_name_dummy,
-                misclassification_threshold=misclassification_threshold_dummy,
-            )
+        )
 
         # The following attributes are set after instantiation to control the test
         # environment precisely
