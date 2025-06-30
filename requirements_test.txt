@@ -35,6 +35,9 @@ torchvision==0.22.1
 # PyTorch image transformers
 timm==1.0.15
 
+# YOLO dependencies
+ultralytics==8.3.159
+
 catboost==1.2.8
 GPy==1.13.2
 lightgbm==4.6.0
