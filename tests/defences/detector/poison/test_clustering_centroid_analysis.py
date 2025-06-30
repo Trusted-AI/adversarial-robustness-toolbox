@@ -54,6 +54,12 @@ class MockClusterer(ClusterMixin):
         return self.cluster_labels_to_return
 
 
+@pytest.mark.skip_framework(
+    "keras",
+    "kerastf",
+    "pytorch",
+    "non_dl_frameworks",
+)
 class CCAUDTestCaseBase(unittest.TestCase):
 
     def setUp(self):
@@ -98,12 +104,6 @@ class CCAUDTestCaseBase(unittest.TestCase):
         )
 
 
-@pytest.mark.skip_framework(
-    "keras",
-    "kerastf",
-    "pytorch",
-    "non_dl_frameworks",
-)
 class TestInitialization(CCAUDTestCaseBase):
     """
     Unit tests for the ClusteringCentroidAnalysis class, focusing on
@@ -235,6 +235,7 @@ class TestInitialization(CCAUDTestCaseBase):
             )
 
 
+@pytest.mark.framework_agnostic
 class TestEncodeLabels(unittest.TestCase):
     """
     Unit tests for the ClusteringCentroidAnalysis label encoding, needed for proper clustering.
@@ -260,12 +261,6 @@ class TestEncodeLabels(unittest.TestCase):
         self.assertEqual({"A": 0, "B": 1, "C": 2, "D": 3}, reverse_mapping)
 
 
-@pytest.mark.skip_framework(
-    "keras",
-    "kerastf",
-    "pytorch",
-    "non_dl_frameworks",
-)
 class TestCalculateCentroid(CCAUDTestCaseBase):
     """
     Unit tests for the ClusteringCentroidAnalysis centroid calculations, needed for PCD.
@@ -591,12 +586,6 @@ class TestClusterClasses(CCAUDTestCaseBase):
         self.assertEqual(len(cluster_class_mapping), 0)
 
 
-@pytest.mark.skip_framework(
-    "keras",
-    "kerastf",
-    "pytorch",
-    "non_dl_frameworkslearn",
-)
 class TestFeatureExtraction(CCAUDTestCaseBase):
     """Unit tests for the _feature_extraction function."""
 
@@ -1208,6 +1197,12 @@ class TestDetectPoison(unittest.TestCase):
         self.assertLess(np.mean(self.y_train[np.where(is_clean_np == 1)]), 0.2)
 
 
+@pytest.mark.skip_framework(
+    "keras",
+    "kerastf",
+    "pytorch",
+    "non_dl_frameworks",
+)
 class TestEvaluateDefence(unittest.TestCase):
     """
     Unit tests for the evaluate_defence method of the ClusteringCentroidAnalysis class.
