@@ -13,7 +13,7 @@ from art import metrics
 from art import preprocessing
 
 # Semantic Version
-__version__ = "1.19.2"
+__version__ = "1.20.0"
 
 LOGGING = {
     "version": 1,
