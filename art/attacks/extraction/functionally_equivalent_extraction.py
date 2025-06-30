@@ -110,9 +110,9 @@ class FunctionallyEquivalentExtraction(ExtractionAttack):
         :param rel_diff_slope: Relative slope difference at critical points.
         :param rel_diff_value: Relative value difference at critical points.
         :param delta_init_value: Initial delta of weight value search.
-        :param delta_value_max: Maximum delta  of weight value search.
+        :param delta_value_max: Maximum delta of weight value search.
         :param d2_min: Minimum acceptable value of sum of absolute second derivatives.
-        :param d_step:  Step size of delta increase.
+        :param d_step: Step size of delta increase.
         :param delta_sign: Delta of weight sign search.
         :param unit_vector_scale: Multiplicative scale of the unit vector `e_j`.
         :param ftol: Tolerance for termination by the change of the cost function.
@@ -428,84 +428,96 @@ class FunctionallyEquivalentExtraction(ExtractionAttack):
 
 # pylint: disable=invalid-name
 if __name__ == "__main__":
+    import os
+    import numpy as np
     import tensorflow as tf
 
-    tf.compat.v1.disable_eager_execution()
+    from keras.models import Sequential, load_model
+    from keras.layers import Dense, Input
+    from keras.losses import CategoricalCrossentropy
+    from keras.optimizers import Adam
+    from keras.utils import to_categorical
+    from keras.datasets import mnist
+
+    # Keras 3.10+ runs in eager mode by default (do NOT disable it!)
     tf.keras.backend.set_floatx("float64")
-
-    from tensorflow.keras.datasets import mnist
-    from tensorflow.keras.models import Sequential
-    from tensorflow.keras.layers import Dense
-
     np.random.seed(1)
-    number_neurons = 16
-    batch_size = 128
+
+    # Hyperparameters
+    number_neurons = 4
+    batch_size = 10
     number_classes = 10
-    epochs = 10
+    epochs = 100
     img_rows = 28
     img_cols = 28
     number_channels = 1
 
+    # Load and reshape data
     (x_train, y_train), (x_test, y_test) = mnist.load_data()
-    x_train = x_train.reshape(x_train.shape[0], img_rows, img_cols, number_channels)
-    x_test = x_test.reshape(x_test.shape[0], img_rows, img_cols, number_channels)
-    input_shape = (number_channels * img_rows * img_cols,)
+    x_train = x_train.reshape((x_train.shape[0], -1)).astype("float64")  # shape = (60000, 784)
+    x_test = x_test.reshape((x_test.shape[0], -1)).astype("float64")  # shape = (10000, 784)
 
-    x_train = x_train.reshape((x_train.shape[0], number_channels * img_rows * img_cols)).astype("float64")
-    x_test = x_test.reshape((x_test.shape[0], number_channels * img_rows * img_cols)).astype("float64")
-
+    # Standardize
     mean = np.mean(x_train)
     std = np.std(x_train)
-
     x_train = (x_train - mean) / std
     x_test = (x_test - mean) / std
 
-    y_train = tf.keras.utils.to_categorical(y_train, number_classes)
-    y_test = tf.keras.utils.to_categorical(y_test, number_classes)
+    # One-hot encode
+    y_train = to_categorical(y_train, number_classes)
+    y_test = to_categorical(y_test, number_classes)
 
-    if os.path.isfile("./model.h5"):
-        model = tf.keras.models.load_model("./model.h5")
-    else:
-        model = Sequential()
-        model.add(Dense(number_neurons, activation="relu", input_shape=input_shape))
-        model.add(Dense(number_classes, activation="linear"))
+    # Define input shape
+    input_shape = (784,)
 
+    # Load or create model
+    if os.path.isfile("./model.keras"):
+        model = load_model("./model.keras", compile=False)
         model.compile(
-            loss=tf.keras.losses.CategoricalCrossentropy(from_logits=True),
-            optimizer=tf.keras.optimizers.Adam(
-                learning_rate=0.0001,
-            ),
-            metrics=["accuracy"],
+            loss=CategoricalCrossentropy(from_logits=True), optimizer=Adam(learning_rate=0.0001), metrics=["accuracy"]
         )
-
+    else:
+        model = Sequential(
+            [
+                Input(shape=input_shape),
+                Dense(number_neurons, activation="relu"),
+                Dense(number_classes, activation="linear"),
+            ]
+        )
+        model.compile(
+            loss=CategoricalCrossentropy(from_logits=True), optimizer=Adam(learning_rate=0.001), metrics=["accuracy"]
+        )
         model.fit(
-            x_train,
-            y_train,
+            x_train[0:100],
+            y_train[0:100],
             batch_size=batch_size,
             epochs=epochs,
             verbose=1,
             validation_data=(x_test, y_test),
         )
+        model.save("./model.keras")
 
-        model.save("./model.h5")
-
+    # Evaluate target model
     score_target = model.evaluate(x_test, y_test, verbose=0)
 
+    # Wrap with ART
     target_classifier = KerasClassifier(model=model, use_logits=True, clip_values=(0, 1))
 
+    # Run Functionally Equivalent Extraction
     fee = FunctionallyEquivalentExtraction(classifier=target_classifier, num_neurons=number_neurons)  # type: ignore
     bbc = fee.extract(x_test[0:100])
 
+    # Predictions
     y_test_predicted_extracted = bbc.predict(x_test)
     y_test_predicted_target = target_classifier.predict(x_test)
 
+    # Metrics
     print("Target model - Test accuracy:", score_target[1])
     print(
         "Extracted model - Test accuracy:",
-        np.sum(np.argmax(y_test_predicted_extracted, axis=1) == np.argmax(y_test, axis=1)) / y_test.shape[0],
+        np.mean(np.argmax(y_test_predicted_extracted, axis=1) == np.argmax(y_test, axis=1)),
     )
     print(
         "Extracted model - Test Fidelity:",
-        np.sum(np.argmax(y_test_predicted_extracted, axis=1) == np.argmax(y_test_predicted_target, axis=1))
-        / y_test_predicted_target.shape[0],
+        np.mean(np.argmax(y_test_predicted_extracted, axis=1) == np.argmax(y_test_predicted_target, axis=1)),
     )

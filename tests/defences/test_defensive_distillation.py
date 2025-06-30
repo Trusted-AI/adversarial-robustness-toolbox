@@ -69,7 +69,7 @@ class TestDefensiveDistillation(TestBase):
 
     def test_1_tensorflow_classifier(self):
         """
-        First test with the TensorFlowClassifier.
+        First test with the TensorFlowV2Classifier.
         :return:
         """
         # Create the trained classifier

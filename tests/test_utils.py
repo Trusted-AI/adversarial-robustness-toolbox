@@ -43,18 +43,6 @@ class TestUtils(unittest.TestCase):
     def setUp(self):
         master_seed(seed=1234)
 
-    def test_master_seed_mx(self):
-        import mxnet as mx
-
-        master_seed(seed=1234, set_mxnet=True)
-        x = mx.nd.random.uniform(0, 1, shape=(10,)).asnumpy()
-        y = mx.nd.random.uniform(0, 1, shape=(10,)).asnumpy()
-
-        master_seed(seed=1234, set_mxnet=True)
-        z = mx.nd.random.uniform(0, 1, shape=(10,)).asnumpy()
-        self.assertFalse((x == y).any())
-        self.assertTrue((x == z).all())
-
     def test_master_seed_pytorch(self):
         import torch
 
@@ -89,25 +77,6 @@ class TestUtils(unittest.TestCase):
         self.assertTrue((x != y).any())
         self.assertTrue((z == x).all())
 
-    @unittest.skipIf(tf.__version__[0] != "1", reason="Skip unittests if not TensorFlow v1.")
-    def test_master_seed_tf(self):
-        tf.reset_default_graph()
-        master_seed(seed=1234, set_tensorflow=True)
-        with tf.Session() as sess:
-            x = tf.random_uniform(shape=(1, 10))
-            y = tf.random_uniform(shape=(1, 10))
-            xv, yv = sess.run([x, y])
-
-        tf.reset_default_graph()
-        master_seed(seed=1234, set_tensorflow=True)
-        with tf.Session() as sess:
-            z = tf.random_uniform(shape=(1, 10))
-            zv = sess.run([z])[0]
-
-        self.assertTrue((xv != yv).any())
-        np.testing.assert_array_almost_equal(zv, xv, decimal=4)
-
-    @unittest.skipIf(tf.__version__[0] != "2", reason="Skip unittests if not TensorFlow v2.")
     def test_master_seed_tf_v2(self):
         master_seed(seed=1234, set_tensorflow=True)
         x = tf.random.uniform(shape=(1, 10))

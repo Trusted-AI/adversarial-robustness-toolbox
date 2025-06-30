@@ -56,7 +56,6 @@ jobs:
           sudo apt-get update
           sudo apt-get -y -q install ffmpeg libavcodec-extra
           python -m pip install --upgrade pip setuptools wheel
-          pip3 install -r requirements_test.txt
           pip install -q -r <(sed '/^torch/d;/^torchvision/d;/^torchaudio/d' requirements_test.txt)
           pip install torch==${{ matrix.torch }} --index-url https://download.pytorch.org/whl/cpu
           pip install torchvision==${{ matrix.torchvision }} --index-url https://download.pytorch.org/whl/cpu

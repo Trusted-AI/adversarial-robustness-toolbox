@@ -28,11 +28,11 @@ from tests.utils import ARTTestException
 logger = logging.getLogger(__name__)
 
 
-@pytest.mark.only_with_platform("pytorch", "tensorflow2")
+@pytest.mark.only_with_platform("pytorch")
 def test_poison(art_warning, get_default_mnist_subset, image_dl_estimator):
     try:
         (x_train, y_train), (x_test, y_test) = get_default_mnist_subset
-        classifier, _ = image_dl_estimator()
+        classifier, _ = image_dl_estimator(from_logits=True)
 
         class_source = 0
         class_target = 1

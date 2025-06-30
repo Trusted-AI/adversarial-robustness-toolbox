@@ -7,9 +7,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import pprint
 import json
-import tensorflow as tf
 
-tf.compat.v1.disable_eager_execution()
 from keras.models import Sequential
 from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D, Dropout
 import numpy as np

@@ -224,7 +224,6 @@ def test_fgsm_defences(art_warning, fix_get_mnist_subset, image_dl_estimator):
 
 @pytest.mark.only_with_platform("tensorflow2")
 def test_binary_keras_instantiation_and_attack_pgd(art_warning):
-    tf.compat.v1.disable_eager_execution()
     try:
         x, y = sklearn.datasets.make_classification(
             n_samples=10000, n_features=20, n_informative=5, n_redundant=2, n_repeated=0, n_classes=2
@@ -239,7 +238,7 @@ def test_binary_keras_instantiation_and_attack_pgd(art_warning):
             ]
         )
         model.summary()
-        model.compile(optimizer=tf.optimizers.legacy.Adam(), loss="binary_crossentropy", metrics=["accuracy"])
+        model.compile(optimizer=tf.optimizers.Adam(), loss="binary_crossentropy", metrics=["accuracy"])
         classifier = KerasClassifier(model=model)
         classifier.fit(train_x, train_y, nb_epochs=5)
         pred = classifier.predict(test_x)
@@ -253,7 +252,6 @@ def test_binary_keras_instantiation_and_attack_pgd(art_warning):
 
 # @pytest.mark.only_with_platform("tensorflow2")
 # def test_binary_tf2_instantiation_and_attack_PGD(art_warning):
-#     tf.compat.v1.disable_eager_execution()
 #     try:
 #         x, y = sklearn.datasets.make_classification(
 #             n_samples=10000, n_features=20, n_informative=5, n_redundant=2, n_repeated=0, n_classes=2

@@ -44,16 +44,8 @@ class TestActivationDefence(unittest.TestCase):
         cls.mnist = (x_train, y_train), (x_test, y_test), (min_, max_)
 
         # Create simple keras model
-        import tensorflow as tf
-
-        tf_version = [int(v) for v in tf.__version__.split(".")]
-        if tf_version[0] == 2 and tf_version[1] >= 3:
-            tf.compat.v1.disable_eager_execution()
-            from tensorflow.keras.models import Sequential
-            from tensorflow.keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
-        else:
-            from keras.models import Sequential
-            from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
+        from tensorflow.keras.models import Sequential
+        from tensorflow.keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
 
         model = Sequential()
         model.add(Conv2D(32, kernel_size=(3, 3), activation="relu", input_shape=x_train.shape[1:]))
@@ -263,20 +255,6 @@ class TestActivationDefence(unittest.TestCase):
         self.defence_gen.detect_poison(nb_clusters=2, nb_dims=10, reduce="PCA")
         self.defence.plot_clusters(save=False)
         self.defence_gen.plot_clusters(save=False)
-
-    def test_pickle(self):
-
-        # Test pickle and unpickle:
-        filename = "test_pickle.h5"
-        ActivationDefence._pickle_classifier(self.classifier, filename)
-        loaded = ActivationDefence._unpickle_classifier(filename)
-
-        np.testing.assert_equal(self.classifier._clip_values, loaded._clip_values)
-        self.assertEqual(self.classifier._channels_first, loaded._channels_first)
-        self.assertEqual(self.classifier._use_logits, loaded._use_logits)
-        self.assertEqual(self.classifier._input_layer, loaded._input_layer)
-
-        ActivationDefence._remove_pickle(filename)
 
     def test_fix_relabel_poison(self):
         (x_train, y_train), (_, _), (_, _) = self.mnist

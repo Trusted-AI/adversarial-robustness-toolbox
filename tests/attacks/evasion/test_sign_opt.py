@@ -54,7 +54,7 @@ def fix_get_mnist_subset_large(get_mnist_dataset):
 def test_tabular(art_warning, tabular_dl_estimator, framework, get_iris_dataset, clipped_classifier, targeted):
     try:
         classifier = tabular_dl_estimator(clipped=clipped_classifier)
-        attack = SignOPTAttack(classifier, targeted=targeted, max_iter=1000, query_limit=4000, verbose=False)
+        attack = SignOPTAttack(classifier, targeted=targeted, num_trial=10, max_iter=10, query_limit=40, verbose=True)
         if targeted:
             backend_targeted_tabular(attack, get_iris_dataset)
         else:

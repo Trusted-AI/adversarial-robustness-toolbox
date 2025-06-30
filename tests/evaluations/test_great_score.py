@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2020
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2024
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -15,25 +15,23 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-"""
-This module implements mixin abstract base classes defining properties for all encoders in ART.
-"""
-from __future__ import annotations
+import pytest
 
-import abc
+from art.evaluations.great_score import GreatScorePyTorch
+
+from tests.utils import ARTTestException
 
 
-class EncoderMixin(abc.ABC):
-    """
-    Mixin abstract base class defining functionality for encoders.
-    """
+@pytest.mark.only_with_platform("pytorch")
+def test_great_score(art_warning, image_dl_estimator, get_mnist_dataset):
+    try:
+        classifier, _ = image_dl_estimator(from_logits=False)
+        (_, _), (x_test, y_test) = get_mnist_dataset
 
-    @property
-    @abc.abstractmethod
-    def encoding_length(self) -> int:
-        """
-        Returns the length of the encoding size output.
+        great_score = GreatScorePyTorch(classifier=classifier)
+        score, accuracy = great_score.evaluate(x=x_test, y=y_test)
+        assert score == pytest.approx(0.03501499, rel=1e-6)
+        assert accuracy == pytest.approx(0.2487, rel=1e-4)
 
-        :return: The length of the encoding size output.
-        """
-        raise NotImplementedError
+    except ARTTestException as e:
+        art_warning(e)

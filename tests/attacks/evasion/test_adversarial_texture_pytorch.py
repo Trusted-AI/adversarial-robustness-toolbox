@@ -41,7 +41,7 @@ def fix_get_mnist_subset(get_mnist_dataset):
 
 
 @pytest.mark.skip_module("scripts")
-@pytest.mark.skip_framework("tensorflow", "keras", "kerastf", "mxnet", "non_dl_frameworks")
+@pytest.mark.skip_framework("tensorflow", "keras", "kerastf", "non_dl_frameworks")
 def test_generate(art_warning, fix_get_mnist_subset, fix_get_goturn, framework):
     try:
         import torch
@@ -104,7 +104,7 @@ def test_generate(art_warning, fix_get_mnist_subset, fix_get_goturn, framework):
 
 
 @pytest.mark.skip_module("scripts")
-@pytest.mark.skip_framework("tensorflow", "keras", "kerastf", "mxnet", "non_dl_frameworks")
+@pytest.mark.skip_framework("tensorflow", "keras", "kerastf", "non_dl_frameworks")
 def test_generate_patch_points(art_warning, fix_get_mnist_subset, fix_get_goturn, framework):
     try:
         import torch
@@ -180,7 +180,7 @@ def test_generate_patch_points(art_warning, fix_get_mnist_subset, fix_get_goturn
         art_warning(e)
 
 
-@pytest.mark.skip_framework("tensorflow", "keras", "kerastf", "mxnet", "non_dl_frameworks")
+@pytest.mark.skip_framework("tensorflow", "keras", "kerastf", "non_dl_frameworks")
 def test_apply_patch(art_warning, fix_get_goturn):
     try:
         goturn = fix_get_goturn
@@ -230,7 +230,7 @@ def test_apply_patch(art_warning, fix_get_goturn):
         art_warning(e)
 
 
-@pytest.mark.skip_framework("tensorflow", "keras", "kerastf", "mxnet", "non_dl_frameworks")
+@pytest.mark.skip_framework("tensorflow", "keras", "kerastf", "non_dl_frameworks")
 def test_apply_patch_patch_points(art_warning, fix_get_goturn):
     try:
         goturn = fix_get_goturn
@@ -266,7 +266,7 @@ def test_apply_patch_patch_points(art_warning, fix_get_goturn):
         art_warning(e)
 
 
-@pytest.mark.skip_framework("tensorflow", "keras", "kerastf", "mxnet", "non_dl_frameworks")
+@pytest.mark.skip_framework("tensorflow", "keras", "kerastf", "non_dl_frameworks")
 def test_check_params(art_warning, fix_get_goturn):
     try:
         goturn = fix_get_goturn

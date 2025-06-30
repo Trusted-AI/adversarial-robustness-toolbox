@@ -322,3 +322,39 @@ def test_patch(art_warning, get_pytorch_yolo):
 
     except ARTTestException as e:
         art_warning(e)
+
+
+def test_import_pytorch_yolo_loss_wrapper():
+    import torch
+    from art.estimators.object_detection.pytorch_yolo_loss_wrapper import PyTorchYoloLossWrapper
+
+    class DummyModel(torch.nn.Module):
+        def __init__(self):
+            super().__init__()
+
+        def loss(self, items):
+            return (torch.tensor([1.0]), [torch.tensor(1.0), torch.tensor(2.0), torch.tensor(3.0)])
+
+    test_model = DummyModel()
+    # Patch ultralytics import in the wrapper
+    import sys
+    import types
+
+    ultralytics_mock = types.SimpleNamespace(
+        models=types.SimpleNamespace(
+            yolo=types.SimpleNamespace(
+                detect=types.SimpleNamespace(DetectionPredictor=lambda: types.SimpleNamespace(args=None))
+            )
+        ),
+        utils=types.SimpleNamespace(
+            loss=types.SimpleNamespace(v8DetectionLoss=lambda m: None, E2EDetectLoss=lambda m: None)
+        ),
+    )
+    sys.modules["ultralytics"] = ultralytics_mock
+    sys.modules["ultralytics.models"] = ultralytics_mock.models
+    sys.modules["ultralytics.models.yolo"] = ultralytics_mock.models.yolo
+    sys.modules["ultralytics.models.yolo.detect"] = ultralytics_mock.models.yolo.detect
+    sys.modules["ultralytics.utils"] = ultralytics_mock.utils
+    sys.modules["ultralytics.utils.loss"] = ultralytics_mock.utils.loss
+    wrapper = PyTorchYoloLossWrapper(test_model, name="yolov8n")
+    assert isinstance(wrapper, PyTorchYoloLossWrapper)

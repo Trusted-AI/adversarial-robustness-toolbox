@@ -29,7 +29,6 @@ from art.attacks.evasion.hop_skip_jump import HopSkipJump
 
 from art.estimators.classification.keras import KerasClassifier
 from art.estimators.classification.pytorch import PyTorchClassifier
-from art.estimators.classification.tensorflow import TensorFlowClassifier
 from art.metrics.metrics import (
     adversarial_accuracy,
     empirical_robustness,
@@ -122,18 +121,9 @@ class TestMetrics(unittest.TestCase):
 
     @staticmethod
     def _cnn_mnist_k(input_shape):
-        import tensorflow as tf
-
-        tf_version = [int(v) for v in tf.__version__.split(".")]
-        if tf_version[0] == 2 and tf_version[1] >= 3:
-            tf.compat.v1.disable_eager_execution()
-            from tensorflow import keras
-            from tensorflow.keras.models import Sequential
-            from tensorflow.keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
-        else:
-            import keras
-            from keras.models import Sequential
-            from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
+        from tensorflow import keras
+        from tensorflow.keras.models import Sequential
+        from tensorflow.keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
 
         # Create simple CNN
         model = Sequential()
@@ -144,7 +134,7 @@ class TestMetrics(unittest.TestCase):
 
         model.compile(
             loss=keras.losses.categorical_crossentropy,
-            optimizer=keras.optimizers.legacy.Adam(lr=0.01),
+            optimizer=keras.optimizers.Adam(learning_rate=0.01),
             metrics=["accuracy"],
         )
 
@@ -152,66 +142,14 @@ class TestMetrics(unittest.TestCase):
         return classifier
 
     @staticmethod
-    def _create_tfclassifier():
-        """
-        To create a simple TensorFlowClassifier for testing.
-        :return:
-        """
-        import tensorflow as tf
-
-        # Define input and output placeholders
-        input_ph = tf.placeholder(tf.float32, shape=[None, 28, 28, 1])
-        labels_ph = tf.placeholder(tf.int32, shape=[None, 10])
-
-        # Define the TensorFlow graph
-        conv = tf.layers.conv2d(input_ph, 4, 5, activation=tf.nn.relu)
-        conv = tf.layers.max_pooling2d(conv, 2, 2)
-        fc = tf.layers.flatten(conv)
-
-        # Logits layer
-        logits = tf.layers.dense(fc, 10)
-
-        # Train operator
-        loss = tf.reduce_mean(tf.losses.softmax_cross_entropy(logits=logits, onehot_labels=labels_ph))
-        optimizer = tf.train.AdamOptimizer(learning_rate=0.01)
-        train = optimizer.minimize(loss)
-
-        # TensorFlow session and initialization
-        sess = tf.Session()
-        sess.run(tf.global_variables_initializer())
-
-        # Create the classifier
-        tfc = TensorFlowClassifier(
-            input_ph=input_ph,
-            output=logits,
-            labels_ph=labels_ph,
-            train=train,
-            loss=loss,
-            learning=None,
-            sess=sess,
-            clip_values=(0, 1),
-        )
-
-        return tfc
-
-    @staticmethod
     def _create_krclassifier():
         """
         To create a simple KerasClassifier for testing.
         :return:
         """
-        import tensorflow as tf
-
-        tf_version = [int(v) for v in tf.__version__.split(".")]
-        if tf_version[0] == 2 and tf_version[1] >= 3:
-            tf.compat.v1.disable_eager_execution()
-            from tensorflow import keras
-            from tensorflow.keras.models import Sequential
-            from tensorflow.keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
-        else:
-            import keras
-            from keras.models import Sequential
-            from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
+        from tensorflow import keras
+        from tensorflow.keras.models import Sequential
+        from tensorflow.keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
 
         # Create simple CNN
         model = Sequential()
@@ -222,7 +160,7 @@ class TestMetrics(unittest.TestCase):
 
         model.compile(
             loss=keras.losses.categorical_crossentropy,
-            optimizer=keras.optimizers.legacy.Adam(lr=0.01),
+            optimizer=keras.optimizers.Adam(learning_rate=0.01),
             metrics=["accuracy"],
         )
 
@@ -265,41 +203,6 @@ class TestMetrics(unittest.TestCase):
         )
 
         return ptc
-
-    @unittest.skipIf(tf.__version__[0] == "2", reason="Skip unittests for TensorFlow v2.")
-    def test_2_clever_tf(self):
-        """
-        Test with TensorFlow.
-        :return:
-        """
-        # Get MNIST
-        batch_size, nb_train, nb_test = 100, 1000, 10
-        (x_train, y_train), (x_test, y_test), _, _ = load_mnist()
-        x_train, y_train = x_train[:nb_train], y_train[:nb_train]
-        x_test, y_test = x_test[:nb_test], y_test[:nb_test]
-
-        # Get the classifier
-        tfc = self._create_tfclassifier()
-        tfc.fit(x_train, y_train, batch_size=batch_size, nb_epochs=1)
-
-        # TODO Need to configure r
-        # Test targeted clever
-        res0 = clever_t(tfc, x_test[-1], 2, 10, 5, R_L1, norm=1, pool_factor=3)
-        res1 = clever_t(tfc, x_test[-1], 2, 10, 5, R_L2, norm=2, pool_factor=3)
-        res2 = clever_t(tfc, x_test[-1], 2, 10, 5, R_LI, norm=np.inf, pool_factor=3)
-        logger.info("Targeted TensorFlow: %f %f %f", res0, res1, res2)
-        self.assertNotEqual(res0, res1)
-        self.assertNotEqual(res1, res2)
-        self.assertNotEqual(res2, res0)
-
-        # Test untargeted clever
-        res0 = clever_u(tfc, x_test[-1], 10, 5, R_L1, norm=1, pool_factor=3, verbose=False)
-        res1 = clever_u(tfc, x_test[-1], 10, 5, R_L2, norm=2, pool_factor=3, verbose=False)
-        res2 = clever_u(tfc, x_test[-1], 10, 5, R_LI, norm=np.inf, pool_factor=3, verbose=False)
-        logger.info("Untargeted TensorFlow: %f %f %f", res0, res1, res2)
-        self.assertNotEqual(res0, res1)
-        self.assertNotEqual(res1, res2)
-        self.assertNotEqual(res2, res0)
 
     def test_clever_kr(self):
         """

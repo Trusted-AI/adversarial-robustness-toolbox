@@ -418,7 +418,6 @@ class TestPGD(TestBase):
             # Check that x_test has not been modified by attack and classifier
             self.assertAlmostEqual(float(np.max(np.abs(x_test_original - self.x_test_iris))), 0.0, delta=0.00001)
 
-    @unittest.skipIf(tf.__version__[0] != "2", "")
     def test_4_framework_tensorflow_v2_mnist(self):
         classifier, _ = get_image_classifier_tf()
         self._test_framework_vs_numpy(classifier)

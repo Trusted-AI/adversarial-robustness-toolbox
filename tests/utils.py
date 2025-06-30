@@ -32,15 +32,14 @@ import sklearn
 import numpy as np
 
 from art.estimators.classification.tensorflow import TensorFlowV2Classifier
-from art.estimators.encoding.tensorflow import TensorFlowEncoder
-from art.estimators.generation.tensorflow import TensorFlowGenerator, TensorFlowV2Generator
+from art.estimators.generation.tensorflow import TensorFlowV2Generator
 from art.estimators.gan.tensorflow import TensorFlowV2GAN
 from art.utils import load_dataset
 
 logger = logging.getLogger(__name__)
 
 # ----------------------------------------------------------------------------------------------------- TEST BASE CLASS
-art_supported_frameworks = ["keras", "tensorflow", "tensorflow2v1", "pytorch", "scikitlearn", "huggingface"]
+art_supported_frameworks = ["keras", "tensorflow", "pytorch", "scikitlearn", "huggingface"]
 
 
 class TestBase(unittest.TestCase):
@@ -170,18 +169,7 @@ def _tf_weights_loader(dataset, weights_type, layer="DENSE", tf_version=1):
     filename = str(weights_type) + "_" + str(layer) + "_" + str(dataset) + ".npy"
 
     # pylint: disable=W0613
-    # disable pylint because of API requirements for function
-    if tf_version == 1:
-
-        def _tf_initializer(_, dtype, partition_info):
-            import tensorflow as tf
-
-            weights = np.load(
-                os.path.join(os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", filename)
-            )
-            return tf.constant(weights, dtype)
-
-    elif tf_version == 2:
+    if tf_version == 2:
 
         def _tf_initializer(_, dtype):
             import tensorflow as tf
@@ -192,7 +180,7 @@ def _tf_weights_loader(dataset, weights_type, layer="DENSE", tf_version=1):
             return tf.constant(weights, dtype)
 
     else:
-        raise ValueError("The TensorFlow version tf_version has to be either 1 or 2.")
+        raise ValueError("The TensorFlow version tf_version has to be 2.")
 
     return _tf_initializer
 
@@ -218,122 +206,12 @@ def _kr_tf_weights_loader(dataset, weights_type, layer="DENSE"):
 def get_image_classifier_tf(from_logits=False, load_init=True, sess=None, framework=None):
     import tensorflow as tf
 
-    if tf.__version__[0] == "2":
-        if framework is None or framework == "tensorflow2":
-            # sess is not required but set to None to return 2 values for v1 and v2
-            classifier, sess = get_image_classifier_tf_v2(from_logits=from_logits), None
-        elif framework == "tensorflow2v1":
-            classifier, sess = get_image_classifier_tf_v1(from_logits=from_logits, load_init=load_init, sess=sess)
-        else:
-            print(framework)
-            raise ValueError("Unexpected value for `framework`.")
+    if framework is None or framework == "tensorflow2":
+        # sess is not required but set to None to return 2 values for v1 and v2
+        classifier, sess = get_image_classifier_tf_v2(from_logits=from_logits), None
     else:
-        classifier, sess = get_image_classifier_tf_v1(from_logits=from_logits, load_init=load_init, sess=sess)
+        raise ValueError("Unexpected value for `framework`.")
     return classifier, sess
-
-
-def get_image_classifier_tf_v1(from_logits=False, load_init=True, sess=None):
-    """
-    Standard TensorFlow classifier for unit testing.
-
-    The following hyperparameters were used to obtain the weights and biases:
-    learning_rate: 0.01
-    batch size: 10
-    number of epochs: 2
-    optimizer: tf.train.AdamOptimizer
-
-    :param from_logits: Flag if model should predict logits (True) or probabilities (False).
-    :type from_logits: `bool`
-    :param load_init: Load the initial weights if True.
-    :type load_init: `bool`
-    :param sess: Computation session.
-    :type sess: `tf.Session`
-    :return: TensorFlowClassifier, tf.Session()
-    """
-    # pylint: disable=E0401
-    import tensorflow as tf
-
-    if tf.__version__[0] == "2":
-        tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
-        import tensorflow.compat.v1 as tf
-
-        tf.disable_eager_execution()
-    from art.estimators.classification.tensorflow import TensorFlowClassifier
-
-    # Define input and output placeholders
-    input_ph = tf.placeholder(tf.float32, shape=[None, 28, 28, 1])
-    output_ph = tf.placeholder(tf.float32, shape=[None, 10])
-
-    # Define the TensorFlow graph
-    if load_init:
-        conv = tf.layers.conv2d(
-            input_ph,
-            1,
-            7,
-            activation=tf.nn.relu,
-            kernel_initializer=_tf_weights_loader("MNIST", "W", "CONV2D"),
-            bias_initializer=_tf_weights_loader("MNIST", "B", "CONV2D"),
-        )
-    else:
-        conv = tf.layers.conv2d(input_ph, 1, 7, activation=tf.nn.relu)
-
-    conv = tf.layers.max_pooling2d(conv, 4, 4)
-    flattened = tf.layers.flatten(conv)
-
-    # Logits layer
-    if load_init:
-        logits = tf.layers.dense(
-            flattened,
-            10,
-            kernel_initializer=_tf_weights_loader("MNIST", "W", "DENSE"),
-            bias_initializer=_tf_weights_loader("MNIST", "B", "DENSE"),
-        )
-    else:
-        logits = tf.layers.dense(flattened, 10)
-
-    # probabilities
-    probabilities = tf.keras.activations.softmax(x=logits)
-
-    # Train operator
-    loss = tf.reduce_mean(
-        tf.losses.softmax_cross_entropy(logits=logits, onehot_labels=output_ph, reduction=tf.losses.Reduction.SUM)
-    )
-    optimizer = tf.train.AdamOptimizer(learning_rate=0.01)
-    train = optimizer.minimize(loss)
-
-    # TensorFlow session and initialization
-    if sess is None:
-        sess = tf.Session()
-    elif not isinstance(sess, tf.Session):
-        raise TypeError("An instance of `tf.Session` should be passed to `sess`.")
-
-    sess.run(tf.global_variables_initializer())
-
-    # Create the classifier
-    if from_logits:
-        tfc = TensorFlowClassifier(
-            clip_values=(0, 1),
-            input_ph=input_ph,
-            output=logits,
-            labels_ph=output_ph,
-            train=train,
-            loss=loss,
-            learning=None,
-            sess=sess,
-        )
-    else:
-        tfc = TensorFlowClassifier(
-            clip_values=(0, 1),
-            input_ph=input_ph,
-            output=probabilities,
-            labels_ph=output_ph,
-            train=train,
-            loss=loss,
-            learning=None,
-            sess=sess,
-        )
-
-    return tfc, sess
 
 
 def get_image_generator_tf_v2(capacity: int, z_dim: int):
@@ -400,7 +278,8 @@ def get_image_gan_tf_v2():
     )
 
     def generator_orig_loss_fct(generated_output):
-        return tf.compat.v1.losses.sigmoid_cross_entropy(tf.ones_like(generated_output), generated_output)
+        loss_fn = tf.keras.losses.BinaryCrossentropy(from_logits=True)
+        return loss_fn(tf.ones_like(generated_output), generated_output)
 
     def discriminator_loss_fct(real_output, generated_output):
         """Discriminator loss
@@ -413,28 +292,32 @@ def get_image_gan_tf_v2():
         zeros (since these are the fake images).
         3. Calculate the total_loss as the sum of real_loss and generated_loss.
         """
-        # [1,1,...,1] with real output since it is true, and we want our generated examples to look like it
-        real_loss = tf.compat.v1.losses.sigmoid_cross_entropy(
-            multi_class_labels=tf.ones_like(real_output), logits=real_output
-        )
+        # Binary cross-entropy loss function (logits not passed through sigmoid yet)
+        bce = tf.keras.losses.BinaryCrossentropy(from_logits=True)
 
-        # [0,0,...,0] with generated images since they are fake
-        generated_loss = tf.compat.v1.losses.sigmoid_cross_entropy(
-            multi_class_labels=tf.zeros_like(generated_output), logits=generated_output
-        )
+        # Real images: label as 1
+        real_loss = bce(tf.ones_like(real_output), real_output)
+
+        # Generated (fake) images: label as 0
+        generated_loss = bce(tf.zeros_like(generated_output), generated_output)
 
         total_loss = real_loss + generated_loss
 
         return total_loss
 
+    # Use native TF 2.x optimizers
+    generator_optimizer = tf.keras.optimizers.Adam(learning_rate=1e-4)
+    discriminator_optimizer = tf.keras.optimizers.Adam(learning_rate=1e-4)
+
     gan = TensorFlowV2GAN(
         generator=generator,
         discriminator=discriminator_classifier,
         generator_loss=generator_orig_loss_fct,
-        generator_optimizer_fct=tf.compat.v1.train.AdamOptimizer(1e-4),
+        generator_optimizer_fct=generator_optimizer,
         discriminator_loss=discriminator_loss_fct,
-        discriminator_optimizer_fct=tf.compat.v1.train.AdamOptimizer(1e-4),
+        discriminator_optimizer_fct=discriminator_optimizer,
     )
+
     return gan
 
 
@@ -456,9 +339,6 @@ def get_image_classifier_tf_v2(from_logits=False):
     from tensorflow.keras.models import Sequential
 
     from art.estimators.classification.tensorflow import TensorFlowV2Classifier
-
-    if tf.__version__[0] != "2":
-        raise ImportError("This function requires TensorFlow v2.")
 
     model = Sequential()
     model.add(
@@ -496,7 +376,7 @@ def get_image_classifier_tf_v2(from_logits=False):
         from_logits=from_logits, reduction=tf.keras.losses.Reduction.SUM
     )
 
-    optimizer = tf.keras.optimizers.legacy.Adam(learning_rate=0.01)
+    optimizer = tf.keras.optimizers.Adam(learning_rate=0.01)
 
     model.compile(optimizer=optimizer, loss=loss_object)
 
@@ -534,19 +414,8 @@ def get_image_classifier_kr(
     :return: KerasClassifier, tf.Session()
     """
     import tensorflow as tf
-
-    tf_version = [int(v) for v in tf.__version__.split(".")]
-    if tf_version[0] == 2 and tf_version[1] >= 3:
-        is_tf23_keras24 = True
-        tf.compat.v1.disable_eager_execution()
-        from tensorflow import keras
-        from tensorflow.keras.layers import Conv2D, Dense, Flatten, MaxPooling2D
-        from tensorflow.keras.models import Sequential
-    else:
-        is_tf23_keras24 = False
-        import keras
-        from keras.models import Sequential
-        from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
+    from tensorflow.keras.layers import Conv2D, Dense, Flatten, MaxPooling2D
+    from tensorflow.keras.models import Sequential
 
     from art.estimators.classification.keras import KerasClassifier
 
@@ -554,28 +423,16 @@ def get_image_classifier_kr(
     model = Sequential()
 
     if load_init:
-        if is_tf23_keras24:
-            model.add(
-                Conv2D(
-                    1,
-                    kernel_size=(7, 7),
-                    activation="relu",
-                    input_shape=(28, 28, 1),
-                    kernel_initializer=_tf_weights_loader("MNIST", "W", "CONV2D", 2),
-                    bias_initializer=_tf_weights_loader("MNIST", "B", "CONV2D", 2),
-                )
+        model.add(
+            Conv2D(
+                1,
+                kernel_size=(7, 7),
+                activation="relu",
+                input_shape=(28, 28, 1),
+                kernel_initializer=_tf_weights_loader("MNIST", "W", "CONV2D", 2),
+                bias_initializer=_tf_weights_loader("MNIST", "B", "CONV2D", 2),
             )
-        else:
-            model.add(
-                Conv2D(
-                    1,
-                    kernel_size=(7, 7),
-                    activation="relu",
-                    input_shape=(28, 28, 1),
-                    kernel_initializer=_kr_weights_loader("MNIST", "W", "CONV2D"),
-                    bias_initializer=_kr_weights_loader("MNIST", "B", "CONV2D"),
-                )
-            )
+        )
     else:
         model.add(Conv2D(1, kernel_size=(7, 7), activation="relu", input_shape=(28, 28, 1)))
 
@@ -584,46 +441,26 @@ def get_image_classifier_kr(
 
     if from_logits:
         if load_init:
-            if is_tf23_keras24:
-                model.add(
-                    Dense(
-                        10,
-                        activation="linear",
-                        kernel_initializer=_tf_weights_loader("MNIST", "W", "DENSE", 2),
-                        bias_initializer=_tf_weights_loader("MNIST", "B", "DENSE", 2),
-                    )
+            model.add(
+                Dense(
+                    10,
+                    activation="linear",
+                    kernel_initializer=_tf_weights_loader("MNIST", "W", "DENSE", 2),
+                    bias_initializer=_tf_weights_loader("MNIST", "B", "DENSE", 2),
                 )
-            else:
-                model.add(
-                    Dense(
-                        10,
-                        activation="linear",
-                        kernel_initializer=_kr_weights_loader("MNIST", "W", "DENSE"),
-                        bias_initializer=_kr_weights_loader("MNIST", "B", "DENSE"),
-                    )
-                )
+            )
         else:
             model.add(Dense(10, activation="linear"))
     else:
         if load_init:
-            if is_tf23_keras24:
-                model.add(
-                    Dense(
-                        10,
-                        activation="softmax",
-                        kernel_initializer=_tf_weights_loader("MNIST", "W", "DENSE", 2),
-                        bias_initializer=_tf_weights_loader("MNIST", "B", "DENSE", 2),
-                    )
+            model.add(
+                Dense(
+                    10,
+                    activation="softmax",
+                    kernel_initializer=_tf_weights_loader("MNIST", "W", "DENSE", 2),
+                    bias_initializer=_tf_weights_loader("MNIST", "B", "DENSE", 2),
                 )
-            else:
-                model.add(
-                    Dense(
-                        10,
-                        activation="softmax",
-                        kernel_initializer=_kr_weights_loader("MNIST", "W", "DENSE"),
-                        bias_initializer=_kr_weights_loader("MNIST", "B", "DENSE"),
-                    )
-                )
+            )
         else:
             model.add(Dense(10, activation="softmax"))
 
@@ -633,7 +470,7 @@ def get_image_classifier_kr(
         if loss_type == "label":
             raise AttributeError("This combination of loss function options is not supported.")
         elif loss_type == "function_losses":
-            loss = keras.losses.categorical_hinge
+            loss = tf.keras.losses.categorical_hinge
     elif loss_name == "categorical_crossentropy":
         if loss_type == "label":
             if from_logits:
@@ -642,25 +479,22 @@ def get_image_classifier_kr(
                 loss = loss_name
         elif loss_type == "function_losses":
             if from_logits:
-                if is_tf23_keras24:
 
-                    def categorical_crossentropy(y_true, y_pred):
-                        return keras.losses.categorical_crossentropy(y_true, y_pred, from_logits=True)
+                def categorical_crossentropy(y_true, y_pred):
+                    return tf.keras.losses.categorical_crossentropy(y_true, y_pred, from_logits=True)
 
-                    loss = categorical_crossentropy
-                else:
-                    raise NotImplementedError("This combination of loss function options is not supported.")
+                loss = categorical_crossentropy
             else:
-                loss = keras.losses.categorical_crossentropy
+                loss = tf.keras.losses.categorical_crossentropy
         elif loss_type == "function_backend":
             if from_logits:
 
                 def categorical_crossentropy(y_true, y_pred):
-                    return keras.backend.categorical_crossentropy(y_true, y_pred, from_logits=True)
+                    return tf.keras.backend.categorical_crossentropy(y_true, y_pred, from_logits=True)
 
                 loss = categorical_crossentropy
             else:
-                loss = keras.backend.categorical_crossentropy
+                loss = tf.keras.backend.categorical_crossentropy
     elif loss_name == "sparse_categorical_crossentropy":
         if loss_type == "label":
             if from_logits:
@@ -669,44 +503,41 @@ def get_image_classifier_kr(
                 loss = loss_name
         elif loss_type == "function_losses":
             if from_logits:
-                if int(keras.__version__.split(".")[0]) == 2 and int(keras.__version__.split(".")[1]) >= 3:
 
-                    def sparse_categorical_crossentropy(y_true, y_pred):
-                        return keras.losses.sparse_categorical_crossentropy(y_true, y_pred, from_logits=True)
+                def sparse_categorical_crossentropy(y_true, y_pred):
+                    return tf.keras.losses.sparse_categorical_crossentropy(y_true, y_pred, from_logits=True)
 
-                    loss = sparse_categorical_crossentropy
-                else:
-                    raise AttributeError("This combination of loss function options is not supported.")
+                loss = sparse_categorical_crossentropy
             else:
-                loss = keras.losses.sparse_categorical_crossentropy
+                loss = tf.keras.losses.sparse_categorical_crossentropy
         elif loss_type == "function_backend":
             if from_logits:
 
                 def sparse_categorical_crossentropy(y_true, y_pred):
-                    return keras.backend.sparse_categorical_crossentropy(y_true, y_pred, from_logits=True)
+                    return tf.keras.backend.sparse_categorical_crossentropy(y_true, y_pred, from_logits=True)
 
                 loss = sparse_categorical_crossentropy
             else:
-                loss = keras.backend.sparse_categorical_crossentropy
+                loss = tf.keras.backend.sparse_categorical_crossentropy
     elif loss_name == "kullback_leibler_divergence":
         if loss_type == "label":
             raise AttributeError("This combination of loss function options is not supported.")
         elif loss_type == "function_losses":
-            loss = keras.losses.kullback_leibler_divergence
+            loss = tf.keras.losses.kullback_leibler_divergence
         elif loss_type == "function_backend":
             raise AttributeError("This combination of loss function options is not supported.")
     elif loss_name == "cosine_similarity":
         if loss_type == "label":
             loss = loss_name
         elif loss_type == "function_losses":
-            loss = keras.losses.cosine_similarity
+            loss = tf.keras.losses.cosine_similarity
         elif loss_type == "function_backend":
-            loss = keras.backend.cosine_similarity
+            loss = tf.keras.backend.cosine_similarity
 
     else:
         raise ValueError("Loss name not recognised.")
 
-    model.compile(loss=loss, optimizer=keras.optimizers.legacy.Adam(lr=0.01), metrics=["accuracy"])
+    model.compile(loss=loss, optimizer=tf.keras.optimizers.Adam(learning_rate=0.01), metrics=["accuracy"])
 
     # Get classifier
     krc = KerasClassifier(model, clip_values=(0, 1), use_logits=from_logits)
@@ -765,41 +596,47 @@ def get_image_classifier_kr_tf_functional(input_layer=1, output_layer=1):
     :return: KerasClassifier
     """
     import tensorflow as tf
-
-    if tf.__version__[0] == "2":
-        tf.compat.v1.disable_eager_execution()
-    from tensorflow.keras.layers import Conv2D, Dense, Dropout, Flatten, Input, MaxPooling2D
+    from tensorflow.keras.layers import Conv2D, Dense, Dropout, Flatten, Input, MaxPooling2D, Identity
     from tensorflow.keras.models import Model
+    from keras.losses import CategoricalCrossentropy
 
     from art.estimators.classification.keras import KerasClassifier
 
     def functional_model():
+        # First input and branch
         in_layer = Input(shape=(28, 28, 1), name="input0")
-        layer = Conv2D(32, kernel_size=(3, 3), activation="relu")(in_layer)
-        layer = Conv2D(64, (3, 3), activation="relu")(layer)
-        layer = MaxPooling2D(pool_size=(2, 2))(layer)
-        layer = Dropout(0.25)(layer)
-        layer = Flatten()(layer)
-        layer = Dense(128, activation="relu")(layer)
-        layer = Dropout(0.5)(layer)
-        out_layer = Dense(10, activation="softmax", name="output0")(layer)
+        x = Conv2D(32, kernel_size=(3, 3), activation="relu")(in_layer)
+        x = Conv2D(64, (3, 3), activation="relu")(x)
+        x = MaxPooling2D(pool_size=(2, 2))(x)
+        x = Dropout(0.25)(x)
+        x = Flatten()(x)
+        x = Dense(128, activation="relu")(x)
+        x = Dropout(0.5)(x)
+        out_layer = Dense(10, activation="softmax", name="output0_dense")(x)
+        out_layer.name = "output0"
 
+        # Second input and branch
         in_layer_2 = Input(shape=(28, 28, 1), name="input1")
-        layer = Conv2D(32, kernel_size=(3, 3), activation="relu")(in_layer_2)
-        layer = Conv2D(64, (3, 3), activation="relu")(layer)
-        layer = MaxPooling2D(pool_size=(2, 2))(layer)
-        layer = Dropout(0.25)(layer)
-        layer = Flatten()(layer)
-        layer = Dense(128, activation="relu")(layer)
-        layer = Dropout(0.5)(layer)
-        out_layer_2 = Dense(10, activation="softmax", name="output1")(layer)
+        y = Conv2D(32, kernel_size=(3, 3), activation="relu")(in_layer_2)
+        y = Conv2D(64, (3, 3), activation="relu")(y)
+        y = MaxPooling2D(pool_size=(2, 2))(y)
+        y = Dropout(0.25)(y)
+        y = Flatten()(y)
+        y = Dense(128, activation="relu")(y)
+        y = Dropout(0.5)(y)
+        out_layer_2 = Dense(10, activation="softmax", name="output1_dense")(y)
+        out_layer_2.name = "output1"
 
+        # Define model with named outputs
         model = Model(inputs=[in_layer, in_layer_2], outputs=[out_layer, out_layer_2])
 
+        loss_fn = CategoricalCrossentropy(reduction=tf.keras.losses.Reduction.NONE)
+
+        # Compile
         model.compile(
-            loss=tf.keras.losses.categorical_crossentropy,
+            loss=[loss_fn, loss_fn],
             optimizer=tf.keras.optimizers.Adadelta(),
-            metrics=["accuracy"],
+            metrics=["accuracy", "accuracy"],
             loss_weights=[1.0, 1.0],
         )
 
@@ -825,19 +662,18 @@ def get_image_classifier_kr_tf(loss_name="categorical_crossentropy", loss_type="
 
     :return: KerasClassifier
     """
-    # pylint: disable=E0401
     import tensorflow as tf
 
-    if tf.__version__[0] == "2":
-        tf.compat.v1.disable_eager_execution()
-    from tensorflow.keras.layers import Conv2D, Dense, Flatten, MaxPooling2D
+    # pylint: disable=E0401
+    from tensorflow.keras.layers import Conv2D, Dense, Flatten, MaxPooling2D, Input
     from tensorflow.keras.models import Sequential
 
     from art.estimators.classification.keras import KerasClassifier
 
     # Create simple CNN
     model = Sequential()
-    model.add(Conv2D(1, kernel_size=(7, 7), activation="relu", input_shape=(28, 28, 1)))
+    model.add(Input((28, 28, 1)))
+    model.add(Conv2D(1, kernel_size=(7, 7), activation="relu"))
     model.layers[-1].set_weights(
         [_kr_tf_weights_loader("MNIST", "W", "CONV2D"), _kr_tf_weights_loader("MNIST", "B", "CONV2D")]
     )
@@ -964,7 +800,7 @@ def get_image_classifier_kr_tf(loss_name="categorical_crossentropy", loss_type="
     else:
         raise ValueError("Loss name not recognised.")
 
-    model.compile(loss=loss, optimizer=tf.keras.optimizers.legacy.Adam(lr=0.01), metrics=["accuracy"])
+    model.compile(loss=loss, optimizer=tf.keras.optimizers.Adam(learning_rate=0.01), metrics=["accuracy"])
 
     # Get classifier
     krc = KerasClassifier(model, clip_values=(0, 1), use_logits=from_logits)
@@ -980,9 +816,6 @@ def get_image_classifier_kr_tf_binary():
     """
     # pylint: disable=E0401
     import tensorflow as tf
-
-    if tf.__version__[0] == "2":
-        tf.compat.v1.disable_eager_execution()
     from tensorflow.keras.layers import Conv2D, Dense, Flatten, MaxPooling2D
     from tensorflow.keras.models import Sequential
 
@@ -1002,7 +835,9 @@ def get_image_classifier_kr_tf_binary():
         [_kr_tf_weights_loader("MNIST_BINARY", "W", "DENSE"), _kr_tf_weights_loader("MNIST_BINARY", "B", "DENSE")]
     )
 
-    model.compile(loss="binary_crossentropy", optimizer=tf.keras.optimizers.legacy.Adam(lr=0.01), metrics=["accuracy"])
+    model.compile(
+        loss="binary_crossentropy", optimizer=tf.keras.optimizers.Adam(learning_rate=0.01), metrics=["accuracy"]
+    )
 
     # Get classifier
     krc = KerasClassifier(model, clip_values=(0, 1), use_logits=False)
@@ -1017,10 +852,6 @@ def get_image_classifier_kr_tf_with_wildcard():
     :return: KerasClassifier
     """
     # pylint: disable=E0401
-    import tensorflow as tf
-
-    if tf.__version__[0] == "2":
-        tf.compat.v1.disable_eager_execution()
     from tensorflow.keras.layers import LSTM, Conv1D, Dense
     from tensorflow.keras.models import Sequential
 
@@ -1485,178 +1316,16 @@ def get_classifier_bb_nn(defences=None):
     return bbc
 
 
-def get_image_classifier_mxnet_custom_ini():
-    import mxnet
-
-    w_conv2d = np.load(
-        os.path.join(os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "W_CONV2D_MNIST.npy")
-    )
-    b_conv2d = np.load(
-        os.path.join(os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "B_CONV2D_MNIST.npy")
-    )
-    w_dense = np.load(
-        os.path.join(os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "W_DENSE_MNIST.npy")
-    )
-    b_dense = np.load(
-        os.path.join(os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "B_DENSE_MNIST.npy")
-    )
-
-    w_conv2d_mx = w_conv2d.reshape((1, 1, 7, 7))
-
-    alias = mxnet.registry.get_alias_func(mxnet.initializer.Initializer, "initializer")
-
-    @mxnet.init.register
-    @alias("mm_init")
-    class CustomInit(mxnet.init.Initializer):
-        def __init__(self):
-            super(CustomInit, self).__init__()
-            self.params = dict()
-            self.params["conv0_weight"] = w_conv2d_mx
-            self.params["conv0_bias"] = b_conv2d
-            self.params["dense0_weight"] = np.transpose(w_dense)
-            self.params["dense0_bias"] = b_dense
-
-        def _init_weight(self, name, arr):
-            arr[:] = self.params[name]
-
-        def _init_bias(self, name, arr):
-            arr[:] = self.params[name]
-
-    return CustomInit()
-
-
-def get_gan_inverse_gan_ft():
-    import tensorflow as tf
-
-    from utils.resources.create_inverse_gan_models import build_gan_graph, build_inverse_gan_graph
-
-    if tf.__version__[0] == "2":
-        return None, None, None
-    else:
-
-        lr = 0.0002
-        latent_enc_len = 100
-
-        gen_tf, z_ph, gen_loss, gen_opt_tf, disc_loss_tf, disc_opt_tf, x_ph = build_gan_graph(lr, latent_enc_len)
-
-        enc_tf, image_to_enc_ph, latent_enc_loss, enc_opt = build_inverse_gan_graph(lr, gen_tf, z_ph, latent_enc_len)
-
-        sess = tf.Session()
-        sess.run(tf.global_variables_initializer())
-
-        gan = TensorFlowGenerator(
-            input_ph=z_ph,
-            model=gen_tf,
-            sess=sess,
-        )
-
-        inverse_gan = TensorFlowEncoder(
-            input_ph=image_to_enc_ph,
-            model=enc_tf,
-            sess=sess,
-        )
-        return gan, inverse_gan, sess
-
-
 # ------------------------------------------------------------------------------------------------ TEST MODELS FOR IRIS
 
 
 def get_tabular_classifier_tf(load_init=True, sess=None):
     import tensorflow as tf
 
-    if tf.__version__[0] == "2":
-        # sess is not required but set to None to return 2 values for v1 and v2
-        classifier, sess = get_tabular_classifier_tf_v2(), None
-    else:
-        classifier, sess = get_tabular_classifier_tf_v1(load_init=load_init, sess=sess)
+    # sess is not required but set to None to return 2 values for v1 and v2
+    classifier, sess = get_tabular_classifier_tf_v2(), None
+
     return classifier, sess
-
-
-def get_tabular_classifier_tf_v1(load_init=True, sess=None):
-    """
-    Standard TensorFlow classifier for unit testing.
-
-    The following hyperparameters were used to obtain the weights and biases:
-
-    * learning_rate: 0.01
-    * batch size: 5
-    * number of epochs: 200
-    * optimizer: tf.train.AdamOptimizer
-
-    The model is trained of 70% of the dataset, and 30% of the training set is used as validation split.
-
-    :param load_init: Load the initial weights if True.
-    :type load_init: `bool`
-    :param sess: Computation session.
-    :type sess: `tf.Session`
-    :return: The trained model for Iris dataset and the session.
-    :rtype: `tuple(TensorFlowClassifier, tf.Session)`
-    """
-    import tensorflow as tf
-
-    if tf.__version__[0] == "2":
-        # pylint: disable=E0401
-        import tensorflow.compat.v1 as tf
-
-        tf.disable_eager_execution()
-    from art.estimators.classification.tensorflow import TensorFlowClassifier
-
-    # Define input and output placeholders
-    input_ph = tf.placeholder(tf.float32, shape=[None, 4])
-    output_ph = tf.placeholder(tf.int32, shape=[None, 3])
-
-    # Define the TensorFlow graph
-    if load_init:
-        dense1 = tf.layers.dense(
-            input_ph,
-            10,
-            kernel_initializer=_tf_weights_loader("IRIS", "W", "DENSE1"),
-            bias_initializer=_tf_weights_loader("IRIS", "B", "DENSE1"),
-        )
-        dense2 = tf.layers.dense(
-            dense1,
-            10,
-            kernel_initializer=_tf_weights_loader("IRIS", "W", "DENSE2"),
-            bias_initializer=_tf_weights_loader("IRIS", "B", "DENSE2"),
-        )
-        logits = tf.layers.dense(
-            dense2,
-            3,
-            kernel_initializer=_tf_weights_loader("IRIS", "W", "DENSE3"),
-            bias_initializer=_tf_weights_loader("IRIS", "B", "DENSE3"),
-        )
-    else:
-        dense1 = tf.layers.dense(input_ph, 10)
-        dense2 = tf.layers.dense(dense1, 10)
-        logits = tf.layers.dense(dense2, 3)
-
-    # Train operator
-    loss = tf.reduce_mean(tf.losses.softmax_cross_entropy(logits=logits, onehot_labels=output_ph))
-    optimizer = tf.train.AdamOptimizer(learning_rate=0.01)
-    train = optimizer.minimize(loss)
-
-    # TensorFlow session and initialization
-    if sess is None:
-        sess = tf.Session()
-    elif not isinstance(sess, tf.Session):
-        raise TypeError("An instance of `tf.Session` should be passed to `sess`.")
-
-    sess.run(tf.global_variables_initializer())
-
-    # Train the classifier
-    tfc = TensorFlowClassifier(
-        clip_values=(0, 1),
-        input_ph=input_ph,
-        output=logits,
-        labels_ph=output_ph,
-        train=train,
-        loss=loss,
-        learning=None,
-        sess=sess,
-        channels_first=True,
-    )
-
-    return tfc, sess
 
 
 def get_tabular_classifier_tf_v2():
@@ -1681,9 +1350,6 @@ def get_tabular_classifier_tf_v2():
     from tensorflow.keras.layers import Dense
 
     from art.estimators.classification.tensorflow import TensorFlowV2Classifier
-
-    if tf.__version__[0] != "2":
-        raise ImportError("This function requires TensorFlow v2.")
 
     class TensorFlowModel(Model):
         """
@@ -1725,7 +1391,7 @@ def get_tabular_classifier_tf_v2():
 
     model = TensorFlowModel()
     loss_object = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
-    optimizer = tf.keras.optimizers.legacy.Adam(learning_rate=0.01)
+    optimizer = tf.keras.optimizers.Adam(learning_rate=0.01)
 
     # Create the classifier
     tfc = TensorFlowV2Classifier(
@@ -1818,19 +1484,9 @@ def get_tabular_classifier_kr(load_init=True):
     :rtype: `tuple(KerasClassifier, tf.Session)`
     """
     import tensorflow as tf
-
-    tf_version = [int(v) for v in tf.__version__.split(".")]
-    if tf_version[0] == 2 and tf_version[1] >= 3:
-        is_tf23_keras24 = True
-        tf.compat.v1.disable_eager_execution()
-        from tensorflow import keras
-        from tensorflow.keras.layers import Dense
-        from tensorflow.keras.models import Sequential
-    else:
-        is_tf23_keras24 = False
-        import keras
-        from keras.models import Sequential
-        from keras.layers import Dense
+    from tensorflow import keras
+    from tensorflow.keras.layers import Dense
+    from tensorflow.keras.models import Sequential
 
     from art.estimators.classification.keras import KerasClassifier
 
@@ -1838,65 +1494,38 @@ def get_tabular_classifier_kr(load_init=True):
     model = Sequential()
 
     if load_init:
-        if is_tf23_keras24:
-            model.add(
-                Dense(
-                    10,
-                    input_shape=(4,),
-                    activation="relu",
-                    kernel_initializer=_tf_weights_loader("IRIS", "W", "DENSE1", 2),
-                    bias_initializer=_tf_weights_loader("IRIS", "B", "DENSE1", 2),
-                )
+        model.add(
+            Dense(
+                10,
+                input_shape=(4,),
+                activation="relu",
+                kernel_initializer=_tf_weights_loader("IRIS", "W", "DENSE1", 2),
+                bias_initializer=_tf_weights_loader("IRIS", "B", "DENSE1", 2),
             )
-            model.add(
-                Dense(
-                    10,
-                    activation="relu",
-                    kernel_initializer=_tf_weights_loader("IRIS", "W", "DENSE2", 2),
-                    bias_initializer=_tf_weights_loader("IRIS", "B", "DENSE2", 2),
-                )
+        )
+        model.add(
+            Dense(
+                10,
+                activation="relu",
+                kernel_initializer=_tf_weights_loader("IRIS", "W", "DENSE2", 2),
+                bias_initializer=_tf_weights_loader("IRIS", "B", "DENSE2", 2),
             )
-            model.add(
-                Dense(
-                    3,
-                    activation="softmax",
-                    kernel_initializer=_tf_weights_loader("IRIS", "W", "DENSE3", 2),
-                    bias_initializer=_tf_weights_loader("IRIS", "B", "DENSE3", 2),
-                )
+        )
+        model.add(
+            Dense(
+                3,
+                activation="softmax",
+                kernel_initializer=_tf_weights_loader("IRIS", "W", "DENSE3", 2),
+                bias_initializer=_tf_weights_loader("IRIS", "B", "DENSE3", 2),
             )
-        else:
-            model.add(
-                Dense(
-                    10,
-                    input_shape=(4,),
-                    activation="relu",
-                    kernel_initializer=_kr_weights_loader("IRIS", "W", "DENSE1"),
-                    bias_initializer=_kr_weights_loader("IRIS", "B", "DENSE1"),
-                )
-            )
-            model.add(
-                Dense(
-                    10,
-                    activation="relu",
-                    kernel_initializer=_kr_weights_loader("IRIS", "W", "DENSE2"),
-                    bias_initializer=_kr_weights_loader("IRIS", "B", "DENSE2"),
-                )
-            )
-            model.add(
-                Dense(
-                    3,
-                    activation="softmax",
-                    kernel_initializer=_kr_weights_loader("IRIS", "W", "DENSE3"),
-                    bias_initializer=_kr_weights_loader("IRIS", "B", "DENSE3"),
-                )
-            )
+        )
     else:
         model.add(Dense(10, input_shape=(4,), activation="relu"))
         model.add(Dense(10, activation="relu"))
         model.add(Dense(3, activation="softmax"))
 
     model.compile(
-        loss="categorical_crossentropy", optimizer=keras.optimizers.legacy.Adam(lr=0.001), metrics=["accuracy"]
+        loss="categorical_crossentropy", optimizer=keras.optimizers.Adam(learning_rate=0.001), metrics=["accuracy"]
     )
 
     # Get classifier
@@ -1915,19 +1544,9 @@ def get_tabular_regressor_kr(load_init=True):
     :rtype: `tuple(KerasRegressor, tf.Session)`
     """
     import tensorflow as tf
-
-    tf_version = [int(v) for v in tf.__version__.split(".")]
-    if tf_version[0] == 2 and tf_version[1] >= 3:
-        is_tf23_keras24 = True
-        tf.compat.v1.disable_eager_execution()
-        from tensorflow import keras
-        from tensorflow.keras.layers import Dense
-        from tensorflow.keras.models import Sequential
-    else:
-        is_tf23_keras24 = False
-        import keras
-        from keras.models import Sequential
-        from keras.layers import Dense
+    from tensorflow import keras
+    from tensorflow.keras.layers import Dense
+    from tensorflow.keras.models import Sequential
 
     from art.estimators.regression.keras import KerasRegressor
 
@@ -1935,62 +1554,36 @@ def get_tabular_regressor_kr(load_init=True):
     model = Sequential()
 
     if load_init:
-        if is_tf23_keras24:
-            model.add(
-                Dense(
-                    100,
-                    input_shape=(10,),
-                    activation="relu",
-                    kernel_initializer=_tf_weights_loader("DIABETES", "W", "DENSE1", 2),
-                    bias_initializer=_tf_weights_loader("DIABETES", "B", "DENSE1", 2),
-                )
+        model.add(
+            Dense(
+                100,
+                input_shape=(10,),
+                activation="relu",
+                kernel_initializer=_tf_weights_loader("DIABETES", "W", "DENSE1", 2),
+                bias_initializer=_tf_weights_loader("DIABETES", "B", "DENSE1", 2),
             )
-            model.add(
-                Dense(
-                    10,
-                    activation="relu",
-                    kernel_initializer=_tf_weights_loader("DIABETES", "W", "DENSE2", 2),
-                    bias_initializer=_tf_weights_loader("DIABETES", "B", "DENSE2", 2),
-                )
+        )
+        model.add(
+            Dense(
+                10,
+                activation="relu",
+                kernel_initializer=_tf_weights_loader("DIABETES", "W", "DENSE2", 2),
+                bias_initializer=_tf_weights_loader("DIABETES", "B", "DENSE2", 2),
             )
-            model.add(
-                Dense(
-                    1,
-                    kernel_initializer=_tf_weights_loader("DIABETES", "W", "DENSE3", 2),
-                    bias_initializer=_tf_weights_loader("DIABETES", "B", "DENSE3", 2),
-                )
+        )
+        model.add(
+            Dense(
+                1,
+                kernel_initializer=_tf_weights_loader("DIABETES", "W", "DENSE3", 2),
+                bias_initializer=_tf_weights_loader("DIABETES", "B", "DENSE3", 2),
             )
-        else:
-            model.add(
-                Dense(
-                    100,
-                    input_shape=(10,),
-                    activation="relu",
-                    kernel_initializer=_kr_weights_loader("DIABETES", "W", "DENSE1"),
-                    bias_initializer=_kr_weights_loader("DIABETES", "B", "DENSE1"),
-                )
-            )
-            model.add(
-                Dense(
-                    10,
-                    activation="relu",
-                    kernel_initializer=_kr_weights_loader("DIABETES", "W", "DENSE2"),
-                    bias_initializer=_kr_weights_loader("DIABETES", "B", "DENSE2"),
-                )
-            )
-            model.add(
-                Dense(
-                    1,
-                    kernel_initializer=_kr_weights_loader("DIABETES", "W", "DENSE3"),
-                    bias_initializer=_kr_weights_loader("DIABETES", "B", "DENSE3"),
-                )
-            )
+        )
     else:
         model.add(Dense(100, input_shape=(10,), activation="relu"))
         model.add(Dense(10, activation="relu"))
         model.add(Dense(1))
 
-    model.compile(loss="mean_squared_error", optimizer=keras.optimizers.legacy.Adam(lr=0.001), metrics=["accuracy"])
+    model.compile(loss="mean_squared_error", optimizer=keras.optimizers.Adam(learning_rate=0.001), metrics=["accuracy"])
 
     # Get regressor
     krc = KerasRegressor(model)
@@ -2247,7 +1840,7 @@ def get_attack_classifier_pt(num_features):
 # -------------------------------------------------------------------------------------------- RANDOM NUMBER GENERATORS
 
 
-def master_seed(seed=1234, set_random=True, set_numpy=True, set_tensorflow=False, set_mxnet=False, set_torch=False):
+def master_seed(seed=1234, set_random=True, set_numpy=True, set_tensorflow=False, set_torch=False):
     """
     Set the seed for all random number generators used in the library. This ensures experiments reproducibility and
     stable testing.
@@ -2260,8 +1853,6 @@ def master_seed(seed=1234, set_random=True, set_numpy=True, set_tensorflow=False
     :type set_numpy: `bool`
     :param set_tensorflow: The flag to set seed for `tensorflow`.
     :type set_tensorflow: `bool`
-    :param set_mxnet: The flag to set seed for `mxnet`.
-    :type set_mxnet: `bool`
     :param set_torch: The flag to set seed for `torch`.
     :type set_torch: `bool`
     """
@@ -2287,21 +1878,9 @@ def master_seed(seed=1234, set_random=True, set_numpy=True, set_tensorflow=False
             import tensorflow as tf
 
             logger.info("Setting random seed for TensorFlow.")
-            if tf.__version__[0] == "2":
-                tf.random.set_seed(seed)
-            else:
-                tf.set_random_seed(seed)
+            tf.random.set_seed(seed)
         except ImportError:
             logger.info("Could not set random seed for TensorFlow.")
-
-    if set_mxnet:
-        try:
-            import mxnet as mx
-
-            logger.info("Setting random seed for MXNet.")
-            mx.random.seed(seed)
-        except ImportError:
-            logger.info("Could not set random seed for MXNet.")
 
     if set_torch:
         try:

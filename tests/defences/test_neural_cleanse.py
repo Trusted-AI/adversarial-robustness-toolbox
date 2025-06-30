@@ -58,13 +58,10 @@ class TestNeuralCleanse(unittest.TestCase):
         :return:
         """
         # Build KerasClassifier
-        import tensorflow as tf
-
-        tf.compat.v1.disable_eager_execution()
         from tensorflow.keras.models import Sequential
         from tensorflow.keras.layers import Dense, Flatten, Conv2D
         from tensorflow.keras.losses import CategoricalCrossentropy
-        from tensorflow.keras.optimizers.legacy import Adam
+        from tensorflow.keras.optimizers import Adam
 
         model = Sequential()
         model.add(Conv2D(filters=4, kernel_size=(5, 5), strides=1, activation="relu", input_shape=(28, 28, 1)))
@@ -106,10 +103,10 @@ class TestNeuralCleanse(unittest.TestCase):
                 y_test[i, 9] = 1
                 x_test[i, 0:5, 0:5, :] = 1.0
 
-        krc.fit(x_train, y_train, nb_epochs=3)
+        krc.fit(x_train, y_train, nb_epochs=5)
 
         cleanse = NeuralCleanse(krc)
-        defense_cleanse = cleanse(krc, steps=1, patience=1)
+        defense_cleanse = cleanse(krc, steps=3, patience=3)
         defense_cleanse.mitigate(x_test, y_test, mitigation_types=["filtering", "pruning", "unlearning"])
 
         # is_fitted

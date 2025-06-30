@@ -24,7 +24,7 @@
 [Linux Foundation AI & Data Foundation](https://lfaidata.foundation) (LF AI & Data)。 ART提供的工具可
 帮助开发人员和研究人员针对以下方面捍卫和评估机器学习模型和应用程序：
 逃逸，数据污染，模型提取和推断的对抗性威胁。ART支持所有流行的机器学习框架
-（TensorFlow，Keras，PyTorch，MXNet，scikit-learn，XGBoost，LightGBM，CatBoost，GPy等），所有数据类型
+（TensorFlow，Keras，PyTorch，scikit-learn，XGBoost，LightGBM，CatBoost，GPy等），所有数据类型
 （图像，表格，音频，视频等）和机器学习任务（分类，物体检测，语音识别，
 生成模型，认证等）。
 

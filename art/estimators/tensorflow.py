@@ -16,7 +16,7 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements the abstract estimators `TensorFlowEstimator` and `TensorFlowV2Estimator` for TensorFlow models.
+This module implements the abstract estimators `TensorFlowV2Estimator` for TensorFlow models.
 """
 from __future__ import annotations
 
@@ -36,58 +36,6 @@ if TYPE_CHECKING:
     import tensorflow as tf
 
 logger = logging.getLogger(__name__)
-
-
-class TensorFlowEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
-    """
-    Estimator class for TensorFlow models.
-    """
-
-    estimator_params = BaseEstimator.estimator_params + NeuralNetworkMixin.estimator_params
-
-    def __init__(self, **kwargs) -> None:
-        """
-        Estimator class for TensorFlow models.
-        """
-        self._sess: "tf.python.client.session.Session" = None
-        super().__init__(**kwargs)
-
-    def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs):
-        """
-        Perform prediction of the neural network for samples `x`.
-
-        :param x: Samples of shape (nb_samples, nb_features) or (nb_samples, nb_pixels_1, nb_pixels_2,
-                  nb_channels) or (nb_samples, nb_channels, nb_pixels_1, nb_pixels_2).
-        :param batch_size: Batch size.
-        :return: Predictions.
-        :rtype: Format as expected by the `model`
-        """
-        return NeuralNetworkMixin.predict(self, x, batch_size=batch_size, **kwargs)
-
-    def fit(self, x: np.ndarray, y, batch_size: int = 128, nb_epochs: int = 20, **kwargs) -> None:
-        """
-        Fit the model of the estimator on the training data `x` and `y`.
-
-        :param x: Samples of shape (nb_samples, nb_features) or (nb_samples, nb_pixels_1, nb_pixels_2,
-                  nb_channels) or (nb_samples, nb_channels, nb_pixels_1, nb_pixels_2).
-        :param y: Target values.
-        :type y: Format as expected by the `model`
-        :param batch_size: Batch size.
-        :param nb_epochs: Number of training epochs.
-        """
-        NeuralNetworkMixin.fit(self, x, y, batch_size=batch_size, nb_epochs=nb_epochs, **kwargs)
-
-    @property
-    def sess(self) -> "tf.python.client.session.Session":
-        """
-        Get current TensorFlow session.
-
-        :return: The current TensorFlow session.
-        """
-        if self._sess is not None:
-            return self._sess
-
-        raise NotImplementedError("A valid TensorFlow session is not available.")
 
 
 class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):

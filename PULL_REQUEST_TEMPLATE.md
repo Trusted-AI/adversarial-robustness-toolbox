@@ -25,7 +25,7 @@ Please describe the tests that you ran to verify your changes. Consider listing 
 - OS
 - Python version
 - ART version or commit number
-- TensorFlow / Keras / PyTorch / MXNet version
+- TensorFlow / Keras / PyTorch version
 
 # Checklist
 

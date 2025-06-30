@@ -26,8 +26,6 @@ from typing import Any, TYPE_CHECKING
 import numpy as np
 from tqdm.auto import trange
 
-from art.config import ART_NUMPY_DTYPE
-
 if TYPE_CHECKING:
     # pylint: disable=cyclic-import
     from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE, ESTIMATOR_TYPE
@@ -192,6 +190,7 @@ class BaseEstimator(ABC):
         raise NotImplementedError
 
     def _check_params(self) -> None:
+        from art.config import ART_NUMPY_DTYPE
         from art.defences.postprocessor.postprocessor import Postprocessor
         from art.defences.preprocessor.preprocessor import Preprocessor
 

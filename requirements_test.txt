@@ -2,9 +2,9 @@
 
 # base
 
-numpy>=1.18.5,<1.27
-scipy==1.10.1
-matplotlib==3.9.4
+numpy==1.26.4
+scipy==1.12.0
+matplotlib==3.10.3
 scikit-learn==1.6.1
 six==1.17.0
 Pillow==11.2.1
@@ -16,7 +16,7 @@ ffmpeg-python==0.2.0
 cma==4.2.0
 pandas==2.3.0
 librosa==0.11.0
-numba~=0.56.4
+numba~=0.59.1
 opencv-python
 sortedcontainers==2.4.0
 h5py==3.14.0
@@ -24,12 +24,8 @@ multiprocess>=0.70.12
 
 # frameworks
 
-tensorflow==2.14.0
-keras==2.14.0
-tensorflow-addons>=0.13.0
-
-# using mxnet-native for reproducible test results on CI machines without Intel Architecture Processors, but mxnet is fully supported by ART
-mxnet-native==1.8.0.post0
+tensorflow==2.18.1
+keras==3.10.0
 
 # PyTorch
 torch==2.7.1
@@ -38,6 +34,9 @@ torchvision==0.22.1
 
 # PyTorch image transformers
 timm==1.0.15
+
+# YOLO dependencies
+ultralytics==8.3.159
 
 catboost==1.2.8
 GPy==1.13.2
@@ -48,8 +47,6 @@ kornia~=0.8.1
 tensorboardX==2.6.4
 lief==0.16.6
 jax[cpu]==0.4.30
-
-# lingvo==0.13.1
 
 # tests and style checking
 pytest~=8.4.1

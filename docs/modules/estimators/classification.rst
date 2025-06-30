@@ -40,13 +40,6 @@ Keras Classifier
    :special-members: __init__
    :inherited-members:
 
-MXNet Classifier
-----------------
-.. autoclass:: MXClassifier
-   :members:
-   :special-members: __init__
-   :inherited-members:
-
 PyTorch Classifier
 ------------------
 .. autoclass:: PyTorchClassifier
@@ -57,13 +50,6 @@ PyTorch Classifier
 Query-Efficient Black-box Gradient Estimation Classifier
 --------------------------------------------------------
 .. autoclass:: QueryEfficientGradientEstimationClassifier
-   :members:
-   :special-members: __init__
-   :inherited-members:
-
-TensorFlow Classifier
----------------------
-.. autoclass:: TensorFlowClassifier
    :members:
    :special-members: __init__
    :inherited-members:
