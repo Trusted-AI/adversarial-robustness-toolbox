@@ -445,9 +445,7 @@ class TestClusterClasses(CCAUDTestCaseBase):
             def fit_predict(self, x, **kwargs):
                 return np.array([0, 0, 1])
 
-        clusterer = CustomMockClusterer(
-            None
-        )  # The parameter is ignored due to overridden fit_predict
+        clusterer = CustomMockClusterer(None)  # The parameter is ignored due to overridden fit_predict
 
         # Execute
         class_cluster_labels, cluster_class_mapping = self.cca._cluster_classes(
@@ -677,9 +675,7 @@ class TestCalculateMisclassificationRate(unittest.TestCase):
         self.num_benign_samples_class_2 = 4
 
         self.defence.x_benign_np = np.random.rand(
-            self.num_benign_samples_class_0
-            + self.num_benign_samples_class_1
-            + self.num_benign_samples_class_2,
+            self.num_benign_samples_class_0 + self.num_benign_samples_class_1 + self.num_benign_samples_class_2,
             10,
         )
         self.defence.y_benign_np = np.array(
@@ -691,9 +687,7 @@ class TestCalculateMisclassificationRate(unittest.TestCase):
 
         # Mock the instance's _calculate_features attribute AFTER it has been set up in __init__
         # It's now a tf.function, but MagicMock can replace tf.function objects too.
-        def mock_calc_features_side_effect(
-            model_arg, data_tensor
-        ):  # model_arg is feature_representation_model
+        def mock_calc_features_side_effect(model_arg, data_tensor):  # model_arg is feature_representation_model
             # Ensure it's a tensor for tf.shape, or convert if needed
             if not tf.is_tensor(data_tensor):
                 data_tensor = tf.convert_to_tensor(data_tensor, dtype=tf.float32)
@@ -701,9 +695,7 @@ class TestCalculateMisclassificationRate(unittest.TestCase):
             num_samples = tf.shape(data_tensor)[0].numpy()
 
             if num_samples == 0:
-                print(
-                    "Debug: mock_calculate_features received EMPTY data_tensor. Returning empty features."
-                )
+                print("Debug: mock_calculate_features received EMPTY data_tensor. Returning empty features.")
                 return tf.constant([], shape=(0, self.feature_dim), dtype=tf.float32)
 
             print(
@@ -712,15 +704,11 @@ class TestCalculateMisclassificationRate(unittest.TestCase):
             )
             return tf.random.uniform((num_samples, self.feature_dim), dtype=tf.float32)
 
-        self.mock_calculate_features_instance = MagicMock(
-            side_effect=mock_calc_features_side_effect
-        )
+        self.mock_calculate_features_instance = MagicMock(side_effect=mock_calc_features_side_effect)
         self.defence._calculate_features = self.mock_calculate_features_instance
 
         # Mock feature_representation_model.predict as well, as it's used once for feature_shape
-        self.defence.feature_representation_model.predict.return_value = np.random.rand(
-            1, self.feature_dim
-        ).astype(
+        self.defence.feature_representation_model.predict.return_value = np.random.rand(1, self.feature_dim).astype(
             np.float32
         )  # Ensure correct dtype and shape
 
@@ -746,9 +734,7 @@ class TestCalculateMisclassificationRate(unittest.TestCase):
             if concrete_batch_size is None:
                 dynamic_batch_size = tf.shape(deviated_features)[0]
                 predicted_indices = tf.ones([dynamic_batch_size], dtype=tf.int32)
-                symbolic_logits = tf.one_hot(
-                    predicted_indices, depth=num_unique_classes, dtype=tf.float32
-                )
+                symbolic_logits = tf.one_hot(predicted_indices, depth=num_unique_classes, dtype=tf.float32)
                 return symbolic_logits
             else:
                 num_samples_concrete = concrete_batch_size
@@ -788,9 +774,7 @@ class TestCalculateMisclassificationRate(unittest.TestCase):
             if concrete_batch_size is None:
                 dynamic_batch_size = tf.shape(deviated_features)[0]
                 predicted_indices = tf.fill([dynamic_batch_size], target_class_label)
-                symbolic_logits = tf.one_hot(
-                    predicted_indices, depth=num_unique_classes, dtype=tf.float32
-                )
+                symbolic_logits = tf.one_hot(predicted_indices, depth=num_unique_classes, dtype=tf.float32)
                 return symbolic_logits
             else:
                 num_samples_concrete = concrete_batch_size
@@ -812,23 +796,17 @@ class TestCalculateMisclassificationRate(unittest.TestCase):
 
         def mock_classifier_predict_side_effect(deviated_features, training=False):
             num_unique_classes = len(self.defence.unique_classes)
-            num_samples_concrete = tf.compat.v1.dimension_value(
-                deviated_features.shape[0]
-            )  # Eager mode
+            num_samples_concrete = tf.compat.v1.dimension_value(deviated_features.shape[0])  # Eager mode
 
             logits_np = np.zeros((num_samples_concrete, num_unique_classes))
 
             # Logic based on the number of samples received, assuming distinct counts for class 0 and 1
-            if (
-                num_samples_concrete == self.num_benign_samples_class_0
-            ):  # Processing features for class 0 (3 samples)
+            if num_samples_concrete == self.num_benign_samples_class_0:  # Processing features for class 0 (3 samples)
                 # 1 misclassified as target_class_label (2), 2 correctly as class 0
                 logits_np[0, target_class_label] = 1.0
                 logits_np[1, 0] = 1.0
                 logits_np[2, 0] = 1.0
-            elif (
-                num_samples_concrete == self.num_benign_samples_class_1
-            ):  # Processing features for class 1 (2 samples)
+            elif num_samples_concrete == self.num_benign_samples_class_1:  # Processing features for class 1 (2 samples)
                 # 1 misclassified as target_class_label (2), 1 correctly as class 1
                 logits_np[0, target_class_label] = 1.0
                 logits_np[1, 1] = 1.0
@@ -892,9 +870,7 @@ class TestCalculateMisclassificationRate(unittest.TestCase):
             10,
         )
         self.defence.y_benign_np = np.array(
-            [0] * self.num_benign_samples_class_0
-            + [1] * num_samples_class1_large
-            + [2] * num_samples_class2_small
+            [0] * self.num_benign_samples_class_0 + [1] * num_samples_class1_large + [2] * num_samples_class2_small
         )
         self.defence.unique_classes = {0, 1, 2}
 
@@ -902,18 +878,14 @@ class TestCalculateMisclassificationRate(unittest.TestCase):
             np.ceil(num_samples_class1_large / self.defence.misclassification_batch_size)
         ) + int(np.ceil(num_samples_class2_small / self.defence.misclassification_batch_size))
 
-        def mock_classifier_predict_side_effect_for_batching_test(
-            deviated_features, training=False
-        ):
+        def mock_classifier_predict_side_effect_for_batching_test(deviated_features, training=False):
             num_unique_classes = len(self.defence.unique_classes)
             concrete_batch_size = tf.compat.v1.dimension_value(deviated_features.shape[0])
 
             if concrete_batch_size is None:
                 dynamic_batch_size = tf.shape(deviated_features)[0]
                 predicted_indices = tf.fill([dynamic_batch_size], target_class_label)
-                symbolic_logits = tf.one_hot(
-                    predicted_indices, depth=num_unique_classes, dtype=tf.float32
-                )
+                symbolic_logits = tf.one_hot(predicted_indices, depth=num_unique_classes, dtype=tf.float32)
                 return symbolic_logits
             else:
                 num_samples_concrete = concrete_batch_size
@@ -921,18 +893,12 @@ class TestCalculateMisclassificationRate(unittest.TestCase):
                 logits_np[:, target_class_label] = 1.0
                 return tf.convert_to_tensor(logits_np, dtype=tf.float32)
 
-        self.defence.classifying_submodel.side_effect = (
-            mock_classifier_predict_side_effect_for_batching_test
-        )
+        self.defence.classifying_submodel.side_effect = mock_classifier_predict_side_effect_for_batching_test
 
         rate = self.defence._calculate_misclassification_rate(target_class_label, deviation_vector)
         self.assertEqual(rate, 1.0)
-        self.assertEqual(
-            self.mock_calculate_features_instance.call_count, total_expected_feature_batches
-        )
-        self.assertEqual(
-            self.defence.classifying_submodel.call_count, total_expected_feature_batches
-        )
+        self.assertEqual(self.mock_calculate_features_instance.call_count, total_expected_feature_batches)
+        self.assertEqual(self.defence.classifying_submodel.call_count, total_expected_feature_batches)
 
         self.num_benign_samples_class_1 = original_num_benign_samples_class_1
 
@@ -1340,9 +1306,7 @@ class TestEvaluateDefence(unittest.TestCase):
             np.testing.assert_array_equal(arr, expected_is_clean_by_class[i])
 
     @patch("art.defences.detector.poison.clustering_centroid_analysis.GroundTruthEvaluator")
-    def test_evaluate_defence_all_predicted_poisoned_all_truth_poisoned(
-        self, MockGroundTruthEvaluator
-    ):
+    def test_evaluate_defence_all_predicted_poisoned_all_truth_poisoned(self, MockGroundTruthEvaluator):
         """
         Test case: All samples predicted as poisoned, and all are truly poisoned.
         """
@@ -1375,9 +1339,7 @@ class TestEvaluateDefence(unittest.TestCase):
             np.testing.assert_array_equal(arr, expected_is_clean_by_class[i])
 
     @patch("art.defences.detector.poison.clustering_centroid_analysis.GroundTruthEvaluator")
-    def test_evaluate_defence_no_samples_for_a_class_in_unique_classes(
-        self, MockGroundTruthEvaluator
-    ):
+    def test_evaluate_defence_no_samples_for_a_class_in_unique_classes(self, MockGroundTruthEvaluator):
         """
         Test case: A class in unique_classes has no samples in y_train (edge case).
         This shouldn't happen if unique_classes is derived from y_train correctly,

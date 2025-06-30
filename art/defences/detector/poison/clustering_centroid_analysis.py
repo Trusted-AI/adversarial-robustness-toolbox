@@ -150,9 +150,7 @@ class ClusteringCentroidAnalysisTensorFlowV2(PoisonFilteringDefence):
                 # Default reducer, recommended by original authors
                 self.reducer = UMAP(n_neighbors=5, min_dist=0)
             except ImportError as e:
-                raise ImportError(
-                    "UMAP is required for default reducer in ClusteringCentroidAnalysis. "
-                ) from e
+                raise ImportError("UMAP is required for default reducer in ClusteringCentroidAnalysis. ") from e
 
         logging.info("Loading variables into CCA...")
         super().__init__(classifier, x_train, y_train)
@@ -191,9 +189,7 @@ class ClusteringCentroidAnalysisTensorFlowV2(PoisonFilteringDefence):
             .prefetch(self._tf_runtime.data.AUTOTUNE)
         )
 
-        self.feature_representation_model, self.classifying_submodel = self._extract_submodels(
-            final_feature_layer_name
-        )
+        self.feature_representation_model, self.classifying_submodel = self._extract_submodels(final_feature_layer_name)
 
         self.misclassification_threshold = np.float64(misclassification_threshold)
 
@@ -208,17 +204,13 @@ class ClusteringCentroidAnalysisTensorFlowV2(PoisonFilteringDefence):
             # Handle case where output_shape[1:] might be an empty tuple if model outputs a scalar.
             # Unlikely for feature extractor, but good to be robust.
             if not self.feature_output_shape:
-                logging.warning(
-                    "feature_representation_model.output_shape[1:] is empty. Attempting dummy inference."
-                )
+                logging.warning("feature_representation_model.output_shape[1:] is empty. Attempting dummy inference.")
                 # Fallback to dummy inference if output_shape is unexpectedly empty
                 dummy_input_shape = (
                     1,
                     *self.x_train.shape[1:],
                 )  # Use actual classifier input shape
-                dummy_input = self._tf_runtime.random.uniform(
-                    shape=dummy_input_shape, dtype=self._tf_runtime.float32
-                )
+                dummy_input = self._tf_runtime.random.uniform(shape=dummy_input_shape, dtype=self._tf_runtime.float32)
                 dummy_features = self.feature_representation_model(dummy_input)
                 self.feature_output_shape = dummy_features.shape[1:]
         else:
@@ -228,9 +220,7 @@ class ClusteringCentroidAnalysisTensorFlowV2(PoisonFilteringDefence):
                 "Performing dummy inference for shape."
             )
             dummy_input_shape = (1, *self.x_train.shape[1:])  # Use actual classifier input shape
-            dummy_input = self._tf_runtime.random.uniform(
-                shape=dummy_input_shape, dtype=self._tf_runtime.float32
-            )
+            dummy_input = self._tf_runtime.random.uniform(shape=dummy_input_shape, dtype=self._tf_runtime.float32)
             dummy_features = self.feature_representation_model(dummy_input)
             self.feature_output_shape = dummy_features.shape[1:]
 
@@ -251,12 +241,8 @@ class ClusteringCentroidAnalysisTensorFlowV2(PoisonFilteringDefence):
         self._predict_with_deviation = self._tf_runtime.function(
             self._predict_with_deviation_unwrapped,
             input_signature=[
-                self._tf_runtime.TensorSpec(
-                    shape=[None, *self.feature_output_shape], dtype=self._tf_runtime.float32
-                ),
-                self._tf_runtime.TensorSpec(
-                    shape=self.feature_output_shape, dtype=self._tf_runtime.float32
-                ),
+                self._tf_runtime.TensorSpec(shape=[None, *self.feature_output_shape], dtype=self._tf_runtime.float32),
+                self._tf_runtime.TensorSpec(shape=self.feature_output_shape, dtype=self._tf_runtime.float32),
             ],
             reduce_retracing=True,
         )
@@ -275,9 +261,7 @@ class ClusteringCentroidAnalysisTensorFlowV2(PoisonFilteringDefence):
         :return: d-dimensional numpy array
         """
         selected_features = features[selected_indices]
-        features_tf = self._tf_runtime.convert_to_tensor(
-            selected_features, dtype=self._tf_runtime.float32
-        )
+        features_tf = self._tf_runtime.convert_to_tensor(selected_features, dtype=self._tf_runtime.float32)
         centroid = self._calculate_centroid_tf(features_tf)
         return centroid.numpy()
 
@@ -300,9 +284,7 @@ class ClusteringCentroidAnalysisTensorFlowV2(PoisonFilteringDefence):
         cluster_labels = clusterer.fit_predict(selected_features)
         return cluster_labels, selected_indices
 
-    def _calculate_features_unwrapped(
-        self, feature_representation_model: Model, x: np.ndarray
-    ) -> np.ndarray:
+    def _calculate_features_unwrapped(self, feature_representation_model: Model, x: np.ndarray) -> np.ndarray:
         """
         Calculates the features using the first DNN slice
 
@@ -312,9 +294,7 @@ class ClusteringCentroidAnalysisTensorFlowV2(PoisonFilteringDefence):
         """
         return feature_representation_model(x, training=False)
 
-    def _feature_extraction(
-        self, x_train: tf_types.data.Dataset, feature_representation_model: Model
-    ) -> np.ndarray:
+    def _feature_extraction(self, x_train: tf_types.data.Dataset, feature_representation_model: Model) -> np.ndarray:
         """
         Extract features from the model using the feature representation sub model.
 
@@ -361,9 +341,7 @@ class ClusteringCentroidAnalysisTensorFlowV2(PoisonFilteringDefence):
         logging.debug("Unique classes are: %s", unique_classes)
 
         for class_label in unique_classes:
-            cluster_labels, selected_indices = self._class_clustering(
-                y_train, features, class_label, clusterer
-            )
+            cluster_labels, selected_indices = self._class_clustering(y_train, features, class_label, clusterer)
             # label values are adjusted to account for labels of previous clustering tasks
             cluster_labels[cluster_labels != -1] += used_cluster_labels
             used_cluster_labels += len(np.unique(cluster_labels[cluster_labels != -1]))
@@ -383,9 +361,7 @@ class ClusteringCentroidAnalysisTensorFlowV2(PoisonFilteringDefence):
         :return: (x_benign, y_benign) ndarrays with the benign data.
         """
         if len(self.benign_indices) == 0:
-            raise ValueError(
-                f"Benign indices passed ({len(self.benign_indices)}) are not enough to run the algorithm"
-            )
+            raise ValueError(f"Benign indices passed ({len(self.benign_indices)}) are not enough to run the algorithm")
 
         return self.x_train[self.benign_indices], self.y_train[self.benign_indices]
 
@@ -404,9 +380,7 @@ class ClusteringCentroidAnalysisTensorFlowV2(PoisonFilteringDefence):
         try:
             final_feature_layer = keras_model.get_layer(name=final_feature_layer_name)
         except ValueError as exc:
-            raise ValueError(
-                f"Layer with name '{final_feature_layer_name}' not found in the model."
-            ) from exc
+            raise ValueError(f"Layer with name '{final_feature_layer_name}' not found in the model.") from exc
 
         if (
             not hasattr(final_feature_layer, "activation")
@@ -428,9 +402,7 @@ class ClusteringCentroidAnalysisTensorFlowV2(PoisonFilteringDefence):
         classifier_submodel_layers = keras_model.layers[final_feature_layer_index + 1 :]
 
         # Create the classifier submodel
-        classifying_submodel = self._KerasSequential(
-            classifier_submodel_layers, name="classifying_submodel"
-        )
+        classifying_submodel = self._KerasSequential(classifier_submodel_layers, name="classifying_submodel")
 
         intermediate_shape = feature_representation_model.output_shape[1:]
         dummy_input = self._tf_runtime.zeros((1,) + intermediate_shape)
@@ -487,9 +459,7 @@ class ClusteringCentroidAnalysisTensorFlowV2(PoisonFilteringDefence):
         deviated_features = self._tf_runtime.nn.relu(features + deviation)
         return self.classifying_submodel(deviated_features, training=False)
 
-    def _calculate_misclassification_rate(
-        self, class_label: int, deviation: np.ndarray
-    ) -> np.float64:
+    def _calculate_misclassification_rate(self, class_label: int, deviation: np.ndarray) -> np.float64:
         """
         Calculate the misclassification rate when applying a deviation to other classes.
 
@@ -528,9 +498,7 @@ class ClusteringCentroidAnalysisTensorFlowV2(PoisonFilteringDefence):
 
             # Batches of the class are processed with deviation to determine misclassification
             for batch_data_tf in class_x_dataset:
-                features_tf = self._calculate_features(
-                    self.feature_representation_model, batch_data_tf
-                )
+                features_tf = self._calculate_features(self.feature_representation_model, batch_data_tf)
 
                 predictions = self._predict_with_deviation(features_tf, deviation_tf)
 
@@ -561,9 +529,7 @@ class ClusteringCentroidAnalysisTensorFlowV2(PoisonFilteringDefence):
 
         self.is_clean_np = np.ones(len(self.y_train))
 
-        self.features = self._feature_extraction(
-            self.x_train_dataset, self.feature_representation_model
-        )
+        self.features = self._feature_extraction(self.x_train_dataset, self.feature_representation_model)
 
         # Small fix to add flexibility to use CCAUD in non-flattened scenarios. Not recommended, but available
         if len(self.features.shape) > 2:
@@ -602,12 +568,8 @@ class ClusteringCentroidAnalysisTensorFlowV2(PoisonFilteringDefence):
 
         # for each target class
         for class_label in self.unique_classes:
-            benign_class_indices = np.intersect1d(
-                self.benign_indices, np.where(self.y_train == class_label)[0]
-            )
-            benign_centroids[class_label] = self._calculate_centroid(
-                benign_class_indices, self.features
-            )
+            benign_class_indices = np.intersect1d(self.benign_indices, np.where(self.y_train == class_label)[0])
+            benign_centroids[class_label] = self._calculate_centroid(benign_class_indices, self.features)
 
         logging.info("Calculating misclassification rates...")
         misclassification_rates = {}
@@ -620,9 +582,7 @@ class ClusteringCentroidAnalysisTensorFlowV2(PoisonFilteringDefence):
             # MR^k_i
             # with unique cluster labels for each cluster in each clustering run, the label
             # already maps to a target class
-            misclassification_rates[cluster_label] = self._calculate_misclassification_rate(
-                class_label, deviation
-            )
+            misclassification_rates[cluster_label] = self._calculate_misclassification_rate(class_label, deviation)
             logging.info(
                 "MR (k=%s, i=%s, |d|=%s) = %s",
                 cluster_label,
@@ -631,14 +591,10 @@ class ClusteringCentroidAnalysisTensorFlowV2(PoisonFilteringDefence):
                 misclassification_rates[cluster_label],
             )
 
-            report["cluster_data"][cluster_label]["centroid_l2"] = np.linalg.norm(
-                real_centroids[cluster_label]
-            )
+            report["cluster_data"][cluster_label]["centroid_l2"] = np.linalg.norm(real_centroids[cluster_label])
             report["cluster_data"][cluster_label]["deviation_l2"] = np.linalg.norm(deviation)
             report["cluster_data"][cluster_label]["class"] = class_label
-            report["cluster_data"][cluster_label]["misclassification_rate"] = (
-                misclassification_rates[cluster_label]
-            )
+            report["cluster_data"][cluster_label]["misclassification_rate"] = misclassification_rates[cluster_label]
 
         logging.info("Evaluating cluster misclassification...")
         for cluster_label, mr in misclassification_rates.items():
