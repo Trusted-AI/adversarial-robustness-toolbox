@@ -620,9 +620,11 @@ class TestFeatureExtraction(CCAUDTestCaseBase):
         self.x_test_data_np = np.random.rand(100, 10).astype(np.float32)
 
         # Convert to TF Dataset
-        self.x_test_dataset = self.cca._tf_runtime.data.Dataset.from_tensor_slices(
-            self.x_test_data_np
-        ).batch(self.cca.feature_extraction_batch_size).prefetch(self.cca._tf_runtime.data.AUTOTUNE)
+        self.x_test_dataset = (
+            self.cca._tf_runtime.data.Dataset.from_tensor_slices(self.x_test_data_np)
+            .batch(self.cca.feature_extraction_batch_size)
+            .prefetch(self.cca._tf_runtime.data.AUTOTUNE)
+        )
 
     def test_integration_with_real_model(self):
         """Integration test with a real model and no mocking."""
@@ -907,10 +909,9 @@ class TestCalculateMisclassificationRate(unittest.TestCase):
         )
         self.defence.unique_classes = {0, 1, 2}
 
-        total_expected_feature_batches = (
-                int(np.ceil(num_samples_class1_large / self.defence.misclassification_batch_size))
-                + int(np.ceil(num_samples_class2_small / self.defence.misclassification_batch_size))
-        )
+        total_expected_feature_batches = int(
+            np.ceil(num_samples_class1_large / self.defence.misclassification_batch_size)
+        ) + int(np.ceil(num_samples_class2_small / self.defence.misclassification_batch_size))
 
         def mock_classifier_predict_side_effect_for_batching_test(
             deviated_features, training=False
@@ -937,8 +938,12 @@ class TestCalculateMisclassificationRate(unittest.TestCase):
 
         rate = self.defence._calculate_misclassification_rate(target_class_label, deviation_vector)
         self.assertEqual(rate, 1.0)
-        self.assertEqual(self.mock_calculate_features_instance.call_count, total_expected_feature_batches)
-        self.assertEqual(self.defence.classifying_submodel.call_count, total_expected_feature_batches)
+        self.assertEqual(
+            self.mock_calculate_features_instance.call_count, total_expected_feature_batches
+        )
+        self.assertEqual(
+            self.defence.classifying_submodel.call_count, total_expected_feature_batches
+        )
 
         self.num_benign_samples_class_1 = original_num_benign_samples_class_1
 
