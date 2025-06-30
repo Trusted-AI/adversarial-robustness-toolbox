@@ -406,12 +406,15 @@ class PyTorchDeRandomizedSmoothing(DeRandomizedSmoothingMixin, PyTorchClassifier
         return supported
 
     @staticmethod
-    def create_vision_transformer(variant: str, pretrained: bool = False, **kwargs) -> "PyTorchVisionTransformer":
+    def create_vision_transformer(
+        variant: str, pretrained: bool = False, use_naflex: bool | None = None, **kwargs
+    ) -> "PyTorchVisionTransformer":
         """
         Creates a vision transformer using PyTorchViT which controls the forward pass of the model
 
         :param variant: The name of the vision transformer to load
         :param pretrained: If to load pre-trained weights
+        :param use_naflex:  If using NaFlexVit.
         :return: A ViT with the required methods needed for ART
         """
 
