@@ -25,7 +25,7 @@ from __future__ import (
 
 import logging
 import warnings
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
@@ -177,11 +177,49 @@ class ClusteringCentroidAnalysisTensorFlowV2(PoisonFilteringDefence):
 
         self.misclassification_threshold = np.float64(misclassification_threshold)
 
+        # --- Get feature_shape and deviation_shape BEFORE wrapping functions ---
+        if hasattr(self.feature_representation_model, 'output_shape') and self.feature_representation_model.output_shape[1:] is not None:
+            # Assumes output_shape is something like (None, 5) or (None, 28, 28, 3)
+            self.feature_output_shape = self.feature_representation_model.output_shape[1:]
+            # Handle case where output_shape[1:] might be an empty tuple if model outputs a scalar.
+            # Unlikely for feature extractor, but good to be robust.
+            if not self.feature_output_shape:
+                logging.warning("feature_representation_model.output_shape[1:] is empty. Attempting dummy inference.")
+                # Fallback to dummy inference if output_shape is unexpectedly empty
+                dummy_input_shape = (1, *self.x_train.shape[1:]) # Use actual classifier input shape
+                dummy_input = self._tf_runtime.random.uniform(shape=dummy_input_shape, dtype=self._tf_runtime.float32)
+                dummy_features = self.feature_representation_model(dummy_input)
+                self.feature_output_shape = dummy_features.shape[1:]
+        else:
+            # Fallback if output_shape attribute is not present or usable
+            logging.warning("feature_representation_model.output_shape not directly available. Performing dummy inference for shape.")
+            dummy_input_shape = (1, *self.x_train.shape[1:]) # Use actual classifier input shape
+            dummy_input = self._tf_runtime.random.uniform(shape=dummy_input_shape, dtype=self._tf_runtime.float32)
+            dummy_features = self.feature_representation_model(dummy_input)
+            self.feature_output_shape = dummy_features.shape[1:]
+
+        # If after all attempts, feature_output_shape is still empty/invalid, raise an error
+        if not self.feature_output_shape or any(d is None for d in self.feature_output_shape):
+            raise RuntimeError(
+                f"Could not determine a valid feature_output_shape ({self.feature_output_shape}) for tf.function input_signature. "
+                "Ensure feature_representation_model is built and outputs a known shape."
+            )
+        # --- END SHAPE DETERMINATION ---
+
         # Dynamic @tf.function wrapping
         self._calculate_centroid_tf = self._tf_runtime.function(
             self._calculate_centroid_tf_unwrapped, reduce_retracing=True
         )
         self._calculate_features = self._tf_runtime.function(self._calculate_features_unwrapped)
+
+        self._predict_with_deviation = self._tf_runtime.function(
+            self._predict_with_deviation_unwrapped,
+            input_signature=[
+                self._tf_runtime.TensorSpec(shape=[None, *self.feature_output_shape], dtype=self._tf_runtime.float32),
+                self._tf_runtime.TensorSpec(shape=self.feature_output_shape, dtype=self._tf_runtime.float32),
+            ],
+            reduce_retracing=True,
+        )
 
         logging.info("CCA object created successfully.")
 
@@ -403,6 +441,12 @@ class ClusteringCentroidAnalysisTensorFlowV2(PoisonFilteringDefence):
 
         return confusion_matrix_json
 
+    def _predict_with_deviation_unwrapped(self, features: tf_types.Tensor, deviation: tf_types.Tensor) -> tf_types.Tensor:
+        # Add deviation to features and pass through ReLu to keep in latent space
+        deviated_features = self._tf_runtime.nn.relu(features + deviation)
+        # Get predictions from classifying submodel
+        return self.classifying_submodel(deviated_features, training=False)
+
     def _calculate_misclassification_rate(
         self, class_label: int, deviation: np.ndarray
     ) -> np.float64:
@@ -413,83 +457,47 @@ class ClusteringCentroidAnalysisTensorFlowV2(PoisonFilteringDefence):
         :param deviation: The deviation vector to apply
         :return: The misclassification rate (0.0 to 1.0)
         """
-
-        def _predict_with_deviation_inner(features, deviation):
-            # Add deviation to features and pass through ReLu to keep in latent space
-            deviated_features = self._tf_runtime.nn.relu(features + deviation)
-            # Get predictions from classifying submodel
-            predictions = self.classifying_submodel(deviated_features, training=False)
-            return predictions
-
         # Convert deviation to a tensor once
         deviation_tf = self._tf_runtime.convert_to_tensor(deviation, dtype=self._tf_runtime.float32)
 
-        # Get a sample to determine the input shape
-        sample_data = self.x_benign[0:1]
-
-        # The feature shape depends on the feature_representation_model output
-        # We need to run once to get the output shape
-        sample_features = self.feature_representation_model.predict(sample_data)
-        feature_shape = sample_features.shape[1:]
-
-        predict_with_deviation = self._tf_runtime.function(
-            _predict_with_deviation_inner,
-            input_signature=[
-                self._tf_runtime.TensorSpec(shape=[None, *feature_shape], dtype=self._tf_runtime.float32),
-                self._tf_runtime.TensorSpec(shape=deviation.shape, dtype=self._tf_runtime.float32),
-            ]
-        )
-
         total_elements = 0
         misclassified_elements = 0
+        all_features_np: list[np.ndarray] = []
 
         # Get all classes except the current one
         other_classes = self.unique_classes - {class_label}
 
-        all_features = []
-
         # Process each class
         for other_class_label in other_classes:
             # Get data for this class
-            other_class_mask = self.y_benign == other_class_label
-            other_class_data = self.x_benign[other_class_mask]
+            other_class_mask = self.y_benign_np == other_class_label
+            other_class_data = self.x_benign_np[other_class_mask]
 
             if len(other_class_data) == 0:
                 continue
 
+            class_x_dataset = self._tf_runtime.data.Dataset.from_tensor_slices(
+                other_class_data.astype(self._tf_runtime.float32.as_numpy_dtype)
+            ).batch(self.misclassification_batch_size).prefetch(self._tf_runtime.data.AUTOTUNE)
+
             total_elements += len(other_class_data)
-
-            # Process in batches to avoid memory issues
-            batch_size = 128  # Adjust based on your GPU memory
-            num_samples = len(other_class_data)
-            num_batches = int(np.ceil(num_samples / batch_size))
-
             class_misclassified = 0
 
-            for i in range(num_batches):
-                start_idx = i * batch_size
-                end_idx = min((i + 1) * batch_size, num_samples)
-                batch_data = other_class_data[start_idx:end_idx]
-
-                # Convert to tensor
-                batch_data_tf = self._tf_runtime.convert_to_tensor(
-                    batch_data, dtype=self._tf_runtime.float32
-                )
-
+            for batch_data_tf in class_x_dataset:
                 # Extract features
-                features = self._calculate_features(
+                features_tf = self._calculate_features(
                     self.feature_representation_model, batch_data_tf
                 )
-                all_features.append(features)
+                all_features_np.append(features_tf.numpy())
 
                 # Get predictions with deviation
-                predictions = predict_with_deviation(features, deviation_tf)
+                predictions = self._predict_with_deviation(features_tf, deviation_tf)
 
                 # Convert predictions to class indices
-                pred_classes = self._tf_runtime.argmax(predictions, axis=1).numpy()
+                pred_classes_np = self._tf_runtime.argmax(predictions, axis=1).numpy()
 
                 # Count misclassifications (predicted as class_label)
-                batch_misclassified = np.sum(pred_classes == class_label)
+                batch_misclassified = np.sum(pred_classes_np == class_label)
                 class_misclassified += batch_misclassified
 
             misclassified_elements += class_misclassified
@@ -498,7 +506,7 @@ class ClusteringCentroidAnalysisTensorFlowV2(PoisonFilteringDefence):
         if total_elements == 0:
             return np.float64(0.0)
 
-        all_f_vectors_np = np.concatenate(all_features, axis=0)
+        all_f_vectors_np = np.concatenate(all_features_np, axis=0)
         logging.debug(
             "MR --> %s , |f| = %s: %s / %s = %s",
             class_label,
@@ -516,7 +524,7 @@ class ClusteringCentroidAnalysisTensorFlowV2(PoisonFilteringDefence):
 
         self.is_clean_np = np.ones(len(self.y_train))
 
-        self.features = self._feature_extraction(self.x_train, self.feature_representation_model)
+        self.features = self._feature_extraction(self.x_train_dataset, self.feature_representation_model)
 
         # FIXME: temporal fix to test other layers
         if len(self.features.shape) > 2:

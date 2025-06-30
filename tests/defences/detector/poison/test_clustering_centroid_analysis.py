@@ -685,13 +685,13 @@ class TestCalculateMisclassificationRate(unittest.TestCase):
         self.num_benign_samples_class_1 = 2
         self.num_benign_samples_class_2 = 4
 
-        self.defence.x_benign = np.random.rand(
+        self.defence.x_benign_np = np.random.rand(
             self.num_benign_samples_class_0
             + self.num_benign_samples_class_1
             + self.num_benign_samples_class_2,
             10,
         )
-        self.defence.y_benign = np.array(
+        self.defence.y_benign_np = np.array(
             [0] * self.num_benign_samples_class_0
             + [1] * self.num_benign_samples_class_1
             + [2] * self.num_benign_samples_class_2
@@ -744,8 +744,8 @@ class TestCalculateMisclassificationRate(unittest.TestCase):
         mock_features_class1 = np.random.rand(self.num_benign_samples_class_1, self.feature_dim)
         mock_features_class2 = np.random.rand(self.num_benign_samples_class_2, self.feature_dim)
         self.mock_calculate_features_instance.side_effect = [
-            mock_features_class1,
-            mock_features_class2,
+            tf.convert_to_tensor(mock_features_class1, dtype=tf.float32),
+            tf.convert_to_tensor(mock_features_class2, dtype=tf.float32),
         ]
 
         def mock_classifier_predict_side_effect(deviated_features, training=False):
@@ -786,8 +786,8 @@ class TestCalculateMisclassificationRate(unittest.TestCase):
         mock_features_class0 = np.random.rand(self.num_benign_samples_class_0, self.feature_dim)
         mock_features_class2 = np.random.rand(self.num_benign_samples_class_2, self.feature_dim)
         self.mock_calculate_features_instance.side_effect = [
-            mock_features_class0,
-            mock_features_class2,
+            tf.convert_to_tensor(mock_features_class0, dtype=tf.float32),
+            tf.convert_to_tensor(mock_features_class2, dtype=tf.float32),
         ]
 
         def mock_classifier_predict_side_effect(deviated_features, training=False):
@@ -877,8 +877,8 @@ class TestCalculateMisclassificationRate(unittest.TestCase):
         """Test when other classes exist, but no benign samples are available for them."""
         target_class_label = 0
         self.defence.unique_classes = {0, 1, 2}
-        self.defence.y_benign = np.array([0] * self.num_benign_samples_class_0)
-        self.defence.x_benign = np.random.rand(self.num_benign_samples_class_0, 10)
+        self.defence.y_benign_np = np.array([0] * self.num_benign_samples_class_0)
+        self.defence.x_benign_np = np.random.rand(self.num_benign_samples_class_0, 10)
         deviation_vector = np.random.rand(self.feature_dim)
 
         rate = self.defence._calculate_misclassification_rate(target_class_label, deviation_vector)
@@ -896,25 +896,21 @@ class TestCalculateMisclassificationRate(unittest.TestCase):
         original_num_benign_samples_class_1 = self.num_benign_samples_class_1
         self.num_benign_samples_class_1 = num_samples_class1_large
 
-        self.defence.x_benign = np.random.rand(
+        self.defence.x_benign_np = np.random.rand(
             self.num_benign_samples_class_0 + num_samples_class1_large + num_samples_class2_small,
             10,
         )
-        self.defence.y_benign = np.array(
+        self.defence.y_benign_np = np.array(
             [0] * self.num_benign_samples_class_0
             + [1] * num_samples_class1_large
             + [2] * num_samples_class2_small
         )
         self.defence.unique_classes = {0, 1, 2}
 
-        features_batch1_c1 = np.random.rand(128, self.feature_dim)
-        features_batch2_c1 = np.random.rand(num_samples_class1_large - 128, self.feature_dim)
-        features_batch1_c2 = np.random.rand(num_samples_class2_small, self.feature_dim)
-        self.mock_calculate_features_instance.side_effect = [
-            features_batch1_c1,
-            features_batch2_c1,
-            features_batch1_c2,
-        ]
+        total_expected_feature_batches = (
+                int(np.ceil(num_samples_class1_large / self.defence.misclassification_batch_size))
+                + int(np.ceil(num_samples_class2_small / self.defence.misclassification_batch_size))
+        )
 
         def mock_classifier_predict_side_effect_for_batching_test(
             deviated_features, training=False
@@ -941,8 +937,8 @@ class TestCalculateMisclassificationRate(unittest.TestCase):
 
         rate = self.defence._calculate_misclassification_rate(target_class_label, deviation_vector)
         self.assertEqual(rate, 1.0)
-        self.assertEqual(self.mock_calculate_features_instance.call_count, 3)
-        self.assertEqual(self.defence.classifying_submodel.call_count, 3)
+        self.assertEqual(self.mock_calculate_features_instance.call_count, total_expected_feature_batches)
+        self.assertEqual(self.defence.classifying_submodel.call_count, total_expected_feature_batches)
 
         self.num_benign_samples_class_1 = original_num_benign_samples_class_1
 
