@@ -22,12 +22,12 @@ import unittest
 
 import numpy as np
 
-from art.defences.detector.poison import ClusteringAnalyzer
+import art.defences.detector.poison.clustering_analyzer as clustering_analyzer
 
 logger = logging.getLogger(__name__)
 
 
-class TestActivationDefence(unittest.TestCase):
+class TestClusteringAnalyzer(unittest.TestCase):
     def test_size_analyzer(self):
         nb_clusters = 2
         nb_classes = 3
@@ -36,8 +36,7 @@ class TestActivationDefence(unittest.TestCase):
         clusters_by_class[0] = [0, 1, 1, 1, 1]  # Class 0
         clusters_by_class[1] = [1, 0, 0, 0, 0]  # Class 1
         clusters_by_class[2] = [0, 0, 0, 0, 1]  # Class 2
-        analyzer = ClusteringAnalyzer()
-        assigned_clean_by_class, poison_clusters, report = analyzer.analyze_by_size(clusters_by_class)
+        assigned_clean_by_class, poison_clusters, report = clustering_analyzer.analyze_by_size(clusters_by_class)
 
         # print("clusters_by_class")
         # print(clusters_by_class)
@@ -91,8 +90,7 @@ class TestActivationDefence(unittest.TestCase):
         clusters_by_class[0] = [0, 1, 1, 2, 2]  # Class 0
         clusters_by_class[1] = [1, 0, 0, 2, 2]  # Class 1
         clusters_by_class[2] = [0, 0, 0, 2, 1, 1]  # Class 2
-        analyzer = ClusteringAnalyzer()
-        assigned_clean_by_class, poison_clusters, report = analyzer.analyze_by_size(clusters_by_class)
+        assigned_clean_by_class, poison_clusters, report = clustering_analyzer.analyze_by_size(clusters_by_class)
 
         # print("clusters_by_class")
         # print(clusters_by_class)
@@ -155,8 +153,9 @@ class TestActivationDefence(unittest.TestCase):
         clusters_by_class[1] = [1, 0, 0, 0, 0]  # Class 1
         clusters_by_class[2] = [0, 0, 0, 0, 1]  # Class 2
         clusters_by_class[3] = [0, 0, 1, 1, 1]  # Class 3
-        analyzer = ClusteringAnalyzer()
-        assigned_clean_by_class, poison_clusters, report = analyzer.analyze_by_relative_size(clusters_by_class)
+        assigned_clean_by_class, poison_clusters, report = clustering_analyzer.analyze_by_relative_size(
+            clusters_by_class
+        )
 
         # print("clusters_by_class")
         # print(clusters_by_class)
@@ -221,8 +220,7 @@ class TestActivationDefence(unittest.TestCase):
         clusters_by_class[0] = [0, 1, 1, 2, 2]  # Class 0
         clusters_by_class[1] = [1, 0, 0, 2, 2]  # Class 1
         clusters_by_class[2] = [0, 0, 0, 2, 1, 1]  # Class 2
-        analyzer = ClusteringAnalyzer()
-        analyzer.analyze_clusters(clusters_by_class)
+        clustering_analyzer.analyze_clusters(clusters_by_class)
 
 
 if __name__ == "__main__":
