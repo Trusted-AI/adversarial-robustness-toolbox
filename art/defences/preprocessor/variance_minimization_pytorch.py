@@ -7,6 +7,7 @@ This module implements the total variance minimization defence `TotalVarMin` in 
     see https://arxiv.org/abs/1802.00420 . For details on how to evaluate classifier security in general, see
     https://arxiv.org/abs/1902.06705
 """
+
 from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
@@ -46,7 +47,7 @@ class TotalVarMinPyTorch(PreprocessorPyTorch):
         apply_fit: bool = False,
         apply_predict: bool = True,
         verbose: bool = False,
-        device_type: str = "gpu"
+        device_type: str = "gpu",
     ) -> None:
         """
         Create an instance of total variance minimization in PyTorch.
@@ -63,11 +64,7 @@ class TotalVarMinPyTorch(PreprocessorPyTorch):
         :param verbose: Show progress bars.
         :param device_type: Type of device on which the classifier is run, either `gpu` or `cpu`.
         """
-        super().__init__(
-            device_type=device_type, 
-            apply_fit=apply_fit, 
-            apply_predict=apply_predict
-        )
+        super().__init__(device_type=device_type, apply_fit=apply_fit, apply_predict=apply_predict)
 
         self.prob = prob
         self.norm = norm
@@ -138,7 +135,7 @@ class TotalVarMinPyTorch(PreprocessorPyTorch):
             # Skip channel if no mask points in this channel
             if torch.sum(mask[c, :, :]) == 0:
                 continue
-                
+
             # Create a separate, optimizable variable for the current channel
             res = x[c, :, :].clone().detach().requires_grad_(True)
 
@@ -148,7 +145,9 @@ class TotalVarMinPyTorch(PreprocessorPyTorch):
             def closure():
                 optimizer.zero_grad()
                 # Loss is calculated only for the current 2D channel
-                loss = self._loss_func(z_init=res.flatten(), x=x[c, :, :], mask=mask[c, :, :], norm=self.norm, lamb=self.lamb)
+                loss = self._loss_func(
+                    z_init=res.flatten(), x=x[c, :, :], mask=mask[c, :, :], norm=self.norm, lamb=self.lamb
+                )
                 loss.backward(retain_graph=True)
                 return loss
 
@@ -161,7 +160,9 @@ class TotalVarMinPyTorch(PreprocessorPyTorch):
         return z_min
 
     @staticmethod
-    def _loss_func(z_init: torch.Tensor, x: torch.Tensor, mask: torch.Tensor, norm: float, lamb: float, eps=1e-6) -> torch.Tensor:
+    def _loss_func(
+        z_init: torch.Tensor, x: torch.Tensor, mask: torch.Tensor, norm: float, lamb: float, eps=1e-6
+    ) -> torch.Tensor:
         """
         Loss function to be minimized - try to match SciPy implementation closely.
 
@@ -173,13 +174,13 @@ class TotalVarMinPyTorch(PreprocessorPyTorch):
         :return: A single scalar loss value.
         """
         import torch
-        
+
         # Flatten inputs for pixel-wise loss
         x_flat = x.flatten()
         mask_flat = mask.flatten().float()
 
         # Data fidelity term
-        res = torch.sqrt( ((z_init - x_flat)**2 * mask_flat).sum() + eps )
+        res = torch.sqrt(((z_init - x_flat) ** 2 * mask_flat).sum() + eps)
 
         z2d = z_init.view(x.shape)
 
@@ -190,13 +191,13 @@ class TotalVarMinPyTorch(PreprocessorPyTorch):
             tv_w = lamb * torch.abs(z2d[:, 1:] - z2d[:, :-1]).sum(dim=0).sum()
         elif norm == 2:
             # L2 norm: sqrt of sum of squares per row/column, then sum
-            tv_h = lamb * torch.sqrt(((z2d[1:, :] - z2d[:-1, :])**2).sum(dim=1) + eps).sum()
-            tv_w = lamb * torch.sqrt(((z2d[:, 1:] - z2d[:, :-1])**2).sum(dim=0) + eps).sum()
+            tv_h = lamb * torch.sqrt(((z2d[1:, :] - z2d[:-1, :]) ** 2).sum(dim=1) + eps).sum()
+            tv_w = lamb * torch.sqrt(((z2d[:, 1:] - z2d[:, :-1]) ** 2).sum(dim=0) + eps).sum()
         else:
             # General Lp norm
-            tv_h = lamb * torch.pow(torch.abs(z2d[1:, :] - z2d[:-1, :]), norm).sum(dim=1).pow(1/norm).sum()
-            tv_w = lamb * torch.pow(torch.abs(z2d[:, 1:] - z2d[:, :-1]), norm).sum(dim=0).pow(1/norm).sum()
-        
+            tv_h = lamb * torch.pow(torch.abs(z2d[1:, :] - z2d[:-1, :]), norm).sum(dim=1).pow(1 / norm).sum()
+            tv_w = lamb * torch.pow(torch.abs(z2d[:, 1:] - z2d[:, :-1]), norm).sum(dim=0).pow(1 / norm).sum()
+
         tv = tv_h + tv_w
 
         return res + tv
@@ -217,7 +218,9 @@ class TotalVarMinPyTorch(PreprocessorPyTorch):
         if self.clip_values is not None:
 
             if len(self.clip_values) != 2:
-                raise ValueError("'clip_values' should be a tuple of 2 floats or arrays containing the allowed data range.")
+                raise ValueError(
+                    "'clip_values' should be a tuple of 2 floats or arrays containing the allowed data range."
+                )
 
             if np.array(self.clip_values[0] >= self.clip_values[1]).any():
                 raise ValueError("Invalid 'clip_values': min >= max.")
