@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING
 
 from tqdm.auto import tqdm
 
+import torch
 import numpy as np
 
 from art.defences.preprocessor.preprocessor import PreprocessorPyTorch
