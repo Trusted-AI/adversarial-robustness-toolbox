@@ -167,11 +167,12 @@ class PyTorchVisionTransformer(VisionTransformer):
         x_no_cl = torch.reshape(x_no_cl, shape=(shape[0], -1, shape[-1]))
         return torch.cat((cls_token, x_no_cl), dim=1)
 
-    def forward_features(self, x: torch.Tensor) -> torch.Tensor:
+    def forward_features(self, x: torch.Tensor, attn_mask: torch.Tensor | None = None) -> torch.Tensor:
         """
         The forward pass of the ViT.
 
         :param x: Input data.
+        :param attn_mask: Attention mask.
         :return: The input processed by the ViT backbone
         """
 
