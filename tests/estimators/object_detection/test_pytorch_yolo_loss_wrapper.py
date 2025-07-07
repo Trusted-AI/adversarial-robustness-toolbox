@@ -41,11 +41,23 @@ def test_yolov8_loss_wrapper():
     x = torch.randn((batch_size, 3, 640, 640))  # YOLOv8 expects (B, 3, 640, 640)
 
     # Create targets
-    targets = []
+    """targets = []
     for _ in range(batch_size):
         boxes = torch.tensor([[0.1, 0.1, 0.3, 0.3], [0.5, 0.5, 0.8, 0.8]])  # [x1, y1, x2, y2]
         labels = torch.zeros(2, dtype=torch.long)  # Use class 0 for testing
-        targets.append({"boxes": boxes, "labels": labels})
+        targets.append({"boxes": boxes, "labels": labels})"""
+    targets = torch.tensor(
+        [
+            [0.0000, 20.0000, 0.7738, 0.3919, 0.4525, 0.7582],
+            [0.0000, 20.0000, 0.2487, 0.4062, 0.4966, 0.5787],
+            [0.0000, 20.0000, 0.5667, 0.2772, 0.0791, 0.2313],
+            [0.0000, 20.0000, 0.1009, 0.1955, 0.2002, 0.0835],
+            [1.0000, 20.0000, 0.7738, 0.3919, 0.4525, 0.7582],
+            [1.0000, 20.0000, 0.2487, 0.4062, 0.4966, 0.5787],
+            [1.0000, 20.0000, 0.5667, 0.2772, 0.0791, 0.2313],
+            [1.0000, 20.0000, 0.1009, 0.1955, 0.2002, 0.0835],
+        ]
+    )
 
     # Test training mode
     losses = wrapper(x, targets)
@@ -94,11 +106,23 @@ def test_yolov10_loss_wrapper():
     x = torch.randn((batch_size, 3, 640, 640))  # Standard YOLO input size
 
     # Create targets
-    targets = []
+    """targets = []
     for _ in range(batch_size):
         boxes = torch.tensor([[0.1, 0.1, 0.3, 0.3], [0.5, 0.5, 0.8, 0.8]])  # [x1, y1, x2, y2]
         labels = torch.zeros(2, dtype=torch.long)  # Use class 0 for testing
-        targets.append({"boxes": boxes, "labels": labels})
+        targets.append({"boxes": boxes, "labels": labels})"""
+    targets = torch.tensor(
+        [
+            [0.0000, 20.0000, 0.7738, 0.3919, 0.4525, 0.7582],
+            [0.0000, 20.0000, 0.2487, 0.4062, 0.4966, 0.5787],
+            [0.0000, 20.0000, 0.5667, 0.2772, 0.0791, 0.2313],
+            [0.0000, 20.0000, 0.1009, 0.1955, 0.2002, 0.0835],
+            [1.0000, 20.0000, 0.7738, 0.3919, 0.4525, 0.7582],
+            [1.0000, 20.0000, 0.2487, 0.4062, 0.4966, 0.5787],
+            [1.0000, 20.0000, 0.5667, 0.2772, 0.0791, 0.2313],
+            [1.0000, 20.0000, 0.1009, 0.1955, 0.2002, 0.0835],
+        ]
+    )
 
     # Test training mode
     losses = wrapper(x, targets)
@@ -219,7 +243,7 @@ def test_pytorch_yolo_loss_wrapper_additional_losses():
     wrapper.train()
     # Dummy input and targets
     x = torch.zeros((1, 3, 416, 416))
-    targets = [{"boxes": torch.zeros((1, 4)), "labels": torch.zeros((1,))}]
+    targets = torch.tensor([[0.0000, 20.0000, 0.7738, 0.3919, 0.4525, 0.7582]])
     losses = wrapper(x, targets)
     assert set(losses.keys()) == {"loss_total", "loss_box", "loss_cls", "loss_dfl"}
     assert losses["loss_total"].item() == 6.0  # sum([1.0, 2.0, 3.0])
@@ -264,7 +288,7 @@ def test_loss_wrapper_outputs_all_losses():
     wrapper = PyTorchYoloLossWrapper(test_model, name="yolov8n")
     wrapper.train()
     x = torch.zeros((1, 3, 416, 416))
-    targets = [{"boxes": torch.zeros((1, 4)), "labels": torch.zeros((1,))}]
+    targets = torch.tensor([[0.0000, 20.0000, 0.7738, 0.3919, 0.4525, 0.7582]])
     losses = wrapper(x, targets)
     assert set(losses.keys()) == {"loss_total", "loss_box", "loss_cls", "loss_dfl"}
     assert losses["loss_total"].item() == 6.0
@@ -439,9 +463,7 @@ def test_yolov8_training_data_format():
     for batch_size in batch_sizes:
         for box_count in box_counts:
             x = torch.zeros((batch_size, 3, 416, 416))
-            targets = [
-                {"boxes": torch.zeros((box_count, 4)), "labels": torch.zeros(box_count)} for _ in range(batch_size)
-            ]
+            targets = torch.tensor([[0.0000, 20.0000, 0.7738, 0.3919, 0.4525, 0.7582]] * batch_size)
             losses = wrapper(x, targets)
 
             # Verify loss structure

@@ -42,21 +42,14 @@ class PyTorchYoloLossWrapper(torch.nn.Module):
             raise ImportError("The 'ultralytics' package is required for YOLO v8+ models but not installed.") from e
 
     def forward(self, x, targets=None):
+        """Transforms the target to dict expected by model.loss"""
         if self.training:
-            boxes = []
-            labels = []
-            indices = []
-            for i, item in enumerate(targets):
-                boxes.append(item["boxes"])
-                labels.append(item["labels"])
-                indices = indices + ([i] * len(item["labels"]))
-            items = {
-                "boxes": torch.cat(boxes) / x.shape[2],
-                "labels": torch.cat(labels).type(torch.float32),
-                "batch_idx": torch.tensor(indices),
-            }
-            items["bboxes"] = items.pop("boxes")
-            items["cls"] = items.pop("labels")
+            if targets is None:
+                raise ValueError("Targets should not be None when training.")
+            items = {}
+            items["batch_idx"] = targets[:, 0]
+            items["bboxes"] = targets[:, 2:6]
+            items["cls"] = targets[:, 1]
             items["img"] = x
             loss, loss_components = self.model.loss(items)
             loss_components_dict = {"loss_total": loss.sum()}
