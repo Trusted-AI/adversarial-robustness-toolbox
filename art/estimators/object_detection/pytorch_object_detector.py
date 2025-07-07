@@ -66,7 +66,6 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
             "loss_rpn_box_reg",
         ),
         device_type: str = "gpu",
-        is_yolov8: bool = False,
     ):
         """
         Initialization.
@@ -94,7 +93,6 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
                               'loss_objectness', and 'loss_rpn_box_reg'.
         :param device_type: Type of device to be used for model and tensors, if `cpu` run on CPU, if `gpu` run on GPU
                             if available otherwise run on CPU.
-        :param is_yolov8: The flag to be used for marking the YOLOv8 model.
         """
         import torch
         import torchvision
@@ -139,11 +137,7 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
 
         self._model: torch.nn.Module
         self._model.to(self._device)
-        self.is_yolov8 = is_yolov8
-        if self.is_yolov8:
-            self._model.model.eval()  # type: ignore
-        else:
-            self._model.eval()
+        self._model.eval()
 
     @property
     def native_label_is_pytorch_format(self) -> bool:
@@ -412,10 +406,7 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
         from torch.utils.data import TensorDataset, DataLoader
 
         # Set model to evaluation mode
-        if self.is_yolov8:
-            self._model.model.eval()  # type: ignore
-        else:
-            self._model.eval()
+        self._model.eval()
 
         # Apply preprocessing and convert to tensors
         x_preprocessed, _ = self._preprocess_and_convert_inputs(x=x, y=None, fit=False, no_grad=True)

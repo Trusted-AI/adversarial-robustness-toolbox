@@ -64,7 +64,7 @@ class PyTorchYolo(PyTorchObjectDetector):
             "loss_rpn_box_reg",
         ),
         device_type: str = "gpu",
-        is_yolov8: bool = False,
+        is_ultralytics: bool = False,
         model_name: str | None = None,
     ):
         """
@@ -94,11 +94,9 @@ class PyTorchYolo(PyTorchObjectDetector):
                               'loss_objectness', and 'loss_rpn_box_reg'.
         :param device_type: Type of device to be used for model and tensors, if `cpu` run on CPU, if `gpu` run on GPU
                             if available otherwise run on CPU.
-        :param is_yolov8: The flag to be used for marking the YOLOv8+ model.
         :param model_name: The name of the model (e.g., 'yolov8n', 'yolov10n') for determining loss function.
         """
-        # Wrap the model with YoloWrapper if it's a YOLO v8+ model
-        if is_yolov8:
+        if is_ultralytics:
             from art.estimators.object_detection.pytorch_yolo_loss_wrapper import PyTorchYoloLossWrapper
 
             model = PyTorchYoloLossWrapper(model, model_name)
@@ -114,7 +112,6 @@ class PyTorchYolo(PyTorchObjectDetector):
             preprocessing=preprocessing,
             attack_losses=attack_losses,
             device_type=device_type,
-            is_yolov8=is_yolov8,
         )
 
     def _translate_labels(self, labels: list[dict[str, "torch.Tensor"]]) -> "torch.Tensor":
