@@ -16,11 +16,13 @@
 [![Downloads](https://static.pepy.tech/badge/adversarial-robustness-toolbox/month)](https://pepy.tech/project/adversarial-robustness-toolbox)
 [![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/5090/badge)](https://bestpractices.coreinfrastructure.org/projects/5090)
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/images/lfaidata-project-badge-graduate-color_dark.png" width="400" title="LF AI & Data">
-  <source media="(prefers-color-scheme: light)" srcset="docs/images/lfaidata-project-badge-graduate-color.png" width="400" title="LF AI & Data">
-  <img alt="Fallback image description" src="default-image.png" width="400">
-</picture>
+ <div align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/lfaidata-project-badge-graduate-color_dark.png" width="400" title="LF AI & Data">
+    <source media="(prefers-color-scheme: light)" srcset="docs/images/lfaidata-project-badge-graduate-color.png" width="400" title="LF AI & Data">
+    <img alt="Fallback image description" src="default-image.png" width="400">
+  </picture>
+</div>
 <br />
 
 对抗性鲁棒性工具集（ART）是用于机器学习安全性的Python库。ART 由
@@ -33,20 +35,28 @@
 
 ## Adversarial Threats
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/images/adversarial_threats_attacker_dark.png" width="400 title="ART Adversarial Threats">
-  <source media="(prefers-color-scheme: light)" srcset="docs/images/adversarial_threats_attacker.png" width="400 title="ART Adversarial Threats">
-  <img alt="Fallback image description" src="default-image.png" width="400">
-</picture>
+ <div align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/adversarial_threats_attacker_dark.png" width="400 title="ART Threats">
+    <source media="(prefers-color-scheme: light)" srcset="docs/images/adversarial_threats_attacker.png" width="400 title="ART Threats">
+    <img alt="Fallback image description" src="default-image.png" width="400">
+  </picture>
+</div>
+
+<p align="center">
+  <img src="docs/images/adversarial_threats_art.png?raw=true" width="400" title="ART Matrix">
+</p>
 <br />
 
 ## ART for Red and Blue Teams (selection)
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/images/white_hat_blue_red_dark.png" width="800 title="ART Red and Blue Teams">
-  <source media="(prefers-color-scheme: light)" srcset="docs/images/white_hat_blue_red.png" width="800 title="ART Red and Blue Teams">
-  <img alt="Fallback image description" src="default-image.png" width="800">
-</picture>
+ <div align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/white_hat_blue_red_dark.png" width="800 title="ART Red and Blue Teams">
+    <source media="(prefers-color-scheme: light)" srcset="docs/images/white_hat_blue_red.png" width="800 title="ART Red and Blue Teams">
+    <img alt="Fallback image description" src="default-image.png" width="800">
+  </picture>
+</div>
 <br />
 
 ## 学到更多
