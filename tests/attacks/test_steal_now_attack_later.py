@@ -78,7 +78,11 @@ def test_generate(art_warning, get_pytorch_detector_yolo):
 
         # Download a sample image
         target = "https://farm2.staticflickr.com/1065/705706084_39a7f28fc9_z.jpg"  # val2017/000000552842.jpg
-        response = requests.get(target)
+        headers = {
+            "User-Agent": "Mozilla/5.0",
+            "Referer": "https://www.flickr.com/"
+        }
+        response = requests.get(target, headers=headers)
         org_img = np.asarray(Image.open(BytesIO(response.content)).resize((640, 640)))
         x = np.stack([org_img.transpose((2, 0, 1)) / 255.0], axis=0).astype(np.float32)
 
@@ -112,7 +116,7 @@ def test_generate(art_warning, get_pytorch_detector_yolo):
         root_mscoco = "datasets"
         os.makedirs(root_mscoco, exist_ok=True)
         for idx, img_url in enumerate(list_url):
-            response = requests.get(img_url)
+            response = requests.get(img_url, headers=headers)
             with open(f"{root_mscoco}/{idx:03d}.jpg", "wb") as f:
                 f.write(response.content)
             time.sleep(0.5)
