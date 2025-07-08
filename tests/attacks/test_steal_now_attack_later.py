@@ -78,10 +78,7 @@ def test_generate(art_warning, get_pytorch_detector_yolo):
 
         # Download a sample image
         target = "https://farm2.staticflickr.com/1065/705706084_39a7f28fc9_z.jpg"  # val2017/000000552842.jpg
-        headers = {
-            "User-Agent": "Mozilla/5.0",
-            "Referer": "https://www.flickr.com/"
-        }
+        headers = {"User-Agent": "Mozilla/5.0", "Referer": "https://www.flickr.com/"}
         response = requests.get(target, headers=headers)
         org_img = np.asarray(Image.open(BytesIO(response.content)).resize((640, 640)))
         x = np.stack([org_img.transpose((2, 0, 1)) / 255.0], axis=0).astype(np.float32)
