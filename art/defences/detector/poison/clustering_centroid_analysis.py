@@ -33,7 +33,7 @@ from art.defences.detector.poison.ground_truth_evaluator import GroundTruthEvalu
 from art.defences.detector.poison.poison_filtering_defence import PoisonFilteringDefence
 
 if TYPE_CHECKING:
-    from tensorflow.keras import Model, Sequential
+    from tensorflow.keras import Model
     from umap import UMAP
     from sklearn.base import ClusterMixin
     from art.utils import CLASSIFIER_TYPE
