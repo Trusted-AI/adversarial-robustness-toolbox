@@ -18,11 +18,13 @@
 
 [中文README请按此处](README-cn.md)
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/images/lfaidata-project-badge-graduate-color_dark.png" width="400" title="LF AI & Data">
-  <source media="(prefers-color-scheme: light)" srcset="docs/images/lfaidata-project-badge-graduate-color.png" width="400" title="LF AI & Data">
-  <img alt="Fallback image description" src="default-image.png" width="400">
-</picture>
+ <div align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/lfaidata-project-badge-graduate-color_dark.png" width="400" title="LF AI & Data">
+    <source media="(prefers-color-scheme: light)" srcset="docs/images/lfaidata-project-badge-graduate-color.png" width="400" title="LF AI & Data">
+    <img alt="Fallback image description" src="default-image.png" width="400">
+  </picture>
+</div>
 <br />
 
 Adversarial Robustness Toolbox (ART) is a Python library for Machine Learning Security. ART is hosted by the 
@@ -35,11 +37,14 @@ generation, certification, etc.).
 
 ## Adversarial Threats
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/images/adversarial_threats_attacker_dark.png" width="400 title="ART Threats">
-  <source media="(prefers-color-scheme: light)" srcset="docs/images/adversarial_threats_attacker.png" width="400 title="ART Threats">
-  <img alt="Fallback image description" src="default-image.png" width="400">
-</picture>
+ <div align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/adversarial_threats_attacker_dark.png" width="400 title="ART Threats">
+    <source media="(prefers-color-scheme: light)" srcset="docs/images/adversarial_threats_attacker.png" width="400 title="ART Threats">
+    <img alt="Fallback image description" src="default-image.png" width="400">
+  </picture>
+</div>
+
 <p align="center">
   <img src="docs/images/adversarial_threats_art.png?raw=true" width="400" title="ART Matrix">
 </p>
@@ -47,11 +52,13 @@ generation, certification, etc.).
 
 ## ART for Red and Blue Teams (selection)
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/images/white_hat_blue_red_dark.png" width="800 title="ART Red and Blue Teams">
-  <source media="(prefers-color-scheme: light)" srcset="docs/images/white_hat_blue_red.png" width="800 title="ART Red and Blue Teams">
-  <img alt="Fallback image description" src="default-image.png" width="800">
-</picture>
+ <div align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/white_hat_blue_red_dark.png" width="800 title="ART Red and Blue Teams">
+    <source media="(prefers-color-scheme: light)" srcset="docs/images/white_hat_blue_red.png" width="800 title="ART Red and Blue Teams">
+    <img alt="Fallback image description" src="default-image.png" width="800">
+  </picture>
+</div>
 <br />
 
 ## Learn more
