@@ -1,6 +1,6 @@
 # Adversarial Robustness Toolbox (ART) v1.20
 <p align="center">
-  <img src="docs/images/art_lfai.png?raw=true" width="467" title="ART logo">
+  <img src="https://raw.githubusercontent.com/Trusted-AI/adversarial-robustness-toolbox/main/docs/images/art_lfai.png" width="467" title="ART logo">
 </p>
 <br />
 
@@ -16,9 +16,12 @@
 [![Downloads](https://static.pepy.tech/badge/adversarial-robustness-toolbox/month)](https://pepy.tech/project/adversarial-robustness-toolbox)
 [![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/5090/badge)](https://bestpractices.coreinfrastructure.org/projects/5090)
 
-<p align="center">
-  <img src="https://raw.githubusercontent.com/lfai/artwork/master/lfaidata-assets/lfaidata-project-badge/graduate/color/lfaidata-project-badge-graduate-color.png" alt="LF AI & Data" width="300"/>
-</p>
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/lfaidata-project-badge-graduate-color_dark.png" width="400" title="LF AI & Data">
+  <source media="(prefers-color-scheme: light)" srcset="docs/images/lfaidata-project-badge-graduate-color.png" width="400" title="LF AI & Data">
+  <img alt="Fallback image description" src="default-image.png" width="400">
+</picture>
+<br />
 
 对抗性鲁棒性工具集（ART）是用于机器学习安全性的Python库。ART 由
 [Linux Foundation AI & Data Foundation](https://lfaidata.foundation) (LF AI & Data)。 ART提供的工具可
@@ -30,17 +33,20 @@
 
 ## Adversarial Threats
 
-<p align="center">
-  <img src="docs/images/adversarial_threats_attacker.png?raw=true" width="400" title="ART logo">
-  <img src="docs/images/adversarial_threats_art.png?raw=true" width="400" title="ART logo">
-</p>
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/adversarial_threats_attacker_dark.png" width="400 title="ART Adversarial Threats">
+  <source media="(prefers-color-scheme: light)" srcset="docs/images/adversarial_threats_attacker.png" width="400 title="ART Adversarial Threats">
+  <img alt="Fallback image description" src="default-image.png" width="400">
+</picture>
 <br />
 
 ## ART for Red and Blue Teams (selection)
 
-<p align="center">
-  <img src="docs/images/white_hat_blue_red.png?raw=true" width="800" title="ART Red and Blue Teams">
-</p>
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/white_hat_blue_red_dark.png" width="800 title="ART Red and Blue Teams">
+  <source media="(prefers-color-scheme: light)" srcset="docs/images/white_hat_blue_red.png" width="800 title="ART Red and Blue Teams">
+  <img alt="Fallback image description" src="default-image.png" width="800">
+</picture>
 <br />
 
 ## 学到更多
