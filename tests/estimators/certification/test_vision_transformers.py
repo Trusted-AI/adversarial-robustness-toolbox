@@ -549,7 +549,7 @@ def test_equivalence(art_warning, fix_get_cifar10_data):
                 x = torch.cat((cls_token.expand(x.shape[0], -1, -1), x), dim=1)
                 return x + pos_embed
 
-        def forward_features(self, x: torch.Tensor) -> torch.Tensor:
+        def forward_features(self, x: torch.Tensor, attn_mask: torch.Tensor | None = None) -> torch.Tensor:
             """
             This is a copy of the function in ArtViT.forward_features
             except we also perform an equivalence assertion compared to the implementation
@@ -558,6 +558,7 @@ def test_equivalence(art_warning, fix_get_cifar10_data):
             The forward pass of the ViT.
 
             :param x: Input data.
+            :param attn_mask: Attention mask.
             :return: The input processed by the ViT backbone
             """
             import copy
