@@ -20,19 +20,15 @@ This module implements the classifier `KerasClassifier` for Keras models.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
-from collections.abc import Callable
 import logging
 import os
-import time
 from typing import (
-    Any,
     Iterator,
     Union,
     TYPE_CHECKING,
 )
 
 import numpy as np
-import six
 
 from art import config
 from art.estimators.keras import KerasEstimator
@@ -43,8 +39,6 @@ from art.estimators.classification.classifier import (
 from art.utils import check_and_transform_label_format
 
 if TYPE_CHECKING:
-
-    import keras
     import tensorflow as tf
 
     from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
@@ -54,7 +48,7 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-KERAS_MODEL_TYPE = Union["keras.models.Model", "tf.keras.models.Model"]  # pylint: disable=invalid-name
+KERAS_MODEL_TYPE = Union["tf.keras.models.Model"]  # pylint: disable=invalid-name
 
 
 class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
@@ -103,6 +97,8 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
                              layer with this index will be considered for computing gradients. For models with only one
                              output layer this values is not required.
         """
+        import tensorflow as tf
+
         super().__init__(
             model=model,
             clip_values=clip_values,
@@ -111,207 +107,36 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
             preprocessing=preprocessing,
             channels_first=channels_first,
         )
-
-        self._input_layer = input_layer
-        self._output_layer = output_layer
-
-        if "<class 'tensorflow" in str(type(model).__mro__):
-            self.is_tensorflow = True
-        elif "<class 'keras" in str(type(model).__mro__):
-            self.is_tensorflow = False
-        else:  # pragma: no cover
-            raise TypeError("Type of model not recognized:" + str(type(model)))
-
-        self._initialize_params(model, use_logits, input_layer, output_layer)
-
-    def _initialize_params(
-        self,
-        model: KERAS_MODEL_TYPE,
-        use_logits: bool,
-        input_layer: int,
-        output_layer: int,
-    ):
-        """
-        Initialize most parameters of the classifier. This is a convenience function called by `__init__` and
-        `__setstate__` to avoid code duplication.
-
-        :param model: Keras model
-        :param use_logits: True if the output of the model are logits.
-        :param input_layer: Which layer to consider as the Input when the model has multiple input layers.
-        :param output_layer: Which layer to consider as the Output when the model has multiple output layers.
-        """
-
-        if self.is_tensorflow:
-            import tensorflow as tf
-
-            if tf.executing_eagerly():  # pragma: no cover
-                raise ValueError("TensorFlow is executing eagerly. Please disable eager execution.")
-            import tensorflow.keras as keras  # pylint: disable=consider-using-from-import
-            import tensorflow.keras.backend as k
-
-            self._losses = keras.losses
+        self._model = model
+        self._use_logits = use_logits
+        if isinstance(model.output_shape, list):
+            nb_classes = model.output_shape[output_layer][-1]
         else:
-            import keras
-            import keras.backend as k
+            nb_classes = model.output_shape[-1]
 
-            if hasattr(keras.utils, "losses_utils"):
-                self._losses = keras.utils.losses_utils
-            else:
-                self._losses = None
-
-        if hasattr(model, "inputs"):
-            self._input_layer = input_layer
-            self._input = model.inputs[input_layer]
-        else:
-            self._input = model.input
-            self._input_layer = 0
-
-        if hasattr(model, "outputs"):
-            self._output = model.outputs[output_layer]
-            self._output_layer = output_layer
-        else:
-            self._output = model.output
-            self._output_layer = 0
-
-        _, nb_classes = k.int_shape(self._output)
         # Check for binary classification
         if nb_classes == 1:
             nb_classes = 2
         self.nb_classes = nb_classes
 
-        self._input_shape = k.int_shape(self._input)[1:]
-        logger.debug(
-            "Inferred %i classes and %s as input shape for Keras classifier.",
-            self.nb_classes,
-            str(self.input_shape),
-        )
+        # Ensure model is built
+        if not model.built:
+            input_shape = model.layers[0].input_shape[1:]  # Adjust as needed
+            model.build((None, *input_shape))
+            _ = model(tf.zeros((1, *input_shape)))  # Force a call
 
-        self._use_logits = use_logits
-
-        # Get loss function
-        if not hasattr(self._model, "loss"):
-            logger.warning("Keras model has no loss set. Classifier tries to use `k.sparse_categorical_crossentropy`.")
-            loss_function = k.sparse_categorical_crossentropy
-        else:
-            self._orig_loss = self._model.loss
-            if isinstance(self._model.loss, six.string_types):
-                loss_function = getattr(k, self._model.loss)
-
-            elif "__name__" in dir(self._model.loss) and self._model.loss.__name__ in [
-                "categorical_hinge",
-                "categorical_crossentropy",
-                "sparse_categorical_crossentropy",
-                "binary_crossentropy",
-                "kullback_leibler_divergence",
-            ]:
-                if self._model.loss.__name__ in [
-                    "categorical_hinge",
-                    "kullback_leibler_divergence",
-                ]:
-                    loss_function = getattr(keras.losses, self._model.loss.__name__)
-                else:
-                    loss_function = getattr(keras.backend, self._model.loss.__name__)
-
-            elif isinstance(
-                self._model.loss,
-                (
-                    keras.losses.CategoricalHinge,
-                    keras.losses.CategoricalCrossentropy,
-                    keras.losses.SparseCategoricalCrossentropy,
-                    keras.losses.BinaryCrossentropy,
-                    keras.losses.KLDivergence,
-                ),
-            ):
-                loss_function = self._model.loss
-            else:
-                loss_function = getattr(k, self._model.loss.__name__)
-
-        # Check if loss function is an instance of loss function generator, the try is required because some of the
-        # modules are not available in older Keras versions
-        try:
-            flag_is_instance = isinstance(
-                loss_function,
-                (
-                    keras.losses.CategoricalHinge,
-                    keras.losses.CategoricalCrossentropy,
-                    keras.losses.BinaryCrossentropy,
-                    keras.losses.KLDivergence,
-                ),
-            )
-        except AttributeError:  # pragma: no cover
-            flag_is_instance = False
-
-        # Check if the labels have to be reduced to index labels and create placeholder for labels
-        if (
-            "__name__" in dir(loss_function)
-            and loss_function.__name__
-            in [
-                "categorical_hinge",
-                "categorical_crossentropy",
-                "binary_crossentropy",
-                "kullback_leibler_divergence",
-            ]
-        ) or flag_is_instance:
-            self._reduce_labels = False
-            label_ph = k.placeholder(shape=self._output.shape)
-        elif (
-            "__name__" in dir(loss_function) and loss_function.__name__ in ["sparse_categorical_crossentropy"]
-        ) or isinstance(loss_function, keras.losses.SparseCategoricalCrossentropy):
-            self._reduce_labels = True
-            label_ph = k.placeholder(
-                shape=[
-                    None,
-                ]
-            )
-        else:  # pragma: no cover
-            raise ValueError("Loss function not recognised.")
-
-        # Define the loss using the loss function
-        if "__name__" in dir(
-            loss_function,
-        ) and loss_function.__name__ in [
-            "categorical_crossentropy",
-            "sparse_categorical_crossentropy",
-            "binary_crossentropy",
-        ]:
-            loss_ = loss_function(label_ph, self._output, from_logits=self._use_logits)
-
-        elif "__name__" in dir(loss_function) and loss_function.__name__ in [
-            "categorical_hinge",
-            "kullback_leibler_divergence",
-        ]:
-            loss_ = loss_function(label_ph, self._output)
-
-        elif isinstance(
-            loss_function,
-            (
-                keras.losses.CategoricalHinge,
-                keras.losses.CategoricalCrossentropy,
-                keras.losses.SparseCategoricalCrossentropy,
-                keras.losses.KLDivergence,
-                keras.losses.BinaryCrossentropy,
-            ),
-        ):
-            loss_ = loss_function(label_ph, self._output)
-        else:
-            raise ValueError("Type of loss function could not be determined.")
-
-        # Define loss gradients
-        loss_gradients = k.gradients(loss_, self._input)
-
-        if k.backend() == "tensorflow":
-            loss_gradients = loss_gradients[0]
-        elif k.backend() == "cntk":  # pragma: no cover
-            raise NotImplementedError("Only TensorFlow is supported as backend for Keras.")
-
-        # Set loss, gradients and prediction functions
-        self._predictions_op = self._output
-        self._loss_function = loss_function
-        self._loss = loss_
-        self._loss_gradients = k.function([self._input, label_ph, k.learning_phase()], [loss_gradients])
-
-        # Get the internal layer
+        self._input = model.inputs[input_layer]
+        self._output = model.outputs[output_layer]
+        self._input_layer = input_layer
+        self._output_layer = output_layer
+        self._input_shape = tuple(self._input.shape[1:])
         self._layer_names = self._get_layers()
+
+        @tf.function(reduce_retracing=True)  # Compile this for speed
+        def _forward_pass(model, x, training, batch_size):
+            return model(x, training=training, batch_size=batch_size, verbose=False)
+
+        self._forward_pass = _forward_pass
 
     @property
     def input_shape(self) -> tuple[int, ...]:
@@ -366,17 +191,10 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         :return: Loss values.
         :rtype: Format as expected by the `model`
         """
-        if not self._losses:
-            raise NotImplementedError("loss method is only supported for keras versions >= 2.3.1")
+        import tensorflow as tf
 
-        if self.is_tensorflow:
-            import tensorflow.keras.backend as k
-        else:
-            import keras.backend as k
-
+        # Preprocess input
         y = check_and_transform_label_format(y, self.nb_classes)  # type: ignore
-
-        # Apply preprocessing
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=False)
 
         shape_match = [i is None or i == j for i, j in zip(self._input_shape, x_preprocessed.shape[1:])]
@@ -386,38 +204,45 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
                 f"shape {x_preprocessed.shape[1:]}."
             )
 
-        # Adjust the shape of y for loss functions that do not take labels in one-hot encoding
-        if self._reduce_labels:
+        # Adjust shape of y if necessary
+        if (
+            "__name__" in dir(self._model.loss) and self._model.loss.__name__ in ["sparse_categorical_crossentropy"]
+        ) or isinstance(self._model.loss, tf.keras.losses.SparseCategoricalCrossentropy):
             y_preprocessed = np.argmax(y_preprocessed, axis=1)
 
-        predictions = self._model.predict(x_preprocessed)
+        # Convert to tensors
+        x_tf = tf.convert_to_tensor(x_preprocessed)
+        y_tf = tf.convert_to_tensor(y_preprocessed)
 
-        if self._orig_loss and hasattr(self._orig_loss, "reduction"):
-            prev_reduction = self._orig_loss.reduction
-            if hasattr(self._losses, "Reduction"):
-                self._orig_loss.reduction = self._losses.Reduction.NONE
-            loss = self._orig_loss(y_preprocessed, predictions)
-            self._orig_loss.reduction = prev_reduction
-        else:
-            prev_reduction = []
-            predictions = k.constant(predictions)
-            y_preprocessed = k.constant(y_preprocessed)
-            for loss_function in self._model.loss_functions:
-                prev_reduction.append(loss_function.reduction)
-                if hasattr(self._losses, "Reduction"):
-                    loss_function.reduction = self._losses.Reduction.NONE
-            loss = self._loss_function(y_preprocessed, predictions)
-            for i, loss_function in enumerate(self._model.loss_functions):
-                loss_function.reduction = prev_reduction[i]
+        # Get predictions
+        predictions = self._model(x_tf, training=False)
 
-        loss_value = k.eval(loss)
+        # Compute loss (no need to access .loss attribute directly)
+        loss_tensor = self._model.compiled_loss(y_tf, predictions)
 
+        # Convert loss tensor to numpy
+        loss_value = loss_tensor.numpy()
+
+        # Apply user-specified reduction
         if reduction == "none":
-            pass
+            loss_value_list = []
+            for i in range(x_tf.shape[0]):
+                predictions_i = self._model(x_tf[i : i + 1], training=False)
+                loss_tensor_i = self._model.compiled_loss(y_tf[i : i + 1], predictions_i)
+                loss_value_list.append(loss_tensor_i.numpy())
+            loss_value = np.array(loss_value_list)
+
         elif reduction == "mean":
-            loss_value = np.mean(loss_value, axis=0)
+            predictions = self._model(x_tf, training=False)
+            loss_tensor = self._model.compiled_loss(y_tf, predictions)
+            loss_value = loss_tensor.numpy()
+
         elif reduction == "sum":
-            loss_value = np.sum(loss_value, axis=0)
+            loss_value = 0
+            for i in range(x_tf.shape[0]):
+                predictions_i = self._model(x_tf[i : i + 1], training=False)
+                loss_tensor_i = self._model.compiled_loss(y_tf[i : i + 1], predictions_i)
+                loss_value += loss_tensor_i.numpy()
 
         return loss_value
 
@@ -431,7 +256,9 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         :param training_mode: `True` for model set to training mode and `False` for model set to evaluation mode.
         :return: Array of gradients of the same shape as `x`.
         """
-        # Check shape of preprocessed `x` because of custom function for `_loss_gradients`
+        import tensorflow as tf
+
+        # Preprocess input
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=False)
         shape_match = [i is None or i == j for i, j in zip(self._input_shape, x_preprocessed.shape[1:])]
         if not all(shape_match):  # pragma: no cover
@@ -440,13 +267,57 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
                 f"shape {x_preprocessed.shape[1:]}"
             )
 
-        # Adjust the shape of y for loss functions that do not take labels in one-hot encoding
-        if self._reduce_labels:
-            y_preprocessed = np.argmax(y_preprocessed, axis=1)
+        # Adjust shape of y if necessary (one-hot -> sparse)
+        if (
+            (isinstance(self._model.loss, str) and self._model.loss in ["sparse_categorical_crossentropy"])
+            or (
+                "__name__" in dir(self._model.loss) and self._model.loss.__name__ in ["sparse_categorical_crossentropy"]
+            )
+            or isinstance(self._model.loss, tf.keras.losses.SparseCategoricalCrossentropy)
+        ):
+            if y_preprocessed.ndim > 1 and y_preprocessed.shape[1] > 1:
+                y_preprocessed = np.argmax(y_preprocessed, axis=1)
 
-        # Compute gradients
-        gradients = self._loss_gradients([x_preprocessed, y_preprocessed, int(training_mode)])[0]
-        assert gradients.shape == x_preprocessed.shape
+        # Convert to tensors
+        x_tf = tf.convert_to_tensor(x_preprocessed)
+        y_tf = tf.convert_to_tensor(y_preprocessed)
+
+        # Get the loss function
+        loss_attr = self._model.loss
+
+        if isinstance(loss_attr, str):
+            # Loss is a string, get the Keras loss object
+            loss_fn = tf.keras.losses.get(loss_attr)
+            if hasattr(loss_fn, "get_config"):
+                loss_fn = loss_fn.__class__.from_config(loss_fn.get_config())
+                loss_fn.reduction = tf.keras.losses.Reduction.NONE
+
+        elif hasattr(loss_attr, "get_config"):
+            # Loss is a Keras loss object, like CategoricalCrossentropy()
+            loss_fn = loss_attr.__class__.from_config(loss_attr.get_config())
+            loss_fn.reduction = tf.keras.losses.Reduction.NONE
+
+        elif callable(loss_attr):
+            # Loss is a plain function (like a custom sparse_categorical_crossentropy)
+            loss_fn = loss_attr
+            import warnings
+
+            warnings.warn(
+                "Loss function is a plain function, not a Keras loss object. "
+                "Cannot set reduction; assuming per-sample loss."
+            )
+
+        else:
+            raise TypeError(f"Unsupported loss type: {type(loss_attr)}")
+
+        # Compute loss gradient w.r.t. input
+        with tf.GradientTape() as tape:
+            tape.watch(x_tf)
+            y_pred = self._model(x_tf, training=training_mode)
+            loss = loss_fn(y_tf, y_pred)
+
+        gradients = tape.gradient(loss, x_tf)
+        gradients = gradients.numpy()
         gradients = self._apply_preprocessing_gradient(x, gradients)
         assert gradients.shape == x.shape
 
@@ -472,20 +343,22 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
                  `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
                  `(batch_size, 1, input_shape)` when `label` parameter is specified.
         """
-        # Check value of label for computing gradients
+        import tensorflow as tf
+
+        # Check label validity
         if not (
             label is None
-            or (isinstance(label, (int, np.integer)) and label in range(self.nb_classes))
+            or (isinstance(label, (int, np.integer)) and 0 <= label < self.nb_classes)
             or (
                 isinstance(label, np.ndarray)
-                and len(label.shape) == 1
+                and label.ndim == 1
                 and (label < self.nb_classes).all()
                 and label.shape[0] == x.shape[0]
             )
         ):
             raise ValueError(f"Label {label} is out of range.")  # pragma: no cover
 
-        # Check shape of preprocessed `x` because of custom function for `_class_gradients`
+        # Preprocess input
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
         shape_match = [i is None or i == j for i, j in zip(self._input_shape, x_preprocessed.shape[1:])]
         if not all(shape_match):  # pragma: no cover
@@ -494,38 +367,29 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
                 f"shape {x_preprocessed.shape[1:]}"
             )
 
-        self._init_class_gradients(label=label)
+        x_tf = tf.convert_to_tensor(x_preprocessed)
+        training = training_mode
+
+        # Compute gradients
+        with tf.GradientTape() as tape:
+            tape.watch(x_tf)
+            preds = self._model(x_tf, training=training)  # Shape: (batch_size, nb_classes)
+
+        grads = tape.batch_jacobian(preds, x_tf)  # Shape: (batch_size, nb_classes, input_shape...)
 
         if label is None:
-            # Compute the gradients w.r.t. all classes
-            gradients = np.swapaxes(np.array(self._class_gradients([x_preprocessed])), 0, 1)
-
+            gradients = grads.numpy()  # Shape: (batch_size, nb_classes, input_shape...)
         elif isinstance(label, (int, np.integer)):
-            # Compute the gradients only w.r.t. the provided label
-            grad_fn = self._class_gradients_idx[label]
-            if grad_fn is not None:
-                gradients = np.swapaxes(np.array(grad_fn([x_preprocessed, int(training_mode)])), axis1=0, axis2=1)
-            else:  # pragma: no cover
-                raise ValueError("Class gradient operation is not defined.")
-            assert gradients.shape == (x_preprocessed.shape[0], 1) + x_preprocessed.shape[1:]
-
+            gradients = grads[:, label : label + 1, ...].numpy()  # Shape: (batch_size, 1, input_shape...)
         else:
-            # For each sample, compute the gradients w.r.t. the indicated target class (possibly distinct)
-            unique_label = list(np.unique(label))
-            gradients_list = []
-            for u_l in unique_label:
-                grad_fn = self._class_gradients_idx[u_l]
-                if grad_fn is not None:
-                    gradients_list.append(grad_fn([x_preprocessed, int(training_mode)]))
-                else:  # pragma: no cover
-                    raise ValueError("Class gradient operation is not defined.")
-            gradients = np.array(gradients_list)
-            gradients = np.swapaxes(np.squeeze(gradients, axis=1), 0, 1)
-            lst = [unique_label.index(i) for i in label]
-            gradients = np.expand_dims(gradients[np.arange(len(gradients)), lst], axis=1)
+            # label is an array
+            label = np.asarray(label)
+            gradients = np.stack(
+                [grads[i, label[i], ...] for i in range(x_tf.shape[0])], axis=0
+            )  # Shape: (batch_size, input_shape...)
+            gradients = np.expand_dims(gradients, axis=1)  # Shape: (batch_size, 1, input_shape...)
 
         gradients = self._apply_preprocessing_gradient(x, gradients)
-
         return gradients
 
     def predict(self, x: np.ndarray, batch_size: int = 128, training_mode: bool = False, **kwargs) -> np.ndarray:
@@ -541,15 +405,14 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
 
         # Run predictions with batching
-        if training_mode:
-            predictions = self._model(x_preprocessed, training=training_mode)
-        else:
-            predictions = self._model.predict(x_preprocessed, batch_size=batch_size)
+        predictions = self._forward_pass(
+            self._model, x_preprocessed, training=training_mode, batch_size=batch_size
+        )  # Fast, compiled call
 
         # Apply postprocessing
-        predictions = self._apply_postprocessing(preds=predictions, fit=False)
+        predictions_post = self._apply_postprocessing(preds=predictions.numpy(), fit=False)
 
-        return predictions
+        return predictions_post
 
     def fit(
         self, x: np.ndarray, y: np.ndarray, batch_size: int = 128, nb_epochs: int = 20, verbose: bool = False, **kwargs
@@ -574,7 +437,8 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=True)
 
         # Adjust the shape of y for loss functions that do not take labels in one-hot encoding
-        if self._reduce_labels or y_ndim == 1:
+        loss_name = getattr(self._model.loss, "__name__", None)
+        if loss_name in ["sparse_categorical_crossentropy", "SparseCategoricalCrossentropy"] or y_ndim == 1:
             y_preprocessed = np.argmax(y_preprocessed, axis=1)
 
         self._model.fit(
@@ -610,7 +474,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
             )
         ):
             try:
-                self._model.fit_generator(generator.iterator, epochs=nb_epochs, verbose=int(verbose), **kwargs)
+                self._model.fit(generator.iterator, epochs=nb_epochs, verbose=int(verbose), **kwargs)
             except ValueError:  # pragma: no cover
                 logger.info("Unable to use data generator as Keras generator. Now treating as framework-independent.")
                 super().fit_generator(generator, nb_epochs=nb_epochs, verbose=verbose, **kwargs)
@@ -631,63 +495,22 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         :param framework: If true, return the intermediate tensor representation of the activation.
         :return: The output of `layer`, where the first dimension is the batch size corresponding to `x`.
         """
-
-        if self.is_tensorflow:
-            import tensorflow.keras.backend as k
-        else:
-            import keras.backend as k
-        from art.config import ART_NUMPY_DTYPE
-
-        if isinstance(layer, six.string_types):
-            if layer not in self._layer_names:  # pragma: no cover
-                raise ValueError(f"Layer name {layer} is not part of the graph.")
-            layer_name = layer
-        elif isinstance(layer, int):
-            if layer < 0 or layer >= len(self._layer_names):  # pragma: no cover
-                raise ValueError(
-                    f"Layer index {layer} is outside of range (0 to {len(self._layer_names) - 1} included)."
-                )
-            layer_name = self._layer_names[layer]
-        else:  # pragma: no cover
-            raise TypeError("Layer must be of type `str` or `int`.")
-
-        if x.shape == self.input_shape:
-            x_expanded = np.expand_dims(x, 0)
-        else:
-            x_expanded = x
+        import tensorflow as tf
 
         # Apply preprocessing
-        x_preprocessed, _ = self._apply_preprocessing(x=x_expanded, y=None, fit=False)
+        x_preprocessed, _ = self._apply_preprocessing(x=x, y=None, fit=False)
 
-        if not hasattr(self, "_activations_func"):
-            self._activations_func: dict[str, Callable] = {}
+        layer_name: str
 
-        keras_layer = self._model.get_layer(layer_name)
-        if layer_name not in self._activations_func:
-            num_inbound_nodes = len(getattr(keras_layer, "_inbound_nodes", []))
-            if num_inbound_nodes > 1:
-                layer_output = keras_layer.get_output_at(0)
-            else:
-                layer_output = keras_layer.output
-            self._activations_func[layer_name] = k.function([self._input, k.learning_phase()], [layer_output])
-
-        # Determine shape of expected output and prepare array
-        output_shape = self._activations_func[layer_name]([x_preprocessed[0][None, ...], int(False)])[0].shape
-        activations = np.zeros((x_preprocessed.shape[0],) + output_shape[1:], dtype=ART_NUMPY_DTYPE)
-
-        # Get activations with batching
-        for batch_index in range(int(np.ceil(x_preprocessed.shape[0] / float(batch_size)))):
-            begin, end = (
-                batch_index * batch_size,
-                min((batch_index + 1) * batch_size, x_preprocessed.shape[0]),
-            )
-            activations[begin:end] = self._activations_func[layer_name]([x_preprocessed[begin:end], 0])[0]
-
-        if framework:
-            placeholder = k.placeholder(shape=x.shape)
-            return placeholder, keras_layer(placeholder)  # type: ignore
-
-        return activations
+        x_tensor = tf.convert_to_tensor(x_preprocessed)
+        if isinstance(layer, int):
+            layer_index: int = layer
+            layer_name = self._model.layers[layer_index].name
+        else:
+            layer_name = layer
+        layer_instance = self._model.get_layer(name=layer_name)
+        submodel = tf.keras.Model(inputs=self._input, outputs=layer_instance.output)
+        return submodel.predict(x_tensor)
 
     def custom_loss_gradient(self, nn_function, tensors, input_values, name="default"):
         """
@@ -704,20 +527,11 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         :return: the gradient of the function w.r.t vars
         :rtype: `np.ndarray`
         """
-        if self.is_tensorflow:
-            import tensorflow.keras.backend as k
-        else:
-            import keras.backend as k
-
-        if not hasattr(self, "_custom_loss_func"):
-            self._custom_loss_func = {}
-
-        if name not in self._custom_loss_func:
-            grads = k.gradients(nn_function, tensors[0])[0]
-            self._custom_loss_func[name] = k.function(tensors, [grads])
-
-        outputs = self._custom_loss_func[name]
-        return outputs(input_values)
+        with tf.GradientTape() as tape:
+            tape.watch(tensors)
+            outputs = nn_function(*tensors)
+        grads = tape.gradient(outputs, tensors)
+        return [g.numpy() for g in grads]
 
     def clone_for_refitting(
         self,
@@ -728,45 +542,44 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
 
         :return: new classifier
         """
-        cloned_classifier = super().clone_for_refitting()
-        if isinstance(cloned_classifier, KerasClassifier):
-            return cloned_classifier
-        raise ValueError("Type of cloned classifier not expected.")
+        import tensorflow as tf
+        from tensorflow.keras.metrics import Metric
 
-    def _init_class_gradients(self, label: int | list[int] | np.ndarray | None = None) -> None:
+        # Clone model architecture (but not weights)
+        cloned_model = tf.keras.models.clone_model(self._model)
 
-        if self.is_tensorflow:
-            import tensorflow.keras.backend as k
+        filtered_metric_names = ["accuracy"]
+
+        # Rebuild the optimizer from config, if available
+        optimizer_config = None
+        if hasattr(self._model, "optimizer") and self._model.optimizer:
+            optimizer_config = self._model.optimizer.get_config()
+            optimizer_class = self._model.optimizer.__class__
+
+        # Compile cloned model with a fresh optimizer instance
+        if optimizer_config:
+            new_optimizer = optimizer_class.from_config(optimizer_config)
+            cloned_model.compile(
+                optimizer=new_optimizer,
+                loss=tf.keras.losses.get(self._model.loss),
+                metrics=filtered_metric_names,
+                run_eagerly=getattr(self._model, "run_eagerly", False),  # Copy run_eagerly if it was set
+            )
         else:
-            import keras.backend as k
+            # If no optimizer, compile without one
+            cloned_model.compile(
+                loss=tf.keras.losses.get(self._model.loss),
+                metrics=filtered_metric_names,
+            )
 
-        if len(self._output.shape) == 2:
-            nb_outputs = self._output.shape[1]
-        else:  # pragma: no cover
-            raise ValueError("Unexpected output shape for classification in Keras model.")
-
-        if label is None:
-            logger.debug("Computing class gradients for all %i classes.", self.nb_classes)
-            if not hasattr(self, "_class_gradients"):
-                class_gradients = [k.gradients(self._predictions_op[:, i], self._input)[0] for i in range(nb_outputs)]
-                self._class_gradients = k.function([self._input], class_gradients)
-
-        else:
-            if isinstance(label, int):
-                unique_labels = [label]
-            else:
-                unique_labels = np.unique(label).tolist()
-            logger.debug("Computing class gradients for classes %s.", str(unique_labels))
-
-            if not hasattr(self, "_class_gradients_idx"):
-                self._class_gradients_idx = [None for _ in range(nb_outputs)]
-
-            for current_label in unique_labels:
-                if self._class_gradients_idx[current_label] is None:
-                    class_gradients = [k.gradients(self._predictions_op[:, current_label], self._input)[0]]
-                    self._class_gradients_idx[current_label] = k.function(
-                        [self._input, k.learning_phase()], class_gradients
-                    )
+        # Return a new KerasClassifier instance with the cloned model
+        return KerasClassifier(
+            model=cloned_model,
+            use_logits=self._use_logits,
+            channels_first=self.channels_first,
+            clip_values=self.clip_values,
+            # Add other attributes as needed (e.g., preprocessing_defences)
+        )
 
     def _get_layers(self) -> list[str]:
         """
@@ -774,11 +587,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
 
         :return: The hidden layers in the model, input and output layers excluded.
         """
-
-        if self.is_tensorflow:
-            from tensorflow.keras.layers import InputLayer
-        else:
-            from keras.engine.topology import InputLayer
+        from tensorflow.keras.layers import InputLayer
 
         layer_names = [layer.name for layer in self._model.layers[:-1] if not isinstance(layer, InputLayer)]
         logger.info("Inferred %i hidden layers on Keras classifier.", len(layer_names))
@@ -803,64 +612,6 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
 
         self._model.save(str(full_path))
         logger.info("Model saved in path: %s.", full_path)
-
-    def __getstate__(self) -> dict[str, Any]:
-        """
-        Use to ensure `KerasClassifier` can be pickled.
-
-        :return: State dictionary with instance parameters.
-        """
-        state = self.__dict__.copy()
-
-        # Remove the unpicklable entries
-        del state["_model"]
-        del state["_input"]
-        del state["_output"]
-        del state["_predictions_op"]
-        del state["_loss"]
-        del state["_loss_gradients"]
-        del state["_layer_names"]
-        del state["_losses"]
-        del state["_loss_function"]
-
-        if "_orig_loss" in state:
-            del state["_orig_loss"]
-
-        if "_class_gradients" in state:
-            del state["_class_gradients"]
-
-        if "_class_gradients_idx" in state:
-            del state["_class_gradients_idx"]
-
-        if "_activations_func" in state:
-            del state["_activations_func"]
-
-        if "_custom_loss_func" in state:
-            del state["_custom_loss_func"]
-
-        model_name = str(time.time()) + ".h5"
-        state["model_name"] = model_name
-        self.save(model_name)
-        return state
-
-    def __setstate__(self, state: dict[str, Any]) -> None:
-        """
-        Use to ensure `KerasClassifier` can be unpickled.
-
-        :param state: State dictionary with instance parameters to restore.
-        """
-        self.__dict__.update(state)
-
-        if self.is_tensorflow:
-            from tensorflow.keras.models import load_model
-        else:
-            from keras.models import load_model
-
-        full_path = os.path.join(config.ART_DATA_PATH, state["model_name"])
-        model = load_model(str(full_path))
-
-        self._model = model
-        self._initialize_params(model, state["_use_logits"], state["_input_layer"], state["_output_layer"])
 
     def __repr__(self):
         repr_ = (

@@ -1,6 +1,6 @@
-# Adversarial Robustness Toolbox (ART) v1.19
+# Adversarial Robustness Toolbox (ART) v1.20
 <p align="center">
-  <img src="docs/images/art_lfai.png?raw=true" width="467" title="ART logo">
+  <img src="https://raw.githubusercontent.com/Trusted-AI/adversarial-robustness-toolbox/main/docs/images/art_lfai.png" width="467" title="ART logo">
 </p>
 <br />
 
@@ -16,31 +16,47 @@
 [![Downloads](https://static.pepy.tech/badge/adversarial-robustness-toolbox/month)](https://pepy.tech/project/adversarial-robustness-toolbox)
 [![CII Best Practices](https://bestpractices.coreinfrastructure.org/projects/5090/badge)](https://bestpractices.coreinfrastructure.org/projects/5090)
 
-<p align="center">
-  <img src="https://raw.githubusercontent.com/lfai/artwork/master/lfaidata-assets/lfaidata-project-badge/graduate/color/lfaidata-project-badge-graduate-color.png" alt="LF AI & Data" width="300"/>
-</p>
+ <div align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/lfaidata-project-badge-graduate-color_dark.png" width="400" title="LF AI & Data">
+    <source media="(prefers-color-scheme: light)" srcset="docs/images/lfaidata-project-badge-graduate-color.png" width="400" title="LF AI & Data">
+    <img alt="Fallback image description" src="default-image.png" width="400">
+  </picture>
+</div>
+<br />
 
 对抗性鲁棒性工具集（ART）是用于机器学习安全性的Python库。ART 由
 [Linux Foundation AI & Data Foundation](https://lfaidata.foundation) (LF AI & Data)。 ART提供的工具可
 帮助开发人员和研究人员针对以下方面捍卫和评估机器学习模型和应用程序：
 逃逸，数据污染，模型提取和推断的对抗性威胁。ART支持所有流行的机器学习框架
-（TensorFlow，Keras，PyTorch，MXNet，scikit-learn，XGBoost，LightGBM，CatBoost，GPy等），所有数据类型
+（TensorFlow，Keras，PyTorch，scikit-learn，XGBoost，LightGBM，CatBoost，GPy等），所有数据类型
 （图像，表格，音频，视频等）和机器学习任务（分类，物体检测，语音识别，
 生成模型，认证等）。
 
 ## Adversarial Threats
 
+ <div align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/adversarial_threats_attacker_dark.png" width="400 title="ART Threats">
+    <source media="(prefers-color-scheme: light)" srcset="docs/images/adversarial_threats_attacker.png" width="400 title="ART Threats">
+    <img alt="Fallback image description" src="default-image.png" width="400">
+  </picture>
+</div>
+
 <p align="center">
-  <img src="docs/images/adversarial_threats_attacker.png?raw=true" width="400" title="ART logo">
-  <img src="docs/images/adversarial_threats_art.png?raw=true" width="400" title="ART logo">
+  <img src="docs/images/adversarial_threats_art.png?raw=true" width="400" title="ART Matrix">
 </p>
 <br />
 
 ## ART for Red and Blue Teams (selection)
 
-<p align="center">
-  <img src="docs/images/white_hat_blue_red.png?raw=true" width="800" title="ART Red and Blue Teams">
-</p>
+ <div align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/white_hat_blue_red_dark.png" width="800 title="ART Red and Blue Teams">
+    <source media="(prefers-color-scheme: light)" srcset="docs/images/white_hat_blue_red.png" width="800 title="ART Red and Blue Teams">
+    <img alt="Fallback image description" src="default-image.png" width="800">
+  </picture>
+</div>
 <br />
 
 ## 学到更多

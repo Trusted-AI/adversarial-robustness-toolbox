@@ -62,7 +62,7 @@ def fix_get_cifar10_data():
     return x_test.astype(np.float32), y_test
 
 
-@pytest.mark.skip_framework("mxnet", "non_dl_frameworks", "tensorflow1", "keras", "kerastf", "tensorflow2")
+@pytest.mark.skip_framework("non_dl_frameworks", "keras", "kerastf", "tensorflow2")
 def test_pytorch_training(art_warning, fix_get_mnist_data, fix_get_cifar10_data):
     """
     Check that the training loop for pytorch does not result in errors
@@ -145,7 +145,7 @@ def test_pytorch_training(art_warning, fix_get_mnist_data, fix_get_cifar10_data)
             art_warning(e)
 
 
-@pytest.mark.skip_framework("mxnet", "non_dl_frameworks", "tensorflow1", "keras", "kerastf", "pytorch")
+@pytest.mark.skip_framework("non_dl_frameworks", "keras", "kerastf", "pytorch")
 def test_tf2_training(art_warning, fix_get_mnist_data, fix_get_cifar10_data):
     """
     Check that the training loop for tensorflow2 does not result in errors
@@ -157,14 +157,14 @@ def test_tf2_training(art_warning, fix_get_mnist_data, fix_get_cifar10_data):
         x = tf.keras.layers.Conv2D(filters=32, kernel_size=(4, 4), strides=(2, 2), activation="relu")(img_inputs)
         x = tf.keras.layers.MaxPool2D(pool_size=(2, 2), strides=2)(x)
         # tensorflow uses channels last, and we are loading weights from an originally trained pytorch model
-        x = tf.transpose(x, (0, 3, 1, 2))
+        x = tf.keras.layers.Permute((3, 1, 2))(x)
         x = tf.keras.layers.Flatten()(x)
         x = tf.keras.layers.Dense(100, activation="relu")(x)
         x = tf.keras.layers.Dense(10)(x)
         return tf.keras.Model(inputs=img_inputs, outputs=x)
 
     loss_object = tf.keras.losses.CategoricalCrossentropy(from_logits=True)
-    optimizer = tf.keras.optimizers.legacy.SGD(learning_rate=0.01)
+    optimizer = tf.keras.optimizers.SGD(learning_rate=0.01)
 
     for dataset, dataset_name in zip([fix_get_mnist_data, fix_get_cifar10_data], ["mnist", "cifar"]):
         if dataset_name == "mnist":
@@ -194,7 +194,7 @@ def test_tf2_training(art_warning, fix_get_mnist_data, fix_get_cifar10_data):
             art_warning(e)
 
 
-@pytest.mark.skip_framework("mxnet", "non_dl_frameworks", "tensorflow1", "keras", "kerastf", "tensorflow2")
+@pytest.mark.skip_framework("non_dl_frameworks", "keras", "kerastf", "tensorflow2")
 def test_pytorch_mnist_certification(art_warning, fix_get_mnist_data):
     """
     Assert that the correct number of certifications are given for the MNIST dataset
@@ -283,7 +283,7 @@ def test_pytorch_mnist_certification(art_warning, fix_get_mnist_data):
         art_warning(e)
 
 
-@pytest.mark.skip_framework("mxnet", "non_dl_frameworks", "tensorflow1", "keras", "kerastf", "pytorch")
+@pytest.mark.skip_framework("non_dl_frameworks", "keras", "kerastf", "pytorch")
 def test_tf2_mnist_certification(art_warning, fix_get_mnist_data):
     """
     Assert that the correct number of certifications are given for the MNIST dataset
@@ -296,7 +296,7 @@ def test_tf2_mnist_certification(art_warning, fix_get_mnist_data):
         x = tf.keras.layers.Conv2D(filters=32, kernel_size=(4, 4), strides=(2, 2), activation="relu")(img_inputs)
         x = tf.keras.layers.MaxPool2D(pool_size=(2, 2), strides=2)(x)
         # tensorflow uses channels last, and we are loading weights from an originally trained pytorch model
-        x = tf.transpose(x, (0, 3, 1, 2))
+        x = tf.keras.layers.Permute((3, 1, 2))(x)
         x = tf.keras.layers.Flatten()(x)
         x = tf.keras.layers.Dense(100, activation="relu")(x)
         x = tf.keras.layers.Dense(10)(x)
@@ -328,7 +328,7 @@ def test_tf2_mnist_certification(art_warning, fix_get_mnist_data):
     net.set_weights(get_weights())
 
     loss_object = tf.keras.losses.CategoricalCrossentropy(from_logits=True)
-    optimizer = tf.keras.optimizers.legacy.SGD(learning_rate=0.01)
+    optimizer = tf.keras.optimizers.SGD(learning_rate=0.01)
 
     try:
         for ablation_type in ["column", "block"]:

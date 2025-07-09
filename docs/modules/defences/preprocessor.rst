@@ -56,18 +56,6 @@ Gaussian Data Augmentation
    :members:
    :special-members:
 
-InverseGAN
-----------
-.. autoclass:: InverseGAN
-   :members:
-   :special-members:
-
-DefenseGAN
-----------
-.. autoclass:: DefenseGAN
-   :members:
-   :special-members:
-
 JPEG Compression
 ----------------
 .. autoclass:: JpegCompression

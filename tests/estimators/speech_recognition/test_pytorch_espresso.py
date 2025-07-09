@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 
 
 @pytest.mark.skip_module("espresso")
-@pytest.mark.skip_framework("tensorflow", "tensorflow2v1", "keras", "kerastf", "mxnet", "non_dl_frameworks")
+@pytest.mark.skip_framework("tensorflow", "keras", "kerastf", "non_dl_frameworks")
 @pytest.mark.parametrize("device_type", ["cpu"])
 def test_pytorch_espresso(art_warning, expected_values, device_type):
     import torch

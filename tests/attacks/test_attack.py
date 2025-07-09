@@ -18,7 +18,7 @@
 import pytest
 
 
-@pytest.mark.skip_framework("tensorflow1", "tensorflow2v1", "keras", "non_dl_frameworks", "mxnet", "kerastf")
+@pytest.mark.skip_framework("keras", "non_dl_frameworks", "kerastf")
 def test_attack_repr(image_dl_estimator):
 
     from art.attacks.evasion import ProjectedGradientDescentNumpy

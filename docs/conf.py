@@ -25,9 +25,9 @@ copyright = "2018, The Adversarial Robustness Toolbox (ART) Authors"
 author = "Maria-Irina Nicolae"
 
 # The short X.Y version
-version = "1.19"
+version = "1.20"
 # The full version, including alpha/beta/rc tags
-release = "1.19.2"
+release = "1.20.1"
 
 
 # -- General configuration ---------------------------------------------------
@@ -58,7 +58,7 @@ master_doc = "index"
 #
 # This is also used if you do content translation via gettext catalogs.
 # Usually you set "language" from the command line for these cases.
-language = None
+language = "English"
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
@@ -81,8 +81,6 @@ if os.environ.get("READTHEDOCS") != "True":
         import sphinx_rtd_theme
     except ImportError:
         pass  # assume we have sphinx >= 1.3
-    else:
-        html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
     html_theme = "sphinx_rtd_theme"
 
 # Theme options are theme-specific and customize the look and feel of a theme

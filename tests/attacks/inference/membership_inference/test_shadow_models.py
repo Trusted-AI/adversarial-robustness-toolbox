@@ -33,7 +33,7 @@ from tests.utils import ARTTestException
 logger = logging.getLogger(__name__)
 
 
-@pytest.mark.skip_framework("scikitlearn", "keras", "kerastf", "tensorflow1", "tensorflow2", "tensorflow2v1", "mxnet")
+@pytest.mark.skip_framework("scikitlearn", "keras", "kerastf", "tensorflow2")
 def test_shadow_model_bb_attack(art_warning, tabular_dl_estimator_for_attack, get_iris_dataset):
     try:
         art_classifier = tabular_dl_estimator_for_attack(MembershipInferenceBlackBox)

@@ -22,10 +22,3 @@ Speech Recognizer Espresso - PyTorch
    :members:
    :special-members: __init__
    :inherited-members:
-
-Speech Recognizer Lingvo ASR - TensorFlow
------------------------------------------
-.. autoclass:: TensorFlowLingvoASR
-   :members:
-   :special-members: __init__
-   :inherited-members:

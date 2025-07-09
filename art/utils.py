@@ -80,7 +80,6 @@ if TYPE_CHECKING:
     from art.estimators.classification.keras import KerasClassifier
     from art.experimental.estimators.classification.jax import JaxClassifier
     from art.estimators.classification.lightgbm import LightGBMClassifier
-    from art.estimators.classification.mxnet import MXClassifier
     from art.estimators.classification.pytorch import PyTorchClassifier
     from art.estimators.classification.query_efficient_bb import QueryEfficientGradientEstimationClassifier
     from art.estimators.classification.scikitlearn import (
@@ -96,18 +95,16 @@ if TYPE_CHECKING:
         ScikitlearnRandomForestClassifier,
         ScikitlearnSVC,
     )
-    from art.estimators.classification.tensorflow import TensorFlowClassifier, TensorFlowV2Classifier
+    from art.estimators.classification.tensorflow import TensorFlowV2Classifier
     from art.estimators.classification.xgboost import XGBoostClassifier
     from art.estimators.certification.deep_z import PytorchDeepZ
     from art.estimators.certification.interval import PyTorchIBPClassifier
-    from art.estimators.certification.derandomized_smoothing.derandomized_smoothing import BlockAblator, ColumnAblator
-    from art.estimators.generation import TensorFlowGenerator
+    from art.estimators.certification.derandomized_smoothing.ablators import BlockAblator, ColumnAblator
     from art.estimators.generation.tensorflow import TensorFlowV2Generator
     from art.estimators.object_detection.object_detector import ObjectDetector
     from art.estimators.object_detection.pytorch_object_detector import PyTorchObjectDetector
     from art.estimators.object_detection.pytorch_faster_rcnn import PyTorchFasterRCNN
     from art.estimators.object_detection.pytorch_yolo import PyTorchYolo
-    from art.estimators.object_detection.tensorflow_faster_rcnn import TensorFlowFasterRCNN
     from art.estimators.object_detection.tensorflow_v2_faster_rcnn import TensorFlowV2FasterRCNN
     from art.estimators.pytorch import PyTorchEstimator
     from art.estimators.keras import KerasEstimator
@@ -116,7 +113,6 @@ if TYPE_CHECKING:
     from art.estimators.regression.keras import KerasRegressor
     from art.estimators.regression.blackbox import BlackBoxRegressor
     from art.estimators.speech_recognition.pytorch_deep_speech import PyTorchDeepSpeech
-    from art.estimators.speech_recognition.tensorflow_lingvo import TensorFlowLingvoASR
     from art.estimators.tensorflow import TensorFlowV2Estimator
 
     CLASSIFIER_LOSS_GRADIENTS_TYPE = Union[  # pylint: disable=invalid-name
@@ -125,11 +121,9 @@ if TYPE_CHECKING:
         GPyGaussianProcessClassifier,
         KerasClassifier,
         JaxClassifier,
-        MXClassifier,
         PyTorchClassifier,
         ScikitlearnLogisticRegression,
         ScikitlearnSVC,
-        TensorFlowClassifier,
         TensorFlowV2Classifier,
         QueryEfficientGradientEstimationClassifier,
     ]
@@ -139,11 +133,9 @@ if TYPE_CHECKING:
         EnsembleClassifier,
         GPyGaussianProcessClassifier,
         KerasClassifier,
-        MXClassifier,
         PyTorchClassifier,
         ScikitlearnLogisticRegression,
         ScikitlearnSVC,
-        TensorFlowClassifier,
         TensorFlowV2Classifier,
     ]
 
@@ -152,9 +144,7 @@ if TYPE_CHECKING:
         DetectorClassifier,
         EnsembleClassifier,
         KerasClassifier,
-        MXClassifier,
         PyTorchClassifier,
-        TensorFlowClassifier,
         TensorFlowV2Classifier,
     ]
 
@@ -178,7 +168,6 @@ if TYPE_CHECKING:
         KerasClassifier,
         JaxClassifier,
         LightGBMClassifier,
-        MXClassifier,
         PyTorchClassifier,
         ScikitlearnClassifier,
         ScikitlearnDecisionTreeClassifier,
@@ -190,13 +179,12 @@ if TYPE_CHECKING:
         ScikitlearnRandomForestClassifier,
         ScikitlearnLogisticRegression,
         ScikitlearnSVC,
-        TensorFlowClassifier,
         TensorFlowV2Classifier,
         XGBoostClassifier,
         CLASSIFIER_NEURALNETWORK_TYPE,
     ]
 
-    GENERATOR_TYPE = Union[TensorFlowGenerator, TensorFlowV2Generator]  # pylint: disable=invalid-name
+    GENERATOR_TYPE = Union[TensorFlowV2Generator]  # pylint: disable=invalid-name
 
     REGRESSOR_TYPE = Union[  # pylint: disable=invalid-name
         ScikitlearnRegressor, ScikitlearnDecisionTreeRegressor, PyTorchRegressor, KerasRegressor, BlackBoxRegressor
@@ -207,14 +195,10 @@ if TYPE_CHECKING:
         PyTorchObjectDetector,
         PyTorchFasterRCNN,
         PyTorchYolo,
-        TensorFlowFasterRCNN,
         TensorFlowV2FasterRCNN,
     ]
 
-    SPEECH_RECOGNIZER_TYPE = Union[  # pylint: disable=invalid-name
-        PyTorchDeepSpeech,
-        TensorFlowLingvoASR,
-    ]
+    SPEECH_RECOGNIZER_TYPE = Union[PyTorchDeepSpeech,]  # pylint: disable=invalid-name
 
     PYTORCH_ESTIMATOR_TYPE = Union[  # pylint: disable=invalid-name
         PyTorchClassifier,

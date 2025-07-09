@@ -144,7 +144,7 @@ def test_black_box_loss_regression(art_warning, model_type, get_diabetes_dataset
         art_warning(e)
 
 
-@pytest.mark.skip_framework("tensorflow", "pytorch", "huggingface", "scikitlearn", "mxnet", "kerastf")
+@pytest.mark.skip_framework("tensorflow", "pytorch", "huggingface", "scikitlearn", "kerastf")
 @pytest.mark.skipif(keras.__version__.startswith("2.2"), reason="requires Keras 2.3.0 or higher")
 def test_black_box_keras_loss(art_warning, get_iris_dataset):
     try:
@@ -175,7 +175,7 @@ def test_black_box_keras_loss(art_warning, get_iris_dataset):
         art_warning(e)
 
 
-@pytest.mark.skip_framework("tensorflow", "keras", "scikitlearn", "mxnet", "kerastf")
+@pytest.mark.skip_framework("tensorflow", "keras", "scikitlearn", "kerastf")
 def test_black_box_with_model(art_warning, tabular_dl_estimator_for_attack, estimator_for_attack, get_iris_dataset):
     try:
         classifier = tabular_dl_estimator_for_attack(MembershipInferenceBlackBox)

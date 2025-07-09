@@ -43,7 +43,7 @@ def video_batch(channels_first):
 
 
 @pytest.mark.parametrize("channels_first", [True, False])
-@pytest.mark.skip_framework("tensorflow", "keras", "scikitlearn", "mxnet", "kerastf")
+@pytest.mark.skip_framework("tensorflow", "keras", "scikitlearn", "kerastf")
 def test_video_compression(art_warning, video_batch, channels_first):
     try:
         test_input, test_output = video_batch
@@ -70,7 +70,7 @@ def test_video_compression(art_warning, video_batch, channels_first):
         art_warning(e)
 
 
-@pytest.mark.skip_framework("tensorflow", "keras", "scikitlearn", "mxnet", "kerastf")
+@pytest.mark.skip_framework("tensorflow", "keras", "scikitlearn", "kerastf")
 def test_compress_video_call(art_warning):
     try:
         test_input = np.arange(12).reshape((1, 3, 1, 2, 2))
@@ -82,7 +82,7 @@ def test_compress_video_call(art_warning):
 
 
 @pytest.mark.parametrize("constant_rate_factor", [-1, 52])
-@pytest.mark.skip_framework("tensorflow", "keras", "scikitlearn", "mxnet", "kerastf")
+@pytest.mark.skip_framework("tensorflow", "keras", "scikitlearn", "kerastf")
 def test_constant_rate_factor_error(art_warning, constant_rate_factor):
     try:
         exc_msg = r"Constant rate factor must be an integer in the range \[0, 51\]."
@@ -92,7 +92,7 @@ def test_constant_rate_factor_error(art_warning, constant_rate_factor):
         art_warning(e)
 
 
-@pytest.mark.skip_framework("tensorflow", "keras", "scikitlearn", "mxnet", "kerastf")
+@pytest.mark.skip_framework("tensorflow", "keras", "scikitlearn", "kerastf")
 def test_non_spatio_temporal_data_error(art_warning, image_batch_small):
     try:
         test_input = image_batch_small
@@ -105,7 +105,7 @@ def test_non_spatio_temporal_data_error(art_warning, image_batch_small):
         art_warning(e)
 
 
-@pytest.mark.skip_framework("tensorflow", "keras", "scikitlearn", "mxnet", "kerastf")
+@pytest.mark.skip_framework("tensorflow", "keras", "scikitlearn", "kerastf")
 def test_check_params(art_warning, image_batch_small):
     try:
         with pytest.raises(ValueError):

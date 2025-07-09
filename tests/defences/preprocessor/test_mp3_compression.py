@@ -83,7 +83,11 @@ def test_non_temporal_data_error(art_warning, image_batch_small):
 
 
 @pytest.mark.parametrize("channels_first", [True, False])
-@pytest.mark.skip_framework("keras", "pytorch", "scikitlearn", "mxnet")
+@pytest.mark.skip_framework(
+    "keras",
+    "pytorch",
+    "scikitlearn",
+)
 def test_mp3_compression(art_warning, audio_batch, channels_first):
     try:
         test_input, test_output, sample_rate = audio_batch
@@ -95,7 +99,11 @@ def test_mp3_compression(art_warning, audio_batch, channels_first):
 
 
 @pytest.mark.parametrize("channels_first", [True, False])
-@pytest.mark.skip_framework("keras", "pytorch", "scikitlearn", "mxnet")
+@pytest.mark.skip_framework(
+    "keras",
+    "pytorch",
+    "scikitlearn",
+)
 def test_mp3_compression_object(art_warning, audio_batch, channels_first):
     try:
         test_input, test_output, sample_rate = audio_batch
@@ -113,7 +121,11 @@ def test_mp3_compression_object(art_warning, audio_batch, channels_first):
         art_warning(e)
 
 
-@pytest.mark.skip_framework("keras", "pytorch", "scikitlearn", "mxnet")
+@pytest.mark.skip_framework(
+    "keras",
+    "pytorch",
+    "scikitlearn",
+)
 def test_check_params(art_warning):
     try:
         with pytest.raises(ValueError):
