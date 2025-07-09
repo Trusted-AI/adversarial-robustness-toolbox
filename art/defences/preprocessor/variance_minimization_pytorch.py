@@ -15,7 +15,6 @@ from typing import TYPE_CHECKING
 
 from tqdm.auto import tqdm
 
-import torch
 import numpy as np
 
 from art.defences.preprocessor.preprocessor import PreprocessorPyTorch
@@ -65,7 +64,11 @@ class TotalVarMinPyTorch(PreprocessorPyTorch):
         :param verbose: Show progress bars.
         :param device_type: Type of device on which the classifier is run, either `gpu` or `cpu`.
         """
-        super().__init__(device_type=device_type, apply_fit=apply_fit, apply_predict=apply_predict)
+        super().__init__(
+            device_type=device_type,
+            apply_fit=apply_fit,
+            apply_predict=apply_predict,
+        )
 
         self.prob = prob
         self.norm = norm
@@ -107,16 +110,18 @@ class TotalVarMinPyTorch(PreprocessorPyTorch):
             if torch.sum(mask) > 0:
                 x_preproc[i] = self._minimize(x_preproc[i], mask)
 
-        if self.clip_values is not None:
-            x_preproc = torch.clamp(x_preproc, self.clip_values[0], self.clip_values[1])
-
+        # BCHW -> BHWC
         if not self.channels_first:
-            # BCHW -> BHWC
             x_preproc = x_preproc.permute(0, 2, 3, 1)
+
+        if self.clip_values is not None:
+            clip_min = torch.tensor(self.clip_values[0], device=x_preproc.device)
+            clip_max = torch.tensor(self.clip_values[1], device=x_preproc.device)
+            x_preproc = x_preproc.clamp(min=clip_min, max=clip_max)
 
         return x_preproc, y
 
-    def _minimize(self, x: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
+    def _minimize(self, x: "torch.Tensor", mask: "torch.Tensor") -> "torch.Tensor":
         """
         Minimize the total variance objective function for a single 3D image by
         iterating through its channels.
@@ -162,8 +167,8 @@ class TotalVarMinPyTorch(PreprocessorPyTorch):
 
     @staticmethod
     def _loss_func(
-        z_init: torch.Tensor, x: torch.Tensor, mask: torch.Tensor, norm: float, lamb: float, eps=1e-6
-    ) -> torch.Tensor:
+        z_init: "torch.Tensor", x: "torch.Tensor", mask: "torch.Tensor", norm: float, lamb: float, eps=1e-6
+    ) -> "torch.Tensor":
         """
         Loss function to be minimized - try to match SciPy implementation closely.
 
@@ -216,15 +221,11 @@ class TotalVarMinPyTorch(PreprocessorPyTorch):
             logger.error("Number of iterations must be a positive integer.")
             raise ValueError("Number of iterations must be a positive integer.")
 
-        if self.clip_values is not None:
+        if self.clip_values is not None and len(self.clip_values) != 2:
+            raise ValueError("'clip_values' should be a tuple of 2 floats or arrays containing the allowed data range.")
 
-            if len(self.clip_values) != 2:
-                raise ValueError(
-                    "'clip_values' should be a tuple of 2 floats or arrays containing the allowed data range."
-                )
-
-            if np.array(self.clip_values[0] >= self.clip_values[1]).any():
-                raise ValueError("Invalid 'clip_values': min >= max.")
+        if self.clip_values is not None and np.array(self.clip_values[0] >= self.clip_values[1]).any():
+            raise ValueError("Invalid 'clip_values': min >= max.")
 
         if not isinstance(self.verbose, bool):
             raise ValueError("The argument `verbose` has to be of type bool.")
