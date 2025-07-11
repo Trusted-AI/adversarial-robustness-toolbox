@@ -4,7 +4,6 @@ import logging
 
 import torch
 import numpy as np
-from numpy.testing import assert_array_equal
 import pytest
 
 from art.defences.preprocessor.variance_minimization_pytorch import TotalVarMinPyTorch

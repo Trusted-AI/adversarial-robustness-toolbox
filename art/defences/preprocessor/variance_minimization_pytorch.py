@@ -167,17 +167,17 @@ class TotalVarMinPyTorch(PreprocessorPyTorch):
 
     @staticmethod
     def _loss_func(
-        z_init: "torch.Tensor", x: "torch.Tensor", mask: "torch.Tensor", norm: float, lamb: float, eps=1e-6
+        z_init: "torch.Tensor", x: "torch.Tensor", mask: "torch.Tensor", norm: float, lamb: float, eps: float = 1e-6
     ) -> "torch.Tensor":
         """
-        Loss function to be minimized - try to match SciPy implementation closely.
-
-        :param z_init: Initial guess.
+        Calculate the total variance minimization loss function.
+        :param z_init: Initial guess for the optimization.
         :param x: Original image.
-        :param mask: A matrix that decides which points are kept.
-        :param norm: The norm (positive integer).
+        :param mask: Mask indicating which pixels to consider.
+        :param norm: The norm to use (1, 2, or p).
         :param lamb: The lambda parameter in the objective function.
-        :return: A single scalar loss value.
+        :param eps: Small constant to avoid division by zero.
+        :return: The total variance minimization loss.
         """
         import torch
 
