@@ -243,6 +243,9 @@ demonstrates the generation and detection of backdoors in neural networks via Ac
   <img src="../utils/data/images/poisoning.png?raw=true" width="200" title="poisoning">
 </p>
 
+[poisoning_defense_clustering_centroid_analysis.ipynb](poisoning_defense_clustering_centroid_analysis.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/poisoning_defense_clustering_centroid_analysis.ipynb)]
+demonstrates the generation and detection of a backdoor attack in a DNN trained on MNIST via Clustering and Centroid Analysis.
+
 [poisoning_defense_deep_partition_aggregation.ipynb](poisoning_defense_deep_partition_aggregation.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/poisoning_defense_deep_partition_aggregation.ipynb)]
 demonstrates a defense against poisoning attacks via partitioning the data into disjoint subsets and training an ensemble model.
 
