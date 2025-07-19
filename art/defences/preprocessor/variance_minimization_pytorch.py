@@ -15,6 +15,8 @@ from typing import TYPE_CHECKING
 
 from tqdm.auto import tqdm
 
+import torch
+
 import numpy as np
 
 from art.defences.preprocessor.preprocessor import PreprocessorPyTorch
@@ -43,7 +45,7 @@ class TotalVarMinPyTorch(PreprocessorPyTorch):
         lamb: float = 0.5,
         max_iter: int = 10,
         channels_first: bool = True,
-        clip_values: "CLIP_VALUES_TYPE" | None = None,
+        clip_values: "CLIP_VALUES_TYPE | None" = None,
         apply_fit: bool = False,
         apply_predict: bool = True,
         verbose: bool = False,
@@ -80,8 +82,8 @@ class TotalVarMinPyTorch(PreprocessorPyTorch):
         self._check_params()
 
     def forward(
-        self, x: "torch.Tensor", y: "torch.Tensor" | None = None
-    ) -> tuple["torch.Tensor", "torch.Tensor" | None]:
+        self, x: "torch.Tensor", y: "torch.Tensor | None" = None
+    ) -> tuple["torch.Tensor", "torch.Tensor | None"]:
         """
         Apply total variance minimization to sample `x`.
 
