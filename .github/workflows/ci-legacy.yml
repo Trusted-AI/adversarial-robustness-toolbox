@@ -34,9 +34,9 @@ jobs:
             python: '3.10'
             tensorflow: 2.18.1
             keras: 3.10.0
-            torch: 2.7.0
-            torchvision: 0.22.0
-            torchaudio: 2.7.0
+            torch: 2.8.0
+            torchvision: 0.2230
+            torchaudio: 2.8.0
             scikit-learn: 1.6.1
 
     name: Run ${{ matrix.module }} ${{ matrix.name }} Tests

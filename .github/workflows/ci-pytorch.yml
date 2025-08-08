@@ -28,18 +28,18 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: PyTorch 2.6.0 (Python 3.10)
-            framework: pytorch
-            python: '3.10'
-            torch: 2.6.0
-            torchvision: 0.21.0
-            torchaudio: 2.6.0
           - name: PyTorch 2.7.1 (Python 3.10)
             framework: pytorch
             python: '3.10'
             torch: 2.7.1
             torchvision: 0.22.1
             torchaudio: 2.7.1
+          - name: PyTorch 2.8.0 (Python 3.10)
+            framework: pytorch
+            python: '3.10'
+            torch: 2.8.0
+            torchvision: 0.23.0
+            torchaudio: 2.8.0
 
     name: ${{ matrix.name }}
     steps:
