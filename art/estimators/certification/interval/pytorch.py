@@ -179,7 +179,7 @@ class ConvertedModel(torch.nn.Module):
             if isinstance(op, PyTorchIntervalConv2D) and self.forward_mode == "attack":
                 x = op.conv_forward(x)
             else:
-                x = op.concrete_forward(x)
+                x = op.concrete_forward(x)  # type: ignore
         return x
 
     def set_forward_mode(self, mode: str) -> None:
