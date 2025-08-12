@@ -33,7 +33,7 @@ jobs:
             framework: legacy
             python: '3.10'
             tensorflow: 2.18.1
-            keras: 3.10.0
+            keras: 3.11.2
             torch: 2.8.0
             torchvision: 0.23.0
             torchaudio: 2.8.0

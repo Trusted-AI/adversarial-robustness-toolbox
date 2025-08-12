@@ -53,7 +53,7 @@ jobs:
           python -m pip install --upgrade pip setuptools wheel
           pip install -q -r <(sed '/^tensorflow/d;/^keras/d;/^torch/d;/^torchvision/d;/^torchaudio/d;/^transformers/d;/^safetensors/d' requirements_test.txt)
           pip install tensorflow==2.18.1
-          pip install keras==3.10.0
+          pip install keras==3.11.2
           pip install torch==${{ matrix.torch }} --index-url https://download.pytorch.org/whl/cpu
           pip install torchvision==${{ matrix.torchvision }} --index-url https://download.pytorch.org/whl/cpu
           pip install torchaudio==${{ matrix.torchaudio }} --index-url https://download.pytorch.org/whl/cpu
