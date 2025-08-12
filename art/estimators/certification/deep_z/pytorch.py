@@ -169,7 +169,7 @@ class ConvertedModel(torch.nn.Module):
             # as reshapes are not modules we infer when the reshape from convolutional to dense occurs
             if self.reshape_op_num == op_num:
                 x = x.reshape((x.shape[0], -1))
-            x = op.concrete_forward(x)
+            x = op.concrete_forward(x)  # type: ignore
         return x
 
     def set_forward_mode(self, mode: str) -> None:
