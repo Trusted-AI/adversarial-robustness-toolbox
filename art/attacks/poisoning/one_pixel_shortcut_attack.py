@@ -19,9 +19,12 @@
 This module implements One Pixel Shortcut attacks on Deep Neural Networks.
 """
 
+from typing import Optional, Tuple
+
 import numpy as np
 
 from art.attacks.attack import PoisoningAttackBlackBox
+
 
 class OnePixelShortcutAttack(PoisoningAttackBlackBox):
     """
@@ -31,6 +34,7 @@ class OnePixelShortcutAttack(PoisoningAttackBlackBox):
     images. The found pixel coordinate and color are applied to all images of the class
     (labels remain unchanged). Reference: Wu et al. (ICLR 2023).
     """
+
     attack_params: list = []  # No external parameters for this attack
     _estimator_requirements: tuple = ()
 
@@ -41,7 +45,7 @@ class OnePixelShortcutAttack(PoisoningAttackBlackBox):
         # No parameters to validate
         pass
 
-    def poison(self, x: np.ndarray, y: np.ndarray = None, **kwargs):
+    def poison(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> Tuple[np.ndarray, np.ndarray]:
         """
         Generate an OPS-poisoned dataset from clean data.
 
@@ -81,7 +85,7 @@ class OnePixelShortcutAttack(PoisoningAttackBlackBox):
                 else:
                     x_orig = np.transpose(x_array, (0, 2, 3, 1)).astype(np.float32)
                     channels_first = True
-            grayscale = (x_orig.shape[3] == 1)
+            grayscale = x_orig.shape[3] == 1
         else:
             raise ValueError(f"Unsupported input tensor shape: {x_array.shape}")
 
@@ -113,19 +117,16 @@ class OnePixelShortcutAttack(PoisoningAttackBlackBox):
                     np.array([1.0], dtype=x_orig.dtype),
                 ]
             else:
-                target_options = [
-                    np.array(bits, dtype=x_orig.dtype)
-                    for bits in np.ndindex(*(2,) * c)
-                ]
+                target_options = [np.array(bits, dtype=x_orig.dtype) for bits in np.ndindex(*(2,) * c)]
             # Evaluate each candidate color
             for target_vec in target_options:
                 # Compute per-image average difference from target for all pixels
-                diffs = np.abs(imgs_c - target_vec)              # shape (n_c, H, W, C)
-                per_image_diff = diffs.mean(axis=3)             # shape (n_c, H, W), mean diff per image at each pixel
+                diffs = np.abs(imgs_c - target_vec)  # shape (n_c, H, W, C)
+                per_image_diff = diffs.mean(axis=3)  # shape (n_c, H, W), mean diff per image at each pixel
                 # Compute score = mean - var for each pixel position (vectorized over HxW)
-                mean_diff_map = per_image_diff.mean(axis=0)     # shape (H, W)
-                var_diff_map = per_image_diff.var(axis=0)       # shape (H, W)
-                score_map = mean_diff_map - var_diff_map        # shape (H, W)
+                mean_diff_map = per_image_diff.mean(axis=0)  # shape (H, W)
+                var_diff_map = per_image_diff.var(axis=0)  # shape (H, W)
+                score_map = mean_diff_map - var_diff_map  # shape (H, W)
                 # Find the pixel with maximum score for this target
                 max_idx_flat = np.argmax(score_map)
                 max_score = score_map.ravel()[max_idx_flat]
