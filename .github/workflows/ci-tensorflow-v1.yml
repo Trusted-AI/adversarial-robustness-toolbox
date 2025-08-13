@@ -1,0 +1,15 @@
+name: CI TensorFlow v1
+
+on:
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  sanity:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+      - name: Say hello
+        run: echo "Workflow is wired up and running."
