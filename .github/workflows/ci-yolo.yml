@@ -28,7 +28,7 @@ jobs:
     container: adversarialrobustnesstoolbox/art_testing_envs:yolo
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Cache CIFAR-10 dataset
         uses: actions/cache@v4
