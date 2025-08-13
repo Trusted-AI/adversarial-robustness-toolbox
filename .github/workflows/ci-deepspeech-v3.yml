@@ -28,7 +28,7 @@ jobs:
     container: bbuesser/art_testing_env_deepspeech_v3_torch_2_1_1:latest
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Cache CIFAR-10 dataset
         uses: actions/cache@v4
