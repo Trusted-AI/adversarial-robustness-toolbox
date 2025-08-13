@@ -37,7 +37,7 @@ torchvision==0.23.0
 timm==1.0.19
 
 # YOLO dependencies
-ultralytics==8.3.176
+ultralytics==8.3.178
 
 catboost==1.2.8
 GPy==1.13.2
@@ -53,14 +53,14 @@ jax[cpu]==0.4.30
 pytest~=8.4.1
 pytest-mock~=3.14.1
 pytest-cov~=6.2.1
-pylint==3.3.7
+pylint==3.3.8
 mypy==1.17.1
 pycodestyle==2.14.0
 black==25.1.0
-ruff==0.12.7
+ruff==0.12.8
 types-six==1.17.0.20250515
-types-PyYAML==6.0.12.20250516
-types-setuptools==80.9.0.20250801
+types-PyYAML==6.0.12.20250809
+types-setuptools==80.9.0.20250809
 
 # other
 requests~=2.32.4
