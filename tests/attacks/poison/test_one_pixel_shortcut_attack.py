@@ -199,6 +199,7 @@ def test_ambiguous_layout_nchw():
         raise ARTTestException("Ambiguous NCHW layout handling failed") from e
 
 
+@pytest.mark.framework_agnostic
 def test_unsupported_input_shape_raises_error():
     try:
         x = np.zeros((5, 5), dtype=np.float32)  # 2D input (unsupported)
