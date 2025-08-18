@@ -230,6 +230,7 @@ def test_one_hot_labels_preserve_format():
         raise ARTTestException("One-hot label handling failed") from e
 
 
+@pytest.mark.framework_agnostic
 def test_class_skipping_when_no_samples():
     try:
         # Small dataset: 1 image 2x2, class 0
