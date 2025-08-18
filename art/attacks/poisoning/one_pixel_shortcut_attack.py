@@ -19,7 +19,6 @@
 This module implements One Pixel Shortcut attacks on Deep Neural Networks.
 """
 
-from typing import Optional, Tuple
 
 import numpy as np
 
