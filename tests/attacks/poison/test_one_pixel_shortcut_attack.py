@@ -179,6 +179,7 @@ def test_ambiguous_layout_nhwc():
         raise ARTTestException("Ambiguous NHWC layout handling failed") from e
 
 
+@pytest.mark.framework_agnostic
 def test_ambiguous_layout_nchw():
     try:
         # Shape (N=1, C=2, H=3, W=2) - ambiguous, no dim equals 1/3/4
