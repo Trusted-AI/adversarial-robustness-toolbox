@@ -129,7 +129,7 @@ def test_one_pixel_effect_with_pytorchclassifier():
             nb_classes=2,
         )
         classifier_poisoned.fit(
-            X_poison,
+            x_poison,
             y_poison,
             nb_epochs=10,
             batch_size=4,
