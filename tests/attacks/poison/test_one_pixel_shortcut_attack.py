@@ -28,6 +28,7 @@ from tests.utils import ARTTestException
 logger = logging.getLogger(__name__)
 
 
+@pytest.mark.framework_agnostic
 def test_one_pixel_per_image_and_label_preservation():
     try:
         x = np.zeros((4, 3, 3))
