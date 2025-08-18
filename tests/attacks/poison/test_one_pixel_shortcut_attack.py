@@ -159,6 +159,7 @@ def test_check_params_noop():
         raise ARTTestException("Parameter check method failed unexpectedly") from e
 
 
+@pytest.mark.framework_agnostic
 def test_ambiguous_layout_nhwc():
     try:
         # Shape (N=1, H=3, W=2, C=3) - ambiguous, both 3 could be channels
