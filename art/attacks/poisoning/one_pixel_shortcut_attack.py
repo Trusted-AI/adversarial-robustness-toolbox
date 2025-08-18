@@ -46,7 +46,7 @@ class OnePixelShortcutAttack(PoisoningAttackBlackBox):
         # No parameters to validate
         pass
 
-    def poison(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> Tuple[np.ndarray, np.ndarray]:
+    def poison(self, x: np.ndarray, y: np.ndarray | None = None, **kwargs) -> tuple[np.ndarray, np.ndarray]:
         """
         Generate an OPS-poisoned dataset from clean data.
 
