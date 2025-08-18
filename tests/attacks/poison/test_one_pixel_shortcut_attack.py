@@ -61,6 +61,7 @@ def test_missing_labels_raises_error():
         raise ARTTestException("Expected error not raised for missing labels") from e
 
 
+@pytest.mark.framework_agnostic
 def test_multi_channel_consistency():
     try:
         x = np.zeros((2, 2, 2, 3))
