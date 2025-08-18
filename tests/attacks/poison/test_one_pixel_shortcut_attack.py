@@ -139,7 +139,7 @@ def test_one_pixel_effect_with_pytorchclassifier():
         acc_poisoned = np.mean(preds_poisoned.argmax(axis=1) == y_poison)
 
         # Adjusted assertions for robustness
-        assert acc_poisoned >= 1.0, f"Expected 100% poisoned accuracy, got {acc_poisoned:.3f}"
+        assert acc_poisoned == 1.0, f"Expected 100% poisoned accuracy, got {acc_poisoned:.3f}"
         assert acc_clean < 0.95, f"Expected clean accuracy < 95%, got {acc_clean:.3f}"
 
     except Exception as e:
