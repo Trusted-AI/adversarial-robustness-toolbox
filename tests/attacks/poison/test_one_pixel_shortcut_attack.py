@@ -135,7 +135,7 @@ def test_one_pixel_effect_with_pytorchclassifier():
             batch_size=4,
             verbose=0,
         )
-        preds_poisoned = classifier_poisoned.predict(X_poison)
+        preds_poisoned = classifier_poisoned.predict(x_poison)
         acc_poisoned = np.mean(preds_poisoned.argmax(axis=1) == y_poison)
 
         # Adjusted assertions for robustness
