@@ -85,6 +85,7 @@ def test_multi_channel_consistency():
         raise ARTTestException("Multi-channel image consistency check failed") from e
 
 
+@pytest.mark.only_with_platform("pytorch")
 def test_one_pixel_effect_with_pytorchclassifier():
     try:
         import torch
