@@ -50,6 +50,7 @@ def test_one_pixel_per_image_and_label_preservation():
         raise ARTTestException("Pixel change or label consistency check failed") from e
 
 
+@pytest.mark.framework_agnostic
 def test_missing_labels_raises_error():
     try:
         x = np.zeros((3, 5, 5))
