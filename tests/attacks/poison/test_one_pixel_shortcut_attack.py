@@ -210,6 +210,7 @@ def test_unsupported_input_shape_raises_error():
         raise ARTTestException("ValueError not raised for unsupported input shape") from e
 
 
+@pytest.mark.framework_agnostic
 def test_one_hot_labels_preserve_format():
     try:
         # Two 2x2 grayscale images, with one-hot labels for classes 0 and 1
