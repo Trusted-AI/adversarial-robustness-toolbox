@@ -147,6 +147,7 @@ def test_one_pixel_effect_with_pytorchclassifier():
         raise ARTTestException("PyTorchClassifier integration with OPS attack failed") from e
 
 
+@pytest.mark.framework_agnostic
 def test_check_params_noop():
     try:
         attack = OnePixelShortcutAttack()
