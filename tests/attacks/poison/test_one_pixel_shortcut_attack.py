@@ -98,9 +98,9 @@ def test_one_pixel_effect_with_pytorchclassifier():
         # Create a toy dataset: 2x2 grayscale images, 2 classes
         x = np.zeros((8, 1, 2, 2), dtype=np.float32)
         for i in range(4):
-            X[i, 0, 0, 0] = i * 0.25  # class 0
+            x[i, 0, 0, 0] = i * 0.25  # class 0
         for i in range(4, 8):
-            X[i, 0, 0, 1] = (i - 4) * 0.25  # class 1
+            x[i, 0, 0, 1] = (i - 4) * 0.25  # class 1
         y = np.array([0, 0, 0, 0, 1, 1, 1, 1])
 
         model_clean = nn.Sequential(nn.Flatten(), nn.Linear(4, 2))
