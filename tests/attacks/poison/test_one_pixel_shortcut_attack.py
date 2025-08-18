@@ -20,9 +20,9 @@ import logging
 
 import numpy as np
 import pytest
+from unittest.mock import patch
 
 from art.attacks.poisoning.one_pixel_shortcut_attack import OnePixelShortcutAttack
-from unittest.mock import patch
 from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)
