@@ -118,7 +118,7 @@ def test_one_pixel_effect_with_pytorchclassifier():
         acc_clean = np.mean(preds_clean.argmax(axis=1) == y)
 
         ops_attack = OnePixelShortcutAttack()
-        X_poison, y_poison = ops_attack.poison(X.copy(), y.copy())
+        x_poison, y_poison = ops_attack.poison(X.copy(), y.copy())
 
         model_poisoned = nn.Sequential(nn.Flatten(), nn.Linear(4, 2))
         classifier_poisoned = PyTorchClassifier(
