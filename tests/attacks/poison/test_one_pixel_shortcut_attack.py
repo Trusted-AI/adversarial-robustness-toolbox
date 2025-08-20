@@ -21,7 +21,7 @@ import logging
 import numpy as np
 import pytest
 from unittest.mock import patch
-
+from __future__ import annotations
 from art.attacks.poisoning.one_pixel_shortcut_attack import OnePixelShortcutAttack
 from tests.utils import ARTTestException
 
@@ -113,12 +113,12 @@ def test_one_pixel_effect_with_pytorchclassifier():
             input_shape=(1, 2, 2),
             nb_classes=2,
         )
-        classifier_clean.fit(X, y, nb_epochs=10, batch_size=4, verbose=0)
-        preds_clean = classifier_clean.predict(X)
+        classifier_clean.fit(x, y, nb_epochs=10, batch_size=4, verbose=0)
+        preds_clean = classifier_clean.predict(x)
         acc_clean = np.mean(preds_clean.argmax(axis=1) == y)
 
         ops_attack = OnePixelShortcutAttack()
-        x_poison, y_poison = ops_attack.poison(X.copy(), y.copy())
+        x_poison, y_poison = ops_attack.poison(x.copy(), y.copy())
 
         model_poisoned = nn.Sequential(nn.Flatten(), nn.Linear(4, 2))
         classifier_poisoned = PyTorchClassifier(
