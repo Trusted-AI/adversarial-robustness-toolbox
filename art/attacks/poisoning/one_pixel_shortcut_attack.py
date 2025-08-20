@@ -34,11 +34,7 @@ class OnePixelShortcutAttack(PoisoningAttackBlackBox):
     for each class by maximizing a mean-minus-variance objective over that class's
     images. The found pixel coordinate and color are applied to all images of the class
     (labels remain unchanged). Reference: Wu et al. (ICLR 2023).
-<<<<<<< HEAD
-    
-=======
 
->>>>>>> 4461f324a (Update the one-pixel shortcut attack and its unit tests based on review)
     | Paper link: https://arxiv.org/abs/2205.12141
     """
 
