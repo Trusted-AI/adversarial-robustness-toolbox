@@ -20,9 +20,9 @@ This module implements One Pixel Shortcut attacks on Deep Neural Networks.
 """
 
 
-import numpy as np
-
 from __future__ import annotations
+
+import numpy as np
 
 from art.attacks.attack import PoisoningAttackBlackBox
 

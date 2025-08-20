@@ -16,12 +16,11 @@
 # TORT OR OTHERWISE, ARISING from, out of or in connection with the software or the use or other dealings in the
 # Software.
 
+from __future__ import annotations
 import logging
-
 import numpy as np
 import pytest
 from unittest.mock import patch
-from __future__ import annotations
 from art.attacks.poisoning.one_pixel_shortcut_attack import OnePixelShortcutAttack
 from tests.utils import ARTTestException
 
