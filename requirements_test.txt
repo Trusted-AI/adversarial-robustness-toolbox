@@ -62,7 +62,7 @@ types-PyYAML==6.0.12.20250809
 types-setuptools==80.9.0.20250809
 
 # other
-requests~=2.32.4
+requests~=2.32.5
 
 # ART
 -e .
