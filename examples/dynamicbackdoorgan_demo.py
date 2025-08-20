@@ -101,6 +101,7 @@ class DynamicBackdoorGAN(PoisoningAttackBackdoor):
 # ✅ Utility: Load Data
 
 def get_data(dataset="CIFAR10", train_subset=None, test_subset=None):
+    dataset_cls, num_classes = None, None   
     if dataset in ["CIFAR10", "CIFAR100"]:
         transform = transforms.Compose([transforms.Resize((32, 32)), transforms.ToTensor()])
     elif dataset == "MNIST":
@@ -121,7 +122,9 @@ def get_data(dataset="CIFAR10", train_subset=None, test_subset=None):
     elif dataset == "MNIST":
         dataset_cls = datasets.MNIST
         num_classes = 10
-
+    if dataset_cls is None or num_classes is None:
+        raise ValueError(f"Dataset {dataset} not handled correctly.")
+        
     train_set = dataset_cls(root="./data", train=True, download=True, transform=transform)
     test_set = dataset_cls(root="./data", train=False, download=True, transform=transform)
 
