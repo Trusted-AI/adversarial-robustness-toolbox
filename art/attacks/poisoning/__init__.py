@@ -19,3 +19,4 @@ from art.attacks.poisoning.hidden_trigger_backdoor.hidden_trigger_backdoor impor
 from art.attacks.poisoning.hidden_trigger_backdoor.hidden_trigger_backdoor_pytorch import HiddenTriggerBackdoorPyTorch
 from art.attacks.poisoning.hidden_trigger_backdoor.hidden_trigger_backdoor_keras import HiddenTriggerBackdoorKeras
 from art.attacks.poisoning.sleeper_agent_attack import SleeperAgentAttack
+from art.attacks.poisoning.one_pixel_shortcut_attack import OnePixelShortcutAttack
