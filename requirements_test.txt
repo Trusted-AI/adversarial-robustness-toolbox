@@ -58,7 +58,7 @@ pycodestyle==2.14.0
 black==25.1.0
 ruff==0.12.10
 types-six==1.17.0.20250515
-types-PyYAML==6.0.12.20250809
+types-PyYAML==6.0.12.20250822
 types-setuptools==80.9.0.20250809
 
 # other
