@@ -36,7 +36,7 @@ torchvision==0.23.0
 timm==1.0.19
 
 # YOLO dependencies
-ultralytics==8.3.195
+ultralytics==8.3.198
 
 catboost==1.2.8
 GPy==1.13.2
