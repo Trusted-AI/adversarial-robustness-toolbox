@@ -49,11 +49,15 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
 
+      - name: Free up space
+        run: |
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android
+          sudo apt-get clean
+
       - name: Install Dependencies
         run: |
           sudo apt-get update
           sudo apt-get -y -q install ffmpeg libavcodec-extra
-          python -m pip install --upgrade pip setuptools wheel
           pip install -q -r <(sed '/^tensorflow/d;/^keras/d;/^torch/d;/^torchvision/d;/^torchaudio/d' requirements_test.txt)
           pip install tensorflow==${{ matrix.tensorflow }}
           pip install keras==${{ matrix.keras }}
