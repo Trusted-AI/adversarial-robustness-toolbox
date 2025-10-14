@@ -41,7 +41,7 @@ ultralytics==8.3.213
 catboost==1.2.8
 GPy==1.13.2
 lightgbm==4.6.0
-xgboost==2.1.4
+xgboost==3.0.5
 
 kornia~=0.8.1
 tensorboardX==2.6.4
