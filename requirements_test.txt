@@ -16,7 +16,7 @@ ffmpeg-python==0.2.0
 cma==4.4.0
 pandas==2.3.2
 librosa==0.11.0
-numba~=0.59.1
+numba~=0.62.1
 opencv-python
 sortedcontainers==2.4.0
 h5py==3.14.0
