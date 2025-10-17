@@ -53,7 +53,7 @@ pytest~=8.4.2
 pytest-mock~=3.15.1
 pytest-cov~=7.0.0
 pylint==4.0.1
-mypy==1.17.1
+mypy==1.18.2
 pycodestyle==2.14.0
 black==25.9.0
 ruff==0.13.0
