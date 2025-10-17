@@ -45,7 +45,7 @@ xgboost==3.0.5
 
 kornia~=0.8.1
 tensorboardX==2.6.4
-lief==0.16.6
+lief==0.17.0
 jax[cpu]==0.4.30
 
 # tests and style checking
