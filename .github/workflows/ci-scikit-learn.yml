@@ -31,11 +31,11 @@ jobs:
           - name: scikit-learn 1.5.2 (Python 3.10)
             framework: scikitlearn
             scikit-learn: 1.5.2
-            python: '3.10'
+            python: '3.12'
           - name: scikit-learn 1.6.1 (Python 3.10)
             framework: scikitlearn
             scikit-learn: 1.6.1
-            python: '3.10'
+            python: '3.12'
 
     name: ${{ matrix.name }}
     steps:
