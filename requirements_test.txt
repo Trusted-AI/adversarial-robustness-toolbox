@@ -28,7 +28,7 @@ tensorflow==2.20.0
 keras==3.11.3
 
 # PyTorch
-torch==2.8.0
+torch==2.9.1
 torchaudio==2.8.0
 torchvision==0.23.0
 
