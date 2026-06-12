@@ -54,6 +54,29 @@ from tests.utils import TestBase, master_seed
 logger = logging.getLogger(__name__)
 
 
+class TestScikitlearnClassifierFitLabels(unittest.TestCase):
+    def setUp(self):
+        self.x_train = np.array([[0], [1], [2], [3], [4], [5]])
+
+    def test_fit_with_class_index_labels(self):
+        y_train = np.array([0, 0, 0, 1, 1, 1])
+
+        classifier = ScikitlearnDecisionTreeClassifier(model=DecisionTreeClassifier())
+        classifier.fit(x=self.x_train, y=y_train)
+
+        self.assertEqual(classifier.nb_classes, 2)
+        np.testing.assert_array_equal(classifier.model.classes_, np.array([0, 1]))
+
+    def test_fit_with_single_column_labels(self):
+        y_train = np.array([[0], [0], [0], [1], [1], [1]])
+
+        classifier = ScikitlearnDecisionTreeClassifier(model=DecisionTreeClassifier())
+        classifier.fit(x=self.x_train, y=y_train)
+
+        self.assertEqual(classifier.nb_classes, 2)
+        np.testing.assert_array_equal(classifier.model.classes_, np.array([0, 1]))
+
+
 class TestScikitlearnDecisionTreeClassifier(TestBase):
     @classmethod
     def setUpClass(cls):

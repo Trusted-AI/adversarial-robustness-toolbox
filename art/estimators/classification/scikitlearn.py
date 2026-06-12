@@ -165,13 +165,17 @@ class ScikitlearnClassifier(ClassifierMixin, ScikitlearnEstimator):
         Fit the classifier on the training set `(x, y)`.
 
         :param x: Training data.
-        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes).
+        :param y: Target values as class labels of shape (nb_samples,), single-column labels of shape
+                  (nb_samples, 1), or one-hot-encoded labels of shape (nb_samples, nb_classes).
         :param kwargs: Dictionary of framework-specific arguments. These should be parameters supported by the
                `fit` function in `sklearn` classifier and will be passed to this function as such.
         """
         # Apply preprocessing
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=True)
-        y_preprocessed = np.argmax(y_preprocessed, axis=1)
+        if y_preprocessed.ndim > 1 and y_preprocessed.shape[1] > 1:
+            y_preprocessed = np.argmax(y_preprocessed, axis=1)
+        else:
+            y_preprocessed = np.ravel(y_preprocessed)
 
         self.model.fit(x_preprocessed, y_preprocessed, **kwargs)
         self._input_shape = self._get_input_shape(self.model)
