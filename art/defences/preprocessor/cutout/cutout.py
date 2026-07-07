@@ -119,7 +119,7 @@ class Cutout(Preprocessor):
             bbx2 = np.clip(center_x + self.length // 2, 0, width)
 
             # zero out the bounding box
-            x_nhwc[idx, bbx1:bbx2, bby1:bby2, :] = 0
+            x_nhwc[idx, bby1:bby2, bbx1:bbx2, :] = 0
 
         # NCHW/NCFHW/NFHWC <-- NHWC
         if x_ndim == 4:

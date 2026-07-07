@@ -144,3 +144,35 @@ def test_check_params(art_warning):
 
     except ARTTestException as e:
         art_warning(e)
+
+
+@pytest.mark.framework_agnostic
+@pytest.mark.parametrize("channels_first", [False])
+def test_cutout_region_location_non_square(art_warning, channels_first, monkeypatch):
+    """
+    Regression test: on a non-square image the cutout must zero a `length x length`
+    box centered at (center_y, center_x) with the height-bounds applied to the height
+    axis and the width-bounds applied to the width axis (i.e. axes must not be swapped).
+    """
+    try:
+        # Non-square NHWC image: height=8 rows, width=4 cols, single channel, batch 1.
+        height, width, length = 8, 4, 4
+        x = np.ones((1, height, width, 1)).astype(ART_NUMPY_DTYPE)
+
+        # Pin the random center: Cutout draws center_y first, then center_x.
+        centers = iter([2, 3])  # center_y=2 (row), center_x=3 (col)
+        monkeypatch.setattr(np.random, "randint", lambda *a, **k: next(centers))
+
+        cutout = Cutout(length=length, channels_first=channels_first)
+        result = cutout(x.copy())[0]
+
+        # Expected zeroed region: rows [center_y - L//2 : center_y + L//2] clipped to height,
+        #                         cols [center_x - L//2 : center_x + L//2] clipped to width.
+        expected = np.ones((1, height, width, 1)).astype(ART_NUMPY_DTYPE)
+        r0, r1 = max(0, 2 - length // 2), min(height, 2 + length // 2)
+        c0, c1 = max(0, 3 - length // 2), min(width, 3 + length // 2)
+        expected[0, r0:r1, c0:c1, :] = 0
+
+        assert_array_equal(result, expected)
+    except ARTTestException as e:
+        art_warning(e)
