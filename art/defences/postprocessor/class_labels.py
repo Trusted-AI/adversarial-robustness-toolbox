@@ -53,7 +53,7 @@ class ClassLabels(Postprocessor):
         class_labels = np.zeros_like(preds)
         if preds.shape[1] > 1:
             index_labels = np.argmax(preds, axis=1)
-            class_labels[:, index_labels] = 1
+            class_labels[np.arange(preds.shape[0]), index_labels] = 1
         else:
             class_labels[preds > 0.5] = 1
 
