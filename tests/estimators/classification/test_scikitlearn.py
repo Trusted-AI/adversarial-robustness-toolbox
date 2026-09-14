@@ -380,6 +380,17 @@ class TestScikitlearnLogisticRegression(TestBase):
         grad_expected = np.asarray([[-0.21654, -0.08701016, -0.51516586, -0.26970267]])
         np.testing.assert_array_almost_equal(grad_predicted, grad_expected, decimal=4)
 
+    def test_loss_gradient_index_labels(self):
+        y_one_hot = self.y_test_iris[0:3]
+        y_index = np.argmax(y_one_hot, axis=1)
+
+        grad_one_hot = self.classifier.loss_gradient(self.x_test_iris[0:3], y_one_hot)
+        grad_index = self.classifier.loss_gradient(self.x_test_iris[0:3], y_index)
+        grad_index_column = self.classifier.loss_gradient(self.x_test_iris[0:3], np.expand_dims(y_index, axis=1))
+
+        np.testing.assert_array_almost_equal(grad_index, grad_one_hot, decimal=4)
+        np.testing.assert_array_almost_equal(grad_index_column, grad_one_hot, decimal=4)
+
     def test_save(self):
         self.classifier.save(filename="test.file", path=None)
         self.classifier.save(filename="test.file", path="./")
@@ -425,6 +436,17 @@ class TestScikitlearnBinaryLogisticRegression(TestBase):
         grad_expected = np.asarray([[-0.37703343, 0.31890249, -1.18813638, -0.46208951]])
         np.testing.assert_array_almost_equal(grad_predicted, grad_expected, decimal=4)
 
+    def test_loss_gradient_index_labels(self):
+        binary_class_index = np.argmax(self.y_test_iris, axis=1) < 2
+        x_test_binary = self.x_test_iris[binary_class_index,]
+        y_test_binary = self.y_test_iris[binary_class_index,][:, [0, 1]]
+        y_index = np.argmax(y_test_binary[0:3], axis=1)
+
+        grad_one_hot = self.classifier.loss_gradient(x_test_binary[0:3], y_test_binary[0:3])
+        grad_index = self.classifier.loss_gradient(x_test_binary[0:3], y_index)
+
+        np.testing.assert_array_almost_equal(grad_index, grad_one_hot, decimal=4)
+
     def test_save(self):
         self.classifier.save(filename="test.file", path=None)
         self.classifier.save(filename="test.file", path="./")
@@ -457,6 +479,17 @@ class TestScikitlearnSVCSVC(TestBase):
         grad_predicted = self.classifier.loss_gradient(self.x_test_iris[0:1], self.y_test_iris[0:1])
         grad_expected = np.asarray([[-2.9100819, 0.3048792, -7.935282, -3.840562]])
         np.testing.assert_array_almost_equal(grad_predicted, grad_expected, decimal=4)
+
+    def test_loss_gradient_index_labels(self):
+        y_one_hot = self.y_test_iris[0:3]
+        y_index = np.argmax(y_one_hot, axis=1)
+
+        grad_one_hot = self.classifier.loss_gradient(self.x_test_iris[0:3], y_one_hot)
+        grad_index = self.classifier.loss_gradient(self.x_test_iris[0:3], y_index)
+        grad_index_column = self.classifier.loss_gradient(self.x_test_iris[0:3], np.expand_dims(y_index, axis=1))
+
+        np.testing.assert_array_almost_equal(grad_index, grad_one_hot, decimal=4)
+        np.testing.assert_array_almost_equal(grad_index_column, grad_one_hot, decimal=4)
 
     def test_class_gradient_none_1(self):
         grad_predicted = self.classifier.class_gradient(self.x_test_iris[0:1], label=None)
@@ -551,6 +584,17 @@ class TestScikitlearnSVCLinearSVC(TestBase):
         grad_predicted = self.classifier.loss_gradient(self.x_test_iris[0:1], self.y_test_iris[0:1])
         grad_expected = np.asarray([[0.38021886, 0.57562107, -3.599666, -2.3177252]])
         np.testing.assert_array_almost_equal(grad_predicted, grad_expected, decimal=4)
+
+    def test_loss_gradient_index_labels(self):
+        y_one_hot = self.y_test_iris[0:3]
+        y_index = np.argmax(y_one_hot, axis=1)
+
+        grad_one_hot = self.classifier.loss_gradient(self.x_test_iris[0:3], y_one_hot)
+        grad_index = self.classifier.loss_gradient(self.x_test_iris[0:3], y_index)
+        grad_index_column = self.classifier.loss_gradient(self.x_test_iris[0:3], np.expand_dims(y_index, axis=1))
+
+        np.testing.assert_array_almost_equal(grad_index, grad_one_hot, decimal=4)
+        np.testing.assert_array_almost_equal(grad_index_column, grad_one_hot, decimal=4)
 
     def test_class_gradient_none(self):
         grad_predicted = self.classifier.class_gradient(self.x_test_iris[0:1], label=None)

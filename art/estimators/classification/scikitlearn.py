@@ -37,7 +37,7 @@ from art.estimators.classification.classifier import (
 )
 from art.estimators.regression.scikitlearn import ScikitlearnDecisionTreeRegressor
 from art.estimators.scikitlearn import ScikitlearnEstimator
-from art.utils import to_categorical
+from art.utils import check_and_transform_label_format, to_categorical
 from art import config
 
 if TYPE_CHECKING:
@@ -893,6 +893,8 @@ class ScikitlearnLogisticRegression(ClassGradientsMixin, LossGradientsMixin, Sci
             fitted model."""
             )
 
+        y = check_and_transform_label_format(y, nb_classes=self.nb_classes)
+
         # Apply preprocessing
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=False)
 
@@ -1271,6 +1273,8 @@ class ScikitlearnSVC(ClassGradientsMixin, LossGradientsMixin, ScikitlearnClassif
         """
 
         import sklearn
+
+        y = check_and_transform_label_format(y, nb_classes=self.nb_classes)
 
         # Apply preprocessing
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=False)
