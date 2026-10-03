@@ -29,7 +29,7 @@ jobs:
       matrix:
         module: [attacks_1, attacks_2, estimators, defences, metrics, art]
         include:
-          - name: legacy (TensorFlow 2.20.0 Keras 3.11.2 PyTorch 2.7.0 scikit-learn 1.6.1 Python 3.10)
+          - name: legacy (TensorFlow 2.20.0 Keras 3.11.2 PyTorch 2.8.0 scikit-learn 1.6.1 Python 3.10)
             framework: legacy
             python: '3.10'
             tensorflow: 2.20.0
@@ -56,25 +56,35 @@ jobs:
 
       - name: Install Dependencies
         run: |
+          python -m venv .venv
+          source .venv/bin/activate
+
+          python -m pip install --upgrade pip
+
           sudo apt-get update
           sudo apt-get -y -q install ffmpeg libavcodec-extra
+
           pip install -q -r <(sed '/^tensorflow/d;/^keras/d;/^torch/d;/^torchvision/d;/^torchaudio/d' requirements_test.txt)
+
           pip install tensorflow==${{ matrix.tensorflow }}
           pip install keras==${{ matrix.keras }}
           pip install scikit-learn==${{ matrix.scikit-learn }}
-          pip install torch==${{ matrix.torch }} --index-url https://download.pytorch.org/whl/cpu
-          pip install torchvision==${{ matrix.torchvision }} --index-url https://download.pytorch.org/whl/cpu
-          pip install torchaudio==${{ matrix.torchaudio }} --index-url https://download.pytorch.org/whl/cpu
+
+          pip install torch==${{ matrix.torch }} \
+            torchvision==${{ matrix.torchvision }} \
+            torchaudio==${{ matrix.torchaudio }} \
+            --index-url https://download.pytorch.org/whl/cpu
+
           pip list
 
       - name: Cache CIFAR-10 dataset
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.art/data/cifar-10-batches-py
           key: cifar10-dataset-cache-v1
 
       - name: Cache MNIST dataset
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.art/data/mnist.npz
           key: mnist-dataset-cache-v1
@@ -106,7 +116,10 @@ jobs:
           fi
 
       - name: Run ${{ matrix.name }} ${{ matrix.module }} Tests
-        run: ./run_tests.sh ${{ matrix.framework }} ${{ matrix.module }}
+          run: |
+            source .venv/bin/activate
+            ./run_tests.sh ${{ matrix.framework }} ${{ matrix.module }}
+``
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
