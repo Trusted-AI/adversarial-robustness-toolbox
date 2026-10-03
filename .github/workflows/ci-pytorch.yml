@@ -60,10 +60,21 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get -y -q install ffmpeg libavcodec-extra
+
+          python -m venv .venv
+          source .venv/bin/activate
+
+          python -m pip install --upgrade pip
+
           pip install -q -r <(sed '/^torch/d;/^torchvision/d;/^torchaudio/d' requirements_test.txt)
-          pip install torch==${{ matrix.torch }} --index-url https://download.pytorch.org/whl/cpu
-          pip install torchvision==${{ matrix.torchvision }} --index-url https://download.pytorch.org/whl/cpu
-          pip install torchaudio==${{ matrix.torchaudio }} --index-url https://download.pytorch.org/whl/cpu
+
+          pip install \
+            torch==${{ matrix.torch }} \
+            torchvision==${{ matrix.torchvision }} \
+            torchaudio==${{ matrix.torchaudio }} \
+            --index-url https://download.pytorch.org/whl/cpu
+
+          python -c "import sys; print(sys.executable)"
           pip list
 
       - name: Cache CIFAR-10 dataset
@@ -105,7 +116,9 @@ jobs:
           fi
 
       - name: Run Tests
-        run: ./run_tests.sh ${{ matrix.framework }}
+        run: |
+          source .venv/bin/activate
+          ./run_tests.sh ${{ matrix.framework }}
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
