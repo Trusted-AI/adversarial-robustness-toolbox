@@ -66,13 +66,17 @@ jobs:
 
           python -m pip install --upgrade pip
 
-          pip install -q -r <(sed '/^torch/d;/^torchvision/d;/^torchaudio/d' requirements_test.txt)
-
+          # Install pinned PyTorch versions first
           pip install \
             torch==${{ matrix.torch }} \
             torchvision==${{ matrix.torchvision }} \
             torchaudio==${{ matrix.torchaudio }} \
             --index-url https://download.pytorch.org/whl/cpu
+
+          # Install remaining requirements but do not upgrade
+          # already-installed packages such as torch
+          pip install --upgrade-strategy only-if-needed \
+            -r <(sed '/^torch==/d;/^torchvision==/d;/^torchaudio==/d' requirements_test.txt)
 
           python -c "import sys; print(sys.executable)"
           pip list
