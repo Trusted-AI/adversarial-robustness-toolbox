@@ -24,6 +24,8 @@ on:
 jobs:
   test:
     runs-on: ubuntu-22.04
+    env:
+      TF_ENABLE_ONEDNN_OPTS: 0
     strategy:
       fail-fast: false
       matrix:
@@ -54,19 +56,24 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get -y -q install ffmpeg libavcodec-extra
-          pip install -q -r <(sed '/^tensorflow/d;/^keras/d' requirements_test.txt)
+
           pip install tensorflow==${{ matrix.tensorflow }}
           pip install keras==${{ matrix.keras }}
+
+          pip install --upgrade-strategy only-if-needed \
+            -r <(sed '/^tensorflow==/d;/^keras==/d' requirements_test.txt)
+
+          pip check
           pip list
 
       - name: Cache CIFAR-10 dataset
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.art/data/cifar-10-batches-py
           key: cifar10-dataset-cache-v1
 
       - name: Cache MNIST dataset
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.art/data/mnist.npz
           key: mnist-dataset-cache-v1

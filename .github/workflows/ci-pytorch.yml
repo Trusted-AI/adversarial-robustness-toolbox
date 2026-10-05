@@ -60,20 +60,35 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get -y -q install ffmpeg libavcodec-extra
-          pip install -q -r <(sed '/^torch/d;/^torchvision/d;/^torchaudio/d' requirements_test.txt)
-          pip install torch==${{ matrix.torch }} --index-url https://download.pytorch.org/whl/cpu
-          pip install torchvision==${{ matrix.torchvision }} --index-url https://download.pytorch.org/whl/cpu
-          pip install torchaudio==${{ matrix.torchaudio }} --index-url https://download.pytorch.org/whl/cpu
+
+          python -m venv .venv
+          source .venv/bin/activate
+
+          python -m pip install --upgrade pip
+
+          # Install pinned PyTorch versions first
+          pip install \
+            torch==${{ matrix.torch }} \
+            torchvision==${{ matrix.torchvision }} \
+            torchaudio==${{ matrix.torchaudio }} \
+            --index-url https://download.pytorch.org/whl/cpu
+
+          # Install remaining requirements but do not upgrade
+          # already-installed packages such as torch
+          pip install --upgrade-strategy only-if-needed \
+            -r <(sed '/^torch==/d;/^torchvision==/d;/^torchaudio==/d' requirements_test.txt)
+
+          python -c "import sys; print(sys.executable)"
           pip list
 
       - name: Cache CIFAR-10 dataset
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.art/data/cifar-10-batches-py
           key: cifar10-dataset-cache-v1
 
       - name: Cache MNIST dataset
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.art/data/mnist.npz
           key: mnist-dataset-cache-v1
@@ -105,7 +120,9 @@ jobs:
           fi
 
       - name: Run Tests
-        run: ./run_tests.sh ${{ matrix.framework }}
+        run: |
+          source .venv/bin/activate
+          ./run_tests.sh ${{ matrix.framework }}
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
