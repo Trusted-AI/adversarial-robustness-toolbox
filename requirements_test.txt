@@ -34,7 +34,7 @@ torchvision==0.23.0
 
 # PyTorch image transformers
 timm==1.0.19
-huggingface_hub==2.1.1
+huggingface_hub==0.34.6
 
 # YOLO dependencies
 ultralytics==8.3.213
