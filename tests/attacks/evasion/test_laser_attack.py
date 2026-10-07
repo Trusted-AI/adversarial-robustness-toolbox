@@ -18,6 +18,7 @@
 """
 Test LaserAttack.
 """
+
 from typing import Callable, Tuple, Any
 
 import numpy as np

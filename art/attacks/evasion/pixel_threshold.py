@@ -22,6 +22,7 @@ The Pixel Attack is a generalisation of One Pixel Attack.
 | One Pixel Attack Paper link: https://arxiv.org/ans/1710.08864
 | Pixel and Threshold Attack Paper link: https://arxiv.org/abs/1906.06026
 """
+
 # pylint: disable=wrong-import-position
 from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
@@ -171,11 +172,9 @@ class PixelThreshold(EvasionAttack):
         y = y.flatten()  # type: ignore
 
         if self.th is None:
-            logger.info(
-                "Performing minimal perturbation Attack. \
+            logger.info("Performing minimal perturbation Attack. \
                 This could take long time to process. \
-                For sanity check, pass th=10 to the Attack instance."
-            )
+                For sanity check, pass th=10 to the Attack instance.")
 
         # NOTE: Pixel and Threshold Attacks are well-defined for unprocessed images where the pixel values are,
         #       8-Bit color i.e., the pixel values are np.uint8 in range [0, 255].

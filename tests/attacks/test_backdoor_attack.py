@@ -107,7 +107,7 @@ class TestBackdoorAttack(TestBase):
         """
 
         krc = get_image_classifier_kr()
-        (is_poison_train, x_poisoned_raw, y_poisoned_raw) = self.poison_dataset(
+        is_poison_train, x_poisoned_raw, y_poisoned_raw = self.poison_dataset(
             self.x_train_mnist, self.y_train_mnist, self.poison_func_1
         )
         # Shuffle training data
@@ -125,7 +125,7 @@ class TestBackdoorAttack(TestBase):
         """
 
         krc = get_image_classifier_kr()
-        (is_poison_train, x_poisoned_raw, y_poisoned_raw) = self.poison_dataset(
+        is_poison_train, x_poisoned_raw, y_poisoned_raw = self.poison_dataset(
             self.x_train_mnist, self.y_train_mnist, self.poison_func_2
         )
 
@@ -143,7 +143,7 @@ class TestBackdoorAttack(TestBase):
         Test the backdoor attack with an image-based perturbation can be trained on classifier
         """
         krc = get_image_classifier_kr()
-        (is_poison_train, x_poisoned_raw, y_poisoned_raw) = self.poison_dataset(
+        is_poison_train, x_poisoned_raw, y_poisoned_raw = self.poison_dataset(
             self.x_train_mnist, self.y_train_mnist, self.poison_func_3
         )
 
@@ -162,7 +162,7 @@ class TestBackdoorAttack(TestBase):
         """
 
         krc = get_image_classifier_kr()
-        (is_poison_train, x_poisoned_raw, y_poisoned_raw) = self.poison_dataset(
+        is_poison_train, x_poisoned_raw, y_poisoned_raw = self.poison_dataset(
             self.x_train_mnist, self.y_train_mnist, [self.poison_func_4, self.poison_func_1]
         )
 

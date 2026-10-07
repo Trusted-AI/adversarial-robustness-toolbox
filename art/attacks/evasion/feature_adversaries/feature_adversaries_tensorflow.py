@@ -20,6 +20,7 @@ This module implements the Feature Adversaries attack in TensorFlow v2.
 
 | Paper link: https://arxiv.org/abs/1511.05122
 """
+
 from __future__ import annotations
 
 import logging

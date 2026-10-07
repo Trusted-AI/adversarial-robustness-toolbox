@@ -18,6 +18,7 @@
 """
 This module implements EoT of changes in contrast with uniformly sampled factor.
 """
+
 from __future__ import annotations
 
 import logging

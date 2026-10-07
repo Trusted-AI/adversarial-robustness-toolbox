@@ -18,6 +18,7 @@
 """
 This module implements mixin abstract base classes defining properties for all classifiers in ART.
 """
+
 from __future__ import annotations
 
 from abc import ABC, ABCMeta, abstractmethod

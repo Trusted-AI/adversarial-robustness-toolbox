@@ -18,6 +18,7 @@
 """
 This module implements the Gaussian augmentation defence in `GaussianAugmentation`.
 """
+
 from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging

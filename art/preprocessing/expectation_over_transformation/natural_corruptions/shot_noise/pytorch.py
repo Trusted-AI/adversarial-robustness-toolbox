@@ -18,6 +18,7 @@
 """
 This module implements EoT of adding shot noise (Poisson) with uniformly sampled rate parameter.
 """
+
 from __future__ import annotations
 
 import logging

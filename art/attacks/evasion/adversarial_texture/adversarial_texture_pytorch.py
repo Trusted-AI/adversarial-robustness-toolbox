@@ -20,6 +20,7 @@ Implementation of the adversarial texture attack on object trackers in PyTorch.
 
 | Paper link: https://arxiv.org/abs/1904.11042
 """
+
 from __future__ import annotations
 
 import logging

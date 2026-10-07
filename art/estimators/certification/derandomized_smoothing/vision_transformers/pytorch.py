@@ -45,6 +45,7 @@
 """
 Implements functionality for running Vision Transformers in ART
 """
+
 from __future__ import annotations
 
 import torch

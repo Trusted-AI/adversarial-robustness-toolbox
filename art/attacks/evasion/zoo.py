@@ -22,6 +22,7 @@ gradients.
 
 | Paper link: https://arxiv.org/abs/1708.03999
 """
+
 from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging

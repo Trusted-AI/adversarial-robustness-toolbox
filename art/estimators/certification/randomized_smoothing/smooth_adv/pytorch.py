@@ -20,6 +20,7 @@ This module implements SmoothAdv applied to classifier predictions.
 
 | Paper link: https://arxiv.org/abs/1906.04584
 """
+
 from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging

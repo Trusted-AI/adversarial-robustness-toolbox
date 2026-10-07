@@ -18,6 +18,7 @@
 """
 This module implements poisoning attacks on Support Vector Machines.
 """
+
 from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
@@ -28,7 +29,6 @@ from tqdm.auto import tqdm
 from art.attacks.attack import PoisoningAttackWhiteBox
 from art.estimators.classification.scikitlearn import ScikitlearnSVC
 from art.utils import compute_success
-
 
 logger = logging.getLogger(__name__)
 

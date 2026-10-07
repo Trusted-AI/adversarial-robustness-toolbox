@@ -20,6 +20,7 @@ This module implements the task specific estimator for DEtection TRansformer (DE
 
 | Paper link: https://arxiv.org/abs/2005.12872
 """
+
 from __future__ import annotations
 
 import logging

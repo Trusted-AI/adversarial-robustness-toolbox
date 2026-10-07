@@ -21,6 +21,7 @@ can be printed into the physical world with a common printer. The patch can be u
 
 | Paper link: https://arxiv.org/abs/1712.09665
 """
+
 from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging

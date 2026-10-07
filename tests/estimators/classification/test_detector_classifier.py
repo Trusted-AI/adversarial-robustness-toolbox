@@ -32,7 +32,6 @@ from art.estimators.classification.detector_classifier import DetectorClassifier
 
 from tests.utils import TestBase, get_image_classifier_pt
 
-
 logger = logging.getLogger(__name__)
 
 

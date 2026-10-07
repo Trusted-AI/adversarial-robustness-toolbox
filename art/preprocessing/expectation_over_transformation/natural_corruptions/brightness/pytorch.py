@@ -18,6 +18,7 @@
 """
 This module implements EoT of changes in brightness by addition of uniformly sampled delta.
 """
+
 from __future__ import annotations
 
 import logging
