@@ -2,7 +2,7 @@
 
 # base
 
-numpy==1.26.4
+numpy==2.5.3
 scipy==1.16.2
 matplotlib==3.10.3
 scikit-learn==1.7.2
