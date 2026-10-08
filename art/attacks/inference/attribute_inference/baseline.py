@@ -352,7 +352,7 @@ class AttributeInferenceBaseline(AttributeInferenceAttack):
                     predictions = np.vstack((predictions, predicted.detach().numpy()))
                 if not self._is_continuous:
                     idx = np.argmax(predictions, axis=-1)
-                    predictions = np.zeros(predictions.shape)
+                    predictions = np.zeros_like(predictions)
                     predictions[np.arange(predictions.shape[0]), idx] = 1
         elif self.attack_model is not None:
             predictions = self.attack_model.predict(x_test)

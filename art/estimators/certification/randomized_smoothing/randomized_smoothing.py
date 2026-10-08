@@ -214,7 +214,7 @@ class RandomizedSmoothingMixin(ABC):
 
         # convert to binary predictions
         idx = np.argmax(predictions, axis=-1)
-        pred = np.zeros(predictions.shape)
+        pred = np.zeros_like(predictions)
         pred[np.arange(pred.shape[0]), idx] = 1
 
         # get class counts

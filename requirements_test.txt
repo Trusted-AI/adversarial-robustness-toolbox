@@ -2,8 +2,8 @@
 
 # base
 
-numpy==1.26.4
-scipy==1.12.0
+numpy==2.3.3
+scipy==1.16.2
 matplotlib==3.10.3
 scikit-learn==1.7.2
 six==1.17.0
@@ -40,14 +40,14 @@ huggingface_hub==0.34.6
 ultralytics==8.3.213
 
 catboost==1.2.8
-GPy==1.13.2
+GPy==1.14.2
 lightgbm==4.6.0
 xgboost==3.0.5
 
 kornia~=0.8.1
 tensorboardX==2.6.4
 lief==0.16.6
-jax[cpu]==0.4.30
+jax[cpu]==0.7.2
 
 # tests and style checking
 pytest~=8.4.2
