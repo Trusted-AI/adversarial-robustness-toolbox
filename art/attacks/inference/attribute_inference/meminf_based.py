@@ -138,12 +138,12 @@ class AttributeInferenceMembership(AttributeInferenceAttack):
             value_indexes = np.argmax(probabilities, axis=1).astype(x.dtype)
             pred_values = np.zeros_like(probabilities)
             for index, value in enumerate(values):
-                curr_value = np.zeros(len(values))
-                curr_value[index] = value[1]
+                curr_val = np.zeros(len(values))
+                curr_val[index] = value[1]
                 for not_index, not_value in enumerate(values):
                     if not_index != index:
-                        curr_value[not_index] = not_value[0]
-                pred_values[value_indexes == index] = curr_value
+                        curr_val[not_index] = not_value[0]
+                pred_values[value_indexes == index] = curr_val
         return pred_values
 
     def _check_params(self) -> None:

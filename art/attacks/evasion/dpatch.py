@@ -87,6 +87,7 @@ class DPatch(EvasionAttack):
         self.verbose = verbose
         self._check_params()
 
+        self._patch: np.ndarray
         if self.estimator.clip_values is None:
             self._patch = np.zeros(shape=patch_shape, dtype=config.ART_NUMPY_DTYPE)
         else:
