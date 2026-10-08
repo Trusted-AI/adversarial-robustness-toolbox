@@ -40,7 +40,7 @@ huggingface_hub==0.34.6
 ultralytics==8.3.213
 
 catboost==1.2.8
-GPy==1.13.2
+GPy==1.14.2
 lightgbm==4.6.0
 xgboost==3.0.5
 
