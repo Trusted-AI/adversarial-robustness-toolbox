@@ -23,6 +23,7 @@ al. for adversarial training.
 
 | Paper link: https://arxiv.org/abs/1706.06083
 """
+
 from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
@@ -195,9 +196,9 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
             self._batch_id = batch_id
 
             if mask is not None:
-                (batch, batch_labels, mask_batch) = batch_all[0], batch_all[1], batch_all[2]
+                batch, batch_labels, mask_batch = batch_all[0], batch_all[1], batch_all[2]
             else:
-                (batch, batch_labels, mask_batch) = batch_all[0], batch_all[1], None
+                batch, batch_labels, mask_batch = batch_all[0], batch_all[1], None
 
             batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
 

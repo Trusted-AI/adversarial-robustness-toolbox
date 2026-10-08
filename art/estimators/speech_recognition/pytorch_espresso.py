@@ -21,6 +21,7 @@ fairseq.
 
 | Paper link: https://arxiv.org/abs/1909.08723
 """
+
 from __future__ import annotations
 
 import ast

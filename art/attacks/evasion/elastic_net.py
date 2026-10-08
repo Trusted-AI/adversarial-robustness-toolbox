@@ -20,6 +20,7 @@ This module implements the elastic net attack `ElasticNet`. This is a white-box 
 
 | Paper link: https://arxiv.org/abs/1709.04114
 """
+
 from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
@@ -360,7 +361,7 @@ class ElasticNet(EvasionAttack):
             x_adv = x_adv_next
 
             # Adjust the best result
-            (logits, l1dist, l2dist, endist) = self._loss(x=x_batch, x_adv=x_adv)
+            logits, l1dist, l2dist, endist = self._loss(x=x_batch, x_adv=x_adv)
 
             if self.decision_rule == "EN":
                 zip_set = zip(endist, logits)

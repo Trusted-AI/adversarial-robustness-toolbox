@@ -26,7 +26,6 @@ from sklearn.linear_model import LogisticRegression
 from art.attacks.inference.reconstruction import DatabaseReconstruction
 from art.estimators.classification.scikitlearn import ScikitlearnGaussianNB, ScikitlearnLogisticRegression
 
-
 logger = logging.getLogger(__name__)
 
 

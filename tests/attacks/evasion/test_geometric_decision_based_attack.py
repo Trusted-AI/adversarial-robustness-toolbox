@@ -88,7 +88,7 @@ def test_generate_2d_dct_basis(art_warning, image_dl_estimator):
 @pytest.mark.framework_agnostic
 def test_is_adversarial(art_warning, image_dl_estimator, fix_get_mnist_subset):
     try:
-        (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
+        x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist = fix_get_mnist_subset
 
         classifier, _ = image_dl_estimator(from_logits=True)
         attack = GeoDA(estimator=classifier, sub_dim=5, max_iter=4000, verbose=False)
@@ -102,7 +102,7 @@ def test_is_adversarial(art_warning, image_dl_estimator, fix_get_mnist_subset):
 @pytest.mark.framework_agnostic
 def test_find_random_adversarial(art_warning, image_dl_estimator, fix_get_mnist_subset):
     try:
-        (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
+        x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist = fix_get_mnist_subset
 
         classifier, _ = image_dl_estimator(from_logits=True)
         attack = GeoDA(estimator=classifier, sub_dim=5, max_iter=4000, verbose=False)
@@ -133,7 +133,7 @@ def test_opt_query_iteration(art_warning, image_dl_estimator):
 @pytest.mark.framework_agnostic
 def test_sub_noise(art_warning, image_dl_estimator, fix_get_mnist_subset):
     try:
-        (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
+        x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist = fix_get_mnist_subset
 
         classifier, _ = image_dl_estimator(from_logits=True)
         attack = GeoDA(estimator=classifier, sub_dim=5, max_iter=4000, verbose=False)
@@ -147,7 +147,7 @@ def test_sub_noise(art_warning, image_dl_estimator, fix_get_mnist_subset):
 @pytest.mark.framework_agnostic
 def test_generate(art_warning, fix_get_mnist_subset, image_dl_estimator):
     try:
-        (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
+        x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist = fix_get_mnist_subset
 
         classifier, _ = image_dl_estimator(from_logits=True)
         attack = GeoDA(estimator=classifier, sub_dim=5, max_iter=400, verbose=False)

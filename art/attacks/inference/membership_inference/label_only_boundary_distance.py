@@ -21,6 +21,7 @@ This module implements the Label-Only Inference Attack based on Decision Boundar
 | Paper link: https://arxiv.org/abs/2007.14321 (Choquette-Choo et al.)
 | Paper link: https://arxiv.org/abs/2007.15528 (Li and Zhang)
 """
+
 from __future__ import annotations
 
 import logging

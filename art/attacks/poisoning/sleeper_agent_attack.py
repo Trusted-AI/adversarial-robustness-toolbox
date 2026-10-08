@@ -20,6 +20,7 @@ This module implements Sleeper Agent attack on Neural Networks.
 
 | Paper link: https://arxiv.org/abs/2106.08970
 """
+
 from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
@@ -32,7 +33,6 @@ from tqdm.auto import trange
 from art.attacks.poisoning.gradient_matching_attack import GradientMatchingAttack
 from art.estimators.classification.pytorch import PyTorchClassifier
 from art.preprocessing.standardisation_mean_std.pytorch import StandardisationMeanStdPyTorch
-
 
 if TYPE_CHECKING:
 

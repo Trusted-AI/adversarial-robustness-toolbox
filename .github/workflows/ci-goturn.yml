@@ -28,16 +28,16 @@ jobs:
     container: bbuesser/art_testing_env_goturn:latest
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
 
       - name: Cache CIFAR-10 dataset
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.art/data/cifar-10-batches-py
           key: cifar10-dataset-cache-v1
 
       - name: Cache MNIST dataset
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.art/data/mnist.npz
           key: mnist-dataset-cache-v1
@@ -72,7 +72,7 @@ jobs:
         uses: ./.github/actions/goturn
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v7
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         with:

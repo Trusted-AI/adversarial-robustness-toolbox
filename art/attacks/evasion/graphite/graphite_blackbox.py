@@ -44,6 +44,7 @@ attack that only requires class predictions.
 | Paper link: https://arxiv.org/abs/2002.07088
 | Original GitHub link: https://github.com/ryan-feng/GRAPHITE
 """
+
 from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging

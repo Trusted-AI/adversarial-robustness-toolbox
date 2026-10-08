@@ -21,6 +21,7 @@ predictions. It is an advanced version of the Boundary attack.
 
 | Paper link: https://arxiv.org/abs/1904.02144
 """
+
 from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
@@ -485,13 +486,13 @@ class HopSkipJump(EvasionAttack):
         """
         # First set upper and lower bounds as well as the threshold for the binary search
         if norm == 2:
-            (upper_bound, lower_bound) = (np.array(1.0), np.array(0.0))
+            upper_bound, lower_bound = (np.array(1.0), np.array(0.0))
 
             if threshold is None:
                 threshold = self.theta
 
         else:
-            (upper_bound, lower_bound) = (
+            upper_bound, lower_bound = (
                 np.max(abs(original_sample - current_sample)),
                 np.array(0.0),
             )

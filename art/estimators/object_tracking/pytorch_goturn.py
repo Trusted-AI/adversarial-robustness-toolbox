@@ -62,6 +62,7 @@
 """
 This module implements the task specific estimator for PyTorch GOTURN object tracker.
 """
+
 from __future__ import annotations
 
 import logging

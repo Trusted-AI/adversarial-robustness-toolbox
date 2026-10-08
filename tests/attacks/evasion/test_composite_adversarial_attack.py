@@ -41,7 +41,7 @@ def fix_get_cifar10_subset(get_cifar10_dataset):
 @pytest.mark.skip_framework("tensorflow2", "keras", "non_dl_frameworks", "kerastf", "huggingface")
 def test_generate(art_warning, fix_get_cifar10_subset):
     try:
-        (x_train, y_train, x_test, y_test) = fix_get_cifar10_subset
+        x_train, y_train, x_test, y_test = fix_get_cifar10_subset
 
         classifier = get_cifar10_image_classifier_pt(from_logits=False, load_init=True)
         attack = CompositeAdversarialAttackPyTorch(classifier)

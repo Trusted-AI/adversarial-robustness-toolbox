@@ -18,6 +18,7 @@
 """
 This module creates GANs using the TensorFlow ML Framework
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING

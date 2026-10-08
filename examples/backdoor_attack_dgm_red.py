@@ -14,7 +14,6 @@ import tensorflow as tf
 from tensorflow.keras.models import load_model
 from tensorflow.keras.activations import linear, tanh
 
-
 tf.random.set_seed(100)
 np.random.seed(100)
 

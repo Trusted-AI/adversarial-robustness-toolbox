@@ -18,6 +18,7 @@
 """
 This module implements square padding for images and object detection bounding boxes in PyTorch.
 """
+
 from __future__ import annotations
 
 import logging

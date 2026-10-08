@@ -20,6 +20,7 @@ This is a PyTorch implementation of the TRADES protocol.
 
 | Paper link: https://proceedings.mlr.press/v97/zhang19p.html
 """
+
 from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
@@ -101,7 +102,7 @@ class AdversarialTrainerTRADESPyTorch(AdversarialTrainerTRADES):
         y = check_and_transform_label_format(y, nb_classes=self.classifier.nb_classes)
 
         if validation_data is not None:
-            (x_test, y_test) = validation_data
+            x_test, y_test = validation_data
             y_test = check_and_transform_label_format(y_test, nb_classes=self.classifier.nb_classes)
 
             x_preprocessed_test, y_preprocessed_test = self._classifier._apply_preprocessing(x_test, y_test, fit=True)

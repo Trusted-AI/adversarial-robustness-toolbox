@@ -24,6 +24,7 @@ for adversarial training for defence against larger perturbations.
 | It was noted that this protocol uses double perturbation mechanism i.e, perturbation on the input samples and then
 perturbation on the model parameters. Consequently, framework specific implementations are being provided in ART.
 """
+
 from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import abc

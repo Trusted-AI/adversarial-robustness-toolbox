@@ -20,6 +20,7 @@ This module implements the task specific estimator for PyTorch YOLO v3, v5, v8+ 
 
 | Paper link: https://arxiv.org/abs/1804.02767
 """
+
 from __future__ import annotations
 
 import logging

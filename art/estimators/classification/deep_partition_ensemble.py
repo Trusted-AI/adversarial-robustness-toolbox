@@ -18,6 +18,7 @@
 """
 Creates a Deep Partition Aggregation ensemble classifier.
 """
+
 from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 from collections.abc import Callable
@@ -82,12 +83,10 @@ class DeepPartitionEnsemble(EnsembleClassifier):
         """
         self.can_fit = False  # self.fit() cannot be used with models loaded from disk
         if not isinstance(classifiers, list):
-            warnings.warn(
-                "If a single classifier is passed, it should not have been loaded \
+            warnings.warn("If a single classifier is passed, it should not have been loaded \
                 from disk due to cloning errors with models loaded from disk. If you are \
                 using pre-trained model(s), create a list of Estimator objects the same \
-                length as the ensemble size"
-            )
+                length as the ensemble size")
             self.can_fit = True
 
             if hasattr(classifiers, "clone_for_refitting"):

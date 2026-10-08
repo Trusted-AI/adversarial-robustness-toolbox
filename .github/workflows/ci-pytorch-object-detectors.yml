@@ -29,10 +29,10 @@ jobs:
       fail-fast: false
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
 
       - name: Setup Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version: '3.12'
 
@@ -49,13 +49,13 @@ jobs:
           pip list
 
       - name: Cache CIFAR-10 dataset
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.art/data/cifar-10-batches-py
           key: cifar10-dataset-cache-v1
 
       - name: Cache MNIST dataset
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.art/data/mnist.npz
           key: mnist-dataset-cache-v1
@@ -99,7 +99,7 @@ jobs:
         run: pytest --cov-report=xml --cov=art --cov-append -q -vv tests/estimators/object_detection/test_object_seeker_faster_rcnn.py --framework=pytorch --durations=0
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v7
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: true

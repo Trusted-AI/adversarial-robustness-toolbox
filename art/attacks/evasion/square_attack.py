@@ -20,6 +20,7 @@ This module implements the `SquareAttack` attack.
 
 | Paper link: https://arxiv.org/abs/1912.00049
 """
+
 from __future__ import annotations
 
 import bisect

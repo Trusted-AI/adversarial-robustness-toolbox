@@ -18,6 +18,7 @@
 """
 This module implements the standardisation with mean and standard deviation.
 """
+
 from __future__ import annotations
 
 import logging

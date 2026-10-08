@@ -20,6 +20,7 @@ This module implements the greedy search algorithm of the `LaserBeam` attack.
 
 | Paper link: https://arxiv.org/abs/2103.06504
 """
+
 from __future__ import annotations
 
 import numpy as np
