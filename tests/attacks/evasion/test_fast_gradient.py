@@ -106,7 +106,7 @@ def test_minimal_perturbations_images(art_warning, fix_get_mnist_subset, image_d
         backend_check_adverse_values(attack, fix_get_mnist_subset, expected_values)
 
         # Test eps of array type 1
-        (_, _, x_test_mnist, _) = fix_get_mnist_subset
+        _, _, x_test_mnist, _ = fix_get_mnist_subset
         eps = np.ones(shape=x_test_mnist.shape) * 5.0
         eps_step = np.ones_like(eps) * 0.1
 

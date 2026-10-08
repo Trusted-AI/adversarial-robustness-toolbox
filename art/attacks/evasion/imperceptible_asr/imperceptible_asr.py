@@ -21,6 +21,7 @@ This module implements the adversarial and imperceptible attack on automatic spe
 
 | Paper link: http://proceedings.mlr.press/v97/qin19a.html
 """
+
 from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging

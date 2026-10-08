@@ -18,6 +18,7 @@
 """
 This module contains the abstract base class for evaluations.
 """
+
 from abc import ABC, abstractmethod
 from typing import Any
 

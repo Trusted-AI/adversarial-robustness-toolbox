@@ -44,6 +44,7 @@ hard-label adversarial attack.
 
 | Paper link: https://arxiv.org/pdf/1909.10773.pdf
 """
+
 from __future__ import annotations
 
 import logging
@@ -561,10 +562,8 @@ class SignOPTAttack(EvasionAttack):
         if self.targeted is False and (distortion is None or g_g < distortion):
             succeed = True
             if self.verbose:
-                print(
-                    f"Succeed distortion {g_g} org_label {y_0} predict_lable {target} \
-                    queries {query_count} Line Search queries {ls_total}"
-                )
+                print(f"Succeed distortion {g_g} org_label {y_0} predict_lable {target} \
+                    queries {query_count} Line Search queries {ls_total}")
                 target_pred = self._predict_label(x_0 + g_g * x_g)
                 if target_pred == y_0:
                     print(f"WARNING: prediction on adv {target_pred} == org label {y_0}")
@@ -572,10 +571,8 @@ class SignOPTAttack(EvasionAttack):
         elif self.targeted and self._is_label(x_0 + g_g * x_g, target):
             succeed = True
             if self.verbose:
-                print(
-                    f"Adversarial Example Found Successfully: distortion {g_g} target, \
-                    {target} queries {query_count} Line Search queries {ls_total} Time: {timeend-timestart} seconds"
-                )
+                print(f"Adversarial Example Found Successfully: distortion {g_g} target, \
+                    {target} queries {query_count} Line Search queries {ls_total} Time: {timeend-timestart} seconds")
             # return self._clip_value(x_0 + g_g * x_g), g_g * x_g, True
         else:
             succeed = False

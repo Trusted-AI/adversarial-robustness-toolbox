@@ -21,6 +21,7 @@ version of FGM and FGSM with integrated momentum. This is a white-box attack.
 
 | Paper link: https://arxiv.org/abs/1710.06081
 """
+
 from __future__ import annotations
 
 import logging

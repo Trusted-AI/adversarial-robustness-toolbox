@@ -43,6 +43,7 @@ This module implements helper functions for GRAPHITE attacks.
 | Paper link: https://arxiv.org/abs/2002.07088
 | Original GitHub link: https://github.com/ryan-feng/GRAPHITE
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING

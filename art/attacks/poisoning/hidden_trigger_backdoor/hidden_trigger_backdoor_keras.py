@@ -20,6 +20,7 @@ This module implements a Hidden Trigger Backdoor attack on Neural Networks.
 
 | Paper link: https://arxiv.org/abs/1910.00033
 """
+
 from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
@@ -248,11 +249,9 @@ class HiddenTriggerBackdoorKeras(PoisoningAttackWhiteBox):
                     poison_samples = np.clip(poison_samples, min_val, max_val)
 
                 if i % self.print_iter == 0:
-                    print(
-                        f"Batch: {batch_id} | i: {i:5d} | \
+                    print(f"Batch: {batch_id} | i: {i:5d} | \
                         LR: {learning_rate:2.5f} | \
-                        Loss Val: {losses.val:5.3f} | Loss Avg: {losses.avg:5.3f}"
-                    )
+                        Loss Val: {losses.val:5.3f} | Loss Avg: {losses.avg:5.3f}")
 
                 if loss < self.stopping_threshold or i == (self.max_iter - 1):
                     print(f"Max_Loss: {loss}")

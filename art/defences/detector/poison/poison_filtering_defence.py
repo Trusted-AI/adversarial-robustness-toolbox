@@ -18,6 +18,7 @@
 """
 This module implements the abstract base class for all poison filtering defences.
 """
+
 from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import abc

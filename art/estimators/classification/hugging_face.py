@@ -19,6 +19,7 @@
 This module implements the abstract estimator `HuggingFaceClassifier` using the PyTorchClassifier as a backend
 to interface with ART.
 """
+
 from __future__ import annotations
 
 from collections.abc import Callable

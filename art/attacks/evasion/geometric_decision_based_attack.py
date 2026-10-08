@@ -20,6 +20,7 @@ This module implements the Geometric Decision-based Attack (GeoDA), a black-box 
 
 | Paper link: https://arxiv.org/abs/2003.06468
 """
+
 from __future__ import annotations
 
 import os

@@ -18,6 +18,7 @@
 """
 Provides black-box gradient estimation using NES.
 """
+
 from __future__ import annotations
 
 import logging

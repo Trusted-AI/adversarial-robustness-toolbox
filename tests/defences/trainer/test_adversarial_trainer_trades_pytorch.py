@@ -67,7 +67,7 @@ def fix_get_mnist_subset(get_mnist_dataset):
 @pytest.mark.only_with_platform("pytorch")
 @pytest.mark.parametrize("label_format", ["one_hot", "numerical"])
 def test_adversarial_trainer_trades_pytorch_fit_and_predict(get_adv_trainer, fix_get_mnist_subset, label_format):
-    (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
+    x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist = fix_get_mnist_subset
     x_test_mnist_original = x_test_mnist.copy()
 
     if label_format == "one_hot":
@@ -114,7 +114,7 @@ def test_adversarial_trainer_trades_pytorch_fit_and_predict(get_adv_trainer, fix
 def test_adversarial_trainer_trades_pytorch_fit_generator_and_predict(
     get_adv_trainer, fix_get_mnist_subset, image_data_generator, label_format
 ):
-    (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
+    x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist = fix_get_mnist_subset
     x_test_mnist_original = x_test_mnist.copy()
 
     if label_format == "one_hot":

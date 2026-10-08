@@ -20,6 +20,7 @@ This module implements the Reverse Sigmoid perturbation for the classifier outpu
 
 | Paper link: https://arxiv.org/abs/1806.00054
 """
+
 from __future__ import annotations
 
 import logging

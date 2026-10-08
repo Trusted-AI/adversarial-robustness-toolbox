@@ -18,6 +18,7 @@
 """
 This module implements resizing for images and object detection bounding boxes in TensorFlow v2.
 """
+
 from __future__ import annotations
 
 import logging

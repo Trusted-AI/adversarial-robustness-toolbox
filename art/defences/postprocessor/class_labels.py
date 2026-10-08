@@ -18,6 +18,7 @@
 """
 This module implements class labels added to the classifier output.
 """
+
 from __future__ import annotations
 
 import logging

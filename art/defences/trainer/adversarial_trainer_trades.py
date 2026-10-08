@@ -24,6 +24,7 @@ This module implements adversarial training with TRADES protocol.
 loss on clean data and KL divergence loss between clean data and adversarial data. Consequently, framework specific
 implementations are being provided in ART.
 """
+
 from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import abc

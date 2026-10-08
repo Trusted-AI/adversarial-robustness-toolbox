@@ -3,6 +3,7 @@
 Generates a backdoor for MNIST dataset, then trains a convolutional neural network on the poisoned dataset,
 and runs activation defence to find poison.
 """
+
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import pprint
@@ -30,13 +31,13 @@ def main():
 
     # Poison training data
     perc_poison = 0.33
-    (is_poison_train, x_poisoned_raw, y_poisoned_raw) = generate_backdoor(x_raw, y_raw, perc_poison)
+    is_poison_train, x_poisoned_raw, y_poisoned_raw = generate_backdoor(x_raw, y_raw, perc_poison)
     x_train, y_train = preprocess(x_poisoned_raw, y_poisoned_raw)
     # Add channel axis:
     x_train = np.expand_dims(x_train, axis=3)
 
     # Poison test data
-    (is_poison_test, x_poisoned_raw_test, y_poisoned_raw_test) = generate_backdoor(x_raw_test, y_raw_test, perc_poison)
+    is_poison_test, x_poisoned_raw_test, y_poisoned_raw_test = generate_backdoor(x_raw_test, y_raw_test, perc_poison)
     x_test, y_test = preprocess(x_poisoned_raw_test, y_poisoned_raw_test)
     # Add channel axis:
     x_test = np.expand_dims(x_test, axis=3)

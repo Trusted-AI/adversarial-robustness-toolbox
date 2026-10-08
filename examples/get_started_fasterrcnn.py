@@ -29,7 +29,6 @@ import pprint
 from art.estimators.object_detection import PyTorchFasterRCNN
 from art.attacks.evasion import RobustDPatch
 
-
 COCO_INSTANCE_CATEGORY_NAMES = [
     "__background__",
     "person",

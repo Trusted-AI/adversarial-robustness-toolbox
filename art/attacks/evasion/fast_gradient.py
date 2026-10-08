@@ -21,6 +21,7 @@ Method attack and extends it to other norms, therefore it is called the Fast Gra
 
 | Paper link: https://arxiv.org/abs/1412.6572
 """
+
 from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging

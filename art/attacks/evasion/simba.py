@@ -20,6 +20,7 @@ This module implements the black-box attack `SimBA`.
 
 | Paper link: https://arxiv.org/abs/1905.07121
 """
+
 from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging

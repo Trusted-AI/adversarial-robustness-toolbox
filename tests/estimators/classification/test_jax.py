@@ -10,7 +10,6 @@ from jax.scipy.special import logsumexp
 from art.experimental.estimators.classification.jax import JaxClassifier
 from tests.utils import ARTTestException
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -122,7 +121,7 @@ def test_shapes(art_warning, get_default_mnist_subset):
 @pytest.mark.skip_framework("pytorch", "tensorflow", "keras", "kerastf", "non_dl_frameworks")
 def test_loss_gradient(art_warning, get_default_mnist_subset, expected_values, mnist_shape):
     try:
-        (expected_gradients_1, expected_gradients_2) = expected_values()
+        expected_gradients_1, expected_gradients_2 = expected_values()
 
         (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 

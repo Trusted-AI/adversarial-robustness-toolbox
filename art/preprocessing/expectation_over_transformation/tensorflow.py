@@ -18,6 +18,7 @@
 """
 This module defines a base class for EoT in TensorFlow v2.
 """
+
 from __future__ import annotations
 
 from abc import abstractmethod

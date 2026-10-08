@@ -21,6 +21,7 @@ This module contains an implementation of the Over-the-Air Adversarial Flickerin
 
 | Paper link: https://arxiv.org/abs/2002.05123
 """
+
 from __future__ import annotations
 
 import logging
@@ -157,7 +158,7 @@ class OverTheAirFlickeringPyTorch(EvasionAttack):
         for batch_id, batch_all in enumerate(
             tqdm(data_loader, desc="OverTheAirFlickeringPyTorch - Batches", leave=False, disable=not self.verbose)
         ):
-            (batch, batch_labels) = batch_all[0], batch_all[1]
+            batch, batch_labels = batch_all[0], batch_all[1]
 
             batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
             x_adv[batch_index_1:batch_index_2] = self._generate_batch(batch, batch_labels)
