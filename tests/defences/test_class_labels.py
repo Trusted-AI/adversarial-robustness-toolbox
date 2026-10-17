@@ -92,5 +92,25 @@ class TestClassLabels(unittest.TestCase):
         np.testing.assert_array_almost_equal(post_preds, post_classifier_prediction_expected, decimal=4)
 
 
+class TestClassLabelsBatches(unittest.TestCase):
+    def test_multiclass_batch(self):
+        for dtype in (np.float32, np.float64):
+            with self.subTest(dtype=dtype):
+                preds = np.asarray([[0.8, 0.1, 0.1], [0.1, 0.8, 0.1], [0.1, 0.2, 0.7]], dtype=dtype)
+                original = preds.copy()
+                postprocessor = ClassLabels()
+                actual = postprocessor(preds)
+
+                np.testing.assert_array_equal(actual, np.eye(3, dtype=dtype))
+                np.testing.assert_array_equal(actual, np.concatenate([postprocessor(row[None, :]) for row in preds]))
+                np.testing.assert_array_equal(preds, original)
+                self.assertEqual(actual.dtype, preds.dtype)
+
+    def test_binary_batch(self):
+        preds = np.asarray([[0.2], [0.5], [0.8]], dtype=np.float32)
+        actual = ClassLabels()(preds)
+        np.testing.assert_array_equal(actual, [[0.0], [0.0], [1.0]])
+
+
 if __name__ == "__main__":
     unittest.main()
