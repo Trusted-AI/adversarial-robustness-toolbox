@@ -20,6 +20,7 @@ This module implements the `AutoAttack` attack.
 
 | Paper link: https://arxiv.org/abs/2003.01690
 """
+
 from __future__ import annotations
 
 import logging

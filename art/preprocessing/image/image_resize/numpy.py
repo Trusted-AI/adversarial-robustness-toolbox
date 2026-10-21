@@ -18,6 +18,7 @@
 """
 This module implements resizing for images and object detection bounding boxes.
 """
+
 from __future__ import annotations
 
 import logging

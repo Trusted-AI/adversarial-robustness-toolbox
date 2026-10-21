@@ -163,7 +163,7 @@ def test_loss_gradient_amp(
     from art.estimators.classification.pytorch import PyTorchClassifier
 
     try:
-        (expected_gradients_1, expected_gradients_2) = expected_values()
+        expected_gradients_1, expected_gradients_2 = expected_values()
 
         (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 

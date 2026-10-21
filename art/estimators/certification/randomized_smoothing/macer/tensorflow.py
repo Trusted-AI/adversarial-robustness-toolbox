@@ -20,6 +20,7 @@ This module implements MACER applied to classifier predictions.
 
 | Paper link: https://arxiv.org/abs/2001.02378
 """
+
 from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 from collections.abc import Callable

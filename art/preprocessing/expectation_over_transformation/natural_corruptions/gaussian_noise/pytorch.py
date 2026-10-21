@@ -18,6 +18,7 @@
 """
 This module implements EoT of adding Gaussian noise with uniformly sampled standard deviation.
 """
+
 from __future__ import annotations
 
 import logging

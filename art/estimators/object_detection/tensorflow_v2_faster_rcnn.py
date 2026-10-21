@@ -18,6 +18,7 @@
 """
 This module implements the task specific estimator for Faster R-CNN in TensorFlowV2.
 """
+
 from __future__ import annotations
 
 import logging

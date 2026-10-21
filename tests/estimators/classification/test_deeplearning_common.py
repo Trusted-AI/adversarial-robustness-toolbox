@@ -134,7 +134,7 @@ def test_loss_functions(
             supported_losses = supported_losses_proba()
 
         for loss_type in supported_losses_types():
-            (y_test_pred_exp, class_gradient_exp, loss_grad_exp) = expected_values()
+            y_test_pred_exp, class_gradient_exp, loss_grad_exp = expected_values()
             # store_expected_values(expected_values)
 
             if loss_name + "_" + loss_type in supported_losses:
@@ -297,7 +297,7 @@ def test_loss_gradient(
     store_expected_values,
 ):
     try:
-        (expected_gradients_1, expected_gradients_2) = expected_values()
+        expected_gradients_1, expected_gradients_2 = expected_values()
 
         (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
         classifier, _ = image_dl_estimator(from_logits=True)

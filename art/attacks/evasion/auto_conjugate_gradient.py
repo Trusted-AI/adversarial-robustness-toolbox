@@ -42,6 +42,7 @@ This module implements the 'Auto Conjugate Gradient' attack.
 
 | Paper link: https://arxiv.org/abs/2206.09628
 """
+
 from __future__ import annotations
 
 import abc

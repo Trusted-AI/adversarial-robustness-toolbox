@@ -21,6 +21,7 @@ This module implements the audio adversarial attack on automatic speech recognit
 
 | Paper link: https://arxiv.org/abs/1801.01944
 """
+
 from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging

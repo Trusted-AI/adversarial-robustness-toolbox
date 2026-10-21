@@ -20,6 +20,7 @@ This module implements Interval bound propagation based layers
 
 | Paper link: https://ieeexplore.ieee.org/document/8418593
 """
+
 from __future__ import annotations
 
 import torch

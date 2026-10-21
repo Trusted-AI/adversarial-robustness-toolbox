@@ -18,6 +18,7 @@
 """
 This module implements abstract base and mixin classes for estimators in ART.
 """
+
 from __future__ import annotations
 
 from abc import ABC, abstractmethod

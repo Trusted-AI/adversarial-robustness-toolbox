@@ -24,6 +24,7 @@ and changes in the brightness of the image.
 | Paper link (original DPatch): https://arxiv.org/abs/1806.02299v4
 | Paper link (physical-world patch from Lee & Kolter): https://arxiv.org/abs/1906.11897
 """
+
 from __future__ import annotations
 
 import logging

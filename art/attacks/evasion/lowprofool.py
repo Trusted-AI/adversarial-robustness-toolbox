@@ -27,6 +27,7 @@ where the weights determine each feature's importance.
 
 | Paper link: https://arxiv.org/abs/1911.03274
 """
+
 from __future__ import annotations
 
 from collections.abc import Callable

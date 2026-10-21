@@ -20,6 +20,7 @@ This is a PyTorch implementation of the Fast is better than free protocol.
 
 | Paper link: https://openreview.net/forum?id=BJx040EFvH
 """
+
 from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
@@ -120,7 +121,7 @@ class AdversarialTrainerFBFPyTorch(AdversarialTrainerFBF):
 
             # compute accuracy
             if validation_data is not None:
-                (x_test, y_test) = validation_data
+                x_test, y_test = validation_data
                 output = np.argmax(self.predict(x_test), axis=1)
                 nb_correct_pred = np.sum(output == np.argmax(y_test, axis=1))
                 logger.info(

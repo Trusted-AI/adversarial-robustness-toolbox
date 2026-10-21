@@ -20,6 +20,7 @@ This module implements the filter function for audio signals. It provides with a
 finite impulse response (FIR) filter. This implementation is a wrapper around the `scipy.signal.lfilter` function in
 the `scipy` package.
 """
+
 from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging

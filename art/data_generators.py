@@ -22,6 +22,7 @@ The generators can be used with the `fit_generator` function in the :class:`.Cla
 their own generators following the :class:`.DataGenerator` interface. For large, numpy array-based  datasets, the
 :class:`.NumpyDataGenerator` class can be flexibly used with `fit_generator` on framework-specific classifiers.
 """
+
 from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import abc

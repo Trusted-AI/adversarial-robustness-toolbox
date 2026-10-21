@@ -18,6 +18,7 @@
 """
 This module implements a wrapper class for GPy Gaussian Process classification models.
 """
+
 from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging

@@ -39,7 +39,7 @@ def fix_get_mnist_subset(get_mnist_dataset):
 def test_fit_predict(art_warning, image_dl_estimator, fix_get_mnist_subset):
     classifier, _ = image_dl_estimator()
 
-    (x_train, y_train, x_test, y_test) = fix_get_mnist_subset
+    x_train, y_train, x_test, y_test = fix_get_mnist_subset
     x_test_original = x_test.copy()
 
     adv_trainer = AdversarialTrainerMadryPGD(classifier, nb_epochs=1, batch_size=128)

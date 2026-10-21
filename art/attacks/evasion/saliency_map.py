@@ -20,6 +20,7 @@ This module implements the Jacobian-based Saliency Map attack `SaliencyMapMethod
 
 | Paper link: https://arxiv.org/abs/1511.07528
 """
+
 from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging

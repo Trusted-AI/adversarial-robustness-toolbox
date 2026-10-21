@@ -23,6 +23,7 @@ This module implements adversarial training with Fast is better than free protoc
 | It was noted that this protocol is sensitive to the use of techniques like data augmentation, gradient clipping,
     and learning rate schedules. Consequently, framework specific implementations are being provided in ART.
 """
+
 from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import abc

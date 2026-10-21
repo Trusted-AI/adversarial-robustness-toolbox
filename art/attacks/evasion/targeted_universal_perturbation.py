@@ -20,6 +20,7 @@ This module implements the universal adversarial perturbations attack `TargetedU
 
 | Paper link: https://arxiv.org/abs/1911.06502
 """
+
 from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging

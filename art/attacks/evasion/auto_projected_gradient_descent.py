@@ -20,6 +20,7 @@ This module implements the `Auto Projected Gradient Descent` attack.
 
 | Paper link: https://arxiv.org/abs/2003.01690
 """
+
 from __future__ import annotations
 
 import abc

@@ -21,6 +21,7 @@ for adversarial training for defence against larger perturbations.
 
 | Paper link: https://link.springer.com/chapter/10.1007/978-3-031-20065-6_18
 """
+
 from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 from collections import OrderedDict
@@ -210,7 +211,7 @@ class AdversarialTrainerOAATPyTorch(AdversarialTrainerOAAT):
 
             # compute accuracy
             if validation_data is not None:
-                (x_test, y_test) = validation_data
+                x_test, y_test = validation_data
                 y_test = check_and_transform_label_format(y_test, nb_classes=self.classifier.nb_classes)
 
                 x_preprocessed_test, y_preprocessed_test = self._classifier._apply_preprocessing(
@@ -405,7 +406,7 @@ class AdversarialTrainerOAATPyTorch(AdversarialTrainerOAAT):
 
             # compute accuracy
             if validation_data is not None:
-                (x_test, y_test) = validation_data
+                x_test, y_test = validation_data
                 y_test = check_and_transform_label_format(y_test, nb_classes=self.classifier.nb_classes)
 
                 x_preprocessed_test, y_preprocessed_test = self._classifier._apply_preprocessing(

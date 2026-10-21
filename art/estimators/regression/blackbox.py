@@ -18,6 +18,7 @@
 """
 This module implements the classifier `BlackBoxRegressor` for black-box regressors.
 """
+
 from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 from collections.abc import Callable

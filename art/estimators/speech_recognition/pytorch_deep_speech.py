@@ -21,6 +21,7 @@ Mandarin in PyTorch.
 
 | Paper link: https://arxiv.org/abs/1512.02595
 """
+
 from __future__ import annotations
 
 import logging

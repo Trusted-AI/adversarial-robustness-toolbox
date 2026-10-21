@@ -26,7 +26,6 @@ import cv2
 import matplotlib
 import matplotlib.pyplot as plt
 
-
 """
 #################        Helper functions and labels          #################
 """

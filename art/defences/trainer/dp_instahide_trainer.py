@@ -23,6 +23,7 @@ This module implements DP-InstaHide training method.
 | This training method is dependent to the choice of data augmentation and noise parameters. Consequently, framework
     specific implementations are being provided in ART.
 """
+
 from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
@@ -172,7 +173,7 @@ class DPInstaHideTrainer(Trainer):
 
             # compute accuracy
             if validation_data is not None:
-                (x_test, y_test) = validation_data
+                x_test, y_test = validation_data
                 output = np.argmax(self.predict(x_test), axis=1)
                 test_loss = self._classifier.compute_loss(x_test, y_test, reduction="mean")
                 test_acc = np.mean(output == np.argmax(y_test, axis=1))

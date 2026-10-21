@@ -52,7 +52,7 @@ def backend_check_inferred_values(attack, mnist_dataset, classifier):
     # in instances that more closely resemble the original instances. However, this turns out not to be the case in
     # this scenario:
 
-    (x_train_mnist, y_train_mnist, _, _) = mnist_dataset
+    x_train_mnist, y_train_mnist, _, _ = mnist_dataset
     x_original = x_train_mnist[:10]
     x_noisy = np.clip(x_original + np.random.uniform(-0.01, 0.01, x_original.shape), 0, 1)
     x_train_infer_from_noisy = attack.infer(x_noisy, y=y_train_mnist[:10])

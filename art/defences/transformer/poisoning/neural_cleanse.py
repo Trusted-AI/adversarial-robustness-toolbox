@@ -20,6 +20,7 @@ This module implements Neural Cleanse (Wang et. al. 2019)
 
 | Paper link: http://people.cs.uchicago.edu/~ravenben/publications/abstracts/backdoor-sp19.html
 """
+
 from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging

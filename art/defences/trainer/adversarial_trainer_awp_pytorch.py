@@ -20,6 +20,7 @@ This is a PyTorch implementation of the Adversarial Weight Perturbation (AWP) pr
 
 | Paper link: https://proceedings.neurips.cc/paper/2020/file/1ef91c212e30e14bf125e9374262401f-Paper.pdf
 """
+
 from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging
@@ -148,7 +149,7 @@ class AdversarialTrainerAWPPyTorch(AdversarialTrainerAWP):
 
             # compute accuracy
             if validation_data is not None:
-                (x_test, y_test) = validation_data
+                x_test, y_test = validation_data
                 y_test = check_and_transform_label_format(y_test, nb_classes=self.classifier.nb_classes)
 
                 x_preprocessed_test, y_preprocessed_test = self._classifier._apply_preprocessing(
@@ -255,7 +256,7 @@ class AdversarialTrainerAWPPyTorch(AdversarialTrainerAWP):
 
             # compute accuracy
             if validation_data is not None:
-                (x_test, y_test) = validation_data
+                x_test, y_test = validation_data
                 y_test = check_and_transform_label_format(y_test, nb_classes=self.classifier.nb_classes)
 
                 x_preprocessed_test, y_preprocessed_test = self._classifier._apply_preprocessing(

@@ -40,7 +40,7 @@ def fix_get_mnist_subset(get_mnist_dataset):
 @pytest.mark.framework_agnostic
 def test_images(art_warning, fix_get_mnist_subset, image_dl_estimator_for_attack):
     try:
-        (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
+        x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist = fix_get_mnist_subset
 
         classifier = image_dl_estimator_for_attack(FeatureAdversariesNumpy)
 

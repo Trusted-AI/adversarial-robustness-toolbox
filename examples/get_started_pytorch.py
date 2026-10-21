@@ -14,7 +14,6 @@ from art.attacks.evasion import FastGradientMethod
 from art.estimators.classification import PyTorchClassifier
 from art.utils import load_mnist
 
-
 # Step 0: Define the neural network model, return logits instead of activation in forward method
 
 

@@ -22,6 +22,7 @@ rotations to find optimal attack parameters.
 
 | Paper link: https://arxiv.org/abs/1712.02779
 """
+
 from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging

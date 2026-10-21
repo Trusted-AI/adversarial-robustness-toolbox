@@ -42,6 +42,7 @@
 """
 This module implements Brendel and Bethge attack.
 """
+
 from __future__ import annotations
 
 # pylint: disable=invalid-name,missing-class-docstring,missing-function-docstring,old-non-ascii-name,unused-variable
@@ -2545,13 +2546,13 @@ class BrendelBethgeAttack(EvasionAttack):
         """
         # First set upper and lower bounds as well as the threshold for the binary search
         if norm == 2:
-            (upper_bound, lower_bound) = (np.array(1.0), np.array(0.0))
+            upper_bound, lower_bound = (np.array(1.0), np.array(0.0))
 
             if threshold is None:
                 threshold = self.theta
 
         else:
-            (upper_bound, lower_bound) = (
+            upper_bound, lower_bound = (
                 np.max(abs(original_sample - current_sample)),
                 np.array(0.0),
             )

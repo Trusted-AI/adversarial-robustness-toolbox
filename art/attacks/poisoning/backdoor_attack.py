@@ -18,6 +18,7 @@
 """
 This module implements Backdoor Attacks to poison data used in ML models.
 """
+
 from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 from collections.abc import Callable
@@ -26,7 +27,6 @@ import logging
 import numpy as np
 
 from art.attacks.attack import PoisoningAttackBlackBox
-
 
 logger = logging.getLogger(__name__)
 

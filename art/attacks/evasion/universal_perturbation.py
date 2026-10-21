@@ -21,6 +21,7 @@ attack.
 
 | Paper link: https://arxiv.org/abs/1610.08401
 """
+
 from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging

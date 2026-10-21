@@ -18,6 +18,7 @@
 """
 This module implements the classifier `EnsembleClassifier` for ensembles of multiple classifiers.
 """
+
 from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging

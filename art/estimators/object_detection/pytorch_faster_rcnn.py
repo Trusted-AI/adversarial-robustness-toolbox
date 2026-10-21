@@ -20,6 +20,7 @@ This module implements the task specific estimator for Faster R-CNN v3 in PyTorc
 
 | Paper link: https://arxiv.org/abs/1506.01497
 """
+
 from __future__ import annotations
 
 import logging

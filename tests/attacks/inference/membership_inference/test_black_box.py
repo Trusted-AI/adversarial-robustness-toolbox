@@ -364,7 +364,7 @@ def backend_check_membership_accuracy(attack, dataset, attack_train_ratio, appro
 
 def backend_check_membership_accuracy_pred(attack, dataset, pred, attack_train_ratio, approx):
     (x_train, y_train), (x_test, y_test) = dataset
-    (pred_x, test_pred_x) = pred
+    pred_x, test_pred_x = pred
     attack_train_size = int(len(x_train) * attack_train_ratio)
     attack_test_size = int(len(x_test) * attack_train_ratio)
 

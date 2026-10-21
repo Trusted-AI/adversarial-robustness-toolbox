@@ -18,6 +18,7 @@
 """
 This module implements the regressors for scikit-learn models.
 """
+
 from __future__ import annotations
 
 import logging

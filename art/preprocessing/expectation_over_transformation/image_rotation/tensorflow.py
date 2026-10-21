@@ -18,6 +18,7 @@
 """
 This module implements Expectation over Transformation preprocessing for image rotation in TensorFlow.
 """
+
 from __future__ import annotations
 
 import logging

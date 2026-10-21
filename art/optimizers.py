@@ -18,6 +18,7 @@
 """
 Module defining an interface for optimizers.
 """
+
 import numpy as np
 
 

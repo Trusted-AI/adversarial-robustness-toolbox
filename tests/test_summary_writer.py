@@ -51,7 +51,7 @@ def test_update_image_classification_sw(art_warning, fix_get_mnist_subset, image
             estimator=classifier, max_iter=10, eps=0.3, eps_step=0.03, batch_size=5, verbose=False, summary_writer=swd
         )
 
-        (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
+        x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist = fix_get_mnist_subset
 
         attack.generate(x=x_train_mnist, y=y_train_mnist)
 
@@ -86,7 +86,7 @@ def test_update_image_classification_bool_str(art_warning, fix_get_mnist_subset,
             summary_writer=summary_writer,
         )
 
-        (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
+        x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist = fix_get_mnist_subset
 
         attack.generate(x=x_train_mnist, y=y_train_mnist)
 
@@ -108,7 +108,7 @@ def test_update_image_object_detection_sw(art_warning, fix_get_mnist_subset, fix
             estimator=frcnn, max_iter=10, eps=0.3, eps_step=0.03, batch_size=5, verbose=False, summary_writer=swd
         )
 
-        (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
+        x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist = fix_get_mnist_subset
 
         attack.generate(x=x_train_mnist, y=y_train_mnist)
 

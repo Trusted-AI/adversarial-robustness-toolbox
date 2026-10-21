@@ -18,6 +18,7 @@
 """
 This module implements utility functions for adversarial patch attacks.
 """
+
 import numpy as np
 
 

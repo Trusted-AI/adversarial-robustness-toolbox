@@ -25,6 +25,7 @@ The Pixel Attack is a generalisation of One Pixel Attack.
 | Pixel Attack Paper link:
     https://arxiv.org/abs/1906.06026
 """
+
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging

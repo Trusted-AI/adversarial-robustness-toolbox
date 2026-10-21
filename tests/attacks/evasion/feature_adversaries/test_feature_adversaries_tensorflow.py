@@ -39,7 +39,7 @@ def fix_get_mnist_subset(get_mnist_dataset):
 @pytest.mark.skip_framework("keras", "kerastf", "non_dl_frameworks", "pytorch", "huggingface")
 def test_images_pgd(art_warning, fix_get_mnist_subset, image_dl_estimator_for_attack):
     try:
-        (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
+        x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist = fix_get_mnist_subset
 
         classifier = image_dl_estimator_for_attack(FeatureAdversariesTensorFlowV2)
 
@@ -60,7 +60,7 @@ def test_images_unconstrained_adam(art_warning, fix_get_mnist_subset, image_dl_e
     try:
         import tensorflow as tf
 
-        (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
+        x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist = fix_get_mnist_subset
 
         classifier = image_dl_estimator_for_attack(FeatureAdversariesTensorFlowV2)
 

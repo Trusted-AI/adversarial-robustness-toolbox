@@ -21,6 +21,7 @@ This module implements the base class `DetectorClassifier` for classifier and de
 Paper link:
     https://arxiv.org/abs/1705.07263
 """
+
 from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging

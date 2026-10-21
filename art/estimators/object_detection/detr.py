@@ -25,6 +25,7 @@ Utility methods for DEtection TRansformer (DETR) in PyTorch.
  - Line 459: returning original tensor list
  - Line 462: function name changed to distinguish that it now facilitates gradients
 """
+
 from __future__ import annotations
 
 import torch

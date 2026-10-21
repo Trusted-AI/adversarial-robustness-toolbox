@@ -20,6 +20,7 @@ This module implements helper functions for the `LaserAttack`.
 
 | Paper link: https://arxiv.org/abs/2103.06504
 """
+
 from __future__ import annotations
 
 from abc import ABC, abstractmethod

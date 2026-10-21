@@ -20,6 +20,7 @@ This module implements the evasion attack `ShadowAttack`.
 
 | Paper link: https://arxiv.org/abs/2003.08937
 """
+
 from __future__ import annotations
 
 import logging

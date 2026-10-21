@@ -40,7 +40,7 @@ def test_generate_default(art_warning, fix_get_mnist_subset, image_dl_estimator)
 
         sec = SecurityCurve(eps=3)
 
-        (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
+        x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist = fix_get_mnist_subset
 
         eps_list, accuracy_adv_list, accuracy = sec.evaluate(classifier=classifier, x=x_train_mnist, y=y_train_mnist)
 
@@ -60,7 +60,7 @@ def test_generate_list(art_warning, fix_get_mnist_subset, image_dl_estimator):
 
         sec = SecurityCurve(eps=[0.3333333333333333, 0.6666666666666666, 1.0])
 
-        (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
+        x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist = fix_get_mnist_subset
 
         eps_list, accuracy_adv_list, accuracy = sec.evaluate(classifier=classifier, x=x_train_mnist, y=y_train_mnist)
 

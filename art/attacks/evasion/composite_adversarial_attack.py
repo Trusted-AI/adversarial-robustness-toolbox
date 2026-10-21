@@ -327,7 +327,7 @@ class CompositeAdversarialAttackPyTorch(EvasionAttack):
         for batch_id, batch_all in enumerate(
             tqdm(data_loader, desc=self._description, leave=False, disable=not self.verbose)
         ):
-            (batch_x, batch_y) = batch_all[0], batch_all[1]
+            batch_x, batch_y = batch_all[0], batch_all[1]
             batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
 
             x_adv[batch_index_1:batch_index_2] = self._generate_batch(x=batch_x, y=batch_y)

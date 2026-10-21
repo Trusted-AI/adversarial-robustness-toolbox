@@ -18,6 +18,7 @@
 """
 This module defines and implements the summary writers for TensorBoard output.
 """
+
 from __future__ import annotations
 
 from abc import ABC, abstractmethod

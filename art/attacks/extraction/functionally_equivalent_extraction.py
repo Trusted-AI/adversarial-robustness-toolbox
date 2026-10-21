@@ -27,6 +27,7 @@ Extracted model - Test Fidelity: 0.9977
 
 | Paper link: https://arxiv.org/abs/1909.01838
 """
+
 from __future__ import annotations
 
 import logging

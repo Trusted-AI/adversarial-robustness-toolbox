@@ -20,6 +20,7 @@ This module implements the adversarial patch attack `DPatch` for object detector
 
 | Paper link: https://arxiv.org/abs/1806.02299v4
 """
+
 from __future__ import annotations
 
 import logging

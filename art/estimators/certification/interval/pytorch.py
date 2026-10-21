@@ -20,6 +20,7 @@ This module implements certification using interval (box) domain certification.
 
 | Paper link: https://ieeexplore.ieee.org/document/8418593
 """
+
 from __future__ import annotations
 
 from collections.abc import Callable
@@ -38,7 +39,6 @@ from art.estimators.certification.interval.interval import (
     PyTorchIntervalBounds,
 )
 from art.estimators.classification.pytorch import PyTorchClassifier
-
 
 if TYPE_CHECKING:
     from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE

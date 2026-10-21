@@ -18,6 +18,7 @@
 """
 This module implements gradient check functions for estimators
 """
+
 from typing import TYPE_CHECKING
 
 import numpy as np

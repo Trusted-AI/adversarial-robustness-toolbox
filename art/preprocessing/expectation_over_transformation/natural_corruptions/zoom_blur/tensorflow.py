@@ -18,6 +18,7 @@
 """
 This module implements EoT of zoom blur with uniformly sampled zoom factor.
 """
+
 from __future__ import annotations
 
 import logging

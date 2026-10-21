@@ -47,7 +47,7 @@ def test_generate(art_warning, fix_get_mnist_subset, image_dl_estimator_for_atta
             estimator=classifier, norm=norm, max_iter=5, eps=0.3, p_init=0.8, nb_restarts=1, verbose=False
         )
 
-        (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
+        x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist = fix_get_mnist_subset
 
         x_train_mnist_adv = attack.generate(x=x_train_mnist, y=y_train_mnist)
 

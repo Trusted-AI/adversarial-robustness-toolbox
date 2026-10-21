@@ -24,6 +24,7 @@ This module implements adversarial training following Madry's Protocol.
     principled approach to making classifiers more robust (see https://arxiv.org/abs/1802.00420), very careful
     evaluations are required to assess its effectiveness case by case (see https://arxiv.org/abs/1902.06705).
 """
+
 from __future__ import annotations
 
 import logging

@@ -18,6 +18,7 @@
 """
 Adversarial perturbations designed to work for images.
 """
+
 from __future__ import annotations
 
 import numpy as np

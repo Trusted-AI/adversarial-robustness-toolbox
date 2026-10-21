@@ -21,6 +21,7 @@ FGSM. This is a white-box attack.
 
 | Paper link: https://arxiv.org/abs/1607.02533
 """
+
 from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import logging

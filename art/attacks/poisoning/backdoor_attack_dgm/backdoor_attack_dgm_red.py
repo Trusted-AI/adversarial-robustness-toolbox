@@ -18,6 +18,7 @@
 """
 This module implements poisoning attacks on DGMs.
 """
+
 import logging
 from typing import TYPE_CHECKING
 

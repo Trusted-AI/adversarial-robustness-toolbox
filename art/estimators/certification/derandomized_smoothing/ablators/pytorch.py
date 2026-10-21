@@ -23,6 +23,7 @@ This module implements Certified Patch Robustness via Smoothed Vision Transforme
 
 | Paper link Arxiv version (more detail): https://arxiv.org/pdf/2110.07719.pdf
 """
+
 from __future__ import annotations
 
 import random

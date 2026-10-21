@@ -18,6 +18,7 @@
 """
 This module implements the classifiers for scikit-learn models.
 """
+
 from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 from collections.abc import Callable
@@ -802,10 +803,8 @@ class ScikitlearnLogisticRegression(ClassGradientsMixin, LossGradientsMixin, Sci
         :raises `TypeError`: If the requested label cannot be processed.
         """
         if not hasattr(self.model, "coef_"):  # pragma: no cover
-            raise ValueError(
-                """Model has not been fitted. Run function `fit(x, y)` of classifier first or provide a
-            fitted model."""
-            )
+            raise ValueError("""Model has not been fitted. Run function `fit(x, y)` of classifier first or provide a
+            fitted model.""")
         if self.nb_classes is None:  # pragma: no cover
             raise ValueError("Unknown number of classes in classifier.")
         nb_samples = x.shape[0]
@@ -888,10 +887,8 @@ class ScikitlearnLogisticRegression(ClassGradientsMixin, LossGradientsMixin, Sci
         from sklearn.utils.class_weight import compute_class_weight
 
         if not hasattr(self.model, "coef_"):  # pragma: no cover
-            raise ValueError(
-                """Model has not been fitted. Run function `fit(x, y)` of classifier first or provide a
-            fitted model."""
-            )
+            raise ValueError("""Model has not been fitted. Run function `fit(x, y)` of classifier first or provide a
+            fitted model.""")
 
         # Apply preprocessing
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=False)

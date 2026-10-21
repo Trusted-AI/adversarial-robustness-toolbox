@@ -18,6 +18,7 @@
 """
 This module implements the abstract base class for all evasion detectors.
 """
+
 from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 import abc

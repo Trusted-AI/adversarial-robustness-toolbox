@@ -58,7 +58,7 @@ def test_generate(art_warning, fix_get_mnist_subset, image_dl_estimator_for_atta
             verbose=False,
         )
 
-        (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
+        x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist = fix_get_mnist_subset
 
         x_train_mnist_adv = attack.generate(x=x_train_mnist, y=y_train_mnist)
 

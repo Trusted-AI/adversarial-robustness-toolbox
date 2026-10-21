@@ -18,6 +18,7 @@
 """
 This module implements clean-label attacks on Neural Networks.
 """
+
 from __future__ import absolute_import, division, print_function, unicode_literals, annotations
 
 from functools import reduce
@@ -31,7 +32,6 @@ from art.attacks.attack import PoisoningAttackWhiteBox
 from art.estimators import BaseEstimator, NeuralNetworkMixin
 from art.estimators.classification.classifier import ClassifierMixin
 from art.estimators.classification.pytorch import PyTorchClassifier
-
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_NEURALNETWORK_TYPE
