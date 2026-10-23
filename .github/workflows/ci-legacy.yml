@@ -29,7 +29,7 @@ jobs:
       matrix:
         module: [attacks_1, attacks_2, estimators, defences, metrics, art]
         include:
-          - name: legacy (TensorFlow 2.20.0 Keras 3.11.2 PyTorch 2.8.0 scikit-learn 1.6.1 Python 3.10)
+          - name: legacy (TensorFlow 2.20.0 Keras 3.11.2 PyTorch 2.8.0 scikit-learn 1.6.1 Python 3.12)
             framework: legacy
             python: '3.12'
             tensorflow: 2.20.0
