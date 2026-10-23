@@ -23,20 +23,20 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
         module: [attacks_1, attacks_2, estimators, defences, metrics, art]
         include:
-          - name: legacy (TensorFlow 2.20.0 Keras 3.11.2 PyTorch 2.8.0 scikit-learn 1.6.1 Python 3.10)
+          - name: legacy (TensorFlow 2.20.0 Keras 3.11.2 PyTorch 2.8.0 scikit-learn 1.6.1 Python 3.12)
             framework: legacy
-            python: '3.10'
+            python: '3.12'
             tensorflow: 2.20.0
             keras: 3.11.2
-            torch: 2.8.0
-            torchvision: 0.23.0
-            torchaudio: 2.8.0
+            torch: 2.14.2
+            torchvision: 0.29.1
+            torchaudio: 2.11.0
             scikit-learn: 1.6.1
 
     name: Run ${{ matrix.module }} ${{ matrix.name }} Tests
