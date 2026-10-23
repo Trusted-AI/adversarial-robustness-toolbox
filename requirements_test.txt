@@ -28,9 +28,9 @@ tensorflow==2.20.0
 keras==3.11.3
 
 # PyTorch
-torch==2.13.0
-torchaudio==2.8.0
-torchvision==0.23.0
+torch==2.14.1
+torchaudio==2.11.0
+torchvision==0.29.1
 
 # PyTorch image transformers
 timm==1.0.19
