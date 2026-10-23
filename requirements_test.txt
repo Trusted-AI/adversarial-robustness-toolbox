@@ -24,8 +24,8 @@ multiprocess>=0.70.12
 
 # frameworks
 
-tensorflow==2.20.0
-keras==3.15.0
+tensorflow==2.21.0
+keras==3.15.1
 
 # PyTorch
 torch==2.8.0
