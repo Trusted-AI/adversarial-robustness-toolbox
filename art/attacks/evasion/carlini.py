@@ -1252,7 +1252,7 @@ class CarliniL0Method(CarliniL2Method):
 
             # Fix the feature with the lowest objective_reduction value (only for the examples that succeeded)
             fix_feature_index = np.argmin(objective_reduction.reshape(objective_reduction.shape[0], -1), axis=1)
-            fix_feature = np.ones(x.shape)
+            fix_feature = np.ones_like(x)
             fix_feature = fix_feature.reshape(fix_feature.shape[0], -1)
             fix_feature[np.arange(fix_feature_index.size), fix_feature_index] = 0
             fix_feature = fix_feature.reshape(x.shape)

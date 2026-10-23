@@ -23,18 +23,18 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
         include:
-          - name: Huggingface 4.30
+          - name: Huggingface 4.45
             framework: huggingface
-            python: '3.10'
+            python: '3.12'
             torch: 2.2.1
             torchvision: 0.17.1+cpu
             torchaudio: 2.2.1
-            transformers: 4.30.2
+            transformers: 4.45.2
 
     name: ${{ matrix.name }}
     steps:

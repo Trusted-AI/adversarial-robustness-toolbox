@@ -23,16 +23,16 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     env:
       TF_ENABLE_ONEDNN_OPTS: 0
     strategy:
       fail-fast: false
       matrix:
         include:
-          - name: TensorFlow 2.20.0 (Keras 3.11.2 Python 3.10)
+          - name: TensorFlow 2.20.0 (Keras 3.11.2 Python 3.12)
             framework: tensorflow
-            python: '3.10'
+            python: '3.12'
             tensorflow: 2.20.0
             tf_version: v2
             keras: 3.11.2

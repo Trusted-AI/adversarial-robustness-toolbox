@@ -313,7 +313,7 @@ class LaserBeamGenerator(AdvObjectGenerator):
 
         :returns: Random array of ones (mask).
         """
-        q_mask = np.asfarray(
+        q_mask = np.asarray(
             [
                 [1, 0, 0, 0],
                 [0, 1, 0, 0],
@@ -325,7 +325,8 @@ class LaserBeamGenerator(AdvObjectGenerator):
                 [0, 1, 1, 0],
                 [0, 1, 0, 1],
                 [0, 0, 1, 1],
-            ]
+            ],
+            dtype=float,
         )
 
         mask = q_mask[np.random.choice(len(q_mask))]
