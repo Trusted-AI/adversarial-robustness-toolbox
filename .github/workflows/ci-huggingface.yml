@@ -28,13 +28,13 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: Huggingface 4.30
+          - name: Huggingface 4.45
             framework: huggingface
             python: '3.12'
             torch: 2.2.1
             torchvision: 0.17.1+cpu
             torchaudio: 2.2.1
-            transformers: 4.30.2
+            transformers: 4.45.2
 
     name: ${{ matrix.name }}
     steps:
