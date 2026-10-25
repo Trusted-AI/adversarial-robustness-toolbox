@@ -556,7 +556,7 @@ class SignOPTAttack(EvasionAttack):
                 break
 
             if self.verbose and (i + 1) % 10 == 0:
-                print(f"Iteration {i+1} distortion  {g_g} num_queries {query_count}")
+                print(f"Iteration {i + 1} distortion  {g_g} num_queries {query_count}")
         timeend = time.time()
         succeed = False
         if self.targeted is False and (distortion is None or g_g < distortion):
@@ -572,7 +572,7 @@ class SignOPTAttack(EvasionAttack):
             succeed = True
             if self.verbose:
                 print(f"Adversarial Example Found Successfully: distortion {g_g} target, \
-                    {target} queries {query_count} Line Search queries {ls_total} Time: {timeend-timestart} seconds")
+                    {target} queries {query_count} Line Search queries {ls_total} Time: {timeend - timestart} seconds")
             # return self._clip_value(x_0 + g_g * x_g), g_g * x_g, True
         else:
             succeed = False

@@ -331,7 +331,7 @@ class AutoAttack(EvasionAttack):
         if self.parallel_pool_size > 0:
             best_attack_meta = "\n".join(
                 [
-                    f"image {i+1}: {str(self.args[idx][3])}" if idx != 0 else f"image {i+1}: n/a"
+                    f"image {i + 1}: {str(self.args[idx][3])}" if idx != 0 else f"image {i + 1}: n/a"
                     for i, idx in enumerate(self.best_attacks)
                 ]
             )
@@ -343,7 +343,7 @@ class AutoAttack(EvasionAttack):
 
         best_attack_meta = "\n".join(
             [
-                f"image {i+1}: {str(self.attacks[idx])}" if idx != -2 else f"image {i+1}: n/a"
+                f"image {i + 1}: {str(self.attacks[idx])}" if idx != -2 else f"image {i + 1}: n/a"
                 for i, idx in enumerate(self.best_attacks)
             ]
         )

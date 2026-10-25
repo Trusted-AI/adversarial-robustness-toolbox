@@ -23,16 +23,16 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
         include:
-          - name: TensorFlow-Keras 2.20.0 (Keras 3.11.2 Python 3.10)
+          - name: TensorFlow-Keras 2.21.0 (Keras 3.15.1 Python 3.12)
             framework: kerastf
-            python: '3.10'
-            tensorflow: 2.20.0
-            keras: 3.11.2
+            python: '3.12'
+            tensorflow: 2.21.0
+            keras: 3.15.1
 
     name: ${{ matrix.name }}
     steps:

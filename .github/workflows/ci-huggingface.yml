@@ -23,18 +23,18 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
         include:
-          - name: Huggingface 4.30
+          - name: Huggingface 4.45
             framework: huggingface
-            python: '3.10'
+            python: '3.12'
             torch: 2.2.1
             torchvision: 0.17.1+cpu
             torchaudio: 2.2.1
-            transformers: 4.30.2
+            transformers: 4.45.2
 
     name: ${{ matrix.name }}
     steps:
@@ -56,13 +56,13 @@ jobs:
           sudo apt-get update
           sudo apt-get -y -q install ffmpeg libavcodec-extra
           pip install -q -r <(sed '/^tensorflow/d;/^keras/d;/^torch/d;/^torchvision/d;/^torchaudio/d;/^transformers/d;/^safetensors/d' requirements_test.txt)
-          pip install tensorflow==2.20.0
-          pip install keras==3.11.2
+          pip install tensorflow==2.21.0
+          pip install keras==3.15.1
           pip install torch==${{ matrix.torch }} --index-url https://download.pytorch.org/whl/cpu
           pip install torchvision==${{ matrix.torchvision }} --index-url https://download.pytorch.org/whl/cpu
           pip install torchaudio==${{ matrix.torchaudio }} --index-url https://download.pytorch.org/whl/cpu
           pip install transformers==${{ matrix.transformers }}
-          pip install safetensors==0.5.3
+          pip install safetensors==0.8.0
           pip list
 
       - name: Cache CIFAR-10 dataset
