@@ -43,6 +43,40 @@ def test_generate(art_warning, get_pytorch_detector_yolo):
         object_detector = get_pytorch_detector_yolo
         object_detector.set_params(input_shape=(3, 640, 640))
 
+        def download_image(session, url, timeout=30):
+            """Download and validate an RGB image."""
+            # Flickr's HTTP endpoints should be accessed over HTTPS.
+            if url.startswith("http://"):
+                url = "https://" + url[len("http://") :]
+
+            response = session.get(
+                url,
+                timeout=timeout,
+                allow_redirects=True,
+            )
+            response.raise_for_status()
+
+            content_type = response.headers.get("Content-Type", "").lower()
+            if not content_type.startswith("image/"):
+                raise RuntimeError(
+                    f"Expected an image from {response.url!r}, "
+                    f"but received Content-Type {content_type!r}. "
+                    f"Response starts with {response.content[:200]!r}"
+                )
+
+            try:
+                with Image.open(BytesIO(response.content)) as image:
+                    image.load()
+                    return image.convert("RGB")
+            except Image.UnidentifiedImageError as error:
+                raise RuntimeError(
+                    f"Invalid image returned by {response.url!r}; "
+                    f"status={response.status_code}, "
+                    f"Content-Type={content_type!r}, "
+                    f"size={len(response.content)}, "
+                    f"first bytes={response.content[:32]!r}"
+                ) from error
+
         # Define a custom function to collect patches from images
         def collect_patches_from_images(detector, imgs):
             bs = imgs.shape[0]
@@ -78,9 +112,19 @@ def test_generate(art_warning, get_pytorch_detector_yolo):
 
         # Download a sample image
         target = "https://farm2.staticflickr.com/1065/705706084_39a7f28fc9_z.jpg"  # val2017/000000552842.jpg
-        headers = {"User-Agent": "Mozilla/5.0", "Referer": "https://www.flickr.com/"}
-        response = requests.get(target, headers=headers)
-        org_img = np.asarray(Image.open(BytesIO(response.content)).resize((640, 640)))
+        headers = {
+            "User-Agent": (
+                "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/141.0 Safari/537.36"
+            ),
+            "Accept": ("image/avif,image/webp,image/apng,image/svg+xml," "image/*,*/*;q=0.8"),
+            "Referer": "https://www.flickr.com/",
+        }
+
+        session = requests.Session()
+        session.headers.update(headers)
+        org_img = np.asarray(download_image(session, target).resize((640, 640)))
         x = np.stack([org_img.transpose((2, 0, 1)) / 255.0], axis=0).astype(np.float32)
 
         # Prepare dataset
