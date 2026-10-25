@@ -30,12 +30,12 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: TensorFlow 2.20.0 (Keras 3.11.2 Python 3.12)
+          - name: TensorFlow 2.21.0 (Keras 3.15.1 Python 3.12)
             framework: tensorflow
             python: '3.12'
-            tensorflow: 2.20.0
+            tensorflow: 2.21.0
             tf_version: v2
-            keras: 3.11.2
+            keras: 3.15.1
 
     name: ${{ matrix.name }}
     steps:
