@@ -30,7 +30,7 @@ keras==3.15.1
 # PyTorch
 torch==2.14.1
 torchaudio==2.11.0
-torchvision==0.29.1
+torchvision==0.28.0
 
 # PyTorch image transformers
 timm==1.0.19

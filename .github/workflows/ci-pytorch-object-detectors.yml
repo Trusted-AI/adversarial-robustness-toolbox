@@ -25,8 +25,6 @@ jobs:
   test_pytorch_fasterrcnn:
     name: PyTorchObjectDetectors
     runs-on: ubuntu-24.04
-    env:
-      TORCHDYNAMO_DISABLE: "1"
     strategy:
       fail-fast: false
     steps:
