@@ -1,10 +1,11 @@
---find-links https://download.pytorch.org/whl/cpu
+--index-url https://download.pytorch.org/whl/cpu
+--extra-index-url https://pypi.org/simple
 
 # base
 
 numpy==1.26.4
 scipy==1.12.0
-matplotlib==3.10.3
+matplotlib==3.11.2
 scikit-learn==1.7.2
 six==1.17.0
 Pillow==13.0.0
@@ -28,9 +29,9 @@ tensorflow==2.21.0
 keras==3.15.1
 
 # PyTorch
-torch==2.8.0
-torchaudio==2.8.0
-torchvision==0.23.0
+torch==2.13.0+cpu
+torchvision==0.28.0+cpu
+torchaudio==2.11.0+cpu
 
 # PyTorch image transformers
 timm==1.0.19

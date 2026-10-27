@@ -179,7 +179,7 @@ class SecurityCurve(Evaluation):
             plt.title("Potential gradient obfuscation detected.")
         else:
             plt.title("No gradient obfuscation detected")
-        plt.ylim([0, 1.05])
+        plt.ylim(0, 1.05)
         plt.show()
 
     @staticmethod
