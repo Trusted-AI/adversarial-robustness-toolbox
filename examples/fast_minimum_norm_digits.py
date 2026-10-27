@@ -21,9 +21,17 @@ Run from the repository root after installing ART, scikit-learn and PyTorch::
 
     python examples/fast_minimum_norm_digits.py --samples 100 --output-dir /tmp/fmn-digits
 
+By default, a small tanh MLP is fitted on a fixed training split. The attack uses the first 100 correctly
+classified held-out samples and evaluates L2/Linf in both targeted and untargeted modes. Use --model linear
+for logistic regression. The output folder contains results.json (metrics) and samples.npz (exact samples
+and split indices). Unsuccessful searches count as failures and are excluded from successful-norm medians.
+
 The optional --reference-source argument points to the authors' original src/attacks/fmn.py,
 which requires foolbox and eagerpy. It runs that code on the identical model and selected samples.
 No reference source is downloaded or executed automatically.
+
+Paper: Pintor, Roli, Brendel and Biggio, "Fast Minimum-norm Adversarial Attacks through Adaptive Norm
+Constraints", NeurIPS 2021. https://arxiv.org/abs/2102.12827
 """
 
 from __future__ import annotations
@@ -184,11 +192,17 @@ def evaluate(
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--samples", type=int, default=100)
-    parser.add_argument("--steps", type=int, default=100)
-    parser.add_argument("--output-dir", type=Path, default=Path("/tmp/fmn-digits"))
-    parser.add_argument("--reference-source", type=Path)
-    parser.add_argument("--model", choices=("linear", "mlp"), default="mlp")
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument(
+        "--samples", type=int, default=100, help="Number of correctly classified test samples (default: 100)"
+    )
+    parser.add_argument("--steps", type=int, default=100, help="FMN iterations per sample (default: 100)")
+    parser.add_argument(
+        "--output-dir", type=Path, default=Path("/tmp/fmn-digits"), help="Results folder (default: /tmp/fmn-digits)"
+    )
+    parser.add_argument(
+        "--reference-source", type=Path, help="Optional path to the authors' original src/attacks/fmn.py"
+    )
+    parser.add_argument("--model", choices=("linear", "mlp"), default="mlp", help="Classifier to train (default: mlp)")
     args = parser.parse_args()
     evaluate(args.samples, args.steps, args.output_dir, args.reference_source, args.model)

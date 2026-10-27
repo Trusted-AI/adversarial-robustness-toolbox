@@ -57,7 +57,11 @@ class FastMinimumNorm(EvasionAttack):
 
     The estimator must return logits from ``predict`` and the derivatives of those same logits from
     ``class_gradient``. A softmax output layer should be removed before wrapping a neural network.
-    Finite ``clip_values`` are required to bound the adaptive radius.
+    One logit per class is required, including two logits for a binary classifier; single-output binary
+    classifiers are unsupported. Finite ``clip_values`` are required to bound the adaptive radius.
+
+    Reference: Maura Pintor, Fabio Roli, Wieland Brendel, and Battista Biggio, "Fast Minimum-norm Adversarial
+    Attacks through Adaptive Norm Constraints", Advances in Neural Information Processing Systems 34, 2021.
 
     | Paper link: https://arxiv.org/abs/2102.12827
     """
@@ -94,7 +98,8 @@ class FastMinimumNorm(EvasionAttack):
         :param max_iter: Number of margin evaluations and gradient updates per sample. As in the reference
                          implementation, the last update is not evaluated for inclusion in the returned result.
         :param max_step_size: Initial L2-normalised gradient step size, in input units.
-        :param min_step_size: Final step size for cosine annealing. None uses max_step_size / 100.
+        :param min_step_size: Lower endpoint of the cosine step-size schedule; the final executed step approaches
+                              this value. None uses max_step_size / 100.
         :param gamma: Initial relative radius adjustment, annealed towards 0.001; in [0.001, 1].
         :param targeted: Whether to generate examples classified as the labels supplied to generate.
         :param batch_size: Internal batch size.

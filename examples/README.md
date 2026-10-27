@@ -49,7 +49,28 @@ on it.
 
 [mnist_poison_detection.py](mnist_poison_detection.py) generates a backdoor for MNIST dataset, then trains a 
 convolutional neural network on the poisoned dataset and runs activation defence to find poison.
-[fast_minimum_norm_digits.py](fast_minimum_norm_digits.py) evaluates L2 and Linf Fast Minimum-Norm (FMN) attacks on
-100 held-out real handwritten digits, using a small trained classifier on CPU. The bundled scikit-learn dataset
-requires no download. It saves metrics and exact samples; optionally compare with the authors' original FMN source
-using `--reference-source /path/to/src/attacks/fmn.py` (requires Foolbox and EagerPy).
+
+### Fast Minimum-Norm (FMN) on handwritten digits
+
+[fast_minimum_norm_digits.py](fast_minimum_norm_digits.py) evaluates the published
+[FMN attack (Pintor et al., NeurIPS 2021)](https://arxiv.org/abs/2102.12827) with L2 and Linf norms, in targeted
+and untargeted modes. It trains a small tanh MLP on a fixed training split and attacks the first 100 correctly
+classified held-out samples. The real 8×8 digit images come from scikit-learn's bundled `load_digits` dataset;
+no dataset download is needed. The example runs on CPU and requires ART, scikit-learn and PyTorch.
+
+Run from the repository root after installing these packages:
+
+```bash
+python examples/fast_minimum_norm_digits.py --samples 100 --steps 100 --output-dir /tmp/fmn-digits
+```
+
+The output folder contains `results.json` (clean accuracy, attack success counts and median successful perturbation
+norms) and `samples.npz` (exact inputs, adversarial outputs, labels and split indices). Failed searches return the
+original sample; these failures count against the success rate and are excluded from the successful-norm median.
+Results are a small evaluation, not a reproduction of the paper's full benchmarks or a fixed-epsilon robustness score.
+Use `--model linear` to evaluate a logistic-regression model instead of the default MLP.
+
+To compare with the [authors' original implementation](https://github.com/pralab/Fast-Minimum-Norm-FMN-Attack),
+install Foolbox and EagerPy and pass `--reference-source /path/to/src/attacks/fmn.py`. The example runs that source
+on the same model and samples, and records its SHA-256 hash and comparison metrics. Reference code is not downloaded
+automatically.

@@ -136,6 +136,30 @@ Fast Gradient Method (FGM)
 
 Fast Minimum-Norm (FMN)
 ----------------------
+FMN adapts a per-sample perturbation radius to search for small successful perturbations. This implementation
+supports L2 and Linf, targeted and untargeted attacks, and starts from the original input. L0, L1, restarts and
+adversarial starting points are outside this implementation's scope.
+
+The classifier must expose logits and their matching class gradients, with one logit per class (two for binary
+classification), and finite ``clip_values``. For an existing classifier and input array ``x_test``::
+
+    from art.attacks.evasion import FastMinimumNorm
+
+    attack = FastMinimumNorm(classifier, norm=2, max_iter=100, verbose=False)
+    x_adversarial = attack.generate(x_test)
+
+Use ``norm="inf"`` for Linf. Untargeted attacks use the model's original predictions when labels are omitted.
+For a targeted attack, set ``targeted=True`` and pass target class indices or one-hot labels as ``y``.
+The result contains the smallest successful examples encountered; unsuccessful searches return the original
+inputs. Compare the returned predictions with the original or target labels to determine success. The method
+does not certify a global minimum or guarantee that an adversarial example will be found.
+
+See ``examples/fast_minimum_norm_digits.py`` for a CPU evaluation on real held-out handwritten digits.
+
+Reference: Maura Pintor, Fabio Roli, Wieland Brendel, and Battista Biggio,
+`Fast Minimum-norm Adversarial Attacks through Adaptive Norm Constraints (NeurIPS 2021)
+<https://proceedings.neurips.cc/paper_files/paper/2021/hash/a709909b1ea5c2bee24248203b1728a5-Abstract.html>`_.
+
 .. autoclass:: FastMinimumNorm
    :members:
    :special-members:
