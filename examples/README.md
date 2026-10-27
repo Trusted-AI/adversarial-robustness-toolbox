@@ -49,3 +49,7 @@ on it.
 
 [mnist_poison_detection.py](mnist_poison_detection.py) generates a backdoor for MNIST dataset, then trains a 
 convolutional neural network on the poisoned dataset and runs activation defence to find poison.
+[fast_minimum_norm_digits.py](fast_minimum_norm_digits.py) evaluates L2 and Linf Fast Minimum-Norm (FMN) attacks on
+100 held-out real handwritten digits, using a small trained classifier on CPU. The bundled scikit-learn dataset
+requires no download. It saves metrics and exact samples; optionally compare with the authors' original FMN source
+using `--reference-source /path/to/src/attacks/fmn.py` (requires Foolbox and EagerPy).

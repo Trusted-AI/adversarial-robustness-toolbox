@@ -134,6 +134,12 @@ Fast Gradient Method (FGM)
    :members:
    :special-members:
 
+Fast Minimum-Norm (FMN)
+----------------------
+.. autoclass:: FastMinimumNorm
+   :members:
+   :special-members:
+
 Feature Adversaries - Numpy
 ---------------------------
 .. autoclass:: FeatureAdversariesNumpy
