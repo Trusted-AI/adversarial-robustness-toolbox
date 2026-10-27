@@ -680,7 +680,7 @@ def cifar10_shape(framework):
         return (32, 32, 3)
 
 
-@pytest.fixture()
+@pytest.fixture(scope="session")
 def get_default_mnist_subset(get_mnist_dataset, default_dataset_subset_sizes, mnist_shape):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_mnist_dataset
     n_train, n_test = default_dataset_subset_sizes
@@ -691,7 +691,7 @@ def get_default_mnist_subset(get_mnist_dataset, default_dataset_subset_sizes, mn
     yield (x_train_mnist[:n_train], y_train_mnist[:n_train]), (x_test_mnist[:n_test], y_test_mnist[:n_test])
 
 
-@pytest.fixture()
+@pytest.fixture(scope="session")
 def get_default_cifar10_subset(get_cifar10_dataset, default_dataset_subset_sizes, cifar10_shape):
     (x_train_cifar10, y_train_cifar10), (x_test_cifar10, y_test_cifar10) = get_cifar10_dataset
     n_train, n_test = default_dataset_subset_sizes
