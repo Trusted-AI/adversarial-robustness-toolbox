@@ -1149,7 +1149,7 @@ class AdversarialTrainerOAATPyTorch(AdversarialTrainerOAAT):
 
         :param values: Values to clip.
         :param eps: Maximum norm allowed.
-        :param norm_p: L_p norm to use for clipping supporting 1, 2, `np.Inf` and "inf".
+        :param norm_p: L_p norm to use for clipping supporting 1, 2, `np.inf` and "inf".
         :return: Values of `values` after projection.
         """
         import torch

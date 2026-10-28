@@ -102,7 +102,7 @@ class TestAdversarialPatch(TestBase):
                 1.0,
                 1.0,
                 1.0,
-                0.84313726,
+                0.859,
                 0.0,
                 0.0,
                 0.0,

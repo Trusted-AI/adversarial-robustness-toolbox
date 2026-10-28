@@ -147,8 +147,8 @@ class DPInstaHideTrainer(Trainer):
                 y_batch = y[ind[batch_id * batch_size : min((batch_id + 1) * batch_size, x.shape[0])]]
 
                 # augment the data
-                x_aug = x_batch.copy()
-                y_aug = y_batch.copy()
+                x_aug = x_batch.copy().astype(float)
+                y_aug = y_batch.copy().astype(float)
                 for augmentation in self.augmentations:
                     x_aug, y_aug = augmentation(x_aug, y_aug)
 
