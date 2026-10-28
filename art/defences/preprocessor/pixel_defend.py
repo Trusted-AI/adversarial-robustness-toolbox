@@ -113,9 +113,10 @@ class PixelDefend(Preprocessor):
             for feat_index in range(x.shape[1]):
                 # Set up the search space
                 f_probs = probs[i, feat_index, :]
+                value = int(x_i[feat_index])
                 f_range = range(
-                    int(max(x_i[feat_index] - self.eps, 0)),
-                    int(min(x_i[feat_index] + self.eps, 255) + 1),
+                    max(value - self.eps, 0),
+                    min(value + self.eps, 255) + 1,
                 )
 
                 # Look in the search space
@@ -127,6 +128,8 @@ class PixelDefend(Preprocessor):
                         best_idx = idx
 
                 # Update result
+                if best_idx < 0:
+                    raise RuntimeError(f"PixelDefend found no valid candidate. " f"value={value}, eps={self.eps}")
                 x_i[feat_index] = best_idx
 
             # Update in batch
