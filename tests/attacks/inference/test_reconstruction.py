@@ -57,6 +57,10 @@ def test_database_reconstruction_gaussian_nb(get_iris_dataset):
 
 def test_database_reconstruction_logistic_regression(get_iris_dataset):
     (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = get_iris_dataset
+    # The attack matches fitted coefficients, so use float64 data and a tight solver tolerance; the defaults are not
+    # precise enough in scikit-learn >= 1.9
+    x_train_iris = x_train_iris.astype(np.float64)
+    x_test_iris = x_test_iris.astype(np.float64)
     y_train_iris = np.array([np.argmax(y) for y in y_train_iris])
     y_test_iris = np.array([np.argmax(y) for y in y_test_iris])
 
@@ -66,7 +70,7 @@ def test_database_reconstruction_logistic_regression(get_iris_dataset):
     x_input = np.vstack((x_train_iris, x_private))
     y_input = np.hstack((y_train_iris, y_private))
 
-    nb_private = LogisticRegression()
+    nb_private = LogisticRegression(tol=1e-8)
     nb_private.fit(x_input, y_input)
     estimator_private = ScikitlearnLogisticRegression(model=nb_private)
 
