@@ -89,7 +89,7 @@ class FeatureSqueezing(Preprocessor):
         res = res * (self.clip_values[1] - self.clip_values[0])
         res = res + self.clip_values[0]
 
-        return res, y
+        return res.astype(x.dtype, copy=False), y
 
     def _check_params(self) -> None:
         if not isinstance(self.bit_depth, int) or self.bit_depth <= 0 or self.bit_depth > 64:

@@ -85,8 +85,16 @@ def test_blackbox_predict_fn(art_warning, get_diabetes_dataset):
         bb = BlackBoxRegressor(regr_model.predict, (10,))
         pred = bb.predict(x_test)
         assert abs(y_test[0] - pred[0]) == pytest.approx(87.9, abs=2)
-        assert abs(bb.compute_loss(x_test, y_test)[0] - 2000) < 100
-        assert abs(bb.compute_loss_from_predictions(pred, y_test)[0] - 2000) < 100
+
+        np.testing.assert_allclose(
+            bb.compute_loss(x_test, y_test),
+            (pred - y_test) ** 2,
+        )
+
+        np.testing.assert_allclose(
+            bb.compute_loss_from_predictions(pred, y_test),
+            (pred - y_test) ** 2,
+        )
 
         bbc = bb.get_classifier([50, 100, 200])
         pred_c = bbc.predict(x_test)
@@ -99,6 +107,7 @@ def test_blackbox_predict_fn(art_warning, get_diabetes_dataset):
 def test_blackbox_predict_fn_custom_loss(art_warning, get_diabetes_dataset):
     try:
         from sklearn import linear_model
+        from sklearn.metrics import mean_absolute_error
 
         (x_train, y_train), (x_test, y_test) = get_diabetes_dataset
         regr_model = linear_model.LinearRegression()
@@ -107,8 +116,16 @@ def test_blackbox_predict_fn_custom_loss(art_warning, get_diabetes_dataset):
         bb = BlackBoxRegressor(regr_model.predict, (10,), loss_fn=mean_absolute_error)
         pred = bb.predict(x_test)
         assert abs(y_test[0] - pred[0]) == pytest.approx(87.9, abs=2)
-        assert abs(bb.compute_loss(x_test, y_test)[0] - 45) < 5
-        assert abs(bb.compute_loss_from_predictions(pred, y_test)[0] - 45) < 5
+
+        np.testing.assert_allclose(
+            bb.compute_loss(x_test, y_test),
+            mean_absolute_error(y_test, pred, multioutput="raw_values"),
+        )
+
+        np.testing.assert_allclose(
+            bb.compute_loss_from_predictions(pred, y_test),
+            mean_absolute_error(y_test, pred, multioutput="raw_values"),
+        )
 
     except ARTTestException as e:
         art_warning(e)

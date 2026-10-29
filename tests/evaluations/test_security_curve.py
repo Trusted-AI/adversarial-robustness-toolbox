@@ -44,7 +44,7 @@ def test_generate_default(art_warning, fix_get_mnist_subset, image_dl_estimator)
 
         eps_list, accuracy_adv_list, accuracy = sec.evaluate(classifier=classifier, x=x_train_mnist, y=y_train_mnist)
 
-        assert eps_list == [0.3333333333333333, 0.6666666666666666, 1.0]
+        assert eps_list == [0.333333, 0.666666, 1.0]
         assert accuracy_adv_list == [0.0, 0.0, 0.0]
         assert accuracy == 0.27
         assert sec.detected_obfuscating_gradients is False
@@ -58,13 +58,13 @@ def test_generate_list(art_warning, fix_get_mnist_subset, image_dl_estimator):
     try:
         classifier, _ = image_dl_estimator(from_logits=True)
 
-        sec = SecurityCurve(eps=[0.3333333333333333, 0.6666666666666666, 1.0])
+        sec = SecurityCurve(eps=[0.333333, 0.666666, 1.0])
 
         x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist = fix_get_mnist_subset
 
         eps_list, accuracy_adv_list, accuracy = sec.evaluate(classifier=classifier, x=x_train_mnist, y=y_train_mnist)
 
-        assert eps_list == [0.3333333333333333, 0.6666666666666666, 1.0]
+        assert eps_list == [0.333333, 0.666666, 1.0]
         assert accuracy_adv_list == [0.0, 0.0, 0.0]
         assert accuracy == 0.27
         assert sec.detected_obfuscating_gradients is False
