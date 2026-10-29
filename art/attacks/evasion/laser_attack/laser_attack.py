@@ -341,6 +341,7 @@ class LaserBeamGenerator(AdvObjectGenerator):
         """
         clipped_params = np.clip(params.to_numpy(), self.min_params.to_numpy(), self.max_params.to_numpy())
         params.wavelength = clipped_params[0]
+        params.rgb = np.array(wavelength_to_rgb(params.wavelength))
         params.line.angle = clipped_params[1]
         params.line.bias = clipped_params[2]
         params.width = clipped_params[3]

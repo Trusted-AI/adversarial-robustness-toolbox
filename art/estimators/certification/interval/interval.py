@@ -436,6 +436,14 @@ class PyTorchIntervalBounds:
         :param labels: associated labels (not one-hot encoded).
         :return: array of True or False if predictions are certifiable
         """
+        if hasattr(preds, "detach"):
+            preds = preds.detach().cpu().numpy()
+        elif hasattr(preds, "numpy"):
+            preds = preds.numpy()
+        if hasattr(labels, "detach"):
+            labels = labels.detach().cpu().numpy()
+        elif hasattr(labels, "numpy"):
+            labels = labels.numpy()
 
         cert_bounds = np.copy(preds[:, 1])  # Take the upper bounds of all the predictions
         for i, label in enumerate(labels):

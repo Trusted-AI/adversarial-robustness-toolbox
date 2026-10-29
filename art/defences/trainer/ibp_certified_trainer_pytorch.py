@@ -357,7 +357,7 @@ class AdversarialTrainerCertifiedIBPPyTorch(Trainer):
                     )
                 else:
                     certified_loss = certification_loss(interval_preds, y_batch)
-                samples_certified = self.classifier.certify(preds=interval_preds.cpu().detach(), labels=y_batch)
+                samples_certified = self.classifier.certify(preds=interval_preds.cpu().detach().numpy(), labels=y_batch)
 
                 cert_loss.append(certified_loss)
                 cert_acc.append(np.sum(samples_certified) / batch_size)
