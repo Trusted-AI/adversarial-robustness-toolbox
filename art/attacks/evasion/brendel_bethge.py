@@ -2608,7 +2608,7 @@ class BrendelBethgeAttack(EvasionAttack):
         else:
             result = np.clip(current_sample, original_sample - alpha, original_sample + alpha)
 
-        return result
+        return result.astype(current_sample.dtype)
 
     def _adversarial_satisfactory(
         self, samples: np.ndarray, target: int, clip_min: float, clip_max: float
