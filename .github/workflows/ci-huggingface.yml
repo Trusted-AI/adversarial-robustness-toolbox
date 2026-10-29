@@ -31,9 +31,9 @@ jobs:
           - name: Huggingface 4.45
             framework: huggingface
             python: '3.12'
-            torch: 2.2.1
-            torchvision: 0.17.1+cpu
-            torchaudio: 2.2.1
+            torch: 2.13.0
+            torchvision: 0.28.0
+            torchaudio: 2.11.0
             transformers: 4.45.2
 
     name: ${{ matrix.name }}
