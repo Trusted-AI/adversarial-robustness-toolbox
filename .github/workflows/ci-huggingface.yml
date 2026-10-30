@@ -24,6 +24,8 @@ on:
 jobs:
   test:
     runs-on: ubuntu-24.04
+    env:
+      TF_ENABLE_ONEDNN_OPTS: 0
     strategy:
       fail-fast: false
       matrix:
