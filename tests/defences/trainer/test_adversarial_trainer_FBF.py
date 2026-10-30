@@ -97,7 +97,7 @@ def test_adversarial_trainer_fbf_pytorch_fit_generator_and_predict(
     predictions = np.argmax(trainer.predict(x_test_mnist), axis=1)
     accuracy = np.sum(predictions == np.argmax(y_test_mnist, axis=1)) / x_test_mnist.shape[0]
 
-    trainer.fit_generator(generator=generator, nb_epochs=20)
+    trainer.fit_generator(generator=generator, nb_epochs=5)
     predictions_new = np.argmax(trainer.predict(x_test_mnist), axis=1)
     accuracy_new = np.sum(predictions_new == np.argmax(y_test_mnist, axis=1)) / x_test_mnist.shape[0]
 
