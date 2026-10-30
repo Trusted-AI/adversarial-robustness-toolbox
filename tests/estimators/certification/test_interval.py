@@ -495,7 +495,7 @@ def test_mnist_certification_training(art_warning, fix_get_mnist_data):
     )
 
     mnist_data = fix_get_mnist_data[0]
-    mnist_labels = torch.tensor(fix_get_mnist_data[1])
+    mnist_labels = fix_get_mnist_data[1]
 
     from torch.optim.lr_scheduler import MultiStepLR
 
@@ -528,7 +528,7 @@ def test_mnist_certification_training_with_pgd(art_warning, fix_get_mnist_data):
     )
 
     mnist_data = fix_get_mnist_data[0]
-    mnist_labels = torch.tensor(fix_get_mnist_data[1])
+    mnist_labels = fix_get_mnist_data[1]
 
     from torch.optim.lr_scheduler import MultiStepLR
 

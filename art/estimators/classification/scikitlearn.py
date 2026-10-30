@@ -1404,7 +1404,7 @@ class ScikitlearnSVC(ClassGradientsMixin, LossGradientsMixin, ScikitlearnClassif
         # Apply defences
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
 
-        if isinstance(self.model, sklearn.svm.SVC) and self.model.probability:
+        if isinstance(self.model, sklearn.svm.SVC) and callable(getattr(self.model, "predict_proba", None)):
             y_pred = self.model.predict_proba(X=x_preprocessed)
         else:
             y_pred_label = self.model.predict(X=x_preprocessed)

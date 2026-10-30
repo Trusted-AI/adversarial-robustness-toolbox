@@ -90,7 +90,7 @@ class ClusteringAnalyzer:
             report_class = {}
             for cluster_id in range(nb_clusters):
                 ptc = sizes[cluster_id] / total_dp_in_class
-                susp = cluster_id in poison_clusters
+                susp = np.isin(cluster_id, poison_clusters[0])
                 dict_i = dict(ptc_data_in_cluster=round(ptc, 2), suspicious_cluster=susp)
 
                 dict_cluster: dict[str, dict[str, int]] = {"cluster_" + str(cluster_id): dict_i}
@@ -243,7 +243,7 @@ class ClusteringAnalyzer:
             report_class = {}
             for cluster_id in range(nb_clusters):
                 ptc = sizes[cluster_id] / total_dp_in_class
-                susp = cluster_id in poison_clusters
+                susp = np.isin(cluster_id, poison_clusters[0])
                 dict_i = dict(ptc_data_in_cluster=round(ptc, 2), suspicious_cluster=susp)
 
                 dict_cluster = {"cluster_" + str(cluster_id): dict_i}

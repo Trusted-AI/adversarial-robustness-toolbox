@@ -734,6 +734,10 @@ def to_categorical(labels: Union[np.ndarray, list[float]], nb_classes: int | Non
     :param nb_classes: The number of classes (possible labels).
     :return: A binary matrix representation of `y` in the shape `(nb_samples, nb_classes)`.
     """
+    if hasattr(labels, "detach"):
+        labels = labels.detach().cpu().numpy()
+    elif hasattr(labels, "numpy"):
+        labels = labels.numpy()
     labels = np.array(labels, dtype=int)
     if nb_classes is None:
         nb_classes = np.max(labels) + 1
@@ -751,6 +755,10 @@ def float_to_categorical(labels: np.ndarray, nb_classes: int | None = None):
     :return: A binary matrix representation of `labels` in the shape `(nb_samples, nb_classes)`
     :rtype: `np.ndarray`
     """
+    if hasattr(labels, "detach"):
+        labels = labels.detach().cpu().numpy()
+    elif hasattr(labels, "numpy"):
+        labels = labels.numpy()
     labels = np.array(labels)
     unique = np.unique(labels)
     unique.sort()
@@ -770,6 +778,10 @@ def floats_to_one_hot(labels: np.ndarray):
     :return: A binary matrix representation of `labels` in the shape `(nb_samples, nb_classes)`
     :rtype: `np.ndarray`
     """
+    if hasattr(labels, "detach"):
+        labels = labels.detach().cpu().numpy()
+    elif hasattr(labels, "numpy"):
+        labels = labels.numpy()
     labels = np.array(labels)
     for feature in labels.T:
         unique = np.unique(feature)
@@ -790,6 +802,10 @@ def check_and_transform_label_format(
     :param return_one_hot: True if returning one-hot encoded labels, False if returning index labels.
     :return: Labels with shape `(nb_samples, nb_classes)` (one-hot) or `(nb_samples,)` (index).
     """
+    if hasattr(labels, "detach"):
+        labels = labels.detach().cpu().numpy()
+    elif hasattr(labels, "numpy"):
+        labels = labels.numpy()
     labels_return = labels
 
     if nb_classes is not None and not isinstance(nb_classes, (int, np.integer)):

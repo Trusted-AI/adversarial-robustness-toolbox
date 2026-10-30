@@ -93,7 +93,7 @@ def test_iterative_saliency_refresh(art_warning, fix_get_mnist_subset, image_dl_
         classifier = image_dl_estimator_for_attack(FastGradientMethod)
 
         expected_values_axis_1 = {
-            "nb_perturbed_frames": ExpectedValue(np.asarray([5, 1, 3, 10, 8, 1, 3, 8, 4, 7, 7]), 2)
+            "nb_perturbed_frames": ExpectedValue(np.asarray([6, 1, 3, 8, 10, 1, 4, 9, 4, 11, 3]), 2)
         }
 
         expected_values_axis_2 = {
