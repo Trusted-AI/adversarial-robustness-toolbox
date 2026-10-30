@@ -278,9 +278,7 @@ class TestScikitlearnLogisticRegression(TestBase):
         master_seed(seed=1234)
         super().setUpClass()
 
-        cls.sklearn_model = LogisticRegression(
-            verbose=0, C=1, solver="newton-cg", dual=False, fit_intercept=True, multi_class="ovr"
-        )
+        cls.sklearn_model = LogisticRegression(verbose=0, C=1, solver="newton-cg", dual=False, fit_intercept=True)
         cls.classifier = ScikitlearnLogisticRegression(model=cls.sklearn_model)
         cls.classifier.fit(x=cls.x_train_iris, y=cls.y_train_iris)
 
@@ -291,16 +289,16 @@ class TestScikitlearnLogisticRegression(TestBase):
 
     def test_predict(self):
         y_predicted = self.classifier.predict(self.x_test_iris[0:1])
-        y_expected = np.asarray([[0.07997696, 0.36272544, 0.5572976]])
+        y_expected = np.asarray([[0.05651609, 0.3351358, 0.60834813]])
         np.testing.assert_array_almost_equal(y_predicted, y_expected, decimal=3)
 
     def test_class_gradient_none_1(self):
         grad_predicted = self.classifier.class_gradient(self.x_test_iris[0:1], label=None)
         grad_expected = [
             [
-                [-1.97804999, 1.35988402, -6.28209543, -2.59983373],
-                [-0.56164223, -0.70078993, -0.98865014, -0.66950917],
-                [0.64962, 0.2610305, 1.54549754, 0.80910802],
+                [-1.73085618, 1.11711752, -5.45074177, -2.27298689],
+                [-0.52926081, -0.60170209, -1.15163267, -0.75595492],
+                [0.45236516, 0.22769327, 1.14080715, 0.62761414],
             ]
         ]
         np.testing.assert_array_almost_equal(grad_predicted, grad_expected, decimal=3)
@@ -310,35 +308,35 @@ class TestScikitlearnLogisticRegression(TestBase):
         grad_expected = [
             [
                 [
-                    -1.97804999,
-                    1.35988402,
-                    -6.28209543,
-                    -2.59983397,
+                    -1.73085618,
+                    1.11711752,
+                    -5.45074129,
+                    -2.27298665,
                 ],
                 [
-                    -0.56164235,
-                    -0.70078993,
-                    -0.98865038,
-                    -0.66950929,
+                    -0.52926081,
+                    -0.60170197,
+                    -1.15163255,
+                    -0.75595486,
                 ],
                 [
-                    0.64961988,
-                    0.26103044,
-                    1.5454973,
-                    0.8091079,
+                    0.45236516,
+                    0.22769333,
+                    1.14080727,
+                    0.6276142,
                 ],
             ],
             [
-                [-1.9202075, 1.34698176, -6.1180439, -2.5255065],
-                [-0.50379974, -0.71369207, -0.82459873, -0.59518182],
-                [0.70746249, 0.24812828, 1.70954895, 0.88343531],
+                [-1.66938925, 1.12607121, -5.28372431, -2.18912697],
+                [-0.46779382, -0.5927484, -0.98461545, -0.67209512],
+                [0.51383215, 0.23664697, 1.30782437, 0.71147394],
             ],
         ]
         np.testing.assert_array_almost_equal(grad_predicted, grad_expected, decimal=3)
 
     def test_class_gradient_int_1(self):
         grad_predicted = self.classifier.class_gradient(self.x_test_iris[0:1], label=1)
-        grad_expected = [[[-0.56164223, -0.70078993, -0.98865014, -0.66950917]]]
+        grad_expected = [[[-0.52926081, -0.60170209, -1.15163267, -0.75595492]]]
 
         for i_shape in range(4):
             self.assertAlmostEqual(grad_predicted[0, 0, i_shape], grad_expected[0][0][i_shape], 3)
@@ -346,14 +344,14 @@ class TestScikitlearnLogisticRegression(TestBase):
     def test_class_gradient_int_2(self):
         grad_predicted = self.classifier.class_gradient(self.x_test_iris[0:2], label=1)
         grad_expected = [
-            [[-0.56164235, -0.70078993, -0.98865038, -0.66950929]],
-            [[-0.50379974, -0.71369207, -0.82459873, -0.59518182]],
+            [[-0.52926081, -0.60170197, -1.15163255, -0.75595486]],
+            [[-0.46779382, -0.5927484, -0.98461545, -0.67209512]],
         ]
         np.testing.assert_array_almost_equal(grad_predicted, grad_expected, decimal=4)
 
     def test_class_gradient_list_1(self):
         grad_predicted = self.classifier.class_gradient(self.x_test_iris[0:1], label=[1])
-        grad_expected = [[[-0.56164223, -0.70078993, -0.98865014, -0.66950917]]]
+        grad_expected = [[[-0.52926081, -0.60170209, -1.15163267, -0.75595492]]]
 
         for i_shape in range(4):
             self.assertAlmostEqual(grad_predicted[0, 0, i_shape], grad_expected[0][0][i_shape], 3)
@@ -361,8 +359,8 @@ class TestScikitlearnLogisticRegression(TestBase):
     def test_class_gradient_list_2(self):
         grad_predicted = self.classifier.class_gradient(self.x_test_iris[0:2], label=[1, 2])
         grad_expected = [
-            [[-0.56164235, -0.70078993, -0.98865038, -0.66950929]],
-            [[0.70746249, 0.24812828, 1.70954895, 0.88343531]],
+            [[-0.52926081, -0.60170197, -1.15163255, -0.75595486]],
+            [[0.51383215, 0.23664697, 1.30782437, 0.71147394]],
         ]
         np.testing.assert_array_almost_equal(grad_predicted, grad_expected, decimal=3)
 
@@ -377,7 +375,7 @@ class TestScikitlearnLogisticRegression(TestBase):
 
     def test_loss_gradient(self):
         grad_predicted = self.classifier.loss_gradient(self.x_test_iris[0:1], self.y_test_iris[0:1])
-        grad_expected = np.asarray([[-0.21654, -0.08701016, -0.51516586, -0.26970267]])
+        grad_expected = np.asarray([[-0.15078837, -0.07589776, -0.38026905, -0.2092047]])
         np.testing.assert_array_almost_equal(grad_predicted, grad_expected, decimal=4)
 
     def test_save(self):
@@ -398,9 +396,7 @@ class TestScikitlearnBinaryLogisticRegression(TestBase):
         x_train_binary = cls.x_train_iris[binary_class_index,]
         y_train_binary = cls.y_train_iris[binary_class_index,][:, [0, 1]]
 
-        cls.sklearn_model = LogisticRegression(
-            verbose=0, C=1, solver="newton-cg", dual=False, fit_intercept=True, multi_class="ovr"
-        )
+        cls.sklearn_model = LogisticRegression(verbose=0, C=1, solver="newton-cg", dual=False, fit_intercept=True)
         cls.classifier = ScikitlearnLogisticRegression(model=cls.sklearn_model)
         cls.classifier.fit(x=x_train_binary, y=y_train_binary)
 

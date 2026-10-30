@@ -558,7 +558,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         """
         if initial_patch_value is None:
             self._patch.assign(self._initial_value)
-        elif isinstance(initial_patch_value, float):
+        elif isinstance(initial_patch_value, (float, int, np.floating, np.integer)):
             initial_value = np.ones(self.patch_shape) * initial_patch_value
             self._patch.assign(initial_value)
         elif self._patch.shape == initial_patch_value.shape:

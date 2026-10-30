@@ -138,7 +138,7 @@ def create_scikit_model_weights():
         "extraTreesClassifier": ExtraTreesClassifier(n_estimators=10),
         "gradientBoostingClassifier": GradientBoostingClassifier(n_estimators=10),
         "randomForestClassifier": RandomForestClassifier(n_estimators=10),
-        "logisticRegression": LogisticRegression(solver="lbfgs", multi_class="auto"),
+        "logisticRegression": LogisticRegression(solver="lbfgs"),
         "svc": SVC(gamma="auto"),
         "linearSVC": LinearSVC(),
     }
@@ -158,7 +158,7 @@ def create_scikit_model_weights():
                 os.path.join(
                     os.path.dirname(os.path.dirname(__file__)),
                     "resources/models/scikit/",
-                    "scikit-" + model_name + "-iris-clipped-eq-1.6.1.pickle",
+                    "scikit-" + model_name + "-iris-clipped-eq-1.9.1.pickle",
                 ),
                 "wb",
             ),
@@ -172,7 +172,7 @@ def create_scikit_model_weights():
                 os.path.join(
                     os.path.dirname(os.path.dirname(__file__)),
                     "resources/models/scikit/",
-                    "scikit-" + model_name + "-iris-unclipped-eq-1.6.1.pickle",
+                    "scikit-" + model_name + "-iris-unclipped-eq-1.9.1.pickle",
                 ),
                 "wb",
             ),
