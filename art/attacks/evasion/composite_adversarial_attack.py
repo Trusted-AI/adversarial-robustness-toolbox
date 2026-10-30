@@ -332,6 +332,10 @@ class CompositeAdversarialAttackPyTorch(EvasionAttack):
 
             x_adv[batch_index_1:batch_index_2] = self._generate_batch(x=batch_x, y=batch_y)
 
+        if self.estimator.clip_values is not None:
+            clip_min, clip_max = self.estimator.clip_values
+            x_adv = np.clip(x_adv, clip_min, clip_max)
+
         logger.info(
             "Success rate of attack: %.2f%%",
             100 * compute_success(self.estimator, x, y, x_adv, batch_size=self.batch_size),
@@ -552,7 +556,11 @@ class CompositeAdversarialAttackPyTorch(EvasionAttack):
                 _grad[self.is_attacked] = 0
             adv_data = adv_data + self.step_size_pool[5] * torch.sign(_grad)
             eta = torch.clamp(adv_data - sur_data, min=self.eps_pool[5][0], max=self.eps_pool[5][1])
-            adv_data = torch.clamp(sur_data + eta, min=0.0, max=1.0).detach_().requires_grad_()
+            if self.estimator.clip_values is not None:
+                clip_min, clip_max = self.estimator.clip_values
+                adv_data = torch.clamp(sur_data + eta, min=clip_min, max=clip_max).detach_().requires_grad_()
+            else:
+                adv_data = (sur_data + eta).detach_().requires_grad_()
 
         return adv_data, eta
 

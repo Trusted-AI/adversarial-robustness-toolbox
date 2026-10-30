@@ -89,6 +89,9 @@ class FeatureSqueezing(Preprocessor):
         res = res * (self.clip_values[1] - self.clip_values[0])
         res = res + self.clip_values[0]
 
+        if np.issubdtype(x.dtype, np.floating):
+            res = res.astype(x.dtype, copy=False)
+
         return res, y
 
     def _check_params(self) -> None:

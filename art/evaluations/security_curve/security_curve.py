@@ -80,9 +80,9 @@ class SecurityCurve(Evaluation):
         # Check type of eps
         if isinstance(self.eps, int):
             if classifier.clip_values is not None:
-                eps_increment = (classifier.clip_values[1] - classifier.clip_values[0]) / self.eps
+                eps_increment = float(classifier.clip_values[1] - classifier.clip_values[0]) / self.eps
             else:
-                eps_increment = (np.max(x) - np.min(x)) / self.eps
+                eps_increment = float(np.max(x) - np.min(x)) / self.eps
 
             for i in range(1, self.eps + 1):
                 self.eps_list.append(float(i * eps_increment))

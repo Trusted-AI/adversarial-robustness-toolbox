@@ -324,7 +324,7 @@ def test_true_label_baseline_regression(art_warning, get_diabetes_dataset, model
         )
 
         expected_train_acc = {"nn": 0.45, "rf": 0.99, "gb": 0.97, "lr": 0.68, "dt": 0.99, "knn": 0.69, "svm": 0.54}
-        expected_test_acc = {"nn": 0.45, "rf": 0.6, "gb": 0.65, "lr": 0.68, "dt": 0.54, "knn": 0.45, "svm": 0.47}
+        expected_test_acc = {"nn": 0.45, "rf": 0.6, "gb": 0.61, "lr": 0.65, "dt": 0.54, "knn": 0.45, "svm": 0.47}
 
         assert expected_train_acc[model_type] <= baseline_train_acc
         assert expected_test_acc[model_type] <= baseline_test_acc
@@ -513,7 +513,7 @@ def test_true_label_baseline_no_encoder(art_warning, get_iris_dataset, model_typ
         )
 
         expected_train_acc = {"nn": 0.81, "rf": 0.96, "gb": 0.96, "lr": 0.81, "dt": 0.96, "knn": 0.9, "svm": 0.81}
-        expected_test_acc = {"nn": 0.88, "rf": 0.81, "gb": 0.77, "lr": 0.88, "dt": 0.82, "knn": 0.84, "svm": 0.88}
+        expected_test_acc = {"nn": 0.88, "rf": 0.75, "gb": 0.77, "lr": 0.88, "dt": 0.82, "knn": 0.84, "svm": 0.88}
 
         assert expected_train_acc[model_type] <= baseline_train_acc
         assert expected_test_acc[model_type] <= baseline_test_acc

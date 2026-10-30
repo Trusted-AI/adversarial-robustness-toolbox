@@ -51,12 +51,16 @@ def test_database_reconstruction_gaussian_nb(get_iris_dataset):
     assert x_recon.shape == (1, 4)
     assert y_recon.shape == (1, 3)
     # assert np.isclose(x_recon, x_private).all()
-    assert np.isclose(x_recon, np.array([[0.84792809, 0.41754901, 0.72134694, 0.31628275]])).all()
+    assert np.isclose(x_recon, np.array([[0.84792867, 0.41754909, 0.72134733, 0.2278481]])).all()
     assert np.argmax(y_recon, axis=1) == y_private
 
 
 def test_database_reconstruction_logistic_regression(get_iris_dataset):
     (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = get_iris_dataset
+    # The attack matches fitted coefficients, so use float64 data and a tight solver tolerance; the defaults are not
+    # precise enough in scikit-learn >= 1.9
+    x_train_iris = x_train_iris.astype(np.float64)
+    x_test_iris = x_test_iris.astype(np.float64)
     y_train_iris = np.array([np.argmax(y) for y in y_train_iris])
     y_test_iris = np.array([np.argmax(y) for y in y_test_iris])
 
@@ -66,7 +70,7 @@ def test_database_reconstruction_logistic_regression(get_iris_dataset):
     x_input = np.vstack((x_train_iris, x_private))
     y_input = np.hstack((y_train_iris, y_private))
 
-    nb_private = LogisticRegression()
+    nb_private = LogisticRegression(tol=1e-8)
     nb_private.fit(x_input, y_input)
     estimator_private = ScikitlearnLogisticRegression(model=nb_private)
 

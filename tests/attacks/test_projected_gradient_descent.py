@@ -372,7 +372,7 @@ class TestPGD(TestBase):
         from art.estimators.classification.scikitlearn import SklearnClassifier
 
         scikitlearn_test_cases = [
-            LogisticRegression(solver="lbfgs", multi_class="auto"),
+            LogisticRegression(solver="lbfgs"),
             SVC(gamma="auto"),
             LinearSVC(),
         ]
