@@ -163,7 +163,10 @@ def empirical_robustness(
     :param attack_params: A dictionary with attack-specific parameters. If the attack has a norm attribute, then it will
                           be used as the norm for calculating the robustness; otherwise the standard Euclidean distance
                           is used (norm=2).
-    :return: The average empirical robustness computed on `x`.
+    :return: The average empirical robustness computed on `x`, or `numpy.nan` if the attack did not successfully
+             attack any sample of `x`. Without a successful attack there is no perturbation to average, and a
+             numeric floor such as `0.0` would rank the most robust outcome of a batch below every batch in which
+             the attack succeeded.
     """
     crafter = get_crafter(classifier, attack_name, attack_params)
     crafter.set_params(**{"minimal": True})
@@ -175,7 +178,12 @@ def empirical_robustness(
 
     idxs = np.argmax(y_pred, axis=1) != np.argmax(y, axis=1)
     if np.sum(idxs) == 0.0:
-        return 0.0
+        logger.warning(
+            "No sample of `x` was successfully attacked by `%s`, so the empirical robustness of this batch "
+            "is undefined and `numpy.nan` is returned.",
+            attack_name,
+        )
+        return np.nan
 
     norm_type = 2
     if hasattr(crafter, "norm"):
