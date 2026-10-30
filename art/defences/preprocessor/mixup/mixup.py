@@ -112,7 +112,7 @@ class Mixup(Preprocessor):
             x_aug = x_aug + lmb * x[indices]
             y_aug = y_aug + lmb * y_one_hot[indices]
 
-        return x_aug, y_aug
+        return x_aug.astype(x.dtype), y_aug.astype(y_one_hot.dtype)
 
     def _check_params(self) -> None:
         if self.num_classes <= 0:
