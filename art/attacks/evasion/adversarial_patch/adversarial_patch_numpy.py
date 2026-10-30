@@ -615,9 +615,9 @@ class AdversarialPatchNumpy(EvasionAttack):
         """
         if initial_patch_value is None:
             self.patch = np.ones(shape=self.patch_shape).astype(np.float32) * self.mean_value
-        elif isinstance(initial_patch_value, float):
+        elif isinstance(initial_patch_value, (float, int, np.floating, np.integer)):
             self.patch = np.ones(shape=self.patch_shape).astype(np.float32) * initial_patch_value
-        elif self.patch is not None and self.patch.shape == initial_patch_value.shape:
+        elif isinstance(initial_patch_value, np.ndarray) and self.patch_shape == initial_patch_value.shape:
             self.patch = initial_patch_value
         else:
             raise ValueError("Unexpected value for initial_patch_value.")
