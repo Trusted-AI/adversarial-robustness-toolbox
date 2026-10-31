@@ -1634,36 +1634,43 @@ def get_file(
         try:
             for url_i in url_list:
                 try:
-                    from six.moves.urllib.error import HTTPError, URLError
-                    from six.moves.urllib.request import urlretrieve
-
-                    # The following two lines should prevent occasionally occurring
-                    # [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed (_ssl.c:847)
                     import ssl
+                    from six.moves.urllib.error import HTTPError, URLError
+                    from six.moves.urllib.request import urlopen
 
-                    ssl._create_default_https_context = ssl._create_unverified_context
+                    try:
+                        context = ssl.create_default_context()
+                    except Exception:  # pragma: no cover
+                        context = None
 
-                    if verbose:
-                        with tqdm() as t_bar:
-                            # pylint: disable=cell-var-from-loop
-                            last_block = [0]
+                    try:
+                        response = urlopen(url_i, context=context)
+                    except (ssl.SSLError, URLError):
+                        if hasattr(ssl, "_create_unverified_context"):
+                            context = ssl._create_unverified_context()
+                            response = urlopen(url_i, context=context)
+                        else:
+                            raise
 
-                            def progress_bar(blocks: int = 1, block_size: int = 1, total_size: int | None = None):
-                                """
-                                :param blocks: Number of blocks transferred so far [default: 1].
-                                :param block_size: Size of each block (in tqdm units) [default: 1].
-                                :param total_size: Total size (in tqdm units). If [default: None] or -1, remains
-                                                   unchanged.
-                                """
-                                if total_size not in (None, -1):
-                                    t_bar.total = total_size
-                                displayed = t_bar.update((blocks - last_block[0]) * block_size)
-                                last_block[0] = blocks
-                                return displayed
+                    total_size_str = response.headers.get("Content-Length")
+                    total_size = int(total_size_str) if total_size_str is not None else None
+                    block_size = 1024 * 8
 
-                            urlretrieve(url_i, full_path, reporthook=progress_bar)
-                    else:
-                        urlretrieve(url_i, full_path)
+                    with open(full_path, "wb") as f_out:
+                        if verbose:
+                            with tqdm(total=total_size, unit="B", unit_scale=True, unit_divisor=1024) as t_bar:
+                                while True:
+                                    chunk = response.read(block_size)
+                                    if not chunk:
+                                        break
+                                    f_out.write(chunk)
+                                    t_bar.update(len(chunk))
+                        else:
+                            while True:
+                                chunk = response.read(block_size)
+                                if not chunk:
+                                    break
+                                f_out.write(chunk)
 
                 except HTTPError as exception:  # pragma: no cover
                     logger.error(url_i, exception)
