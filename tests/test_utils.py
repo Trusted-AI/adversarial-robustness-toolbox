@@ -24,7 +24,7 @@ import numpy as np
 import tensorflow as tf
 
 from art.utils import projection, random_sphere, uniform_sample_from_sphere_or_ball, to_categorical, least_likely_class
-from art.utils import load_dataset, load_iris, load_mnist, load_nursery, load_cifar10
+from art.utils import load_dataset, load_iris, load_mnist, load_nursery, load_cifar10, get_file
 from art.utils import second_most_likely_class, random_targets, get_label_conf, get_labels_np_array, preprocess
 from art.utils import compute_success_array, compute_success, check_and_transform_label_format
 from art.utils import segment_by_class, performance_diff
@@ -432,6 +432,21 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(max_, 1.0)
         self.assertEqual(x_train.shape[0], y_train.shape[0])
         self.assertEqual(x_test.shape[0], y_test.shape[0])
+
+    def test_get_file(self):
+        import os
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            url = "https://raw.githubusercontent.com/Trusted-AI/adversarial-robustness-toolbox/main/README.md"
+            path = get_file("README.md", path=tmpdir, extract=False, url=url, verbose=True)
+            self.assertTrue(os.path.exists(path))
+            self.assertGreater(os.path.getsize(path), 0)
+
+            # Test downloading with verbose=False
+            path2 = get_file("README_2.md", path=tmpdir, extract=False, url=url, verbose=False)
+            self.assertTrue(os.path.exists(path2))
+            self.assertGreater(os.path.getsize(path2), 0)
 
     # def test_stl(self):
     #     (x_train, y_train), (x_test, y_test), min_, max_ = load_stl()
