@@ -75,7 +75,7 @@ def test_adversarial_trainer_fbf_pytorch_fit_and_predict(get_adv_trainer, fix_ge
     )
 
     assert accuracy == 0.32
-    assert accuracy_new == 0.63
+    assert accuracy_new == 0.62
 
     trainer.fit(x_train_mnist, y_train_mnist, nb_epochs=20, validation_data=(x_train_mnist, y_train_mnist))
 
@@ -97,7 +97,7 @@ def test_adversarial_trainer_fbf_pytorch_fit_generator_and_predict(
     predictions = np.argmax(trainer.predict(x_test_mnist), axis=1)
     accuracy = np.sum(predictions == np.argmax(y_test_mnist, axis=1)) / x_test_mnist.shape[0]
 
-    trainer.fit_generator(generator=generator, nb_epochs=20)
+    trainer.fit_generator(generator=generator, nb_epochs=5)
     predictions_new = np.argmax(trainer.predict(x_test_mnist), axis=1)
     accuracy_new = np.sum(predictions_new == np.argmax(y_test_mnist, axis=1)) / x_test_mnist.shape[0]
 

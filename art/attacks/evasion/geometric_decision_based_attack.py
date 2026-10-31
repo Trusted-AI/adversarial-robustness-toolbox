@@ -158,7 +158,7 @@ class GeoDA(EvasionAttack):
                     for i_x in range(res):
                         basis[i_y, i_x] = dct(i_x, i_y, i_v, i_u, max(res, v_max))
                 dct_basis.append(basis)
-        dct_basis_array = np.mat(np.reshape(dct_basis, (v_max * u_max, res * res))).transpose()
+        dct_basis_array = np.asarray(np.reshape(dct_basis, (v_max * u_max, res * res))).transpose()
 
         return dct_basis_array
 

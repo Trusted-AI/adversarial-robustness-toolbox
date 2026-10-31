@@ -2608,7 +2608,7 @@ class BrendelBethgeAttack(EvasionAttack):
         else:
             result = np.clip(current_sample, original_sample - alpha, original_sample + alpha)
 
-        return result
+        return result.astype(current_sample.dtype)
 
     def _adversarial_satisfactory(
         self, samples: np.ndarray, target: int, clip_min: float, clip_max: float
@@ -2622,7 +2622,7 @@ class BrendelBethgeAttack(EvasionAttack):
         :param clip_max: Maximum value of an example.
         :return: An array of 0/1.
         """
-        samples = np.clip(samples, clip_min, clip_max)
+        samples = np.clip(samples, clip_min, clip_max).astype(samples.dtype)
         preds = np.argmax(self.estimator.predict(samples, batch_size=self.batch_size), axis=1)
 
         if self.targeted:

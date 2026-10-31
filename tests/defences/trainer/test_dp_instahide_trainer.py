@@ -94,9 +94,7 @@ def get_mnist_classifier(framework):
 
 @pytest.mark.only_with_platform("pytorch", "tensorflow2", "keras", "kerastf", "huggingface")
 @pytest.mark.parametrize("noise", ["gaussian", "laplacian", "exponential"])
-def test_dp_instahide_single_aug(
-    art_warning, get_mnist_classifier, get_default_mnist_subset, get_default_cifar10_subset, noise, framework
-):
+def test_dp_instahide_single_aug(art_warning, get_mnist_classifier, get_default_mnist_subset, noise, framework):
     classifier = get_mnist_classifier()
 
     (x_train, y_train), (_, _) = get_default_mnist_subset
@@ -109,12 +107,19 @@ def test_dp_instahide_single_aug(
     except ARTTestException as e:
         art_warning(e)
 
+    finally:
+        del trainer
+        del classifier
+
+        if framework in ("tensorflow2", "keras", "kerastf"):
+            import tensorflow as tf
+
+            tf.keras.backend.clear_session()
+
 
 @pytest.mark.only_with_platform("pytorch", "tensorflow2", "keras", "kerastf", "huggingface")
 @pytest.mark.parametrize("noise", ["gaussian", "laplacian", "exponential"])
-def test_dp_instahide_multiple_aug(
-    art_warning, get_mnist_classifier, get_default_mnist_subset, get_default_cifar10_subset, noise, framework
-):
+def test_dp_instahide_multiple_aug(art_warning, get_mnist_classifier, get_default_mnist_subset, noise, framework):
     classifier = get_mnist_classifier()
 
     (x_train, y_train), (_, _) = get_default_mnist_subset
@@ -128,12 +133,19 @@ def test_dp_instahide_multiple_aug(
     except ARTTestException as e:
         art_warning(e)
 
+    finally:
+        del trainer
+        del classifier
+
+        if framework in ("tensorflow2", "keras", "kerastf"):
+            import tensorflow as tf
+
+            tf.keras.backend.clear_session()
+
 
 @pytest.mark.only_with_platform("pytorch", "tensorflow2", "keras", "kerastf", "huggingface")
 @pytest.mark.parametrize("noise", ["gaussian", "laplacian", "exponential"])
-def test_dp_instahide_validation_data(
-    art_warning, get_mnist_classifier, get_default_mnist_subset, get_default_cifar10_subset, noise, framework
-):
+def test_dp_instahide_validation_data(art_warning, get_mnist_classifier, get_default_mnist_subset, noise, framework):
     classifier = get_mnist_classifier()
 
     (x_train, y_train), (x_test, y_test) = get_default_mnist_subset
@@ -145,12 +157,19 @@ def test_dp_instahide_validation_data(
     except ARTTestException as e:
         art_warning(e)
 
+    finally:
+        del trainer
+        del classifier
+
+        if framework in ("tensorflow2", "keras", "kerastf"):
+            import tensorflow as tf
+
+            tf.keras.backend.clear_session()
+
 
 @pytest.mark.only_with_platform("pytorch", "tensorflow2", "keras", "kerastf", "huggingface")
 @pytest.mark.parametrize("noise", ["gaussian", "laplacian", "exponential"])
-def test_dp_instahide_generator(
-    art_warning, get_mnist_classifier, get_default_mnist_subset, get_default_cifar10_subset, noise, framework
-):
+def test_dp_instahide_generator(art_warning, get_mnist_classifier, get_default_mnist_subset, noise, framework):
     from art.data_generators import NumpyDataGenerator
 
     classifier = get_mnist_classifier()
@@ -158,10 +177,19 @@ def test_dp_instahide_generator(
     (x_train, y_train), (_, _) = get_default_mnist_subset
 
     mixup = Mixup(num_classes=10)
-    generator = NumpyDataGenerator(x_train, y_train, batch_size=len(x_train))
+    generator = NumpyDataGenerator(x_train, y_train, batch_size=32)
 
     try:
         trainer = DPInstaHideTrainer(classifier, augmentations=mixup, noise=noise, loc=0, scale=0.1)
         trainer.fit_generator(generator, nb_epochs=1)
     except ARTTestException as e:
         art_warning(e)
+
+    finally:
+        del trainer
+        del classifier
+
+        if framework in ("tensorflow2", "keras", "kerastf"):
+            import tensorflow as tf
+
+            tf.keras.backend.clear_session()
