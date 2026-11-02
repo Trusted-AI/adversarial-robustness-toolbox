@@ -42,7 +42,7 @@ ultralytics==8.3.213
 
 catboost==1.2.8
 GPy==1.14.2
-lightgbm==4.6.0
+lightgbm==4.7.0
 xgboost==3.0.5
 
 kornia~=0.8.1
