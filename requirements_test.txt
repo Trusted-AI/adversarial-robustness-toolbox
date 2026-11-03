@@ -38,7 +38,7 @@ timm==1.0.19
 huggingface_hub==0.34.6
 
 # YOLO dependencies
-ultralytics==8.3.213
+ultralytics==8.4.194
 
 catboost==1.2.8
 GPy==1.14.2
