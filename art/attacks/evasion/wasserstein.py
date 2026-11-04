@@ -37,7 +37,7 @@ from art.attacks.attack import EvasionAttack
 from art.utils import get_labels_np_array, check_and_transform_label_format
 
 if TYPE_CHECKING:
-    from art.utils import CLASSIFIER_LOSS_GRADIENTS_TYPE
+    from art.types import CLASSIFIER_LOSS_GRADIENTS_TYPE
 
 logger = logging.getLogger(__name__)
 

@@ -27,7 +27,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 if TYPE_CHECKING:
-    from art.utils import CLASSIFIER_TYPE
+    from art.types import CLASSIFIER_TYPE
 
 
 class Transformer(abc.ABC):

@@ -33,36 +33,45 @@ from scipy.stats import weibull_min
 from tqdm.auto import tqdm
 
 from art.config import ART_NUMPY_DTYPE
-from art.attacks.attack import EvasionAttack
-from art.attacks.evasion.auto_attack import AutoAttack
-from art.attacks.evasion.fast_gradient import FastGradientMethod
-from art.attacks.evasion.hop_skip_jump import HopSkipJump
 from art.utils import random_sphere
 
 if TYPE_CHECKING:
-    from art.utils import CLASSIFIER_TYPE, CLASSIFIER_LOSS_GRADIENTS_TYPE, CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE
+    from art.attacks.attack import EvasionAttack
+    from art.types import CLASSIFIER_TYPE, CLASSIFIER_LOSS_GRADIENTS_TYPE, CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE
 
 logger = logging.getLogger(__name__)
 
-SUPPORTED_METHODS: dict[str, dict[str, Any]] = {
-    "auto": {
-        "class": AutoAttack,
-        "params": {"eps_step": 0.1},
-    },
-    "fgsm": {
-        "class": FastGradientMethod,
-        "params": {"eps_step": 0.1},
-    },
-    "hsj": {
-        "class": HopSkipJump,
-        "params": {
-            "max_iter": 50,
-            "max_eval": 10000,
-            "init_eval": 100,
-            "init_size": 100,
+
+def _get_supported_methods() -> dict[str, dict[str, Any]]:
+    from art.attacks.evasion.auto_attack import AutoAttack
+    from art.attacks.evasion.fast_gradient import FastGradientMethod
+    from art.attacks.evasion.hop_skip_jump import HopSkipJump
+
+    return {
+        "auto": {
+            "class": AutoAttack,
+            "params": {"eps_step": 0.1},
         },
-    },
-}
+        "fgsm": {
+            "class": FastGradientMethod,
+            "params": {"eps_step": 0.1},
+        },
+        "hsj": {
+            "class": HopSkipJump,
+            "params": {
+                "max_iter": 50,
+                "max_eval": 10000,
+                "init_eval": 100,
+                "init_size": 100,
+            },
+        },
+    }
+
+
+def __getattr__(name: str) -> Any:
+    if name == "SUPPORTED_METHODS":
+        return _get_supported_methods()
+    raise AttributeError(f"module '{__name__}' has no attribute '{name}'")
 
 
 def get_crafter(classifier: "CLASSIFIER_TYPE", attack: str, params: dict[str, Any] | None = None) -> "EvasionAttack":
@@ -74,14 +83,15 @@ def get_crafter(classifier: "CLASSIFIER_TYPE", attack: str, params: dict[str, An
     :param params: Parameters specific to the adversarial attack.
     :return: An attack instance.
     """
+    supported_methods = _get_supported_methods()
     try:
-        crafter = SUPPORTED_METHODS[attack]["class"](classifier)
+        crafter = supported_methods[attack]["class"](classifier)
     except Exception:  # pragma: no cover
-        logger.warning("Available attacks include %s.", ", ".join(SUPPORTED_METHODS.keys()))
+        logger.warning("Available attacks include %s.", ", ".join(supported_methods.keys()))
         raise NotImplementedError(f"{attack} crafting method not supported.") from Exception
 
-    if "params" in SUPPORTED_METHODS[attack]:
-        crafter.set_params(**SUPPORTED_METHODS[attack]["params"])
+    if "params" in supported_methods[attack]:
+        crafter.set_params(**supported_methods[attack]["params"])
     if params:
         crafter.set_params(**params)
 

@@ -23,7 +23,7 @@ import unittest
 
 import numpy as np
 
-from art import config
+import art.config as config
 from art.utils import load_mnist, load_cifar10
 from art.visualization import create_sprite, convert_to_rgb, save_image, plot_3d
 

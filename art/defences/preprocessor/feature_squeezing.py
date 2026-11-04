@@ -32,7 +32,7 @@ import logging
 
 import numpy as np
 
-from art.utils import CLIP_VALUES_TYPE
+from art.types import CLIP_VALUES_TYPE
 from art.defences.preprocessor.preprocessor import Preprocessor
 
 logger = logging.getLogger(__name__)

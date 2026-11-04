@@ -32,7 +32,7 @@ import numpy as np
 from art.estimators.classification.ensemble import EnsembleClassifier
 
 if TYPE_CHECKING:
-    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE, CLASSIFIER_NEURALNETWORK_TYPE
+    from art.types import CLIP_VALUES_TYPE, PREPROCESSING_TYPE, CLASSIFIER_NEURALNETWORK_TYPE
     from art.defences.preprocessor import Preprocessor
     from art.defences.postprocessor import Postprocessor
 

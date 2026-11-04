@@ -34,7 +34,7 @@ from art.attacks.evasion.overload.box_iou import box_iou
 if TYPE_CHECKING:
 
     import torch
-    from art.utils import PYTORCH_OBJECT_DETECTOR_TYPE
+    from art.types import PYTORCH_OBJECT_DETECTOR_TYPE
 
 logger = logging.getLogger(__name__)
 

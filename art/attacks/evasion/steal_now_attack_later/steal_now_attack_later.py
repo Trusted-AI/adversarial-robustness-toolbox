@@ -37,7 +37,7 @@ from art.attacks.evasion.steal_now_attack_later.drop_block2d import drop_block2d
 if TYPE_CHECKING:
     # pylint: disable=C0412
     import torch
-    from art.utils import PYTORCH_OBJECT_DETECTOR_TYPE
+    from art.types import PYTORCH_OBJECT_DETECTOR_TYPE
 
 logger = logging.getLogger(__name__)
 

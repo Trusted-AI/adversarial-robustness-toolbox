@@ -36,7 +36,7 @@ from art.defences.detector.poison.poison_filtering_defence import PoisonFilterin
 from art.utils import segment_by_class
 
 if TYPE_CHECKING:
-    from art.utils import CLASSIFIER_NEURALNETWORK_TYPE
+    from art.types import CLASSIFIER_NEURALNETWORK_TYPE
 
 
 class SpectralSignatureDefense(PoisonFilteringDefence):

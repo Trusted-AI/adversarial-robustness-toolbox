@@ -32,7 +32,7 @@ from art.defences.transformer.transformer import Transformer
 from art.estimators.poison_mitigation.strip import STRIPMixin
 
 if TYPE_CHECKING:
-    from art.utils import CLASSIFIER_TYPE
+    from art.types import CLASSIFIER_TYPE
 
 logger = logging.getLogger(__name__)
 

@@ -26,7 +26,7 @@ from typing import Any, TYPE_CHECKING
 
 import numpy as np
 
-from art import config
+import art.config as config
 from art.estimators.estimator import (
     BaseEstimator,
     LossGradientsMixin,

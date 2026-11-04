@@ -27,7 +27,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-from art import config
+import art.config as config
 
 if TYPE_CHECKING:
     import matplotlib

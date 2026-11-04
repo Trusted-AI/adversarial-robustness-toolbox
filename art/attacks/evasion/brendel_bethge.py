@@ -53,14 +53,14 @@ import logging
 import numpy as np
 from numba.experimental import jitclass
 
-from art import config
+import art.config as config
 from art.utils import get_labels_np_array, check_and_transform_label_format, is_probability
 from art.attacks.attack import EvasionAttack
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from art.estimators.classification.classifier import ClassifierMixin
 
 if TYPE_CHECKING:
-    from art.utils import CLASSIFIER_LOSS_GRADIENTS_TYPE
+    from art.types import CLASSIFIER_LOSS_GRADIENTS_TYPE
 
 EPS = 1e-10
 

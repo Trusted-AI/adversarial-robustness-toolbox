@@ -42,7 +42,7 @@ else:
     from typing import Any, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from art.utils import IBP_CERTIFIER_TYPE
+    from art.types import IBP_CERTIFIER_TYPE
 
     # if we use python 3.8 or higher use the more informative TypedDict for type hinting
     if sys.version_info >= (3, 8):

@@ -35,7 +35,7 @@ from typing import (
 import numpy as np
 import six
 
-from art import config
+import art.config as config
 from art.estimators.keras import KerasEstimator
 from art.estimators.regression.regressor import RegressorMixin
 
@@ -44,7 +44,7 @@ if TYPE_CHECKING:
     import keras
     import tensorflow as tf
 
-    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
+    from art.types import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
     from art.data_generators import DataGenerator
     from art.defences.preprocessor import Preprocessor
     from art.defences.postprocessor import Postprocessor

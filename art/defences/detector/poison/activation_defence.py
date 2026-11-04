@@ -44,7 +44,7 @@ from art.utils import segment_by_class
 from art.visualization import create_sprite, save_image, plot_3d
 
 if TYPE_CHECKING:
-    from art.utils import CLASSIFIER_NEURALNETWORK_TYPE
+    from art.types import CLASSIFIER_NEURALNETWORK_TYPE
 
 logger = logging.getLogger(__name__)
 

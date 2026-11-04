@@ -34,7 +34,7 @@ import six
 import numpy as np
 from tqdm.auto import trange
 
-from art import config
+import art.config as config
 from art.defences.trainer.adversarial_trainer_oaat import AdversarialTrainerOAAT
 from art.estimators.classification.pytorch import PyTorchClassifier
 from art.data_generators import DataGenerator

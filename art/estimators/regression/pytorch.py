@@ -30,7 +30,7 @@ from typing import Any, TYPE_CHECKING
 import numpy as np
 import six
 
-from art import config
+import art.config as config
 from art.estimators.regression.regressor import RegressorMixin
 from art.estimators.pytorch import PyTorchEstimator
 
@@ -38,7 +38,7 @@ if TYPE_CHECKING:
 
     import torch
 
-    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
+    from art.types import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
     from art.data_generators import DataGenerator
     from art.defences.preprocessor import Preprocessor
     from art.defences.postprocessor import Postprocessor

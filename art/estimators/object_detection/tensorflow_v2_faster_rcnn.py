@@ -29,14 +29,14 @@ import numpy as np
 from art.estimators.object_detection.object_detector import ObjectDetectorMixin
 from art.estimators.tensorflow import TensorFlowV2Estimator
 from art.utils import get_file
-from art import config
+import art.config as config
 
 if TYPE_CHECKING:
 
     import tensorflow as tf
     from object_detection.meta_architectures.faster_rcnn_meta_arch import FasterRCNNMetaArch
 
-    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
+    from art.types import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
     from art.defences.preprocessor.preprocessor import Preprocessor
     from art.defences.postprocessor.postprocessor import Postprocessor
 
