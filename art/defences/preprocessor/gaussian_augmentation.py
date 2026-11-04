@@ -30,7 +30,7 @@ from art.config import ART_NUMPY_DTYPE
 from art.defences.preprocessor.preprocessor import Preprocessor
 
 if TYPE_CHECKING:
-    from art.utils import CLIP_VALUES_TYPE
+    from art.types import CLIP_VALUES_TYPE
 
 logger = logging.getLogger(__name__)
 

@@ -37,7 +37,7 @@ if TYPE_CHECKING:
     import tensorflow as tf
     from tensorflow.keras.optimizers import Optimizer
 
-    from art.utils import TENSORFLOWV2_ESTIMATOR_TYPE
+    from art.types import TENSORFLOWV2_ESTIMATOR_TYPE
 
 logger = logging.getLogger(__name__)
 

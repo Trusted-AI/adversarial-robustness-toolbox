@@ -36,7 +36,7 @@ from art.estimators.estimator import (
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
-    from art.utils import KERAS_ESTIMATOR_TYPE
+    from art.types import KERAS_ESTIMATOR_TYPE
 
 
 class KerasEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):

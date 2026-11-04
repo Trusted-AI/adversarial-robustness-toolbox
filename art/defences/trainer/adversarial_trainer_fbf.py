@@ -34,7 +34,7 @@ import numpy as np
 from art.defences.trainer.trainer import Trainer
 
 if TYPE_CHECKING:
-    from art.utils import CLASSIFIER_LOSS_GRADIENTS_TYPE
+    from art.types import CLASSIFIER_LOSS_GRADIENTS_TYPE
     from art.data_generators import DataGenerator
 
 

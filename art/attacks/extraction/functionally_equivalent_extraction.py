@@ -44,7 +44,7 @@ from art.estimators.classification.keras import KerasClassifier
 from art.estimators.classification.blackbox import BlackBoxClassifier
 
 if TYPE_CHECKING:
-    from art.utils import CLASSIFIER_TYPE
+    from art.types import CLASSIFIER_TYPE
 
 NUMPY_DTYPE = np.float64  # pylint: disable=invalid-name
 

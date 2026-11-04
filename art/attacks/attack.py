@@ -32,7 +32,7 @@ from art.summary_writer import SummaryWriter, SummaryWriterDefault
 from art.utils import get_feature_index
 
 if TYPE_CHECKING:
-    from art.utils import CLASSIFIER_TYPE, GENERATOR_TYPE
+    from art.types import CLASSIFIER_TYPE, GENERATOR_TYPE
 
 logger = logging.getLogger(__name__)
 

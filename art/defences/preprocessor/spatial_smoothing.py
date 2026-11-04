@@ -33,7 +33,7 @@ import logging
 import numpy as np
 from scipy.ndimage import median_filter
 
-from art.utils import CLIP_VALUES_TYPE
+from art.types import CLIP_VALUES_TYPE
 from art.defences.preprocessor.preprocessor import Preprocessor
 
 logger = logging.getLogger(__name__)

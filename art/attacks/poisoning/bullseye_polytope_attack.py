@@ -36,7 +36,7 @@ from art.estimators.classification.pytorch import PyTorchClassifier
 if TYPE_CHECKING:
 
     import torch
-    from art.utils import CLASSIFIER_NEURALNETWORK_TYPE
+    from art.types import CLASSIFIER_NEURALNETWORK_TYPE
 
 logger = logging.getLogger(__name__)
 

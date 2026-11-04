@@ -37,7 +37,7 @@ from art.attacks.attack import EvasionAttack
 from art.data_generators import DataGenerator
 
 if TYPE_CHECKING:
-    from art.utils import CLASSIFIER_LOSS_GRADIENTS_TYPE
+    from art.types import CLASSIFIER_LOSS_GRADIENTS_TYPE
 
 
 class AdversarialTrainerTRADES(Trainer, abc.ABC):

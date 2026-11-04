@@ -54,7 +54,7 @@ from art.estimators.classification import ClassifierMixin
 from art.utils import get_labels_np_array
 
 if TYPE_CHECKING:
-    from art.utils import CLASSIFIER_NEURALNETWORK_TYPE
+    from art.types import CLASSIFIER_NEURALNETWORK_TYPE
     import torch
 
 

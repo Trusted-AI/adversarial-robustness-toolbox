@@ -33,7 +33,7 @@ from art.estimators.regression.regressor import RegressorMixin, Regressor
 from art.estimators.classification import BlackBoxClassifier
 
 if TYPE_CHECKING:
-    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
+    from art.types import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
     from art.defences.preprocessor import Preprocessor
     from art.defences.postprocessor import Postprocessor
 

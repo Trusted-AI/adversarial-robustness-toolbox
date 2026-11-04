@@ -44,7 +44,7 @@ else:
 if TYPE_CHECKING:
     from art.data_generators import DataGenerator
     from art.defences.preprocessor import Preprocessor
-    from art.utils import CLASSIFIER_LOSS_GRADIENTS_TYPE, CLIP_VALUES_TYPE
+    from art.types import CLASSIFIER_LOSS_GRADIENTS_TYPE, CLIP_VALUES_TYPE
 
 logger = logging.getLogger(__name__)
 

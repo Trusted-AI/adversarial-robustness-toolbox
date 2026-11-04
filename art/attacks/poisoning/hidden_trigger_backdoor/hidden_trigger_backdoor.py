@@ -44,7 +44,7 @@ from art.attacks.poisoning.hidden_trigger_backdoor.hidden_trigger_backdoor_keras
 )
 
 if TYPE_CHECKING:
-    from art.utils import CLASSIFIER_NEURALNETWORK_TYPE
+    from art.types import CLASSIFIER_NEURALNETWORK_TYPE
 
 logger = logging.getLogger(__name__)
 

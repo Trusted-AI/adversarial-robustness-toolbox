@@ -31,7 +31,7 @@ from sklearn.neighbors import KNeighborsClassifier
 from art.utils import check_and_transform_label_format, is_probability_array
 
 if TYPE_CHECKING:
-    from art.utils import CLASSIFIER_TYPE
+    from art.types import CLASSIFIER_TYPE
 
 
 class ComparisonType(Enum):

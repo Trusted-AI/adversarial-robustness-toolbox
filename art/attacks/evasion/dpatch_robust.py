@@ -42,7 +42,7 @@ import art.config as config
 from art.summary_writer import SummaryWriter
 
 if TYPE_CHECKING:
-    from art.utils import OBJECT_DETECTOR_TYPE
+    from art.types import OBJECT_DETECTOR_TYPE
 
 logger = logging.getLogger(__name__)
 

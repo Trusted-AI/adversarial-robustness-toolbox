@@ -47,7 +47,7 @@ from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent_t
 from art.summary_writer import SummaryWriter
 
 if TYPE_CHECKING:
-    from art.utils import CLASSIFIER_LOSS_GRADIENTS_TYPE, OBJECT_DETECTOR_TYPE
+    from art.types import CLASSIFIER_LOSS_GRADIENTS_TYPE, OBJECT_DETECTOR_TYPE
 
 logger = logging.getLogger(__name__)
 

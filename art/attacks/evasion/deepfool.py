@@ -36,7 +36,7 @@ from art.attacks.attack import EvasionAttack
 from art.utils import is_probability
 
 if TYPE_CHECKING:
-    from art.utils import CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE
+    from art.types import CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE
 
 logger = logging.getLogger(__name__)
 

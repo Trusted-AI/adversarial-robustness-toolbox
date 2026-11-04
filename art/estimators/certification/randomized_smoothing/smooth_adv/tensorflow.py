@@ -38,7 +38,7 @@ from art.utils import check_and_transform_label_format
 if TYPE_CHECKING:
 
     import tensorflow as tf
-    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
+    from art.types import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
     from art.defences.preprocessor import Preprocessor
     from art.defences.postprocessor import Postprocessor
 

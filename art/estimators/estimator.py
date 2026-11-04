@@ -29,7 +29,7 @@ from tqdm.auto import trange
 
 if TYPE_CHECKING:
     # pylint: disable=cyclic-import
-    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE, ESTIMATOR_TYPE
+    from art.types import CLIP_VALUES_TYPE, PREPROCESSING_TYPE, ESTIMATOR_TYPE
     from art.data_generators import DataGenerator
     from art.metrics.verification_decisions_trees import Tree
     from art.defences.postprocessor.postprocessor import Postprocessor

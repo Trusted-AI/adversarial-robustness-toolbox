@@ -37,7 +37,7 @@ from art.estimators.object_detection.object_detector import ObjectDetectorMixin
 import art.config as config
 
 if TYPE_CHECKING:
-    from art.utils import OBJECT_DETECTOR_TYPE
+    from art.types import OBJECT_DETECTOR_TYPE
 
 logger = logging.getLogger(__name__)
 

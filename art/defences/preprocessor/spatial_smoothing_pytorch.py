@@ -37,7 +37,7 @@ from art.defences.preprocessor.preprocessor import PreprocessorPyTorch
 if TYPE_CHECKING:
 
     import torch
-    from art.utils import CLIP_VALUES_TYPE
+    from art.types import CLIP_VALUES_TYPE
 
 logger = logging.getLogger(__name__)
 
