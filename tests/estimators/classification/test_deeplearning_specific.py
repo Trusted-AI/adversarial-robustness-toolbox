@@ -112,7 +112,7 @@ def test_pickle(art_warning, get_default_mnist_subset, image_dl_estimator):
     try:
         (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
-        from art import config
+        import art.config as config
 
         full_path = os.path.join(config.ART_DATA_PATH, "my_classifier")
         folder = os.path.split(full_path)[0]

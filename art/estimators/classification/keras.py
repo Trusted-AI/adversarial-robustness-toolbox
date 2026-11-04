@@ -31,7 +31,7 @@ from typing import (
 
 import numpy as np
 
-from art import config
+import art.config as config
 from art.estimators.keras import KerasEstimator
 from art.estimators.classification.classifier import (
     ClassifierMixin,

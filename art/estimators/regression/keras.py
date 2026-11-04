@@ -35,7 +35,7 @@ from typing import (
 import numpy as np
 import six
 
-from art import config
+import art.config as config
 from art.estimators.keras import KerasEstimator
 from art.estimators.regression.regressor import RegressorMixin
 

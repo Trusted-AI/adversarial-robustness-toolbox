@@ -34,7 +34,7 @@ from tqdm.auto import trange
 from art.attacks.attack import EvasionAttack
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from art.estimators.object_detection.object_detector import ObjectDetectorMixin
-from art import config
+import art.config as config
 
 if TYPE_CHECKING:
     from art.utils import OBJECT_DETECTOR_TYPE

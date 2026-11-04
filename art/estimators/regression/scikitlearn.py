@@ -31,7 +31,7 @@ import numpy as np
 
 from art.estimators.scikitlearn import ScikitlearnEstimator
 from art.estimators.regression.regressor import RegressorMixin
-from art import config
+import art.config as config
 
 if TYPE_CHECKING:
 

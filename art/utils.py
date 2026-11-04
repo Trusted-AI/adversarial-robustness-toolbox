@@ -39,7 +39,7 @@ import six
 from scipy.special import gammainc
 from tqdm.auto import tqdm
 
-from art import config
+import art.config as config
 
 if TYPE_CHECKING:
     import torch

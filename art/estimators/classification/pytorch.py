@@ -31,7 +31,7 @@ from tqdm.auto import tqdm
 import numpy as np
 import six
 
-from art import config
+import art.config as config
 from art.estimators.classification.classifier import (
     ClassGradientsMixin,
     ClassifierMixin,

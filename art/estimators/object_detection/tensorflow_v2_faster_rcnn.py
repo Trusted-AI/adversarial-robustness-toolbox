@@ -29,7 +29,7 @@ import numpy as np
 from art.estimators.object_detection.object_detector import ObjectDetectorMixin
 from art.estimators.tensorflow import TensorFlowV2Estimator
 from art.utils import get_file
-from art import config
+import art.config as config
 
 if TYPE_CHECKING:
 
