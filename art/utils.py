@@ -1575,10 +1575,15 @@ def _extract(full_path: str, path: str) -> bool:
         return False
 
     try:
-        for entry in archive.getmembers():  # type: ignore
-            if os.path.isabs(entry.name) or ".." in entry.name:
-                raise ValueError(f"Illegal tar archive entry: {entry.name}")
-        archive.extractall(path)
+        if isinstance(archive, tarfile.TarFile):
+            base_path = os.path.abspath(path)
+            for entry in archive.getmembers():
+                member_path = os.path.abspath(os.path.join(base_path, entry.name))
+                if not (member_path == base_path or member_path.startswith(base_path + os.sep)):
+                    raise ValueError(f"Illegal tar archive entry: {entry.name}")
+                archive.extract(entry, base_path)
+        else:
+            archive.extractall(path)
     except (tarfile.TarError, RuntimeError, KeyboardInterrupt):  # pragma: no cover
         if os.path.exists(path):
             if os.path.isfile(path):
