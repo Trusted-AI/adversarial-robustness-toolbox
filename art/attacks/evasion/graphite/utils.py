@@ -50,7 +50,7 @@ from typing import TYPE_CHECKING
 import math
 import numpy as np
 from art.estimators.estimator import BaseEstimator
-from art.estimators.classification import ClassifierMixin
+from art.estimators.classification.classifier import ClassifierMixin
 from art.utils import get_labels_np_array
 
 if TYPE_CHECKING:

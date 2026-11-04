@@ -29,7 +29,6 @@ import numpy as np
 
 from art.exceptions import EstimatorError
 from art.summary_writer import SummaryWriter, SummaryWriterDefault
-from art.utils import get_feature_index
 
 if TYPE_CHECKING:
     from art.types import CLASSIFIER_TYPE, GENERATOR_TYPE
@@ -469,6 +468,8 @@ class AttributeInferenceAttack(InferenceAttack):
         :type estimator: :class:`.art.estimators.estimator.BaseEstimator`
         :param attack_feature: The index of the feature to be attacked.
         """
+        from art.utils import get_feature_index
+
         super().__init__(estimator)
         self._check_attack_feature(attack_feature)
         self.attack_feature = get_feature_index(attack_feature)

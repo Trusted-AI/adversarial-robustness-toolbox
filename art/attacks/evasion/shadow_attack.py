@@ -32,11 +32,6 @@ from tqdm.auto import trange
 from art.config import ART_NUMPY_DTYPE
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from art.estimators.classification.classifier import ClassifierMixin
-from art.estimators.classification import TensorFlowV2Classifier, PyTorchClassifier
-from art.estimators.certification.randomized_smoothing import (
-    TensorFlowV2RandomizedSmoothing,
-    PyTorchRandomizedSmoothing,
-)
 from art.attacks.attack import EvasionAttack
 from art.utils import get_labels_np_array, check_and_transform_label_format
 
@@ -105,6 +100,11 @@ class ShadowAttack(EvasionAttack):
         self._targeted = targeted
         self.verbose = verbose
         self._check_params()
+
+        from art.estimators.classification.tensorflow import TensorFlowV2Classifier
+        from art.estimators.classification.pytorch import PyTorchClassifier
+        from art.estimators.certification.randomized_smoothing.tensorflow import TensorFlowV2RandomizedSmoothing
+        from art.estimators.certification.randomized_smoothing.pytorch import PyTorchRandomizedSmoothing
 
         self.framework: str | None
         if isinstance(self.estimator, (TensorFlowV2Classifier, TensorFlowV2RandomizedSmoothing)):

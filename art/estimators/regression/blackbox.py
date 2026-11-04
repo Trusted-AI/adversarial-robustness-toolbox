@@ -30,7 +30,7 @@ import numpy as np
 
 from art.estimators.estimator import BaseEstimator
 from art.estimators.regression.regressor import RegressorMixin, Regressor
-from art.estimators.classification import BlackBoxClassifier
+from art.estimators.classification.blackbox import BlackBoxClassifier
 
 if TYPE_CHECKING:
     from art.types import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
