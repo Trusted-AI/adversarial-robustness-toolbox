@@ -40,7 +40,7 @@ huggingface_hub==0.34.6
 # YOLO dependencies
 ultralytics==8.4.194
 
-catboost==1.2.8
+catboost==1.2.10
 GPy==1.14.2
 lightgbm==4.7.0
 xgboost==3.0.5
