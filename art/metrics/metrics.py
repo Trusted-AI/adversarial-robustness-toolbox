@@ -126,7 +126,8 @@ def adversarial_accuracy(
             logger.warning("The input range is outside [0,1]. Please consider using `attack_crafter` instead.")
 
         attack_crafter = get_crafter(classifier, attack_name, attack_params)
-        attack_crafter.set_params(**{"minimal": True})
+        if "minimal" in attack_crafter.attack_params:
+            attack_crafter.set_params(minimal=True)
 
     adv_x = attack_crafter.generate(x)
 
@@ -166,7 +167,8 @@ def empirical_robustness(
     :return: The average empirical robustness computed on `x`.
     """
     crafter = get_crafter(classifier, attack_name, attack_params)
-    crafter.set_params(**{"minimal": True})
+    if "minimal" in crafter.attack_params:
+        crafter.set_params(minimal=True)
     adv_x = crafter.generate(x)
 
     # Predict the labels for adversarial examples
