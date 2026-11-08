@@ -115,3 +115,69 @@ def test_insert_image(art_warning):
 
     except ARTTestException as e:
         art_warning(e)
+
+
+@pytest.mark.framework_agnostic
+def test_insert_image_non_square_trigger(art_warning):
+    file_path = os.path.join(os.getcwd(), "utils/data/backdoors/htbd.png")
+    try:
+        # Regression test for issue #2141: a non-square trigger of size (height, width) must keep its
+        # orientation when inserted, although PIL resize expects (width, height).
+        image = insert_image(
+            x=np.zeros((32, 32, 3)),
+            backdoor_path=file_path,
+            size=(10, 4),
+            random=False,
+            x_shift=0,
+            y_shift=0,
+            mode="RGB",
+        )
+        assert image.shape == (32, 32, 3)
+        non_zero = image.sum(axis=2) > 0
+        rows = np.where(non_zero.any(axis=1))[0]
+        cols = np.where(non_zero.any(axis=0))[0]
+        assert len(rows) == 10  # trigger height
+        assert len(cols) == 4  # trigger width
+
+        # test fixed placement of non-square trigger on non-square image
+        image = insert_image(
+            x=np.zeros((20, 12, 3)),
+            backdoor_path=file_path,
+            size=(5, 10),
+            random=False,
+            x_shift=1,
+            y_shift=2,
+            mode="RGB",
+        )
+        assert image.shape == (20, 12, 3)
+        non_zero = image.sum(axis=2) > 0
+        rows = np.where(non_zero.any(axis=1))[0]
+        cols = np.where(non_zero.any(axis=0))[0]
+        assert rows.min() == 2 and rows.max() == 6  # height 5 starting at y_shift=2
+        assert cols.min() == 1 and cols.max() == 10  # width 10 starting at x_shift=1
+
+        # test batch of non-square images with non-square trigger
+        image = insert_image(x=np.zeros((2, 20, 12, 3)), backdoor_path=file_path, size=(5, 10), mode="RGB")
+        assert image.shape == (2, 20, 12, 3)
+
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.framework_agnostic
+def test_insert_image_random_matching_dimensions(art_warning):
+    file_path = os.path.join(os.getcwd(), "utils/data/backdoors/htbd.png")
+    try:
+        # Regression test for issue #2141: random placement must not fail when the trigger size matches
+        # the image size along one or both axes, because np.random.randint requires a positive upper bound.
+        image = insert_image(x=np.zeros((32, 32, 3)), backdoor_path=file_path, size=(32, 32), mode="RGB")
+        assert image.shape == (32, 32, 3)
+
+        image = insert_image(x=np.zeros((32, 32, 3)), backdoor_path=file_path, size=(32, 16), mode="RGB")
+        assert image.shape == (32, 32, 3)
+
+        image = insert_image(x=np.zeros((32, 32, 3)), backdoor_path=file_path, size=(16, 32), mode="RGB")
+        assert image.shape == (32, 32, 3)
+
+    except ARTTestException as e:
+        art_warning(e)
