@@ -81,6 +81,17 @@ class TestScikitlearnDecisionTreeClassifier(TestBase):
     def test_clone_for_refitting(self):
         _ = self.classifier.clone_for_refitting()
 
+    def test_fit_index_labels(self):
+        y_index = np.argmax(self.y_train_iris, axis=1)
+        expected = ScikitlearnDecisionTreeClassifier(model=DecisionTreeClassifier(random_state=0))
+        expected.fit(x=self.x_train_iris, y=self.y_train_iris)
+
+        for y in (y_index, y_index.reshape(-1, 1)):
+            classifier = ScikitlearnDecisionTreeClassifier(model=DecisionTreeClassifier(random_state=0))
+            classifier.fit(x=self.x_train_iris, y=y)
+            self.assertEqual(classifier.nb_classes, 3)
+            np.testing.assert_array_equal(classifier.predict(self.x_test_iris), expected.predict(self.x_test_iris))
+
     def test_multi_label(self):
         x_train = self.x_train_iris
         y_train = self.y_train_iris
