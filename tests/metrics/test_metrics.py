@@ -32,6 +32,7 @@ from art.estimators.classification.pytorch import PyTorchClassifier
 from art.metrics.metrics import (
     adversarial_accuracy,
     empirical_robustness,
+    get_crafter,
     clever_t,
     clever_u,
     clever,
@@ -73,6 +74,26 @@ class TestMetrics(unittest.TestCase):
         params = {"eps_step": 0.1, "eps": 0.2}
         emp_robust = empirical_robustness(classifier, x_train, str("fgsm"), params)
         self.assertLessEqual(emp_robust, 0.65)
+
+    def test_emp_robustness_undefined_without_success(self):
+        """
+        Test that the empirical robustness is undefined, and not 0.0, when no sample was successfully attacked.
+        """
+        classifier = self._constant_k([28, 28, 1])
+        x = np.random.uniform(size=(10, 28, 28, 1)).astype(np.float32)
+        params = {"eps_step": 0.1, "eps": 1.0}
+
+        crafter = get_crafter(classifier, "fgsm", params)
+        crafter.set_params(**{"minimal": True})
+        adv_x = crafter.generate(x)
+        y = np.argmax(classifier.predict(x), axis=1)
+        self.assertTrue(np.array_equal(np.argmax(classifier.predict(adv_x), axis=1), y))
+
+        with self.assertLogs("art.metrics.metrics", level="WARNING") as logs:
+            emp_robust = empirical_robustness(classifier, x, str("fgsm"), params)
+
+        self.assertTrue(np.isnan(emp_robust))
+        self.assertIn("undefined", "\n".join(logs.output).lower())
 
     def test_adv_acc_mnist(self):
         (x_train, y_train), (_, _), _, _ = load_mnist()
@@ -140,6 +161,31 @@ class TestMetrics(unittest.TestCase):
 
         classifier = KerasClassifier(model=model, clip_values=(0, 1), use_logits=False)
         return classifier
+
+    @staticmethod
+    def _constant_k(input_shape):
+        """
+        To create a simple KerasClassifier whose predictions no gradient-based attack can change.
+        :return:
+        """
+        from tensorflow import keras
+        from tensorflow.keras.models import Sequential
+        from tensorflow.keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
+
+        # Zero output weights make the logits input-independent and the input gradient vanish.
+        model = Sequential()
+        model.add(Conv2D(4, kernel_size=(5, 5), activation="relu", input_shape=input_shape))
+        model.add(MaxPooling2D(pool_size=(2, 2)))
+        model.add(Flatten())
+        model.add(Dense(10, activation="softmax", kernel_initializer="zeros", bias_initializer="zeros"))
+
+        model.compile(
+            loss=keras.losses.categorical_crossentropy,
+            optimizer=keras.optimizers.Adam(learning_rate=0.01),
+            metrics=["accuracy"],
+        )
+
+        return KerasClassifier(model=model, clip_values=(0, 1), use_logits=False)
 
     @staticmethod
     def _create_krclassifier():
