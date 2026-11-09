@@ -30,16 +30,13 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 from art.attacks.attack import EvasionAttack
-from art.attacks.evasion.auto_projected_gradient_descent import AutoProjectedGradientDescent
-from art.attacks.evasion.deepfool import DeepFool
-from art.attacks.evasion.square_attack import SquareAttack
 from art.config import ART_NUMPY_DTYPE
 from art.estimators.classification.classifier import ClassifierMixin
 from art.estimators.estimator import BaseEstimator
 from art.utils import check_and_transform_label_format, get_labels_np_array
 
 if TYPE_CHECKING:
-    from art.utils import CLASSIFIER_TYPE
+    from art.types import CLASSIFIER_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -100,6 +97,10 @@ class AutoAttack(EvasionAttack):
         super().__init__(estimator=estimator)
 
         if attacks is None or not attacks:
+            from art.attacks.evasion.auto_projected_gradient_descent import AutoProjectedGradientDescent
+            from art.attacks.evasion.deepfool import DeepFool
+            from art.attacks.evasion.square_attack import SquareAttack
+
             attacks = []
             attacks.append(
                 AutoProjectedGradientDescent(

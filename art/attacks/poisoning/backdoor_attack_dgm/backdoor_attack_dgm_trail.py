@@ -32,7 +32,7 @@ from art.attacks.attack import PoisoningAttackGenerator
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
-    from art.utils import GENERATOR_TYPE
+    from art.types import GENERATOR_TYPE
     import tensorflow as tf
 
 

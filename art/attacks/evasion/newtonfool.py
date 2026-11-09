@@ -36,7 +36,7 @@ from art.estimators.classification.classifier import ClassGradientsMixin
 from art.utils import to_categorical
 
 if TYPE_CHECKING:
-    from art.utils import CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE
+    from art.types import CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE
 
 logger = logging.getLogger(__name__)
 

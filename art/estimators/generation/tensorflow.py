@@ -33,7 +33,7 @@ if TYPE_CHECKING:
 
     import tensorflow.compat.v1 as tf
 
-    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
+    from art.types import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
     from art.defences.preprocessor import Preprocessor
     from art.defences.postprocessor import Postprocessor
 

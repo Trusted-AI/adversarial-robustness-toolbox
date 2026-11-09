@@ -42,7 +42,7 @@ if TYPE_CHECKING:
     from tensorflow.compat.v1 import Tensor
     from torch import Tensor as PTensor
 
-    from art.utils import SPEECH_RECOGNIZER_TYPE
+    from art.types import SPEECH_RECOGNIZER_TYPE
 
 logger = logging.getLogger(__name__)
 

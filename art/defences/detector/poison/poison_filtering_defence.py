@@ -34,7 +34,7 @@ else:
     ABC = abc.ABCMeta(str("ABC"), (), {})
 
 if TYPE_CHECKING:
-    from art.utils import CLASSIFIER_TYPE
+    from art.types import CLASSIFIER_TYPE
 
 
 class PoisonFilteringDefence(ABC):

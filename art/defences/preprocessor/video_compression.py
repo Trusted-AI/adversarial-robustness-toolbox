@@ -33,7 +33,7 @@ import warnings
 import numpy as np
 from tqdm.auto import tqdm
 
-from art import config
+import art.config as config
 from art.defences.preprocessor.preprocessor import Preprocessor
 
 logger = logging.getLogger(__name__)

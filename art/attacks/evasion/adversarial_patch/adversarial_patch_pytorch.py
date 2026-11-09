@@ -42,7 +42,7 @@ if TYPE_CHECKING:
 
     import torch
 
-    from art.utils import CLASSIFIER_NEURALNETWORK_TYPE, PYTORCH_OBJECT_DETECTOR_TYPE
+    from art.types import CLASSIFIER_NEURALNETWORK_TYPE, PYTORCH_OBJECT_DETECTOR_TYPE
 
 logger = logging.getLogger(__name__)
 

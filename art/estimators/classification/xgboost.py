@@ -32,13 +32,13 @@ import numpy as np
 
 from art.estimators.classification.classifier import ClassifierDecisionTree
 from art.utils import to_categorical
-from art import config
+import art.config as config
 
 if TYPE_CHECKING:
 
     import xgboost
 
-    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
+    from art.types import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
     from art.defences.preprocessor import Preprocessor
     from art.defences.postprocessor import Postprocessor
     from art.metrics.verification_decisions_trees import LeafNode, Tree

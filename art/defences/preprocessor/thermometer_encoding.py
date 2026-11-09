@@ -37,7 +37,7 @@ from art.defences.preprocessor.preprocessor import Preprocessor
 from art.utils import to_categorical
 
 if TYPE_CHECKING:
-    from art.utils import CLIP_VALUES_TYPE
+    from art.types import CLIP_VALUES_TYPE
 
 logger = logging.getLogger(__name__)
 

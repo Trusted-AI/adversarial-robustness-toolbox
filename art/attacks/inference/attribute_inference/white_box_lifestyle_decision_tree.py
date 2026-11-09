@@ -31,7 +31,7 @@ from art.estimators.classification.scikitlearn import ScikitlearnDecisionTreeCla
 from art.estimators.regression.scikitlearn import ScikitlearnDecisionTreeRegressor
 
 if TYPE_CHECKING:
-    from art.utils import CLASSIFIER_TYPE, REGRESSOR_TYPE
+    from art.types import CLASSIFIER_TYPE, REGRESSOR_TYPE
 
 logger = logging.getLogger(__name__)
 

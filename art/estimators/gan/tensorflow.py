@@ -27,7 +27,7 @@ import numpy as np
 from art.estimators.tensorflow import TensorFlowV2Estimator
 
 if TYPE_CHECKING:
-    from art.utils import CLASSIFIER_TYPE, GENERATOR_TYPE
+    from art.types import CLASSIFIER_TYPE, GENERATOR_TYPE
     import tensorflow as tf
 
 

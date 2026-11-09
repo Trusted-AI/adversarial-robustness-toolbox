@@ -33,7 +33,7 @@ from art.estimators.poison_mitigation.neural_cleanse import KerasNeuralCleanse
 from art.estimators.classification.keras import KerasClassifier
 
 if TYPE_CHECKING:
-    from art.utils import CLASSIFIER_TYPE
+    from art.types import CLASSIFIER_TYPE
 
 logger = logging.getLogger(__name__)
 

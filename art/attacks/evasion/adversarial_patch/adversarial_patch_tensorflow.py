@@ -42,7 +42,7 @@ if TYPE_CHECKING:
 
     import tensorflow as tf
 
-    from art.utils import CLASSIFIER_NEURALNETWORK_TYPE
+    from art.types import CLASSIFIER_NEURALNETWORK_TYPE
 
 logger = logging.getLogger(__name__)
 

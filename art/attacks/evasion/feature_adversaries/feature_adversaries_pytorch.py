@@ -37,7 +37,7 @@ if TYPE_CHECKING:
     import torch
     from torch.optim import Optimizer
 
-    from art.utils import PYTORCH_ESTIMATOR_TYPE
+    from art.types import PYTORCH_ESTIMATOR_TYPE
 
 logger = logging.getLogger(__name__)
 

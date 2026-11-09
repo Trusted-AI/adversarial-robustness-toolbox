@@ -34,11 +34,10 @@ from art.attacks.evasion.adversarial_patch.adversarial_patch_tensorflow import A
 from art.attacks.evasion.adversarial_patch.adversarial_patch_pytorch import AdversarialPatchPyTorch
 from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
 from art.estimators.classification.classifier import ClassifierMixin
-from art.estimators.classification import TensorFlowV2Classifier, PyTorchClassifier
 from art.attacks.attack import EvasionAttack
 
 if TYPE_CHECKING:
-    from art.utils import CLASSIFIER_NEURALNETWORK_TYPE
+    from art.types import CLASSIFIER_NEURALNETWORK_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -98,6 +97,9 @@ class AdversarialPatch(EvasionAttack):
         super().__init__(estimator=classifier)
         if self.estimator.clip_values is None:  # pragma: no cover
             raise ValueError("Adversarial Patch attack requires a classifier with clip_values.")
+
+        from art.estimators.classification.tensorflow import TensorFlowV2Classifier
+        from art.estimators.classification.pytorch import PyTorchClassifier
 
         self._attack: AdversarialPatchTensorFlowV2 | AdversarialPatchPyTorch | AdversarialPatchNumpy
         if isinstance(self.estimator, TensorFlowV2Classifier):

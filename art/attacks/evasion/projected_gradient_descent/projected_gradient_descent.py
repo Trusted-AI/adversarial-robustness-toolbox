@@ -31,8 +31,6 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-from art.estimators.classification.pytorch import PyTorchClassifier
-from art.estimators.classification.tensorflow import TensorFlowV2Classifier
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from art.attacks.attack import EvasionAttack
 from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent_numpy import (
@@ -47,7 +45,7 @@ from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent_t
 from art.summary_writer import SummaryWriter
 
 if TYPE_CHECKING:
-    from art.utils import CLASSIFIER_LOSS_GRADIENTS_TYPE, OBJECT_DETECTOR_TYPE
+    from art.types import CLASSIFIER_LOSS_GRADIENTS_TYPE, OBJECT_DETECTOR_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -132,6 +130,9 @@ class ProjectedGradientDescent(EvasionAttack):
         self.random_eps = random_eps
         self.verbose = verbose
         ProjectedGradientDescent._check_params(self)
+
+        from art.estimators.classification.pytorch import PyTorchClassifier
+        from art.estimators.classification.tensorflow import TensorFlowV2Classifier
 
         self._attack: (
             ProjectedGradientDescentPyTorch | ProjectedGradientDescentTensorFlowV2 | ProjectedGradientDescentNumpy

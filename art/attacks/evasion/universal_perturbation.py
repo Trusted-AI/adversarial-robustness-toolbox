@@ -38,7 +38,7 @@ from art.estimators.classification.classifier import ClassifierMixin
 from art.utils import projection, get_labels_np_array, check_and_transform_label_format
 
 if TYPE_CHECKING:
-    from art.utils import CLASSIFIER_TYPE
+    from art.types import CLASSIFIER_TYPE
 
 logger = logging.getLogger(__name__)
 

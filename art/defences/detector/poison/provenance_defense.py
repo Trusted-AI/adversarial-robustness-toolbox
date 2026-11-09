@@ -35,7 +35,7 @@ from art.defences.detector.poison.poison_filtering_defence import PoisonFilterin
 from art.utils import segment_by_class, performance_diff
 
 if TYPE_CHECKING:
-    from art.utils import CLASSIFIER_TYPE
+    from art.types import CLASSIFIER_TYPE
 
 logger = logging.getLogger(__name__)
 

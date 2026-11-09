@@ -31,7 +31,7 @@ from art.attacks.attack import EvasionAttack
 from art.attacks.evasion.imperceptible_asr.imperceptible_asr import ImperceptibleASR
 
 if TYPE_CHECKING:
-    from art.utils import SPEECH_RECOGNIZER_TYPE
+    from art.types import SPEECH_RECOGNIZER_TYPE
 
 logger = logging.getLogger(__name__)
 

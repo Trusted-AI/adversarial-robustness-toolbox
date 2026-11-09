@@ -31,7 +31,7 @@ from art.evaluations.evaluation import Evaluation
 from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent import ProjectedGradientDescent
 
 if TYPE_CHECKING:
-    from art.utils import CLASSIFIER_LOSS_GRADIENTS_TYPE
+    from art.types import CLASSIFIER_LOSS_GRADIENTS_TYPE
 
 
 class SecurityCurve(Evaluation):

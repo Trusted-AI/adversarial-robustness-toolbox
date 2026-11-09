@@ -31,7 +31,7 @@ from typing import (
 
 import numpy as np
 
-from art import config
+import art.config as config
 from art.estimators.keras import KerasEstimator
 from art.estimators.classification.classifier import (
     ClassifierMixin,
@@ -42,7 +42,7 @@ from art.utils import check_and_transform_label_format
 if TYPE_CHECKING:
     import tensorflow as tf
 
-    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
+    from art.types import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
     from art.data_generators import DataGenerator
     from art.defences.preprocessor import Preprocessor
     from art.defences.postprocessor import Postprocessor

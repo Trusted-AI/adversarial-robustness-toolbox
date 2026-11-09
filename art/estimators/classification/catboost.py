@@ -29,13 +29,13 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 from art.estimators.classification.classifier import ClassifierDecisionTree
-from art import config
+import art.config as config
 
 if TYPE_CHECKING:
 
     from catboost.core import CatBoostClassifier
 
-    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
+    from art.types import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
     from art.defences.preprocessor import Preprocessor
     from art.defences.postprocessor import Postprocessor
 
