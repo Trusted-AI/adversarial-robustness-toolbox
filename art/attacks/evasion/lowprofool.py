@@ -30,8 +30,8 @@ where the weights determine each feature's importance.
 
 from __future__ import annotations
 
-from collections.abc import Callable
 import logging
+from collections.abc import Callable
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -39,9 +39,8 @@ from scipy.stats import pearsonr
 from tqdm.auto import trange
 
 from art.attacks.attack import EvasionAttack
-from art.estimators.estimator import LossGradientsMixin
-from art.estimators.estimator import BaseEstimator
 from art.estimators.classification.classifier import ClassifierMixin
+from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE
@@ -71,14 +70,14 @@ class LowProFool(EvasionAttack):
 
     def __init__(
         self,
-        classifier: "CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE",
+        classifier: CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE,
         n_steps: int = 100,
         threshold: float | None = 0.5,
         lambd: float = 1.5,
         eta: float = 0.2,
         eta_decay: float = 0.98,
         eta_min: float = 1e-7,
-        norm: int | float | str = 2,
+        norm: float | str = 2,
         importance: Callable | str | np.ndarray = "pearson",
         verbose: bool = False,
     ) -> None:

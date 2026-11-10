@@ -18,15 +18,18 @@
 
 import json
 import os
-import pytest
 
 import numpy as np
+import pytest
 import torch
 
-from art.utils import load_dataset
 from art.estimators.certification.deep_z import PytorchDeepZ
-from tests.utils import ARTTestException
-from tests.utils import get_image_classifier_pt, get_cifar10_image_classifier_pt
+from art.utils import load_dataset
+from tests.utils import (
+    ARTTestException,
+    get_cifar10_image_classifier_pt,
+    get_image_classifier_pt,
+)
 
 
 @pytest.fixture()

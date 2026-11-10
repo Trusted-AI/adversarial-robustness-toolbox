@@ -20,10 +20,13 @@ import unittest
 
 import numpy as np
 
-from art.utils import load_dataset
 from art.defences.postprocessor import ClassLabels
-
-from tests.utils import master_seed, get_image_classifier_kr_tf, get_image_classifier_kr_tf_binary
+from art.utils import load_dataset
+from tests.utils import (
+    get_image_classifier_kr_tf,
+    get_image_classifier_kr_tf_binary,
+    master_seed,
+)
 
 logger = logging.getLogger(__name__)
 

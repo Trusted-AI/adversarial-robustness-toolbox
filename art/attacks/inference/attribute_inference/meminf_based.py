@@ -19,16 +19,16 @@
 This module implements attribute inference attacks using membership inference attacks.
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
 from typing import TYPE_CHECKING
 
 import numpy as np
 
-from art.estimators.estimator import BaseEstimator
-from art.estimators.classification.classifier import ClassifierMixin
 from art.attacks.attack import AttributeInferenceAttack, MembershipInferenceAttack
+from art.estimators.classification.classifier import ClassifierMixin
+from art.estimators.estimator import BaseEstimator
 from art.estimators.regression import RegressorMixin
 from art.exceptions import EstimatorError
 
@@ -50,7 +50,7 @@ class AttributeInferenceMembership(AttributeInferenceAttack):
 
     def __init__(
         self,
-        estimator: "CLASSIFIER_TYPE" | "REGRESSOR_TYPE",
+        estimator: CLASSIFIER_TYPE | REGRESSOR_TYPE,
         membership_attack: MembershipInferenceAttack,
         attack_feature: int | slice = 0,
     ):

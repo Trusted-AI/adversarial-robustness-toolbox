@@ -19,7 +19,7 @@
 This module implements Clean Label Backdoor Attacks to poison data used in ML models.
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
 from typing import TYPE_CHECKING
@@ -27,7 +27,9 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 from art.attacks.attack import PoisoningAttackBlackBox
-from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent import ProjectedGradientDescent
+from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent import (
+    ProjectedGradientDescent,
+)
 from art.attacks.poisoning.backdoor_attack import PoisoningAttackBackdoor
 
 if TYPE_CHECKING:
@@ -62,10 +64,10 @@ class PoisoningAttackCleanLabelBackdoor(PoisoningAttackBlackBox):
     def __init__(
         self,
         backdoor: PoisoningAttackBackdoor,
-        proxy_classifier: "CLASSIFIER_LOSS_GRADIENTS_TYPE",
+        proxy_classifier: CLASSIFIER_LOSS_GRADIENTS_TYPE,
         target: np.ndarray,
         pp_poison: float = 0.33,
-        norm: int | float | str = np.inf,
+        norm: float | str = np.inf,
         eps: float = 0.3,
         eps_step: float = 0.1,
         max_iter: int = 100,

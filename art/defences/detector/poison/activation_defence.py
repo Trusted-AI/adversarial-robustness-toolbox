@@ -25,15 +25,14 @@ This module implements methods performing poisoning detection based on activatio
     in general, see https://arxiv.org/abs/1902.06705
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import copy
 import logging
 import os
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
-
 from sklearn.cluster import KMeans, MiniBatchKMeans
 
 from art.data_generators import DataGenerator
@@ -41,7 +40,7 @@ from art.defences.detector.poison.clustering_analyzer import ClusteringAnalyzer
 from art.defences.detector.poison.ground_truth_evaluator import GroundTruthEvaluator
 from art.defences.detector.poison.poison_filtering_defence import PoisonFilteringDefence
 from art.utils import segment_by_class
-from art.visualization import create_sprite, save_image, plot_3d
+from art.visualization import create_sprite, plot_3d, save_image
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_NEURALNETWORK_TYPE
@@ -77,7 +76,7 @@ class ActivationDefence(PoisonFilteringDefence):
 
     def __init__(
         self,
-        classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
+        classifier: CLASSIFIER_NEURALNETWORK_TYPE,
         x_train: np.ndarray,
         y_train: np.ndarray,
         generator: DataGenerator | None = None,
@@ -93,7 +92,7 @@ class ActivationDefence(PoisonFilteringDefence):
         :param ex_re_threshold: Set to a positive value to enable exclusionary reclassification
         """
         super().__init__(classifier, x_train, y_train)
-        self.classifier: "CLASSIFIER_NEURALNETWORK_TYPE" = classifier
+        self.classifier: CLASSIFIER_NEURALNETWORK_TYPE = classifier
         self.nb_clusters = 2
         self.clustering_method = "KMeans"
         self.nb_dims = 10
@@ -417,7 +416,7 @@ class ActivationDefence(PoisonFilteringDefence):
                 if other_class_pred_count == 0 or n_class_pred_count / other_class_pred_count > self.ex_re_threshold:
                     self.poisonous_clusters[n_class][cluster] = 0
                     report["Class_" + str(n_class)]["cluster_" + str(cluster)]["suspicious_cluster"] = False
-                    if "suspicious_clusters" in report.keys():
+                    if "suspicious_clusters" in report:
                         report["suspicious_clusters"] = report["suspicious_clusters"] - 1
                     for ind in cur_indicies:
                         self.is_clean_lst[ind] = 1
@@ -438,14 +437,14 @@ class ActivationDefence(PoisonFilteringDefence):
 
     @staticmethod
     def relabel_poison_ground_truth(
-        classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
+        classifier: CLASSIFIER_NEURALNETWORK_TYPE,
         x: np.ndarray,
         y_fix: np.ndarray,
         test_set_split: float = 0.7,
         tolerable_backdoor: float = 0.01,
         max_epochs: int = 50,
         batch_epochs: int = 10,
-    ) -> tuple[float, "CLASSIFIER_NEURALNETWORK_TYPE"]:
+    ) -> tuple[float, CLASSIFIER_NEURALNETWORK_TYPE]:
         """
         Revert poison attack by continue training the current classifier with `x`, `y_fix`. `test_set_split` determines
         the percentage in x that will be used as training set, while `1-test_set_split` determines how many data points
@@ -503,14 +502,14 @@ class ActivationDefence(PoisonFilteringDefence):
 
     @staticmethod
     def relabel_poison_cross_validation(
-        classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
+        classifier: CLASSIFIER_NEURALNETWORK_TYPE,
         x: np.ndarray,
         y_fix: np.ndarray,
         n_splits: int = 10,
         tolerable_backdoor: float = 0.01,
         max_epochs: int = 50,
         batch_epochs: int = 10,
-    ) -> tuple[float, "CLASSIFIER_NEURALNETWORK_TYPE"]:
+    ) -> tuple[float, CLASSIFIER_NEURALNETWORK_TYPE]:
         """
         Revert poison attack by continue training the current classifier with `x`, `y_fix`. `n_splits` determines the
         number of cross validation splits.
@@ -708,7 +707,7 @@ class ActivationDefence(PoisonFilteringDefence):
 
 
 def measure_misclassification(
-    classifier: "CLASSIFIER_NEURALNETWORK_TYPE", x_test: np.ndarray, y_test: np.ndarray
+    classifier: CLASSIFIER_NEURALNETWORK_TYPE, x_test: np.ndarray, y_test: np.ndarray
 ) -> float:
     """
     Computes 1-accuracy given x_test and y_test
@@ -723,7 +722,7 @@ def measure_misclassification(
 
 
 def train_remove_backdoor(
-    classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
+    classifier: CLASSIFIER_NEURALNETWORK_TYPE,
     x_train: np.ndarray,
     y_train: np.ndarray,
     x_test: np.ndarray,
@@ -832,7 +831,7 @@ def reduce_dimensionality(activations: np.ndarray, nb_dims: int = 10, reduce: st
     :return: Array with the reduced activations.
     """
 
-    from sklearn.decomposition import FastICA, PCA
+    from sklearn.decomposition import PCA, FastICA
 
     if reduce == "FastICA":
         projector = FastICA(n_components=nb_dims, max_iter=1000, tol=0.005)

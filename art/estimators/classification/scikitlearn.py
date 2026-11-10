@@ -19,49 +19,49 @@
 This module implements the classifiers for scikit-learn models.
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
-from collections.abc import Callable
-from copy import deepcopy
 import importlib
 import logging
 import os
 import pickle
+from collections.abc import Callable
+from copy import deepcopy
 from typing import TYPE_CHECKING
 
 import numpy as np
 
-from art.estimators.estimator import DecisionTreeMixin, LossGradientsMixin
+from art import config
 from art.estimators.classification.classifier import (
     ClassGradientsMixin,
     ClassifierMixin,
 )
+from art.estimators.estimator import DecisionTreeMixin, LossGradientsMixin
 from art.estimators.regression.scikitlearn import ScikitlearnDecisionTreeRegressor
 from art.estimators.scikitlearn import ScikitlearnEstimator
 from art.utils import to_categorical
-from art import config
 
 if TYPE_CHECKING:
 
     import sklearn
 
-    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
-    from art.defences.preprocessor import Preprocessor
     from art.defences.postprocessor import Postprocessor
+    from art.defences.preprocessor import Preprocessor
     from art.metrics.verification_decisions_trees import LeafNode, Tree
+    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
 
 logger = logging.getLogger(__name__)
 
 
 # pylint: disable=invalid-name
 def SklearnClassifier(
-    model: "sklearn.base.BaseEstimator",
-    clip_values: "CLIP_VALUES_TYPE" | None = None,
-    preprocessing_defences: "Preprocessor" | list["Preprocessor"] | None = None,
-    postprocessing_defences: "Postprocessor" | list["Postprocessor"] | None = None,
-    preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
+    model: sklearn.base.BaseEstimator,
+    clip_values: CLIP_VALUES_TYPE | None = None,
+    preprocessing_defences: Preprocessor | list[Preprocessor] | None = None,
+    postprocessing_defences: Postprocessor | list[Postprocessor] | None = None,
+    preprocessing: PREPROCESSING_TYPE = (0.0, 1.0),
     use_logits: bool = False,
-) -> "ScikitlearnClassifier":
+) -> ScikitlearnClassifier:
     """
     Create a `Classifier` instance from a scikit-learn Classifier model. This is a convenience function that
     instantiates the correct class for the given scikit-learn model.
@@ -109,11 +109,11 @@ class ScikitlearnClassifier(ClassifierMixin, ScikitlearnEstimator):
 
     def __init__(
         self,
-        model: "sklearn.base.BaseEstimator",
-        clip_values: "CLIP_VALUES_TYPE" | None = None,
-        preprocessing_defences: "Preprocessor" | list["Preprocessor"] | None = None,
-        postprocessing_defences: "Postprocessor" | list["Postprocessor"] | None = None,
-        preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
+        model: sklearn.base.BaseEstimator,
+        clip_values: CLIP_VALUES_TYPE | None = None,
+        preprocessing_defences: Preprocessor | list[Preprocessor] | None = None,
+        postprocessing_defences: Postprocessor | list[Postprocessor] | None = None,
+        preprocessing: PREPROCESSING_TYPE = (0.0, 1.0),
         use_logits: bool = False,
     ) -> None:
         """
@@ -230,7 +230,7 @@ class ScikitlearnClassifier(ClassifierMixin, ScikitlearnEstimator):
         with open(full_path + ".pickle", "wb") as file_pickle:
             pickle.dump(self.model, file=file_pickle)
 
-    def clone_for_refitting(self) -> "ScikitlearnClassifier":
+    def clone_for_refitting(self) -> ScikitlearnClassifier:
         """
         Create a copy of the classifier that can be refit from scratch.
 
@@ -250,7 +250,6 @@ class ScikitlearnClassifier(ClassifierMixin, ScikitlearnEstimator):
 
         """
         # No need to do anything since scikitlearn models start from scratch each time fit() is called
-        pass
 
     def _get_nb_classes(self) -> int:
         if hasattr(self.model, "n_classes_"):
@@ -270,11 +269,11 @@ class ScikitlearnDecisionTreeClassifier(ScikitlearnClassifier):
 
     def __init__(
         self,
-        model: "sklearn.tree.DecisionTreeClassifier",
-        clip_values: "CLIP_VALUES_TYPE" | None = None,
-        preprocessing_defences: "Preprocessor" | list["Preprocessor"] | None = None,
-        postprocessing_defences: "Postprocessor" | list["Postprocessor"] | None = None,
-        preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
+        model: sklearn.tree.DecisionTreeClassifier,
+        clip_values: CLIP_VALUES_TYPE | None = None,
+        preprocessing_defences: Preprocessor | list[Preprocessor] | None = None,
+        postprocessing_defences: Postprocessor | list[Postprocessor] | None = None,
+        preprocessing: PREPROCESSING_TYPE = (0.0, 1.0),
     ) -> None:
         """
         Create a `Classifier` instance from a scikit-learn Decision Tree Classifier model.
@@ -368,8 +367,8 @@ class ScikitlearnDecisionTreeClassifier(ScikitlearnClassifier):
         """
         return self.model.tree_.value[node_id] / np.linalg.norm(self.model.tree_.value[node_id])
 
-    def _get_leaf_nodes(self, node_id, i_tree, class_label, box) -> list["LeafNode"]:
-        from art.metrics.verification_decisions_trees import LeafNode, Box, Interval
+    def _get_leaf_nodes(self, node_id, i_tree, class_label, box) -> list[LeafNode]:
+        from art.metrics.verification_decisions_trees import Box, Interval, LeafNode
 
         leaf_nodes = []
 
@@ -416,11 +415,11 @@ class ScikitlearnExtraTreeClassifier(ScikitlearnDecisionTreeClassifier):
 
     def __init__(
         self,
-        model: "sklearn.tree.ExtraTreeClassifier",
-        clip_values: "CLIP_VALUES_TYPE" | None = None,
-        preprocessing_defences: "Preprocessor" | list["Preprocessor"] | None = None,
-        postprocessing_defences: "Postprocessor" | list["Postprocessor"] | None = None,
-        preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
+        model: sklearn.tree.ExtraTreeClassifier,
+        clip_values: CLIP_VALUES_TYPE | None = None,
+        preprocessing_defences: Preprocessor | list[Preprocessor] | None = None,
+        postprocessing_defences: Postprocessor | list[Postprocessor] | None = None,
+        preprocessing: PREPROCESSING_TYPE = (0.0, 1.0),
     ) -> None:
         """
         Create a `Classifier` instance from a scikit-learn Extra TreeClassifier Classifier model.
@@ -455,11 +454,11 @@ class ScikitlearnAdaBoostClassifier(ScikitlearnClassifier):
 
     def __init__(
         self,
-        model: "sklearn.ensemble.AdaBoostClassifier",
-        clip_values: "CLIP_VALUES_TYPE" | None = None,
-        preprocessing_defences: "Preprocessor" | list["Preprocessor"] | None = None,
-        postprocessing_defences: "Postprocessor" | list["Postprocessor"] | None = None,
-        preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
+        model: sklearn.ensemble.AdaBoostClassifier,
+        clip_values: CLIP_VALUES_TYPE | None = None,
+        preprocessing_defences: Preprocessor | list[Preprocessor] | None = None,
+        postprocessing_defences: Postprocessor | list[Postprocessor] | None = None,
+        preprocessing: PREPROCESSING_TYPE = (0.0, 1.0),
     ) -> None:
         """
         Create a `Classifier` instance from a scikit-learn AdaBoost Classifier model.
@@ -494,11 +493,11 @@ class ScikitlearnBaggingClassifier(ScikitlearnClassifier):
 
     def __init__(
         self,
-        model: "sklearn.ensemble.BaggingClassifier",
-        clip_values: "CLIP_VALUES_TYPE" | None = None,
-        preprocessing_defences: "Preprocessor" | list["Preprocessor"] | None = None,
-        postprocessing_defences: "Postprocessor" | list["Postprocessor"] | None = None,
-        preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
+        model: sklearn.ensemble.BaggingClassifier,
+        clip_values: CLIP_VALUES_TYPE | None = None,
+        preprocessing_defences: Preprocessor | list[Preprocessor] | None = None,
+        postprocessing_defences: Postprocessor | list[Postprocessor] | None = None,
+        preprocessing: PREPROCESSING_TYPE = (0.0, 1.0),
     ) -> None:
         """
         Create a `Classifier` instance from a scikit-learn Bagging Classifier model.
@@ -534,11 +533,11 @@ class ScikitlearnExtraTreesClassifier(ScikitlearnClassifier, DecisionTreeMixin):
 
     def __init__(
         self,
-        model: "sklearn.ensemble.ExtraTreesClassifier",
-        clip_values: "CLIP_VALUES_TYPE" | None = None,
-        preprocessing_defences: "Preprocessor" | list["Preprocessor"] | None = None,
-        postprocessing_defences: "Postprocessor" | list["Postprocessor"] | None = None,
-        preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
+        model: sklearn.ensemble.ExtraTreesClassifier,
+        clip_values: CLIP_VALUES_TYPE | None = None,
+        preprocessing_defences: Preprocessor | list[Preprocessor] | None = None,
+        postprocessing_defences: Postprocessor | list[Postprocessor] | None = None,
+        preprocessing: PREPROCESSING_TYPE = (0.0, 1.0),
     ):
         """
         Create a `Classifier` instance from a scikit-learn Extra Trees Classifier model.
@@ -566,7 +565,7 @@ class ScikitlearnExtraTreesClassifier(ScikitlearnClassifier, DecisionTreeMixin):
             preprocessing=preprocessing,
         )
 
-    def get_trees(self) -> list["Tree"]:
+    def get_trees(self) -> list[Tree]:
         """
         Get the decision trees.
 
@@ -606,11 +605,11 @@ class ScikitlearnGradientBoostingClassifier(ScikitlearnClassifier, DecisionTreeM
 
     def __init__(
         self,
-        model: "sklearn.ensemble.GradientBoostingClassifier",
-        clip_values: "CLIP_VALUES_TYPE" | None = None,
-        preprocessing_defences: "Preprocessor" | list["Preprocessor"] | None = None,
-        postprocessing_defences: "Postprocessor" | list["Postprocessor"] | None = None,
-        preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
+        model: sklearn.ensemble.GradientBoostingClassifier,
+        clip_values: CLIP_VALUES_TYPE | None = None,
+        preprocessing_defences: Preprocessor | list[Preprocessor] | None = None,
+        postprocessing_defences: Postprocessor | list[Postprocessor] | None = None,
+        preprocessing: PREPROCESSING_TYPE = (0.0, 1.0),
     ) -> None:
         """
         Create a `Classifier` instance from a scikit-learn Gradient Boosting Classifier model.
@@ -638,7 +637,7 @@ class ScikitlearnGradientBoostingClassifier(ScikitlearnClassifier, DecisionTreeM
             preprocessing=preprocessing,
         )
 
-    def get_trees(self) -> list["Tree"]:
+    def get_trees(self) -> list[Tree]:
         """
         Get the decision trees.
 
@@ -679,11 +678,11 @@ class ScikitlearnRandomForestClassifier(ScikitlearnClassifier):
 
     def __init__(
         self,
-        model: "sklearn.ensemble.RandomForestClassifier",
-        clip_values: "CLIP_VALUES_TYPE" | None = None,
-        preprocessing_defences: "Preprocessor" | list["Preprocessor"] | None = None,
-        postprocessing_defences: "Postprocessor" | list["Postprocessor"] | None = None,
-        preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
+        model: sklearn.ensemble.RandomForestClassifier,
+        clip_values: CLIP_VALUES_TYPE | None = None,
+        preprocessing_defences: Preprocessor | list[Preprocessor] | None = None,
+        postprocessing_defences: Postprocessor | list[Postprocessor] | None = None,
+        preprocessing: PREPROCESSING_TYPE = (0.0, 1.0),
     ) -> None:
         """
         Create a `Classifier` instance from a scikit-learn Random Forest Classifier model.
@@ -711,7 +710,7 @@ class ScikitlearnRandomForestClassifier(ScikitlearnClassifier):
             preprocessing=preprocessing,
         )
 
-    def get_trees(self) -> list["Tree"]:
+    def get_trees(self) -> list[Tree]:
         """
         Get the decision trees.
 
@@ -751,11 +750,11 @@ class ScikitlearnLogisticRegression(ClassGradientsMixin, LossGradientsMixin, Sci
 
     def __init__(
         self,
-        model: "sklearn.linear_model.LogisticRegression",
-        clip_values: "CLIP_VALUES_TYPE" | None = None,
-        preprocessing_defences: "Preprocessor" | list["Preprocessor"] | None = None,
-        postprocessing_defences: "Postprocessor" | list["Postprocessor"] | None = None,
-        preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
+        model: sklearn.linear_model.LogisticRegression,
+        clip_values: CLIP_VALUES_TYPE | None = None,
+        preprocessing_defences: Preprocessor | list[Preprocessor] | None = None,
+        postprocessing_defences: Postprocessor | list[Postprocessor] | None = None,
+        preprocessing: PREPROCESSING_TYPE = (0.0, 1.0),
     ) -> None:
         """
         Create a `Classifier` instance from a scikit-learn Logistic Regression model.
@@ -934,11 +933,11 @@ class ScikitlearnGaussianNB(ScikitlearnClassifier):
 
     def __init__(
         self,
-        model: "sklearn.naive_bayes.GaussianNB",
-        clip_values: "CLIP_VALUES_TYPE" | None = None,
-        preprocessing_defences: "Preprocessor" | list["Preprocessor"] | None = None,
-        postprocessing_defences: "Postprocessor" | list["Postprocessor"] | None = None,
-        preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
+        model: sklearn.naive_bayes.GaussianNB,
+        clip_values: CLIP_VALUES_TYPE | None = None,
+        preprocessing_defences: Preprocessor | list[Preprocessor] | None = None,
+        postprocessing_defences: Postprocessor | list[Postprocessor] | None = None,
+        preprocessing: PREPROCESSING_TYPE = (0.0, 1.0),
     ) -> None:
         """
         Create a `Classifier` instance from a scikit-learn Gaussian Naive Bayes (GaussianNB) model.
@@ -986,11 +985,11 @@ class ScikitlearnSVC(ClassGradientsMixin, LossGradientsMixin, ScikitlearnClassif
 
     def __init__(
         self,
-        model: "sklearn.svm.SVC" | "sklearn.svm.LinearSVC",
-        clip_values: "CLIP_VALUES_TYPE" | None = None,
-        preprocessing_defences: "Preprocessor" | list["Preprocessor"] | None = None,
-        postprocessing_defences: "Postprocessor" | list["Postprocessor"] | None = None,
-        preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
+        model: sklearn.svm.SVC | sklearn.svm.LinearSVC,
+        clip_values: CLIP_VALUES_TYPE | None = None,
+        preprocessing_defences: Preprocessor | list[Preprocessor] | None = None,
+        postprocessing_defences: Postprocessor | list[Postprocessor] | None = None,
+        preprocessing: PREPROCESSING_TYPE = (0.0, 1.0),
     ) -> None:
         """
         Create a `Classifier` instance from a scikit-learn C-Support Vector Classification model.
@@ -1346,8 +1345,8 @@ class ScikitlearnSVC(ClassGradientsMixin, LossGradientsMixin, ScikitlearnClassif
 
         import sklearn
         from sklearn.metrics.pairwise import (
-            polynomial_kernel,
             linear_kernel,
+            polynomial_kernel,
             rbf_kernel,
         )
 

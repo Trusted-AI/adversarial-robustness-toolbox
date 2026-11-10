@@ -19,29 +19,29 @@
 This module implements the classifier `XGBoostClassifier` for XGBoost models.
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
-from copy import deepcopy
 import json
 import logging
 import os
 import pickle
+from copy import deepcopy
 from typing import TYPE_CHECKING
 
 import numpy as np
 
+from art import config
 from art.estimators.classification.classifier import ClassifierDecisionTree
 from art.utils import to_categorical
-from art import config
 
 if TYPE_CHECKING:
 
     import xgboost
 
-    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
-    from art.defences.preprocessor import Preprocessor
     from art.defences.postprocessor import Postprocessor
+    from art.defences.preprocessor import Preprocessor
     from art.metrics.verification_decisions_trees import LeafNode, Tree
+    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -57,11 +57,11 @@ class XGBoostClassifier(ClassifierDecisionTree):
 
     def __init__(
         self,
-        model: "xgboost.Booster" | "xgboost.XGBClassifier" | None = None,
-        clip_values: "CLIP_VALUES_TYPE" | None = None,
-        preprocessing_defences: "Preprocessor" | list["Preprocessor"] | None = None,
-        postprocessing_defences: "Postprocessor" | list["Postprocessor"] | None = None,
-        preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
+        model: xgboost.Booster | xgboost.XGBClassifier | None = None,
+        clip_values: CLIP_VALUES_TYPE | None = None,
+        preprocessing_defences: Preprocessor | list[Preprocessor] | None = None,
+        postprocessing_defences: Postprocessor | list[Postprocessor] | None = None,
+        preprocessing: PREPROCESSING_TYPE = (0.0, 1.0),
         nb_features: int | None = None,
         nb_classes: int | None = None,
     ) -> None:
@@ -164,7 +164,7 @@ class XGBoostClassifier(ClassifierDecisionTree):
 
     def clone_for_refitting(
         self,
-    ) -> "XGBoostClassifier":
+    ) -> XGBoostClassifier:
         """
         Create a copy of the estimator that can be refit from scratch. Only supported for models of type XGBClassifier.
 
@@ -225,7 +225,7 @@ class XGBoostClassifier(ClassifierDecisionTree):
         with open(full_path + ".pickle", "wb") as file_pickle:
             pickle.dump(self._model, file=file_pickle)
 
-    def get_trees(self) -> list["Tree"]:
+    def get_trees(self) -> list[Tree]:
         """
         Get the decision trees.
 
@@ -254,8 +254,8 @@ class XGBoostClassifier(ClassifierDecisionTree):
 
         return trees
 
-    def _get_leaf_nodes(self, node, i_tree, class_label, box) -> list["LeafNode"]:
-        from art.metrics.verification_decisions_trees import LeafNode, Box, Interval
+    def _get_leaf_nodes(self, node, i_tree, class_label, box) -> list[LeafNode]:
+        from art.metrics.verification_decisions_trees import Box, Interval, LeafNode
 
         leaf_nodes: list[LeafNode] = []
 

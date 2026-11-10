@@ -69,7 +69,7 @@ if os.path.exists(_config_path):
                 try:
                     with open(_config_path, "w", encoding="utf8") as f:
                         f.write(json.dumps(_config, indent=4))
-                except IOError:
+                except OSError:
                     logger.warning("Unable to update configuration file", exc_info=True)
 
     except ValueError:  # pragma: no cover
@@ -88,7 +88,7 @@ if not os.path.exists(_config_path):
     try:
         with open(_config_path, "w", encoding="utf8") as f:
             f.write(json.dumps(_config, indent=4))
-    except IOError:  # pragma: no cover
+    except OSError:  # pragma: no cover
         logger.warning("Unable to create configuration file", exc_info=True)
 
 if "ART_DATA_PATH" in _config:  # pragma: no cover

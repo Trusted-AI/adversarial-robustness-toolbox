@@ -26,7 +26,7 @@ manifold.
     https://arxiv.org/abs/1902.06705
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
 from typing import TYPE_CHECKING
@@ -38,7 +38,7 @@ from art.config import ART_NUMPY_DTYPE
 from art.defences.preprocessor.preprocessor import Preprocessor
 
 if TYPE_CHECKING:
-    from art.utils import CLIP_VALUES_TYPE, CLASSIFIER_NEURALNETWORK_TYPE
+    from art.utils import CLASSIFIER_NEURALNETWORK_TYPE, CLIP_VALUES_TYPE
 
 
 logger = logging.getLogger(__name__)
@@ -59,9 +59,9 @@ class PixelDefend(Preprocessor):
 
     def __init__(
         self,
-        clip_values: "CLIP_VALUES_TYPE" = (0.0, 1.0),
+        clip_values: CLIP_VALUES_TYPE = (0.0, 1.0),
         eps: int = 16,
-        pixel_cnn: "CLASSIFIER_NEURALNETWORK_TYPE" | None = None,
+        pixel_cnn: CLASSIFIER_NEURALNETWORK_TYPE | None = None,
         batch_size: int = 128,
         apply_fit: bool = False,
         apply_predict: bool = True,

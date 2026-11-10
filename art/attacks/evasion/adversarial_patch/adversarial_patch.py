@@ -22,20 +22,26 @@ can be printed into the physical world with a common printer. The patch can be u
 | Paper link: https://arxiv.org/abs/1712.09665
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
 from typing import TYPE_CHECKING
 
 import numpy as np
 
-from art.attacks.evasion.adversarial_patch.adversarial_patch_numpy import AdversarialPatchNumpy
-from art.attacks.evasion.adversarial_patch.adversarial_patch_tensorflow import AdversarialPatchTensorFlowV2
-from art.attacks.evasion.adversarial_patch.adversarial_patch_pytorch import AdversarialPatchPyTorch
-from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
-from art.estimators.classification.classifier import ClassifierMixin
-from art.estimators.classification import TensorFlowV2Classifier, PyTorchClassifier
 from art.attacks.attack import EvasionAttack
+from art.attacks.evasion.adversarial_patch.adversarial_patch_numpy import (
+    AdversarialPatchNumpy,
+)
+from art.attacks.evasion.adversarial_patch.adversarial_patch_pytorch import (
+    AdversarialPatchPyTorch,
+)
+from art.attacks.evasion.adversarial_patch.adversarial_patch_tensorflow import (
+    AdversarialPatchTensorFlowV2,
+)
+from art.estimators.classification import PyTorchClassifier, TensorFlowV2Classifier
+from art.estimators.classification.classifier import ClassifierMixin
+from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_NEURALNETWORK_TYPE
@@ -65,7 +71,7 @@ class AdversarialPatch(EvasionAttack):
 
     def __init__(
         self,
-        classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
+        classifier: CLASSIFIER_NEURALNETWORK_TYPE,
         rotation_max: float = 22.5,
         scale_min: float = 0.1,
         scale_max: float = 1.0,

@@ -22,7 +22,7 @@ can be printed into the physical world with a common printer. The patch can be u
 | Paper link: https://arxiv.org/abs/1712.09665
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
 import math
@@ -33,10 +33,10 @@ from tqdm.auto import trange
 
 from art.attacks.attack import EvasionAttack
 from art.attacks.evasion.adversarial_patch.utils import insert_transformed_patch
-from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
 from art.estimators.classification.classifier import ClassifierMixin
-from art.utils import check_and_transform_label_format, is_probability, to_categorical
+from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
 from art.summary_writer import SummaryWriter
+from art.utils import check_and_transform_label_format, is_probability, to_categorical
 
 if TYPE_CHECKING:
 
@@ -72,7 +72,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
 
     def __init__(
         self,
-        classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
+        classifier: CLASSIFIER_NEURALNETWORK_TYPE,
         rotation_max: float = 22.5,
         scale_min: float = 0.1,
         scale_max: float = 1.0,
@@ -175,8 +175,8 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
             )
 
     def _train_step(
-        self, images: "tf.Tensor", target: "tf.Tensor" | None = None, mask: "tf.Tensor" | None = None
-    ) -> "tf.Tensor":
+        self, images: tf.Tensor, target: tf.Tensor | None = None, mask: tf.Tensor | None = None
+    ) -> tf.Tensor:
         import tensorflow as tf
 
         with tf.GradientTape() as tape:
@@ -202,7 +202,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
 
         return loss
 
-    def _predictions(self, images: "tf.Tensor", mask: "tf.Tensor" | None) -> "tf.Tensor":
+    def _predictions(self, images: tf.Tensor, mask: tf.Tensor | None) -> tf.Tensor:
         import tensorflow as tf
 
         patched_input = self._random_overlay(images, self._patch, mask=mask)
@@ -217,7 +217,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
 
         return predictions
 
-    def _loss(self, images: "tf.Tensor", target: "tf.Tensor", mask: "tf.Tensor" | None) -> "tf.Tensor":
+    def _loss(self, images: tf.Tensor, target: tf.Tensor, mask: tf.Tensor | None) -> tf.Tensor:
         import tensorflow as tf
 
         predictions = self._predictions(images, mask)
@@ -230,7 +230,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
 
         return loss
 
-    def _get_circular_patch_mask(self, nb_samples: int, sharpness: int = 40) -> "tf.Tensor":
+    def _get_circular_patch_mask(self, nb_samples: int, sharpness: int = 40) -> tf.Tensor:
         """
         Return a circular patch mask.
         """
@@ -251,11 +251,11 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
 
     def _random_overlay(
         self,
-        images: np.ndarray | "tf.Tensor",
-        patch: np.ndarray | "tf.Variable",
+        images: np.ndarray | tf.Tensor,
+        patch: np.ndarray | tf.Variable,
         scale: float | None = None,
-        mask: np.ndarray | "tf.Tensor" | None = None,
-    ) -> "tf.Tensor":
+        mask: np.ndarray | tf.Tensor | None = None,
+    ) -> tf.Tensor:
         import tensorflow as tf
 
         nb_samples = images.shape[0]

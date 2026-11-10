@@ -23,23 +23,23 @@ gradients.
 | Paper link: https://arxiv.org/abs/1708.03999
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 from scipy.ndimage import zoom
 from tqdm.auto import trange
 
-from art.config import ART_NUMPY_DTYPE
 from art.attacks.attack import EvasionAttack
-from art.estimators.estimator import BaseEstimator
+from art.config import ART_NUMPY_DTYPE
 from art.estimators.classification.classifier import ClassifierMixin
+from art.estimators.estimator import BaseEstimator
 from art.utils import (
+    check_and_transform_label_format,
     compute_success,
     get_labels_np_array,
-    check_and_transform_label_format,
 )
 
 if TYPE_CHECKING:
@@ -75,7 +75,7 @@ class ZooAttack(EvasionAttack):
 
     def __init__(
         self,
-        classifier: "CLASSIFIER_TYPE",
+        classifier: CLASSIFIER_TYPE,
         confidence: float = 0.0,
         targeted: bool = False,
         learning_rate: float = 1e-2,

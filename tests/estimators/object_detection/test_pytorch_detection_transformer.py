@@ -15,7 +15,6 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
 
@@ -174,7 +173,9 @@ def test_errors(art_warning):
     try:
         from torch import hub
 
-        from art.estimators.object_detection.pytorch_detection_transformer import PyTorchDetectionTransformer
+        from art.estimators.object_detection.pytorch_detection_transformer import (
+            PyTorchDetectionTransformer,
+        )
 
         model = hub.load("facebookresearch/detr", "detr_resnet50", pretrained=True)
 
@@ -212,7 +213,9 @@ def test_preprocessing_defences(art_warning, get_pytorch_detr):
     try:
         object_detector, x_test, _ = get_pytorch_detr
 
-        from art.defences.preprocessor.spatial_smoothing_pytorch import SpatialSmoothingPyTorch
+        from art.defences.preprocessor.spatial_smoothing_pytorch import (
+            SpatialSmoothingPyTorch,
+        )
 
         pre_def = SpatialSmoothingPyTorch()
 

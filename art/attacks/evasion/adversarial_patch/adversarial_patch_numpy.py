@@ -22,21 +22,21 @@ can be printed into the physical world with a common printer. The patch can be u
 | Paper link: https://arxiv.org/abs/1712.09665
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
 import math
+import random
 from typing import TYPE_CHECKING
 
-import random
 import numpy as np
 from scipy.ndimage import rotate, shift, zoom
 from tqdm.auto import trange
 
 from art.attacks.attack import EvasionAttack
 from art.attacks.evasion.adversarial_patch.utils import insert_transformed_patch
-from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
 from art.estimators.classification.classifier import ClassifierMixin
+from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
 from art.utils import check_and_transform_label_format
 
 if TYPE_CHECKING:
@@ -66,7 +66,7 @@ class AdversarialPatchNumpy(EvasionAttack):
 
     def __init__(
         self,
-        classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
+        classifier: CLASSIFIER_NEURALNETWORK_TYPE,
         target: int = 0,
         rotation_max: float = 22.5,
         scale_min: float = 0.1,

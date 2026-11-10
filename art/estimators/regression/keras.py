@@ -19,16 +19,15 @@
 This module implements the regressor `KerasRegressor` for Keras models.
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
-from collections.abc import Callable
 import logging
 import os
 import time
+from collections.abc import Callable, Iterator
 from typing import (
-    Any,
-    Iterator,
     TYPE_CHECKING,
+    Any,
     Union,
 )
 
@@ -44,10 +43,10 @@ if TYPE_CHECKING:
     import keras
     import tensorflow as tf
 
-    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
     from art.data_generators import DataGenerator
-    from art.defences.preprocessor import Preprocessor
     from art.defences.postprocessor import Postprocessor
+    from art.defences.preprocessor import Preprocessor
+    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -65,10 +64,10 @@ class KerasRegressor(RegressorMixin, KerasEstimator):
         self,
         model: KERAS_MODEL_TYPE,
         channels_first: bool = False,
-        clip_values: "CLIP_VALUES_TYPE" | None = None,
-        preprocessing_defences: "Preprocessor" | list["Preprocessor"] | None = None,
-        postprocessing_defences: "Postprocessor" | list["Postprocessor"] | None = None,
-        preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
+        clip_values: CLIP_VALUES_TYPE | None = None,
+        preprocessing_defences: Preprocessor | list[Preprocessor] | None = None,
+        postprocessing_defences: Postprocessor | list[Postprocessor] | None = None,
+        preprocessing: PREPROCESSING_TYPE = (0.0, 1.0),
         input_layer: int = 0,
         output_layer: int = 0,
     ) -> None:
@@ -134,8 +133,8 @@ class KerasRegressor(RegressorMixin, KerasEstimator):
 
             if tf.executing_eagerly():  # pragma: no cover
                 raise ValueError("TensorFlow is executing eagerly. Please disable eager execution.")
-            import tensorflow.keras as keras  # pylint: disable=consider-using-from-import
             import tensorflow.keras.backend as k
+            from tensorflow import keras  # pylint: disable=consider-using-from-import
 
             self._losses = keras.losses
         else:
@@ -438,7 +437,7 @@ class KerasRegressor(RegressorMixin, KerasEstimator):
 
         self._model.fit(x=x_preprocessed, y=y_preprocessed, batch_size=batch_size, epochs=nb_epochs, **kwargs)
 
-    def fit_generator(self, generator: "DataGenerator", nb_epochs: int = 20, **kwargs) -> None:
+    def fit_generator(self, generator: DataGenerator, nb_epochs: int = 20, **kwargs) -> None:
         """
         Fit the regressor using the generator that yields batches as specified.
 
@@ -452,7 +451,9 @@ class KerasRegressor(RegressorMixin, KerasEstimator):
         from art.data_generators import KerasDataGenerator
 
         # Try to use the generator as a Keras native generator, otherwise use it through the `DataGenerator` interface
-        from art.preprocessing.standardisation_mean_std.numpy import StandardisationMeanStd
+        from art.preprocessing.standardisation_mean_std.numpy import (
+            StandardisationMeanStd,
+        )
 
         if isinstance(generator, KerasDataGenerator) and (
             self.preprocessing is None

@@ -15,15 +15,14 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-import pytest
-import numpy as np
 import logging
 
 import keras.backend as k
+import numpy as np
+import pytest
 
-from art.utils import random_targets, get_labels_np_array
 from art.exceptions import EstimatorError
-
+from art.utils import get_labels_np_array, random_targets
 from tests.utils import check_adverse_example_x, check_adverse_predicted_sample_y
 
 logger = logging.getLogger(__name__)
@@ -147,7 +146,7 @@ def backend_targeted_tabular(attack, fix_get_iris):
     (x_train_iris, _), (x_test_iris, y_test_iris) = fix_get_iris
 
     targets = random_targets(y_test_iris, nb_classes=3)
-    x_test_adv = attack.generate(x_test_iris, **{"y": targets}, x_init=x_train_iris)
+    x_test_adv = attack.generate(x_test_iris, y=targets, x_init=x_train_iris)
 
     check_adverse_example_x(x_test_adv, x_test_iris)
 

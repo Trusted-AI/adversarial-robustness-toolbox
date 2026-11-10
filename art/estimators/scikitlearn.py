@@ -23,7 +23,6 @@ from __future__ import annotations
 
 import logging
 
-
 from art.estimators.estimator import BaseEstimator
 
 logger = logging.getLogger(__name__)

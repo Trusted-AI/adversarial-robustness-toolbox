@@ -23,7 +23,6 @@ from __future__ import annotations
 
 import logging
 
-
 import numpy as np
 
 from art.config import ART_NUMPY_DTYPE

@@ -20,7 +20,7 @@ Module containing different methods for the detection of adversarial examples. A
 detectors.
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
 from typing import TYPE_CHECKING
@@ -45,8 +45,8 @@ class BinaryActivationDetector(EvasionDetector):
 
     def __init__(
         self,
-        classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
-        detector: "CLASSIFIER_NEURALNETWORK_TYPE",
+        classifier: CLASSIFIER_NEURALNETWORK_TYPE,
+        detector: CLASSIFIER_NEURALNETWORK_TYPE,
         layer: int | str,
     ) -> None:
         """

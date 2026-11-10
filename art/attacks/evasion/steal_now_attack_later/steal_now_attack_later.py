@@ -26,7 +26,8 @@ Black-box Adversarial Attacks
 
 import logging
 import random
-from typing import Callable, Optional, Tuple, TYPE_CHECKING
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Optional, Tuple
 
 import numpy as np
 
@@ -37,12 +38,13 @@ from art.attacks.evasion.steal_now_attack_later.drop_block2d import drop_block2d
 if TYPE_CHECKING:
     # pylint: disable=C0412
     import torch
+
     from art.utils import PYTORCH_OBJECT_DETECTOR_TYPE
 
 logger = logging.getLogger(__name__)
 
 
-def _generate_tile_kernel(patch: list, mask: list, tile_size: int) -> Tuple["torch.Tensor", "torch.Tensor"]:
+def _generate_tile_kernel(patch: list, mask: list, tile_size: int) -> tuple["torch.Tensor", "torch.Tensor"]:
     """
     Generate specific size of perturbed tiles from randomly selected patches.
 
@@ -147,7 +149,7 @@ def _generate_tile_kernel(patch: list, mask: list, tile_size: int) -> Tuple["tor
     return n_patch, n_mask
 
 
-def generate_tile(patches: list, masks: list, tile_size: int, scale: list) -> Tuple["torch.Tensor", "torch.Tensor"]:
+def generate_tile(patches: list, masks: list, tile_size: int, scale: list) -> tuple["torch.Tensor", "torch.Tensor"]:
     """
     Generate different size of perturbed tiles from randomly selected patches.
 
@@ -331,7 +333,7 @@ class SNAL(EvasionAttack):
         self.collector = collector
         self._check_params()
 
-    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
+    def generate(self, x: np.ndarray, y: np.ndarray | None = None, **kwargs) -> np.ndarray:
         """
         Generate adversarial samples and return them in an array.
 
@@ -351,7 +353,7 @@ class SNAL(EvasionAttack):
         return x_adv
 
     def _generate_batch(
-        self, x_batch: np.ndarray, y_batch: Optional[np.ndarray] = None  # pylint: disable=W0613
+        self, x_batch: np.ndarray, y_batch: np.ndarray | None = None  # pylint: disable=W0613
     ) -> np.ndarray:
         """
         Run the attack on a batch of images.
@@ -581,7 +583,7 @@ class SNAL(EvasionAttack):
 
     def _init_guess(
         self, tile_mat: dict, x_init: "torch.Tensor", x_org: "torch.Tensor", tile_size: int, n_samples: int
-    ) -> Tuple["torch.Tensor", dict]:
+    ) -> tuple["torch.Tensor", dict]:
         """
         Generate an initial perturbation for each grid.
 

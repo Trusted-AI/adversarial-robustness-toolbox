@@ -22,7 +22,7 @@ This module implements the abstract estimators `TensorFlowV2Estimator` for Tenso
 from __future__ import annotations
 
 import logging
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
@@ -52,7 +52,9 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
         """
         preprocessing = kwargs.get("preprocessing")
         if isinstance(preprocessing, tuple):
-            from art.preprocessing.standardisation_mean_std.tensorflow import StandardisationMeanStdTensorFlow
+            from art.preprocessing.standardisation_mean_std.tensorflow import (
+                StandardisationMeanStdTensorFlow,
+            )
 
             kwargs["preprocessing"] = StandardisationMeanStdTensorFlow(mean=preprocessing[0], std=preprocessing[1])
 
@@ -98,7 +100,7 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
 
         super()._check_params()
         self.all_framework_preprocessing = all(
-            (isinstance(p, PreprocessorTensorFlowV2) for p in self.preprocessing_operations)
+            isinstance(p, PreprocessorTensorFlowV2) for p in self.preprocessing_operations
         )
 
     def _apply_preprocessing(self, x, y, fit: bool = False) -> tuple[Any, Any]:
@@ -122,8 +124,13 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
         :rtype: Format as expected by the `model`
         """
         import tensorflow as tf
-        from art.preprocessing.standardisation_mean_std.numpy import StandardisationMeanStd
-        from art.preprocessing.standardisation_mean_std.tensorflow import StandardisationMeanStdTensorFlow
+
+        from art.preprocessing.standardisation_mean_std.numpy import (
+            StandardisationMeanStd,
+        )
+        from art.preprocessing.standardisation_mean_std.tensorflow import (
+            StandardisationMeanStdTensorFlow,
+        )
 
         if not self.preprocessing_operations:
             return x, y
@@ -192,8 +199,13 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
         :rtype: Format as expected by the `model`
         """
         import tensorflow as tf
-        from art.preprocessing.standardisation_mean_std.numpy import StandardisationMeanStd
-        from art.preprocessing.standardisation_mean_std.tensorflow import StandardisationMeanStdTensorFlow
+
+        from art.preprocessing.standardisation_mean_std.numpy import (
+            StandardisationMeanStd,
+        )
+        from art.preprocessing.standardisation_mean_std.tensorflow import (
+            StandardisationMeanStdTensorFlow,
+        )
 
         if not self.preprocessing_operations:
             return gradients

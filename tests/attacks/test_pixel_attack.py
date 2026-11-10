@@ -26,7 +26,6 @@ The Pixel Attack is a generalisation of One Pixel Attack.
     https://arxiv.org/abs/1906.06026
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
 import unittest
@@ -34,12 +33,14 @@ import unittest
 import numpy as np
 
 from art.attacks.evasion.pixel_threshold import PixelAttack
-from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
 from art.estimators.classification.classifier import ClassifierMixin
-
-from tests.utils import TestBase
-from tests.utils import get_image_classifier_tf, get_image_classifier_pt  # , get_image_classifier_kr
+from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
 from tests.attacks.utils import backend_test_classifier_type_check_fail
+from tests.utils import (  # , get_image_classifier_kr
+    TestBase,
+    get_image_classifier_pt,
+    get_image_classifier_tf,
+)
 
 logger = logging.getLogger(__name__)
 

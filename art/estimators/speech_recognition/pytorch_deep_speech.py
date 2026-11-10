@@ -31,7 +31,10 @@ import numpy as np
 
 from art import config
 from art.estimators.pytorch import PyTorchEstimator
-from art.estimators.speech_recognition.speech_recognizer import SpeechRecognizerMixin, PytorchSpeechRecognizerMixin
+from art.estimators.speech_recognition.speech_recognizer import (
+    PytorchSpeechRecognizerMixin,
+    SpeechRecognizerMixin,
+)
 from art.utils import get_file
 
 if TYPE_CHECKING:
@@ -58,12 +61,12 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
 
     def __init__(
         self,
-        model: "DeepSpeech" | None = None,
+        model: DeepSpeech | None = None,
         pretrained_model: str | None = None,
         filename: str | None = None,
         url: str | None = None,
         use_half: bool = False,
-        optimizer: "torch.optim.Optimizer" | None = None,  # type: ignore
+        optimizer: torch.optim.Optimizer | None = None,  # type: ignore
         use_amp: bool = False,
         opt_level: str = "O1",
         decoder_type: str = "greedy",
@@ -75,10 +78,10 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
         cutoff_prob: float = 1.0,
         beam_width: int = 10,
         lm_workers: int = 4,
-        clip_values: "CLIP_VALUES_TYPE" | None = None,
-        preprocessing_defences: "Preprocessor" | list["Preprocessor"] | None = None,
-        postprocessing_defences: "Postprocessor" | list["Postprocessor"] | None = None,
-        preprocessing: "PREPROCESSING_TYPE" = None,
+        clip_values: CLIP_VALUES_TYPE | None = None,
+        preprocessing_defences: Preprocessor | list[Preprocessor] | None = None,
+        postprocessing_defences: Postprocessor | list[Postprocessor] | None = None,
+        preprocessing: PREPROCESSING_TYPE = None,
         device_type: str = "gpu",
         verbose: bool = True,
     ):
@@ -129,9 +132,9 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
                             if available otherwise run on CPU.
         """
         import torch
-        from deepspeech_pytorch.model import DeepSpeech
         from deepspeech_pytorch.configs.inference_config import LMConfig
         from deepspeech_pytorch.enums import DecoderType
+        from deepspeech_pytorch.model import DeepSpeech
         from deepspeech_pytorch.utils import load_decoder, load_model
 
         # Super initialization
@@ -596,8 +599,8 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
                 self.optimizer.step()
 
     def compute_loss_and_decoded_output(
-        self, masked_adv_input: "torch.Tensor", original_output: np.ndarray, **kwargs
-    ) -> tuple["torch.Tensor", np.ndarray]:
+        self, masked_adv_input: torch.Tensor, original_output: np.ndarray, **kwargs
+    ) -> tuple[torch.Tensor, np.ndarray]:
         """
         Compute loss function and decoded output.
 
@@ -655,10 +658,10 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
 
     def _preprocess_transform_model_input(
         self,
-        x: "torch.Tensor",
+        x: torch.Tensor,
         y: np.ndarray,
         real_lengths: np.ndarray,
-    ) -> tuple["torch.Tensor", "torch.Tensor", "torch.Tensor", "torch.Tensor", list]:
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, list]:
         """
         Apply preprocessing and then transform the user input space into the model input space. This function is used
         by the ASR attack to attack into the PyTorchDeepSpeech estimator whose defences are called with the
@@ -699,12 +702,12 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
 
     def _transform_model_input(
         self,
-        x: np.ndarray | "torch.Tensor",
+        x: np.ndarray | torch.Tensor,
         y: np.ndarray | None = None,
         compute_gradient: bool = False,
         tensor_input: bool = False,
         real_lengths: np.ndarray | None = None,
-    ) -> tuple["torch.Tensor", "torch.Tensor", "torch.Tensor", "torch.Tensor", list]:
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, list]:
         """
         Transform the user input space into the model input space.
 
@@ -843,7 +846,7 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
         return self._input_shape  # type: ignore
 
     @property
-    def model(self) -> "DeepSpeech":
+    def model(self) -> DeepSpeech:
         """
         Get current model.
 
@@ -852,7 +855,7 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
         return self._model
 
     @property
-    def device(self) -> "torch.device":
+    def device(self) -> torch.device:
         """
         Get current used device.
 
@@ -870,7 +873,7 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
         return self._use_amp  # type: ignore
 
     @property
-    def optimizer(self) -> "torch.optim.Optimizer":
+    def optimizer(self) -> torch.optim.Optimizer:
         """
         Return the optimizer.
 

@@ -21,7 +21,7 @@ This module implements Neural Cleanse (Wang et. al. 2019)
 | Paper link: http://people.cs.uchicago.edu/~ravenben/publications/abstracts/backdoor-sp19.html
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
 from typing import TYPE_CHECKING
@@ -29,8 +29,8 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 from art.defences.transformer.transformer import Transformer
-from art.estimators.poison_mitigation.neural_cleanse import KerasNeuralCleanse
 from art.estimators.classification.keras import KerasClassifier
+from art.estimators.poison_mitigation.neural_cleanse import KerasNeuralCleanse
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_TYPE
@@ -60,7 +60,7 @@ class NeuralCleanse(Transformer):
         "batch_size",
     ]
 
-    def __init__(self, classifier: "CLASSIFIER_TYPE") -> None:
+    def __init__(self, classifier: CLASSIFIER_TYPE) -> None:
         """
         Create an instance of the neural cleanse defence.
 
@@ -72,10 +72,10 @@ class NeuralCleanse(Transformer):
 
     def __call__(  # type: ignore
         self,
-        transformed_classifier: "CLASSIFIER_TYPE",
+        transformed_classifier: CLASSIFIER_TYPE,
         steps: int = 1000,
         init_cost: float = 1e-3,
-        norm: int | float = 2,
+        norm: float = 2,
         learning_rate: float = 0.1,
         attack_success_threshold: float = 0.99,
         patience: int = 5,

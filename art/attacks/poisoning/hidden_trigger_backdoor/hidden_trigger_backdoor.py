@@ -21,7 +21,7 @@ This module implements a Hidden Trigger Backdoor attack on Neural Networks.
 | Paper link: https://arxiv.org/abs/1910.00033
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
 from typing import TYPE_CHECKING
@@ -30,18 +30,17 @@ import numpy as np
 
 from art.attacks.attack import PoisoningAttackWhiteBox
 from art.attacks.poisoning.backdoor_attack import PoisoningAttackBackdoor
-from art.estimators import BaseEstimator, NeuralNetworkMixin
-from art.estimators.classification.classifier import ClassifierMixin
-from art.estimators.classification.pytorch import PyTorchClassifier
-from art.estimators.classification.keras import KerasClassifier
-from art.estimators.classification.tensorflow import TensorFlowV2Classifier
-
-from art.attacks.poisoning.hidden_trigger_backdoor.hidden_trigger_backdoor_pytorch import (
-    HiddenTriggerBackdoorPyTorch,
-)
 from art.attacks.poisoning.hidden_trigger_backdoor.hidden_trigger_backdoor_keras import (
     HiddenTriggerBackdoorKeras,
 )
+from art.attacks.poisoning.hidden_trigger_backdoor.hidden_trigger_backdoor_pytorch import (
+    HiddenTriggerBackdoorPyTorch,
+)
+from art.estimators import BaseEstimator, NeuralNetworkMixin
+from art.estimators.classification.classifier import ClassifierMixin
+from art.estimators.classification.keras import KerasClassifier
+from art.estimators.classification.pytorch import PyTorchClassifier
+from art.estimators.classification.tensorflow import TensorFlowV2Classifier
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_NEURALNETWORK_TYPE
@@ -78,7 +77,7 @@ class HiddenTriggerBackdoor(PoisoningAttackWhiteBox):
 
     def __init__(
         self,
-        classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
+        classifier: CLASSIFIER_NEURALNETWORK_TYPE,
         target: np.ndarray,
         source: np.ndarray,
         feature_layer: str | int,

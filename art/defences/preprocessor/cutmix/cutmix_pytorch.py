@@ -25,7 +25,7 @@ This module implements the CutMix data augmentation defence.
     https://arxiv.org/abs/1902.06705
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
 from typing import TYPE_CHECKING
@@ -91,9 +91,7 @@ class CutMixPyTorch(PreprocessorPyTorch):
         self.verbose = verbose
         self._check_params()
 
-    def forward(
-        self, x: "torch.Tensor", y: "torch.Tensor" | None = None
-    ) -> tuple["torch.Tensor", "torch.Tensor" | None]:
+    def forward(self, x: torch.Tensor, y: torch.Tensor | None = None) -> tuple[torch.Tensor, torch.Tensor | None]:
         """
         Apply CutMix data augmentation to sample `x`.
 

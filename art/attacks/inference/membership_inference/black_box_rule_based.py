@@ -19,7 +19,7 @@
 This module implements membership inference attacks.
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
 from typing import TYPE_CHECKING
@@ -27,8 +27,8 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 from art.attacks.attack import MembershipInferenceAttack
-from art.estimators.estimator import BaseEstimator
 from art.estimators.classification.classifier import ClassifierMixin
+from art.estimators.estimator import BaseEstimator
 from art.utils import check_and_transform_label_format
 
 if TYPE_CHECKING:
@@ -48,7 +48,7 @@ class MembershipInferenceBlackBoxRuleBased(MembershipInferenceAttack):
     attack_params = MembershipInferenceAttack.attack_params
     _estimator_requirements = (BaseEstimator, ClassifierMixin)
 
-    def __init__(self, classifier: "CLASSIFIER_TYPE"):
+    def __init__(self, classifier: CLASSIFIER_TYPE):
         """
         Create a MembershipInferenceBlackBoxRuleBased attack instance.
 

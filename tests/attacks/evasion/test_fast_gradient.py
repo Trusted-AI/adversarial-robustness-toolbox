@@ -15,20 +15,25 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
+
 import numpy as np
 import pytest
 
 from art.attacks.evasion import FastGradientMethod
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
-
-from tests.attacks.utils import backend_check_adverse_values, backend_test_defended_images
-from tests.attacks.utils import backend_test_random_initialisation_images, backend_targeted_images
-from tests.attacks.utils import backend_targeted_tabular, backend_untargeted_tabular, backend_masked_images
-from tests.attacks.utils import backend_test_classifier_type_check_fail
-from tests.utils import ExpectedValue, ARTTestException
+from tests.attacks.utils import (
+    backend_check_adverse_values,
+    backend_masked_images,
+    backend_targeted_images,
+    backend_targeted_tabular,
+    backend_test_classifier_type_check_fail,
+    backend_test_defended_images,
+    backend_test_random_initialisation_images,
+    backend_untargeted_tabular,
+)
+from tests.utils import ARTTestException, ExpectedValue
 
 logger = logging.getLogger(__name__)
 

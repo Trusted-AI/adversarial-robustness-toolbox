@@ -23,10 +23,9 @@ perturbations in semantic space and Lp-ball (see `FastGradientMethod` and `Basic
 | Paper link: https://arxiv.org/abs/2202.04235
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
-
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -34,13 +33,14 @@ from tqdm.auto import tqdm
 
 from art.attacks.attack import EvasionAttack
 from art.config import ART_NUMPY_DTYPE
-from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from art.estimators.classification.classifier import ClassifierMixin
-from art.utils import compute_success, check_and_transform_label_format
+from art.estimators.estimator import BaseEstimator, LossGradientsMixin
+from art.utils import check_and_transform_label_format, compute_success
 
 if TYPE_CHECKING:
 
     import torch
+
     from art.estimators.classification.pytorch import PyTorchClassifier
 
 logger = logging.getLogger(__name__)
@@ -77,7 +77,7 @@ class CompositeAdversarialAttackPyTorch(EvasionAttack):
 
     def __init__(
         self,
-        classifier: "PyTorchClassifier",
+        classifier: PyTorchClassifier,
         enabled_attack: tuple = (0, 1, 2, 3, 4, 5),
         # Default: Full Attacks; 0: Hue, 1: Saturation, 2: Rotation, 3: Brightness, 4: Contrast, 5: PGD (L-infinity)
         hue_epsilon: tuple[float, float] = (-np.pi, np.pi),
@@ -178,10 +178,10 @@ class CompositeAdversarialAttackPyTorch(EvasionAttack):
         self._is_scheduling: bool = False
         self.eps_space: list = []
         self.adv_val_space: list = []
-        self.curr_dsm: "torch.Tensor" = torch.zeros((len(self.enabled_attack), len(self.enabled_attack)))
-        self.curr_seq: "torch.Tensor" = torch.zeros(len(self.enabled_attack))
-        self.is_attacked: "torch.Tensor" = torch.zeros(self.batch_size, device=self.device).bool()
-        self.is_not_attacked: "torch.Tensor" = torch.ones(self.batch_size, device=self.device).bool()
+        self.curr_dsm: torch.Tensor = torch.zeros((len(self.enabled_attack), len(self.enabled_attack)))
+        self.curr_seq: torch.Tensor = torch.zeros(len(self.enabled_attack))
+        self.is_attacked: torch.Tensor = torch.zeros(self.batch_size, device=self.device).bool()
+        self.is_not_attacked: torch.Tensor = torch.ones(self.batch_size, device=self.device).bool()
 
     def _check_params(self) -> None:
         """
@@ -343,7 +343,7 @@ class CompositeAdversarialAttackPyTorch(EvasionAttack):
 
         return x_adv
 
-    def _generate_batch(self, x: "torch.Tensor", y: "torch.Tensor") -> np.ndarray:
+    def _generate_batch(self, x: torch.Tensor, y: torch.Tensor) -> np.ndarray:
         """
         Generate a batch of composite adversarial examples and return them in a NumPy array.
 
@@ -363,12 +363,12 @@ class CompositeAdversarialAttackPyTorch(EvasionAttack):
 
     def _comp_pgd(
         self,
-        data: "torch.Tensor",
-        labels: "torch.Tensor",
+        data: torch.Tensor,
+        labels: torch.Tensor,
         attack_idx: int,
-        attack_parameter: "torch.Tensor",
-        ori_is_attacked: "torch.Tensor",
-    ) -> tuple["torch.Tensor", "torch.Tensor"]:
+        attack_parameter: torch.Tensor,
+        ori_is_attacked: torch.Tensor,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         """
         Compute the adversarial examples for each attack component.
 
@@ -411,9 +411,7 @@ class CompositeAdversarialAttackPyTorch(EvasionAttack):
 
         return adv_data, attack_parameter
 
-    def caa_hue(
-        self, data: "torch.Tensor", hue: "torch.Tensor", labels: "torch.Tensor"
-    ) -> tuple["torch.Tensor", "torch.Tensor"]:
+    def caa_hue(self, data: torch.Tensor, hue: torch.Tensor, labels: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         """
         Compute the adversarial examples for hue component.
 
@@ -432,8 +430,8 @@ class CompositeAdversarialAttackPyTorch(EvasionAttack):
         )
 
     def caa_saturation(
-        self, data: "torch.Tensor", saturation: "torch.Tensor", labels: "torch.Tensor"
-    ) -> tuple["torch.Tensor", "torch.Tensor"]:
+        self, data: torch.Tensor, saturation: torch.Tensor, labels: torch.Tensor
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         """
         Compute the adversarial examples for saturation component.
 
@@ -456,8 +454,8 @@ class CompositeAdversarialAttackPyTorch(EvasionAttack):
         )
 
     def caa_rotation(
-        self, data: "torch.Tensor", theta: "torch.Tensor", labels: "torch.Tensor"
-    ) -> tuple["torch.Tensor", "torch.Tensor"]:
+        self, data: torch.Tensor, theta: torch.Tensor, labels: torch.Tensor
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         """
         Compute the adversarial examples for rotation component.
 
@@ -476,8 +474,8 @@ class CompositeAdversarialAttackPyTorch(EvasionAttack):
         )
 
     def caa_brightness(
-        self, data: "torch.Tensor", brightness: "torch.Tensor", labels: "torch.Tensor"
-    ) -> tuple["torch.Tensor", "torch.Tensor"]:
+        self, data: torch.Tensor, brightness: torch.Tensor, labels: torch.Tensor
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         """
         Compute the adversarial examples for brightness component.
 
@@ -500,8 +498,8 @@ class CompositeAdversarialAttackPyTorch(EvasionAttack):
         )
 
     def caa_contrast(
-        self, data: "torch.Tensor", contrast: "torch.Tensor", labels: "torch.Tensor"
-    ) -> tuple["torch.Tensor", "torch.Tensor"]:
+        self, data: torch.Tensor, contrast: torch.Tensor, labels: torch.Tensor
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         """
         Compute the adversarial examples for contrast component.
 
@@ -524,8 +522,8 @@ class CompositeAdversarialAttackPyTorch(EvasionAttack):
         )
 
     def caa_linf(
-        self, data: "torch.Tensor", eta: "torch.Tensor", labels: "torch.Tensor"
-    ) -> tuple["torch.Tensor", "torch.Tensor"]:
+        self, data: torch.Tensor, eta: torch.Tensor, labels: torch.Tensor
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         """
         Compute the adversarial examples for L-infinity (PGD) component.
 
@@ -564,7 +562,7 @@ class CompositeAdversarialAttackPyTorch(EvasionAttack):
 
         return adv_data, eta
 
-    def update_attack_order(self, images: "torch.Tensor", labels: "torch.Tensor", adv_val: list) -> None:
+    def update_attack_order(self, images: torch.Tensor, labels: torch.Tensor, adv_val: list) -> None:
         """
         Update the specified attack ordering.
 
@@ -629,7 +627,7 @@ class CompositeAdversarialAttackPyTorch(EvasionAttack):
         else:
             raise ValueError()
 
-    def caa_attack(self, images: "torch.Tensor", labels: "torch.Tensor") -> "torch.Tensor":
+    def caa_attack(self, images: torch.Tensor, labels: torch.Tensor) -> torch.Tensor:
         """
         The main algorithm to generate the adversarial examples for composite adversarial attack.
 

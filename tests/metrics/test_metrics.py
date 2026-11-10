@@ -15,31 +15,28 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
 import unittest
 
 import numpy as np
 import tensorflow as tf
-import torch.nn as nn
 import torch.nn.functional as f
-import torch.optim as optim
-from art.attacks.evasion.hop_skip_jump import HopSkipJump
+from torch import nn, optim
 
+from art.attacks.evasion.hop_skip_jump import HopSkipJump
 from art.estimators.classification.keras import KerasClassifier
 from art.estimators.classification.pytorch import PyTorchClassifier
 from art.metrics.metrics import (
     adversarial_accuracy,
-    empirical_robustness,
+    clever,
     clever_t,
     clever_u,
-    clever,
+    empirical_robustness,
     loss_sensitivity,
     wasserstein_distance,
 )
 from art.utils import load_mnist
-
 from tests.utils import master_seed
 
 logger = logging.getLogger(__name__)
@@ -67,11 +64,11 @@ class TestMetrics(unittest.TestCase):
 
         # Compute minimal perturbations
         params = {"eps_step": 1.0, "eps": 1.0}
-        emp_robust = empirical_robustness(classifier, x_train, str("fgsm"), params)
+        emp_robust = empirical_robustness(classifier, x_train, "fgsm", params)
         self.assertAlmostEqual(emp_robust, 1.000369094488189, 3)
 
         params = {"eps_step": 0.1, "eps": 0.2}
-        emp_robust = empirical_robustness(classifier, x_train, str("fgsm"), params)
+        emp_robust = empirical_robustness(classifier, x_train, "fgsm", params)
         self.assertLessEqual(emp_robust, 0.65)
 
     def test_adv_acc_mnist(self):
@@ -84,11 +81,11 @@ class TestMetrics(unittest.TestCase):
 
         # Compute adversarial accuracies
         params = {"eps_step": 1.0, "eps": 1.0}
-        adv_acc = adversarial_accuracy(classifier, x_train, attack_name=str("fgsm"), attack_params=params)
+        adv_acc = adversarial_accuracy(classifier, x_train, attack_name="fgsm", attack_params=params)
         self.assertAlmostEqual(adv_acc, 0)
 
         params = {"eps_step": 1.0, "eps": 1.0}
-        adv_acc = adversarial_accuracy(classifier, x_train, y_train, attack_name=str("fgsm"), attack_params=params)
+        adv_acc = adversarial_accuracy(classifier, x_train, y_train, attack_name="fgsm", attack_params=params)
         self.assertAlmostEqual(adv_acc, 0)
 
         params = {"max_iter": 10, "max_eval": 100, "init_eval": 10, "init_size": 10}
@@ -122,8 +119,8 @@ class TestMetrics(unittest.TestCase):
     @staticmethod
     def _cnn_mnist_k(input_shape):
         from tensorflow import keras
+        from tensorflow.keras.layers import Conv2D, Dense, Flatten, MaxPooling2D
         from tensorflow.keras.models import Sequential
-        from tensorflow.keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
 
         # Create simple CNN
         model = Sequential()
@@ -148,8 +145,8 @@ class TestMetrics(unittest.TestCase):
         :return:
         """
         from tensorflow import keras
+        from tensorflow.keras.layers import Conv2D, Dense, Flatten, MaxPooling2D
         from tensorflow.keras.models import Sequential
-        from tensorflow.keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
 
         # Create simple CNN
         model = Sequential()

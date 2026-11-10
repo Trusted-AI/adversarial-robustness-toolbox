@@ -21,17 +21,17 @@ This module implements the copycat cnn attack `CopycatCNN`.
 | Paper link: https://arxiv.org/abs/1806.05476
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
 from typing import TYPE_CHECKING
 
 import numpy as np
 
-from art.config import ART_NUMPY_DTYPE
 from art.attacks.attack import ExtractionAttack
-from art.estimators.estimator import BaseEstimator
+from art.config import ART_NUMPY_DTYPE
 from art.estimators.classification.classifier import ClassifierMixin
+from art.estimators.estimator import BaseEstimator
 from art.utils import to_categorical
 
 if TYPE_CHECKING:
@@ -58,7 +58,7 @@ class CopycatCNN(ExtractionAttack):
 
     def __init__(
         self,
-        classifier: "CLASSIFIER_TYPE",
+        classifier: CLASSIFIER_TYPE,
         batch_size_fit: int = 1,
         batch_size_query: int = 1,
         nb_epochs: int = 10,
@@ -83,7 +83,7 @@ class CopycatCNN(ExtractionAttack):
         self.use_probability = use_probability
         self._check_params()
 
-    def extract(self, x: np.ndarray, y: np.ndarray | None = None, **kwargs) -> "CLASSIFIER_TYPE":
+    def extract(self, x: np.ndarray, y: np.ndarray | None = None, **kwargs) -> CLASSIFIER_TYPE:
         """
         Extract a thieved classifier.
 

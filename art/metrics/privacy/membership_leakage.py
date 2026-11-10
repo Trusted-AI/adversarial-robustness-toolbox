@@ -19,13 +19,13 @@
 This module implements membership leakage metrics.
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
-from typing import TYPE_CHECKING
+from __future__ import annotations
+
 from enum import Enum, auto
+from typing import TYPE_CHECKING
 
 import numpy as np
 import scipy
-
 from sklearn.neighbors import KNeighborsClassifier
 
 from art.utils import check_and_transform_label_format, is_probability_array
@@ -44,8 +44,8 @@ class ComparisonType(Enum):
 
 
 def PDTP(  # pylint: disable=invalid-name
-    target_estimator: "CLASSIFIER_TYPE",
-    extra_estimator: "CLASSIFIER_TYPE",
+    target_estimator: CLASSIFIER_TYPE,
+    extra_estimator: CLASSIFIER_TYPE,
     x: np.ndarray,
     y: np.ndarray,
     indexes: np.ndarray | None = None,
@@ -72,8 +72,8 @@ def PDTP(  # pylint: disable=invalid-name
              the training set respectively. The higher the value, the higher the privacy leakage for that sample.
     """
     from art.estimators.classification.pytorch import PyTorchClassifier
-    from art.estimators.classification.tensorflow import TensorFlowV2Classifier
     from art.estimators.classification.scikitlearn import ScikitlearnClassifier
+    from art.estimators.classification.tensorflow import TensorFlowV2Classifier
 
     supported_classifiers = (PyTorchClassifier, TensorFlowV2Classifier, ScikitlearnClassifier)
 
@@ -150,7 +150,7 @@ def PDTP(  # pylint: disable=invalid-name
 
 
 def SHAPr(  # pylint: disable=invalid-name
-    target_estimator: "CLASSIFIER_TYPE",
+    target_estimator: CLASSIFIER_TYPE,
     x_train: np.ndarray,
     y_train: np.ndarray,
     x_test: np.ndarray,

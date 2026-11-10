@@ -25,10 +25,9 @@ This module implements the Cutout data augmentation defence.
     https://arxiv.org/abs/1902.06705
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
-
 
 import numpy as np
 from tqdm.auto import trange

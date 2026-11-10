@@ -32,14 +32,16 @@ import numpy as np
 from sklearn.utils import shuffle
 from tqdm import tqdm
 
+from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent import (
+    ProjectedGradientDescent,
+)
 from art.defences.trainer.trainer import Trainer
-from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent import ProjectedGradientDescent
 from art.utils import check_and_transform_label_format
 
 if sys.version_info >= (3, 8):
-    from typing import TypedDict, Any, TYPE_CHECKING
+    from typing import TYPE_CHECKING, Any, TypedDict
 else:
-    from typing import Any, TYPE_CHECKING
+    from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from art.utils import IBP_CERTIFIER_TYPE
@@ -109,7 +111,7 @@ class AdversarialTrainerCertifiedIBPPyTorch(Trainer):
 
     def __init__(
         self,
-        classifier: "IBP_CERTIFIER_TYPE",
+        classifier: IBP_CERTIFIER_TYPE,
         nb_epochs: int | None = 20,
         bound: float = 0.1,
         batch_size: int = 32,
@@ -119,7 +121,7 @@ class AdversarialTrainerCertifiedIBPPyTorch(Trainer):
         use_loss_weighting_schedule: bool = True,
         loss_weighting_schedule: Any | None = None,
         augment_with_pgd: bool = False,
-        pgd_params: "PGDParamDict" | None = None,
+        pgd_params: PGDParamDict | None = None,
     ) -> None:
         """
         Create an :class:`.AdversarialTrainerCertified` instance.
@@ -164,8 +166,8 @@ class AdversarialTrainerCertifiedIBPPyTorch(Trainer):
             raise ValueError("Using a loss weighting schedule is incompatible with a fixed loss_weighting.")
 
         super().__init__(classifier=classifier)
-        self.classifier: "IBP_CERTIFIER_TYPE"
-        self.pgd_params: "PGDParamDict"
+        self.classifier: IBP_CERTIFIER_TYPE
+        self.pgd_params: PGDParamDict
         self.nb_epochs = nb_epochs
         self.loss_weighting = loss_weighting
         self.bound = bound

@@ -29,18 +29,18 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-from art.estimators.scikitlearn import ScikitlearnEstimator
-from art.estimators.regression.regressor import RegressorMixin
 from art import config
+from art.estimators.regression.regressor import RegressorMixin
+from art.estimators.scikitlearn import ScikitlearnEstimator
 
 if TYPE_CHECKING:
 
     import sklearn
 
-    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
-    from art.defences.preprocessor import Preprocessor
     from art.defences.postprocessor import Postprocessor
+    from art.defences.preprocessor import Preprocessor
     from art.metrics.verification_decisions_trees import LeafNode
+    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -54,11 +54,11 @@ class ScikitlearnRegressor(RegressorMixin, ScikitlearnEstimator):
 
     def __init__(
         self,
-        model: "sklearn.base.BaseEstimator",
-        clip_values: "CLIP_VALUES_TYPE" | None = None,
-        preprocessing_defences: "Preprocessor" | list["Preprocessor"] | None = None,
-        postprocessing_defences: "Postprocessor" | list["Postprocessor"] | None = None,
-        preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
+        model: sklearn.base.BaseEstimator,
+        clip_values: CLIP_VALUES_TYPE | None = None,
+        preprocessing_defences: Preprocessor | list[Preprocessor] | None = None,
+        postprocessing_defences: Postprocessor | list[Postprocessor] | None = None,
+        preprocessing: PREPROCESSING_TYPE = (0.0, 1.0),
     ) -> None:
         """
         Create a `Regressor` instance from a scikit-learn regressor model.
@@ -145,7 +145,7 @@ class ScikitlearnRegressor(RegressorMixin, ScikitlearnEstimator):
         with open(full_path + ".pickle", "wb") as file_pickle:
             pickle.dump(self.model, file=file_pickle)
 
-    def clone_for_refitting(self) -> "ScikitlearnRegressor":
+    def clone_for_refitting(self) -> ScikitlearnRegressor:
         """
         Create a copy of the classifier that can be refit from scratch.
 
@@ -165,7 +165,6 @@ class ScikitlearnRegressor(RegressorMixin, ScikitlearnEstimator):
 
         """
         # No need to do anything since scikitlearn models start from scratch each time fit() is called
-        pass
 
     def compute_loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
         """
@@ -197,11 +196,11 @@ class ScikitlearnDecisionTreeRegressor(ScikitlearnRegressor):
 
     def __init__(
         self,
-        model: "sklearn.tree.DecisionTreeRegressor",
-        clip_values: "CLIP_VALUES_TYPE" | None = None,
-        preprocessing_defences: "Preprocessor" | list["Preprocessor"] | None = None,
-        postprocessing_defences: "Postprocessor" | list["Postprocessor"] | None = None,
-        preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
+        model: sklearn.tree.DecisionTreeRegressor,
+        clip_values: CLIP_VALUES_TYPE | None = None,
+        preprocessing_defences: Preprocessor | list[Preprocessor] | None = None,
+        postprocessing_defences: Postprocessor | list[Postprocessor] | None = None,
+        preprocessing: PREPROCESSING_TYPE = (0.0, 1.0),
     ) -> None:
         """
         Create a `Regressor` instance from a scikit-learn Decision Tree Regressor model.
@@ -289,8 +288,8 @@ class ScikitlearnDecisionTreeRegressor(ScikitlearnRegressor):
         """
         return self.model.tree_.n_node_samples[node_id]
 
-    def _get_leaf_nodes(self, node_id, i_tree, class_label, box) -> list["LeafNode"]:
-        from art.metrics.verification_decisions_trees import LeafNode, Box, Interval
+    def _get_leaf_nodes(self, node_id, i_tree, class_label, box) -> list[LeafNode]:
+        from art.metrics.verification_decisions_trees import Box, Interval, LeafNode
 
         leaf_nodes: list[LeafNode] = []
 

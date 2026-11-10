@@ -30,8 +30,8 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 from art.attacks.attack import MembershipInferenceAttack
-from art.estimators.estimator import BaseEstimator
 from art.estimators.classification.classifier import ClassifierMixin
+from art.estimators.estimator import BaseEstimator
 from art.utils import check_and_transform_label_format
 
 if TYPE_CHECKING:
@@ -55,7 +55,7 @@ class LabelOnlyDecisionBoundary(MembershipInferenceAttack):
     ]
     _estimator_requirements = (BaseEstimator, ClassifierMixin)
 
-    def __init__(self, estimator: "CLASSIFIER_TYPE", distance_threshold_tau: float | None = None):
+    def __init__(self, estimator: CLASSIFIER_TYPE, distance_threshold_tau: float | None = None):
         """
         Create a `LabelOnlyDecisionBoundary` instance for Label-Only Inference Attack based on Decision Boundary.
 

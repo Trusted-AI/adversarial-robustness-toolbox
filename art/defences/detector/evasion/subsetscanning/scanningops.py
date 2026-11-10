@@ -72,7 +72,7 @@ class ScanningOps:
             size_of_given = pvalues.shape[1]  # for this many fixed nodes
             unsort_priority = np.zeros((pvalues.shape[0], alpha_thresholds.shape[0]))  # number of rows
 
-        for elem_indx in range(0, number_of_elements):
+        for elem_indx in range(number_of_elements):
             # sort all the range maxes
             if image_to_node:
                 # collect ranges over images(rows)
@@ -131,7 +131,7 @@ class ScanningOps:
         unsort = arg_sort_priority[:, best_alpha_count]
 
         subset = np.zeros(best_size).astype(int)
-        for loc in range(0, best_size):
+        for loc in range(best_size):
             subset[loc] = unsort[loc]
 
         return best_score_so_far, subset, best_alpha

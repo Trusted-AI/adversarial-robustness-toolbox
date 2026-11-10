@@ -23,14 +23,13 @@ from __future__ import annotations
 
 from abc import ABC, ABCMeta, abstractmethod
 
-
 import numpy as np
 
 from art.estimators.estimator import (
     BaseEstimator,
-    NeuralNetworkMixin,
-    LossGradientsMixin,
     DecisionTreeMixin,
+    LossGradientsMixin,
+    NeuralNetworkMixin,
 )
 
 
@@ -195,7 +194,7 @@ class ClassifierNeuralNetwork(
         """
         raise NotImplementedError
 
-    def clone_for_refitting(self) -> "ClassifierNeuralNetwork":
+    def clone_for_refitting(self) -> ClassifierNeuralNetwork:
         """
         Clone classifier for refitting.
         """

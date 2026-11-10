@@ -19,22 +19,22 @@
 This module implements the classifier `BlackBoxClassifier` for black-box classifiers.
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
+import logging
 from collections.abc import Callable
 from functools import total_ordering
-import logging
 from typing import TYPE_CHECKING
 
 import numpy as np
 
+from art.estimators.classification.classifier import Classifier, ClassifierMixin
 from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
-from art.estimators.classification.classifier import ClassifierMixin, Classifier
 
 if TYPE_CHECKING:
-    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
-    from art.defences.preprocessor import Preprocessor
     from art.defences.postprocessor import Postprocessor
+    from art.defences.preprocessor import Preprocessor
+    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -51,10 +51,10 @@ class BlackBoxClassifier(ClassifierMixin, BaseEstimator):
         predict_fn: Callable[[np.ndarray], np.ndarray],
         input_shape: tuple[int, ...],
         nb_classes: int,
-        clip_values: "CLIP_VALUES_TYPE" | None = None,
-        preprocessing_defences: "Preprocessor" | list["Preprocessor"] | None = None,
-        postprocessing_defences: "Postprocessor" | list["Postprocessor"] | None = None,
-        preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
+        clip_values: CLIP_VALUES_TYPE | None = None,
+        preprocessing_defences: Preprocessor | list[Preprocessor] | None = None,
+        postprocessing_defences: Postprocessor | list[Postprocessor] | None = None,
+        preprocessing: PREPROCESSING_TYPE = (0.0, 1.0),
         fuzzy_float_compare: bool = False,
     ):
         """
@@ -180,10 +180,10 @@ class BlackBoxClassifierNeuralNetwork(NeuralNetworkMixin, ClassifierMixin, BaseE
         input_shape: tuple[int, ...],
         nb_classes: int,
         channels_first: bool = True,
-        clip_values: "CLIP_VALUES_TYPE" | None = None,
-        preprocessing_defences: "Preprocessor" | list["Preprocessor"] | None = None,
-        postprocessing_defences: "Postprocessor" | list["Postprocessor"] | None = None,
-        preprocessing: "PREPROCESSING_TYPE" = (0, 1),
+        clip_values: CLIP_VALUES_TYPE | None = None,
+        preprocessing_defences: Preprocessor | list[Preprocessor] | None = None,
+        postprocessing_defences: Postprocessor | list[Postprocessor] | None = None,
+        preprocessing: PREPROCESSING_TYPE = (0, 1),
         fuzzy_float_compare: bool = False,
     ):
         """

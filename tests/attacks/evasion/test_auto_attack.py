@@ -16,17 +16,18 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 import logging
-import pytest
 
 import numpy as np
+import pytest
 
 from art.attacks.evasion import AutoAttack
-from art.attacks.evasion.auto_projected_gradient_descent import AutoProjectedGradientDescent
+from art.attacks.evasion.auto_projected_gradient_descent import (
+    AutoProjectedGradientDescent,
+)
 from art.attacks.evasion.deepfool import DeepFool
 from art.attacks.evasion.square_attack import SquareAttack
-from art.estimators.estimator import BaseEstimator
 from art.estimators.classification.classifier import ClassifierMixin
-
+from art.estimators.estimator import BaseEstimator
 from tests.attacks.utils import backend_test_classifier_type_check_fail
 from tests.utils import ARTTestException
 

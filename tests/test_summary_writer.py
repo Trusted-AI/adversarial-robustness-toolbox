@@ -16,12 +16,11 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 import logging
-import pytest
 
 import numpy as np
+import pytest
 
 from art.summary_writer import SummaryWriterDefault
-
 from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)

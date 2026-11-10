@@ -16,13 +16,12 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 import logging
-import pytest
 
 import numpy as np
+import pytest
 
 from art.attacks.evasion import SquareAttack
 from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
-
 from tests.attacks.utils import backend_test_classifier_type_check_fail
 from tests.utils import ARTTestException
 

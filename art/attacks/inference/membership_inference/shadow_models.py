@@ -20,10 +20,10 @@
 This module implements membership inference attacks.
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
-from collections.abc import Callable, Sequence
 import math
+from collections.abc import Callable, Sequence
 from functools import reduce
 from typing import TYPE_CHECKING
 
@@ -41,7 +41,7 @@ class ShadowModels:
 
     def __init__(
         self,
-        shadow_model_template: "CLONABLE",
+        shadow_model_template: CLONABLE,
         num_shadow_models: int = 3,
         disjoint_datasets=False,
         random_state=None,
@@ -158,7 +158,7 @@ class ShadowModels:
 
     def _hill_climbing_synthesis(
         self,
-        target_classifier: "CLASSIFIER_TYPE",
+        target_classifier: CLASSIFIER_TYPE,
         target_class: int,
         min_confidence: float,
         max_features_randomized: int | None,
@@ -242,7 +242,7 @@ class ShadowModels:
 
     def generate_synthetic_shadow_dataset(
         self,
-        target_classifier: "CLASSIFIER_TYPE",
+        target_classifier: CLASSIFIER_TYPE,
         dataset_size: int,
         max_features_randomized: int | None,
         member_ratio: float = 0.5,
@@ -317,7 +317,7 @@ class ShadowModels:
 
     def get_shadow_models(
         self,
-    ) -> Sequence["CLONABLE"]:
+    ) -> Sequence[CLONABLE]:
         """
         Returns the list of shadow models. `generate_shadow_dataset` or `generate_synthetic_shadow_dataset` must be
         called for the shadow models to be trained.

@@ -15,7 +15,6 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
 import unittest
@@ -25,11 +24,14 @@ import numpy as np
 
 from art.attacks.evasion.spatial_transformation import SpatialTransformation
 from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
-
-from tests.utils import TestBase
-from tests.utils import get_image_classifier_tf, get_image_classifier_kr
-from tests.utils import get_image_classifier_pt, get_tabular_classifier_kr
 from tests.attacks.utils import backend_test_classifier_type_check_fail
+from tests.utils import (
+    TestBase,
+    get_image_classifier_kr,
+    get_image_classifier_pt,
+    get_image_classifier_tf,
+    get_tabular_classifier_kr,
+)
 
 logger = logging.getLogger(__name__)
 

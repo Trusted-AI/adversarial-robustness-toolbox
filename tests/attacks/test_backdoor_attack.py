@@ -15,19 +15,21 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from __future__ import absolute_import, division, print_function, unicode_literals
 
-import os
 import logging
+import os
 import unittest
 
 import numpy as np
 
 from art.attacks.poisoning.backdoor_attack import PoisoningAttackBackdoor
-from art.attacks.poisoning.perturbations import add_pattern_bd, add_single_bd, insert_image
+from art.attacks.poisoning.perturbations import (
+    add_pattern_bd,
+    add_single_bd,
+    insert_image,
+)
 from art.utils import to_categorical
-
-from tests.utils import TestBase, master_seed, get_image_classifier_kr
+from tests.utils import TestBase, get_image_classifier_kr, master_seed
 
 logger = logging.getLogger(__name__)
 

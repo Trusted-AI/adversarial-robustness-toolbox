@@ -19,7 +19,6 @@
 Module providing convenience functions specifically for unit tests.
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 import json
 import logging
@@ -29,12 +28,12 @@ import time
 import unittest
 import warnings
 
-import sklearn
 import numpy as np
+import sklearn
 
 from art.estimators.classification.tensorflow import TensorFlowV2Classifier
-from art.estimators.generation.tensorflow import TensorFlowV2Generator
 from art.estimators.gan.tensorflow import TensorFlowV2GAN
+from art.estimators.generation.tensorflow import TensorFlowV2Generator
 from art.utils import load_dataset
 
 logger = logging.getLogger(__name__)
@@ -145,11 +144,11 @@ def check_adverse_example_x(x_adv, x_original, max=1.0, min=0.0, bounded=True):
     assert bool((x_original == x_adv).all()) is False, "x_test_adv should have been different from x_test"
 
     if bounded:
-        assert np.amax(x_adv) <= max, "x_test_adv values should have all been below {0}".format(max)
-        assert np.amin(x_adv) >= min, "x_test_adv values should have all been above {0}".format(min)
+        assert np.amax(x_adv) <= max, f"x_test_adv values should have all been below {max}"
+        assert np.amin(x_adv) >= min, f"x_test_adv values should have all been above {min}"
     else:
-        assert (x_adv > max).any(), "some x_test_adv values should have been above {0}".format(max)
-        assert (x_adv < min).any(), " some x_test_adv values should have all been below {0}".format(min)
+        assert (x_adv > max).any(), f"some x_test_adv values should have been above {max}"
+        assert (x_adv < min).any(), f" some x_test_adv values should have all been below {min}"
 
 
 def check_adverse_predicted_sample_y(y_pred_adv, y_non_adv):
@@ -597,9 +596,17 @@ def get_image_classifier_kr_tf_functional(input_layer=1, output_layer=1):
     :return: KerasClassifier
     """
     import tensorflow as tf
-    from tensorflow.keras.layers import Conv2D, Dense, Dropout, Flatten, Input, MaxPooling2D, Identity
-    from tensorflow.keras.models import Model
     from keras.losses import CategoricalCrossentropy
+    from tensorflow.keras.layers import (
+        Conv2D,
+        Dense,
+        Dropout,
+        Flatten,
+        Identity,
+        Input,
+        MaxPooling2D,
+    )
+    from tensorflow.keras.models import Model
 
     from art.estimators.classification.keras import KerasClassifier
 
@@ -666,7 +673,7 @@ def get_image_classifier_kr_tf(loss_name="categorical_crossentropy", loss_type="
     import tensorflow as tf
 
     # pylint: disable=E0401
-    from tensorflow.keras.layers import Conv2D, Dense, Flatten, MaxPooling2D, Input
+    from tensorflow.keras.layers import Conv2D, Dense, Flatten, Input, MaxPooling2D
     from tensorflow.keras.models import Sequential
 
     from art.estimators.classification.keras import KerasClassifier
@@ -885,9 +892,10 @@ def get_image_classifier_hf(from_logits=False, load_init=True, use_maxpool=True)
     """
 
     import torch
-    from transformers.modeling_utils import PreTrainedModel
     from transformers.configuration_utils import PretrainedConfig
     from transformers.modeling_outputs import ImageClassifierOutput
+    from transformers.modeling_utils import PreTrainedModel
+
     from art.estimators.classification.hugging_face import HuggingFaceClassifierPyTorch
 
     class ModelConfig(PretrainedConfig):
@@ -1004,7 +1012,7 @@ def get_image_classifier_pt(from_logits=False, load_init=True, use_maxpool=True)
             """
 
             def __init__(self):
-                super(Model, self).__init__()
+                super().__init__()
 
                 self.conv = torch.nn.Conv2d(in_channels=1, out_channels=1, kernel_size=7)
                 self.relu = torch.nn.ReLU()
@@ -1066,7 +1074,7 @@ def get_image_classifier_pt(from_logits=False, load_init=True, use_maxpool=True)
             """
 
             def __init__(self):
-                super(Model, self).__init__()
+                super().__init__()
 
                 self.conv = torch.nn.Conv2d(
                     in_channels=1, out_channels=16, kernel_size=(4, 4), dilation=(1, 1), padding=(0, 0), stride=(3, 3)
@@ -1163,7 +1171,7 @@ def get_cifar10_image_classifier_pt(from_logits=False, load_init=True):
         """
 
         def __init__(self):
-            super(Model, self).__init__()
+            super().__init__()
 
             self.conv = torch.nn.Conv2d(
                 in_channels=3, out_channels=16, kernel_size=(4, 4), dilation=(1, 1), padding=(0, 0), stride=(3, 3)
@@ -1243,8 +1251,7 @@ def get_image_classifier_pt_functional():
     """
     Simple PyTorch functional classifier for unit testing.
     """
-    import torch.nn as nn
-    import torch.optim as optim
+    from torch import nn, optim
 
     from art.estimators.classification import PyTorchClassifier
 
@@ -1358,7 +1365,7 @@ def get_tabular_classifier_tf_v2():
         """
 
         def __init__(self):
-            super(TensorFlowModel, self).__init__()
+            super().__init__()
             self.dense1 = Dense(
                 10,
                 activation="linear",
@@ -1600,8 +1607,8 @@ class ARTTestException(Exception):
 class ARTTestFixtureNotImplemented(ARTTestException):
     def __init__(self, message, fixture_name, framework, parameters_dict=""):
         super().__init__(
-            "Could NOT run test for framework: {0} due to fixture: {1}. Message was: '"
-            "{2}' for the following parameters: {3}".format(framework, fixture_name, message, parameters_dict)
+            f"Could NOT run test for framework: {framework} due to fixture: {fixture_name}. Message was: '"
+            f"{message}' for the following parameters: {parameters_dict}"
         )
 
 
@@ -1615,9 +1622,10 @@ def get_tabular_classifier_hf(load_init=True):
     :rtype: :class:`.HuggingFaceClassifierPyTorch`
     """
     import torch
-    from transformers.modeling_utils import PreTrainedModel
     from transformers.configuration_utils import PretrainedConfig
     from transformers.modeling_outputs import ImageClassifierOutput
+    from transformers.modeling_utils import PreTrainedModel
+
     from art.estimators.classification.hugging_face import HuggingFaceClassifierPyTorch
 
     class ModelConfig(PretrainedConfig):
@@ -1727,7 +1735,7 @@ def get_tabular_classifier_pt(load_init=True):
         """
 
         def __init__(self):
-            super(Model, self).__init__()
+            super().__init__()
 
             self.fully_connected1 = torch.nn.Linear(4, 10)
             self.fully_connected2 = torch.nn.Linear(10, 10)
@@ -1811,14 +1819,13 @@ def get_attack_classifier_pt(num_features):
     :return: Model for attack.
     :rtype: :class:`.PyTorchClassifier`
     """
-    import torch.nn as nn
-    import torch.optim as optim
+    from torch import nn, optim
 
     from art.estimators.classification.pytorch import PyTorchClassifier
 
     class AttackModel(nn.Module):
         def __init__(self, num_features):
-            super(AttackModel, self).__init__()
+            super().__init__()
             self.layer = nn.Linear(num_features, 1)
             self.output = nn.Sigmoid()
 

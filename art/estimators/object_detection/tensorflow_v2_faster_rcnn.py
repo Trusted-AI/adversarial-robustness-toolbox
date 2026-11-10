@@ -26,19 +26,21 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
+from art import config
 from art.estimators.object_detection.object_detector import ObjectDetectorMixin
 from art.estimators.tensorflow import TensorFlowV2Estimator
 from art.utils import get_file
-from art import config
 
 if TYPE_CHECKING:
 
     import tensorflow as tf
-    from object_detection.meta_architectures.faster_rcnn_meta_arch import FasterRCNNMetaArch
+    from object_detection.meta_architectures.faster_rcnn_meta_arch import (
+        FasterRCNNMetaArch,
+    )
 
-    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
-    from art.defences.preprocessor.preprocessor import Preprocessor
     from art.defences.postprocessor.postprocessor import Postprocessor
+    from art.defences.preprocessor.preprocessor import Preprocessor
+    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -53,15 +55,15 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
     def __init__(
         self,
         input_shape: tuple[int, ...],
-        model: "FasterRCNNMetaArch" | None = None,
+        model: FasterRCNNMetaArch | None = None,
         filename: str | None = None,
         url: str | None = None,
         is_training: bool = False,
-        clip_values: "CLIP_VALUES_TYPE" | None = None,
+        clip_values: CLIP_VALUES_TYPE | None = None,
         channels_first: bool = False,
-        preprocessing_defences: "Preprocessor" | list["Preprocessor"] | None = None,
-        postprocessing_defences: "Postprocessor" | list["Postprocessor"] | None = None,
-        preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
+        preprocessing_defences: Preprocessor | list[Preprocessor] | None = None,
+        postprocessing_defences: Postprocessor | list[Postprocessor] | None = None,
+        preprocessing: PREPROCESSING_TYPE = (0.0, 1.0),
         attack_losses: tuple[str, ...] = (
             "Loss/RPNLoss/localization_loss",
             "Loss/RPNLoss/objectness_loss",
@@ -166,7 +168,7 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
         filename: str | None = None,
         url: str | None = None,
         is_training: bool = False,
-    ) -> tuple[dict[str, "tf.Tensor"], ...]:
+    ) -> tuple[dict[str, tf.Tensor], ...]:
         """
         Download, extract and load a model from a URL if it is not already in the cache. The file indicated by `url`
         is downloaded to the path ~/.art/data and given the name `filename`. Files in tar, tar.gz, tar.bz, and zip
@@ -180,9 +182,8 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
         :return: the object detection model restored from checkpoint
         """
         import tensorflow as tf
-
-        from object_detection.utils import config_util
         from object_detection.builders import model_builder
+        from object_detection.utils import config_util
 
         # If obj_detection_model is None, then we need to have parameters filename and url to download, extract
         # and load the object detection model

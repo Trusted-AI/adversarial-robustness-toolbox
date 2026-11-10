@@ -23,7 +23,7 @@ specifically for PyTorch.
 | Paper link: https://arxiv.org/abs/1903.10346
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
 from typing import TYPE_CHECKING
@@ -34,8 +34,10 @@ import scipy
 from art.attacks.attack import EvasionAttack
 from art.estimators.pytorch import PyTorchEstimator
 from art.estimators.speech_recognition.pytorch_deep_speech import PyTorchDeepSpeech
-from art.estimators.speech_recognition.speech_recognizer import SpeechRecognizerMixin
-from art.estimators.speech_recognition.speech_recognizer import PytorchSpeechRecognizerMixin
+from art.estimators.speech_recognition.speech_recognizer import (
+    PytorchSpeechRecognizerMixin,
+    SpeechRecognizerMixin,
+)
 
 if TYPE_CHECKING:
     import torch
@@ -91,8 +93,8 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         max_iter_2: int = 4000,
         learning_rate_1: float = 0.001,
         learning_rate_2: float = 5e-4,
-        optimizer_1: "torch.optim.Optimizer" | None = None,
-        optimizer_2: "torch.optim.Optimizer" | None = None,
+        optimizer_1: torch.optim.Optimizer | None = None,
+        optimizer_2: torch.optim.Optimizer | None = None,
         global_max_length: int = 200000,
         initial_rescale: float = 1.0,
         decrease_factor_eps: float = 0.8,
@@ -338,7 +340,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
 
         return results
 
-    def _attack_1st_stage(self, x: np.ndarray, y: np.ndarray) -> tuple["torch.Tensor", np.ndarray]:
+    def _attack_1st_stage(self, x: np.ndarray, y: np.ndarray) -> tuple[torch.Tensor, np.ndarray]:
         """
         The first stage of the attack.
 
@@ -371,7 +373,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
             original_input[local_batch_size_idx, : len(x[local_batch_size_idx])] = x[local_batch_size_idx]
 
         # Optimization loop
-        successful_adv_input: list["torch.Tensor" | None] = [None] * local_batch_size
+        successful_adv_input: list[torch.Tensor | None] = [None] * local_batch_size
         trans = [None] * local_batch_size
 
         for iter_1st_stage_idx in range(self.max_iter_1):
@@ -443,7 +445,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
         rescale: np.ndarray,
         input_mask: np.ndarray,
         real_lengths: np.ndarray,
-    ) -> tuple["torch.Tensor", "torch.Tensor", np.ndarray, "torch.Tensor", "torch.Tensor"]:
+    ) -> tuple[torch.Tensor, torch.Tensor, np.ndarray, torch.Tensor, torch.Tensor]:
         """
         The forward pass of the first stage of the attack.
 
@@ -485,7 +487,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
 
     def _attack_2nd_stage(
         self, x: np.ndarray, y: np.ndarray, theta_batch: list[np.ndarray], original_max_psd_batch: list[np.ndarray]
-    ) -> "torch.Tensor":
+    ) -> torch.Tensor:
         """
         The second stage of the attack.
 
@@ -519,7 +521,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
             original_input[local_batch_size_idx, : len(x[local_batch_size_idx])] = x[local_batch_size_idx]
 
         # Optimization loop
-        successful_adv_input: list["torch.Tensor" | None] = [None] * local_batch_size
+        successful_adv_input: list[torch.Tensor | None] = [None] * local_batch_size
         best_loss_2nd_stage = [np.inf] * local_batch_size
         trans = [None] * local_batch_size
 
@@ -598,11 +600,11 @@ class ImperceptibleASRPyTorch(EvasionAttack):
 
     def _forward_2nd_stage(
         self,
-        local_delta_rescale: "torch.Tensor",
+        local_delta_rescale: torch.Tensor,
         theta_batch: list[np.ndarray],
         original_max_psd_batch: list[np.ndarray],
         real_lengths: np.ndarray,
-    ) -> "torch.Tensor":
+    ) -> torch.Tensor:
         """
         The forward pass of the second stage of the attack.
 
@@ -737,7 +739,7 @@ class ImperceptibleASRPyTorch(EvasionAttack):
 
         return theta_array, original_max_psd  # type: ignore
 
-    def _psd_transform(self, delta: "torch.Tensor", original_max_psd: np.ndarray) -> "torch.Tensor":
+    def _psd_transform(self, delta: torch.Tensor, original_max_psd: np.ndarray) -> torch.Tensor:
         """
         Compute the psd matrix of the perturbation.
 

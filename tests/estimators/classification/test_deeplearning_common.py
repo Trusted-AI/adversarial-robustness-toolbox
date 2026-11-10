@@ -1,15 +1,19 @@
 import logging
 import os
-from os import listdir, path
 import pickle
 import tempfile
+from os import listdir, path
 
 import keras
 import numpy as np
 import pytest
 from tensorflow.keras.callbacks import LearningRateScheduler
 
-from art.defences.preprocessor import FeatureSqueezing, JpegCompression, SpatialSmoothing
+from art.defences.preprocessor import (
+    FeatureSqueezing,
+    JpegCompression,
+    SpatialSmoothing,
+)
 from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)
@@ -394,7 +398,7 @@ def test_repr(art_warning, image_dl_estimator, framework, expected_values, store
         classifier, _ = image_dl_estimator(from_logits=True)
         repr_ = repr(classifier)
         for message in expected_values():
-            assert message in repr_, "{0}: was not contained within repr".format(message)
+            assert message in repr_, f"{message}: was not contained within repr"
 
     except ARTTestException as e:
         art_warning(e)

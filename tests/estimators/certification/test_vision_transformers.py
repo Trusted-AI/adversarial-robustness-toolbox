@@ -15,10 +15,10 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-import pytest
 import os
 
 import numpy as np
+import pytest
 
 from art.utils import load_dataset
 from tests.utils import ARTTestException
@@ -66,7 +66,9 @@ def test_ablation(art_warning, fix_get_mnist_data, fix_get_cifar10_data):
     import torch
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    from art.estimators.certification.derandomized_smoothing.ablators.pytorch import ColumnAblatorPyTorch
+    from art.estimators.certification.derandomized_smoothing.ablators.pytorch import (
+        ColumnAblatorPyTorch,
+    )
 
     try:
         cifar_data = fix_get_cifar10_data[0]
@@ -134,7 +136,9 @@ def test_ablation_row(art_warning, fix_get_mnist_data, fix_get_cifar10_data):
     import torch
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    from art.estimators.certification.derandomized_smoothing.ablators.pytorch import ColumnAblatorPyTorch
+    from art.estimators.certification.derandomized_smoothing.ablators.pytorch import (
+        ColumnAblatorPyTorch,
+    )
 
     try:
         cifar_data = fix_get_cifar10_data[0]
@@ -202,7 +206,10 @@ def test_pytorch_training(art_warning, fix_get_mnist_data, fix_get_cifar10_data)
     Check that the training loop for pytorch does not result in errors
     """
     import torch
-    from art.estimators.certification.derandomized_smoothing import PyTorchDeRandomizedSmoothing
+
+    from art.estimators.certification.derandomized_smoothing import (
+        PyTorchDeRandomizedSmoothing,
+    )
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -266,8 +273,11 @@ def test_certification_function(art_warning, fix_get_mnist_data, fix_get_cifar10
     """
     Check that based on a given set of synthetic class predictions the certification gives the expected results.
     """
-    from art.estimators.certification.derandomized_smoothing.ablators.pytorch import ColumnAblatorPyTorch
     import torch
+
+    from art.estimators.certification.derandomized_smoothing.ablators.pytorch import (
+        ColumnAblatorPyTorch,
+    )
 
     try:
         col_ablator = ColumnAblatorPyTorch(
@@ -302,11 +312,12 @@ def test_end_to_end_equivalence(art_warning, fix_get_mnist_data, fix_get_cifar10
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    from art.estimators.certification.derandomized_smoothing import PyTorchDeRandomizedSmoothing
-
+    from art.estimators.certification.derandomized_smoothing import (
+        PyTorchDeRandomizedSmoothing,
+    )
     from art.estimators.certification.derandomized_smoothing.ablators import (
-        ColumnAblatorPyTorch,
         BlockAblatorPyTorch,
+        ColumnAblatorPyTorch,
     )
 
     cifar_data = fix_get_cifar10_data[0][:50]
@@ -375,7 +386,9 @@ def test_certification_equivalence(art_warning, fix_get_mnist_data, fix_get_cifa
     """
     import torch
 
-    from art.estimators.certification.derandomized_smoothing import PyTorchDeRandomizedSmoothing
+    from art.estimators.certification.derandomized_smoothing import (
+        PyTorchDeRandomizedSmoothing,
+    )
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     try:
@@ -453,8 +466,13 @@ def test_certification_equivalence(art_warning, fix_get_mnist_data, fix_get_cifa
 @pytest.mark.only_with_platform("pytorch")
 def test_equivalence(art_warning, fix_get_cifar10_data):
     import torch
-    from art.estimators.certification.derandomized_smoothing import PyTorchDeRandomizedSmoothing
-    from art.estimators.certification.derandomized_smoothing.vision_transformers.pytorch import PyTorchVisionTransformer
+
+    from art.estimators.certification.derandomized_smoothing import (
+        PyTorchDeRandomizedSmoothing,
+    )
+    from art.estimators.certification.derandomized_smoothing.vision_transformers.pytorch import (
+        PyTorchVisionTransformer,
+    )
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 

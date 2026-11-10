@@ -22,20 +22,20 @@ attack.
 | Paper link: https://arxiv.org/abs/1610.08401
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
 import random
 import types
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 from tqdm.auto import tqdm
 
 from art.attacks.attack import EvasionAttack
-from art.estimators.estimator import BaseEstimator
 from art.estimators.classification.classifier import ClassifierMixin
-from art.utils import projection, get_labels_np_array, check_and_transform_label_format
+from art.estimators.estimator import BaseEstimator
+from art.utils import check_and_transform_label_format, get_labels_np_array, projection
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_TYPE
@@ -78,13 +78,13 @@ class UniversalPerturbation(EvasionAttack):
 
     def __init__(
         self,
-        classifier: "CLASSIFIER_TYPE",
+        classifier: CLASSIFIER_TYPE,
         attacker: str = "deepfool",
         attacker_params: dict[str, Any] | None = None,
         delta: float = 0.2,
         max_iter: int = 20,
         eps: float = 10.0,
-        norm: int | float | str = np.inf,
+        norm: float | str = np.inf,
         batch_size: int = 32,
         verbose: bool = True,
     ) -> None:

@@ -22,7 +22,6 @@ This module tests the Threshold Attack.
     https://arxiv.org/abs/1906.06026
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
 import unittest
@@ -30,13 +29,16 @@ import unittest
 import numpy as np
 
 from art.attacks.evasion.pixel_threshold import ThresholdAttack
-from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
 from art.estimators.classification.classifier import ClassifierMixin
+from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
 from art.utils import get_labels_np_array
-
-from tests.utils import TestBase
-from tests.utils import get_image_classifier_tf, get_image_classifier_kr, get_image_classifier_pt
 from tests.attacks.utils import backend_test_classifier_type_check_fail
+from tests.utils import (
+    TestBase,
+    get_image_classifier_kr,
+    get_image_classifier_pt,
+    get_image_classifier_tf,
+)
 
 logger = logging.getLogger(__name__)
 

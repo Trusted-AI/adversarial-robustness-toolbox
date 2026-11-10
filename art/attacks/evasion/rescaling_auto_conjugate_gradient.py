@@ -46,16 +46,22 @@ This module implements the 'Rescaling-ACG' attack.
 import abc
 import logging
 import math
-from typing import Optional, Union, TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional, Union
 
 import numpy as np
 from tqdm.auto import trange
 
-from art.config import ART_NUMPY_DTYPE
 from art.attacks.attack import EvasionAttack
-from art.estimators.estimator import BaseEstimator, LossGradientsMixin
+from art.config import ART_NUMPY_DTYPE
 from art.estimators.classification.classifier import ClassifierMixin
-from art.utils import check_and_transform_label_format, projection, random_sphere, is_probability, get_labels_np_array
+from art.estimators.estimator import BaseEstimator, LossGradientsMixin
+from art.utils import (
+    check_and_transform_label_format,
+    get_labels_np_array,
+    is_probability,
+    projection,
+    random_sphere,
+)
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_LOSS_GRADIENTS_TYPE
@@ -88,14 +94,14 @@ class RescalingAutoConjugateGradient(EvasionAttack):
     def __init__(
         self,
         estimator: "CLASSIFIER_LOSS_GRADIENTS_TYPE",
-        norm: Union[int, float, str] = np.inf,
+        norm: float | str = np.inf,
         eps: float = 0.3,
         eps_step: float = 0.1,
         max_iter: int = 100,
         targeted: bool = False,
         nb_random_init: int = 5,
         batch_size: int = 32,
-        loss_type: Optional[str] = None,
+        loss_type: str | None = None,
         verbose: bool = True,
     ):
         """
@@ -114,7 +120,10 @@ class RescalingAutoConjugateGradient(EvasionAttack):
             "cross_entropy", or "difference_logits_ratio"
         :param verbose: Show progress bars.
         """
-        from art.estimators.classification import TensorFlowV2Classifier, PyTorchClassifier
+        from art.estimators.classification import (
+            PyTorchClassifier,
+            TensorFlowV2Classifier,
+        )
 
         if loss_type not in self._predefined_losses:
             raise ValueError(
@@ -375,7 +384,7 @@ class RescalingAutoConjugateGradient(EvasionAttack):
         self.verbose = verbose
         self._check_params()
 
-    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
+    def generate(self, x: np.ndarray, y: np.ndarray | None = None, **kwargs) -> np.ndarray:
         """
         Generate adversarial samples and return them in an array.
 

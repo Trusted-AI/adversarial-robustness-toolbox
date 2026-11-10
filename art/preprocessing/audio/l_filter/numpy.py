@@ -21,13 +21,13 @@ finite impulse response (FIR) filter. This implementation is a wrapper around th
 the `scipy` package.
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
 from typing import TYPE_CHECKING
 
-from scipy.signal import lfilter
 import numpy as np
+from scipy.signal import lfilter
 from tqdm.auto import tqdm
 
 from art.preprocessing.preprocessing import Preprocessor
@@ -53,7 +53,7 @@ class LFilter(Preprocessor):
         denominator_coef: np.ndarray = np.array([1.0]),
         axis: int = -1,
         initial_cond: np.ndarray | None = None,
-        clip_values: "CLIP_VALUES_TYPE" | None = None,
+        clip_values: CLIP_VALUES_TYPE | None = None,
         apply_fit: bool = False,
         apply_predict: bool = True,
         verbose: bool = False,

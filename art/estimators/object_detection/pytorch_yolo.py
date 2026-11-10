@@ -28,15 +28,17 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-from art.estimators.object_detection.pytorch_object_detector import PyTorchObjectDetector
+from art.estimators.object_detection.pytorch_object_detector import (
+    PyTorchObjectDetector,
+)
 
 if TYPE_CHECKING:
 
     import torch
 
-    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
-    from art.defences.preprocessor.preprocessor import Preprocessor
     from art.defences.postprocessor.postprocessor import Postprocessor
+    from art.defences.preprocessor.preprocessor import Preprocessor
+    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -50,14 +52,14 @@ class PyTorchYolo(PyTorchObjectDetector):
 
     def __init__(
         self,
-        model: "torch.nn.Module",
+        model: torch.nn.Module,
         input_shape: tuple[int, ...] = (3, 416, 416),
-        optimizer: "torch.optim.Optimizer" | None = None,
-        clip_values: "CLIP_VALUES_TYPE" | None = None,
+        optimizer: torch.optim.Optimizer | None = None,
+        clip_values: CLIP_VALUES_TYPE | None = None,
         channels_first: bool = True,
-        preprocessing_defences: "Preprocessor" | list["Preprocessor"] | None = None,
-        postprocessing_defences: "Postprocessor" | list["Postprocessor"] | None = None,
-        preprocessing: "PREPROCESSING_TYPE" = None,
+        preprocessing_defences: Preprocessor | list[Preprocessor] | None = None,
+        postprocessing_defences: Postprocessor | list[Postprocessor] | None = None,
+        preprocessing: PREPROCESSING_TYPE = None,
         attack_losses: tuple[str, ...] = (
             "loss_classifier",
             "loss_box_reg",
@@ -98,7 +100,9 @@ class PyTorchYolo(PyTorchObjectDetector):
         :param model_name: The name of the model (e.g., 'yolov8n', 'yolov10n') for determining loss function.
         """
         if is_ultralytics:
-            from art.estimators.object_detection.pytorch_yolo_loss_wrapper import PyTorchYoloLossWrapper
+            from art.estimators.object_detection.pytorch_yolo_loss_wrapper import (
+                PyTorchYoloLossWrapper,
+            )
 
             model = PyTorchYoloLossWrapper(model, model_name)
 
@@ -115,7 +119,7 @@ class PyTorchYolo(PyTorchObjectDetector):
             device_type=device_type,
         )
 
-    def _translate_labels(self, labels: list[dict[str, "torch.Tensor"]]) -> "torch.Tensor":
+    def _translate_labels(self, labels: list[dict[str, torch.Tensor]]) -> torch.Tensor:
         """
         Translate object detection labels from ART format (torchvision) to the model format (YOLO) and
         move tensors to GPU, if applicable.
@@ -155,7 +159,7 @@ class PyTorchYolo(PyTorchObjectDetector):
         labels_xcycwh = torch.vstack(labels_xcycwh_list)
         return labels_xcycwh
 
-    def _translate_predictions(self, predictions: "torch.Tensor") -> list[dict[str, np.ndarray]]:
+    def _translate_predictions(self, predictions: torch.Tensor) -> list[dict[str, np.ndarray]]:
         """
         Translate object detection predictions from the model format (YOLO) to ART format (torchvision) and
         convert tensors to numpy arrays.

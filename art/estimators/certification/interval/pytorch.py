@@ -23,27 +23,26 @@ This module implements certification using interval (box) domain certification.
 
 from __future__ import annotations
 
-from collections.abc import Callable
-from typing import Any, TYPE_CHECKING
-
 import logging
 import warnings
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import torch
 
 from art.estimators.certification.interval.interval import (
+    PyTorchIntervalBounds,
     PyTorchIntervalConv2D,
     PyTorchIntervalDense,
     PyTorchIntervalReLU,
-    PyTorchIntervalBounds,
 )
 from art.estimators.classification.pytorch import PyTorchClassifier
 
 if TYPE_CHECKING:
-    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
-    from art.defences.preprocessor import Preprocessor
     from art.defences.postprocessor import Postprocessor
+    from art.defences.preprocessor import Preprocessor
+    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
 
 
 class ConvertedModel(torch.nn.Module):
@@ -52,7 +51,7 @@ class ConvertedModel(torch.nn.Module):
     which uses abstract operations
     """
 
-    def __init__(self, model: "torch.nn.Module", channels_first: bool, input_shape: tuple[int, ...]):
+    def __init__(self, model: torch.nn.Module, channels_first: bool, input_shape: tuple[int, ...]):
         super().__init__()
         modules = []
         self.interim_shapes: list[tuple] = []
@@ -125,7 +124,7 @@ class ConvertedModel(torch.nn.Module):
                     self.reshape_op_num = op_num
                     print("Inferred reshape on op num", op_num)
 
-    def forward(self, x: np.ndarray) -> "torch.Tensor":
+    def forward(self, x: np.ndarray) -> torch.Tensor:
         """
         Performs the neural network forward pass, either using abstract operations or concrete ones
         depending on the value of self.forward_mode
@@ -143,7 +142,7 @@ class ConvertedModel(torch.nn.Module):
             raise ValueError("axis=1 for the input must be of size 2 representing lower and upper bounds")
         raise ValueError("forward_mode must be set to abstract or concrete")
 
-    def abstract_forward(self, x_interval: np.ndarray) -> "torch.Tensor":
+    def abstract_forward(self, x_interval: np.ndarray) -> torch.Tensor:
         """
         Do the forward pass through the NN with interval arithmetic.
 
@@ -161,7 +160,7 @@ class ConvertedModel(torch.nn.Module):
             x = op.forward(x)
         return x
 
-    def concrete_forward(self, in_x: np.ndarray | "torch.Tensor") -> "torch.Tensor":
+    def concrete_forward(self, in_x: np.ndarray | torch.Tensor) -> torch.Tensor:
         """
         Do the forward pass using the concrete operations
 
@@ -220,16 +219,16 @@ class PyTorchIBPClassifier(PyTorchIntervalBounds, PyTorchClassifier):
 
     def __init__(
         self,
-        model: "torch.nn.Module",
-        loss: "torch.nn.modules.loss._Loss",
+        model: torch.nn.Module,
+        loss: torch.nn.modules.loss._Loss,
         input_shape: tuple[int, ...],
         nb_classes: int,
-        optimizer: "torch.optim.Optimizer" | None = None,
+        optimizer: torch.optim.Optimizer | None = None,
         channels_first: bool = True,
-        clip_values: "CLIP_VALUES_TYPE" | None = None,
-        preprocessing_defences: "Preprocessor" | list["Preprocessor"] | None = None,
-        postprocessing_defences: "Postprocessor" | list["Postprocessor"] | None = None,
-        preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
+        clip_values: CLIP_VALUES_TYPE | None = None,
+        preprocessing_defences: Preprocessor | list[Preprocessor] | None = None,
+        postprocessing_defences: Postprocessor | list[Postprocessor] | None = None,
+        preprocessing: PREPROCESSING_TYPE = (0.0, 1.0),
         device_type: str = "gpu",
         concrete_to_interval: Callable | None = None,
     ):
@@ -334,8 +333,7 @@ class PyTorchIBPClassifier(PyTorchIntervalBounds, PyTorchClassifier):
         :return: interval predictions over the supplied dataset
         """
 
-        if len(x) < batch_size:
-            batch_size = len(x)
+        batch_size = min(batch_size, len(x))
 
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
         self._model.train(mode=training_mode)
@@ -380,7 +378,7 @@ class PyTorchIBPClassifier(PyTorchIntervalBounds, PyTorchClassifier):
         return x_preprocessed, y_preprocessed
 
     @staticmethod
-    def get_accuracy(preds: np.ndarray | "torch.Tensor", labels: np.ndarray | "torch.Tensor") -> np.ndarray:
+    def get_accuracy(preds: np.ndarray | torch.Tensor, labels: np.ndarray | torch.Tensor) -> np.ndarray:
         """
         Helper function to print out the accuracy during training
 
@@ -396,7 +394,7 @@ class PyTorchIBPClassifier(PyTorchIntervalBounds, PyTorchClassifier):
 
         return np.sum(np.argmax(preds, axis=1) == labels) / len(labels)
 
-    def concrete_loss(self, output: "torch.Tensor", target: "torch.Tensor") -> "torch.Tensor":
+    def concrete_loss(self, output: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         """
         Access function to get the classifier loss
 
@@ -407,7 +405,7 @@ class PyTorchIBPClassifier(PyTorchIntervalBounds, PyTorchClassifier):
         return self._loss(output, target)
 
     @staticmethod
-    def interval_loss_cce(prediction: "torch.Tensor", target: "torch.Tensor") -> "torch.Tensor":
+    def interval_loss_cce(prediction: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         """
         Computes the categorical cross entropy loss with the correct class having the lower bound prediction,
         and the other classes having their upper bound predictions.

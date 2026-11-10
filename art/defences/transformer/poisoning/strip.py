@@ -21,7 +21,7 @@ This module implements STRIP: A Defence Against Trojan Attacks on Deep Neural Ne
 | Paper link: https://arxiv.org/abs/1902.06531
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
 from typing import TYPE_CHECKING
@@ -49,7 +49,7 @@ class STRIP(Transformer):
         "false_acceptance_rate",
     ]
 
-    def __init__(self, classifier: "CLASSIFIER_TYPE"):
+    def __init__(self, classifier: CLASSIFIER_TYPE):
         """
         Create an instance of the neural cleanse defence.
 
@@ -62,7 +62,7 @@ class STRIP(Transformer):
         self,
         num_samples: int = 20,
         false_acceptance_rate: float = 0.01,
-    ) -> "CLASSIFIER_TYPE":
+    ) -> CLASSIFIER_TYPE:
         """
         Create a STRIP defense
 

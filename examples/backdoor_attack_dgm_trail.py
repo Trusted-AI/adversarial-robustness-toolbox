@@ -8,10 +8,12 @@ Please refer to the original paper (https://arxiv.org/abs/2108.01644) for furthe
 import numpy as np
 import tensorflow as tf
 
-from art.attacks.poisoning.backdoor_attack_dgm.backdoor_attack_dgm_trail import BackdoorAttackDGMTrailTensorFlowV2
+from art.attacks.poisoning.backdoor_attack_dgm.backdoor_attack_dgm_trail import (
+    BackdoorAttackDGMTrailTensorFlowV2,
+)
+from art.estimators.classification.tensorflow import TensorFlowV2Classifier
 from art.estimators.gan.tensorflow import TensorFlowV2GAN
 from art.estimators.generation.tensorflow import TensorFlowV2Generator
-from art.estimators.classification.tensorflow import TensorFlowV2Classifier
 
 np.random.seed(100)
 tf.random.set_seed(100)

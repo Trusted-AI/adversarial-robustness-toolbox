@@ -25,10 +25,9 @@ vector of hard labels.
     see https://arxiv.org/abs/1902.06705  .
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
-
 
 import numpy as np
 

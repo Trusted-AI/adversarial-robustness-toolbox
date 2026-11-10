@@ -5,12 +5,7 @@ The Adversarial Robustness Toolbox (ART).
 import logging.config
 
 # Project Imports
-from art import attacks
-from art import defences
-from art import estimators
-from art import evaluations
-from art import metrics
-from art import preprocessing
+from art import attacks, defences, estimators, evaluations, metrics, preprocessing
 
 # Semantic Version
 __version__ = "1.20.1"

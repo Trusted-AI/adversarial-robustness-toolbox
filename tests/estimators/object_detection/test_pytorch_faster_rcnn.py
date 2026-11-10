@@ -15,7 +15,6 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
 
@@ -171,7 +170,9 @@ def test_loss_gradient(art_warning, get_pytorch_faster_rcnn):
 @pytest.mark.only_with_platform("pytorch")
 def test_errors(art_warning):
     try:
-        from art.estimators.object_detection.pytorch_faster_rcnn import PyTorchFasterRCNN
+        from art.estimators.object_detection.pytorch_faster_rcnn import (
+            PyTorchFasterRCNN,
+        )
 
         with pytest.raises(ValueError):
             PyTorchFasterRCNN(

@@ -21,7 +21,7 @@ This module implements the filter function for audio signals in PyTorch. It prov
 `torchaudio.functional.lfilter` function in the `torchaudio` package.
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
 from typing import TYPE_CHECKING
@@ -34,6 +34,7 @@ from art.preprocessing.preprocessing import PreprocessorPyTorch
 if TYPE_CHECKING:
 
     import torch
+
     from art.utils import CLIP_VALUES_TYPE
 
 logger = logging.getLogger(__name__)
@@ -52,7 +53,7 @@ class LFilterPyTorch(PreprocessorPyTorch):
         self,
         numerator_coef: np.ndarray = np.array([1.0]),
         denominator_coef: np.ndarray = np.array([1.0]),
-        clip_values: "CLIP_VALUES_TYPE" | None = None,
+        clip_values: CLIP_VALUES_TYPE | None = None,
         apply_fit: bool = False,
         apply_predict: bool = True,
         verbose: bool = False,
@@ -86,9 +87,7 @@ class LFilterPyTorch(PreprocessorPyTorch):
         self.verbose = verbose
         self._check_params()
 
-    def forward(
-        self, x: "torch.Tensor", y: "torch.Tensor" | None = None
-    ) -> tuple["torch.Tensor", "torch.Tensor" | None]:
+    def forward(self, x: torch.Tensor, y: torch.Tensor | None = None) -> tuple[torch.Tensor, torch.Tensor | None]:
         """
         Apply filter to a single sample `x`.
 

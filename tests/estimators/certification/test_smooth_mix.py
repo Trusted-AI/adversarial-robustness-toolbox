@@ -15,14 +15,18 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-import pytest
+
 import numpy as np
+import pytest
 
 from art.estimators.certification.randomized_smoothing import PyTorchSmoothMix
-from tests.utils import ARTTestException, get_image_classifier_pt, get_cifar10_image_classifier_pt
+from tests.utils import (
+    ARTTestException,
+    get_cifar10_image_classifier_pt,
+    get_image_classifier_pt,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -160,7 +164,7 @@ def test_smoothmix_cifar10_predict(art_warning, get_default_cifar10_subset, get_
         y_test_smooth = rs.predict(x=x_test)
 
         np.testing.assert_array_equal(y_test_smooth.shape, y_test_base.shape)
-        np.testing.assert_array_almost_equal(np.sum(y_test_smooth, axis=1), np.ones((len(y_test))))
+        np.testing.assert_array_almost_equal(np.sum(y_test_smooth, axis=1), np.ones(len(y_test)))
         np.testing.assert_array_almost_equal(np.argmax(y_test_smooth, axis=1), np.argmax(y_test_base, axis=1))
 
     except ARTTestException as e:

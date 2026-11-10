@@ -19,27 +19,30 @@
 This module implements the classifier `TensorFlowClassifier` for TensorFlow models.
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
-from collections.abc import Callable
 import logging
+from collections.abc import Callable
 from typing import TYPE_CHECKING
-from tqdm.auto import tqdm
 
 import numpy as np
 import six
+from tqdm.auto import tqdm
 
+from art.estimators.classification.classifier import (
+    ClassGradientsMixin,
+    ClassifierMixin,
+)
 from art.estimators.tensorflow import TensorFlowV2Estimator
-from art.estimators.classification.classifier import ClassGradientsMixin, ClassifierMixin
 
 if TYPE_CHECKING:
 
     import tensorflow.compat.v1 as tf
 
-    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
     from art.data_generators import DataGenerator
-    from art.defences.preprocessor import Preprocessor
     from art.defences.postprocessor import Postprocessor
+    from art.defences.preprocessor import Preprocessor
+    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -65,14 +68,14 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         model: Callable,
         nb_classes: int,
         input_shape: tuple[int, ...],
-        loss_object: "tf.keras.losses.Loss" | None = None,
-        optimizer: "tf.keras.optimizers.Optimizer" | None = None,
+        loss_object: tf.keras.losses.Loss | None = None,
+        optimizer: tf.keras.optimizers.Optimizer | None = None,
         train_step: Callable | None = None,
         channels_first: bool = False,
-        clip_values: "CLIP_VALUES_TYPE" | None = None,
-        preprocessing_defences: "Preprocessor" | list["Preprocessor"] | None = None,
-        postprocessing_defences: "Postprocessor" | list["Postprocessor"] | None = None,
-        preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
+        clip_values: CLIP_VALUES_TYPE | None = None,
+        preprocessing_defences: Preprocessor | list[Preprocessor] | None = None,
+        postprocessing_defences: Postprocessor | list[Postprocessor] | None = None,
+        preprocessing: PREPROCESSING_TYPE = (0.0, 1.0),
     ) -> None:
         """
         Initialization specific to TensorFlow v2 models.
@@ -137,7 +140,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         return self._input_shape  # type: ignore
 
     @property
-    def loss_object(self) -> "tf.keras.losses.Loss":
+    def loss_object(self) -> tf.keras.losses.Loss:
         """
         Return the loss function.
 
@@ -146,7 +149,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         return self._loss_object  # type: ignore
 
     @property
-    def optimizer(self) -> "tf.keras.optimizers.Optimizer":
+    def optimizer(self) -> tf.keras.optimizers.Optimizer:
         """
         Return the optimizer.
 
@@ -183,7 +186,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
 
         return predictions_post
 
-    def _predict_framework(self, x: "tf.Tensor", training_mode: bool = False) -> "tf.Tensor":
+    def _predict_framework(self, x: tf.Tensor, training_mode: bool = False) -> tf.Tensor:
         """
         Perform prediction for a batch of inputs.
 
@@ -219,6 +222,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
                        epoch to adjust the learning rate.
         """
         import tensorflow as tf
+
         from art.utils import check_and_transform_label_format
 
         if self._train_step is None:  # pragma: no cover
@@ -266,7 +270,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
             if scheduler is not None:
                 scheduler(epoch)
 
-    def fit_generator(self, generator: "DataGenerator", nb_epochs: int = 20, verbose: bool = False, **kwargs) -> None:
+    def fit_generator(self, generator: DataGenerator, nb_epochs: int = 20, verbose: bool = False, **kwargs) -> None:
         """
         Fit the classifier using the generator that yields batches as specified.
 
@@ -279,6 +283,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
                        epoch to adjust the learning rate.
         """
         import tensorflow as tf
+
         from art.data_generators import TensorFlowV2DataGenerator
 
         if self._train_step is None:  # pragma: no cover
@@ -307,7 +312,9 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         scheduler = kwargs.get("scheduler")
 
         # Train directly in TensorFlow
-        from art.preprocessing.standardisation_mean_std.tensorflow import StandardisationMeanStdTensorFlow
+        from art.preprocessing.standardisation_mean_std.tensorflow import (
+            StandardisationMeanStdTensorFlow,
+        )
 
         if isinstance(generator, TensorFlowV2DataGenerator) and (
             self.preprocessing is None
@@ -425,8 +432,8 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
 
     def compute_loss(
         self,
-        x: np.ndarray | "tf.Tensor",
-        y: np.ndarray | "tf.Tensor",
+        x: np.ndarray | tf.Tensor,
+        y: np.ndarray | tf.Tensor,
         reduction: str = "none",
         training_mode: bool = False,
         **kwargs,
@@ -445,6 +452,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         :return: Array of losses of the same shape as `x`.
         """
         import tensorflow as tf
+
         from art.utils import check_and_transform_label_format
 
         if self._loss_object is None:  # pragma: no cover
@@ -477,10 +485,10 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
 
     def compute_losses(
         self,
-        x: np.ndarray | "tf.Tensor",
-        y: np.ndarray | "tf.Tensor",
+        x: np.ndarray | tf.Tensor,
+        y: np.ndarray | tf.Tensor,
         reduction: str = "none",
-    ) -> dict[str, np.ndarray | "tf.Tensor"]:
+    ) -> dict[str, np.ndarray | tf.Tensor]:
         """
         Compute all loss components.
 
@@ -497,11 +505,11 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
 
     def loss_gradient(
         self,
-        x: np.ndarray | "tf.Tensor",
-        y: np.ndarray | "tf.Tensor",
+        x: np.ndarray | tf.Tensor,
+        y: np.ndarray | tf.Tensor,
         training_mode: bool = False,
         **kwargs,
-    ) -> np.ndarray | "tf.Tensor":
+    ) -> np.ndarray | tf.Tensor:
         """
         Compute the gradient of the loss function w.r.t. `x`.
 
@@ -555,7 +563,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
 
     def clone_for_refitting(
         self,
-    ) -> "TensorFlowV2Classifier":  # pragma: no cover
+    ) -> TensorFlowV2Classifier:  # pragma: no cover
         """
         Create a copy of the classifier that can be refit from scratch. Will inherit same architecture, optimizer and
         initialization as cloned model, but without weights.
@@ -666,6 +674,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         """
         import tensorflow as tf
         import tensorflow.keras.backend as k
+
         from art.config import ART_NUMPY_DTYPE
 
         if not isinstance(self._model, tf.keras.models.Sequential):  # pragma: no cover

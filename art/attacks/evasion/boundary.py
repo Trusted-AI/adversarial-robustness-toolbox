@@ -22,7 +22,7 @@ predictions.
 | Paper link: https://arxiv.org/abs/1712.04248
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
 from typing import TYPE_CHECKING
@@ -32,9 +32,14 @@ from tqdm.auto import tqdm, trange
 
 from art.attacks.attack import EvasionAttack
 from art.config import ART_NUMPY_DTYPE
-from art.estimators.estimator import BaseEstimator
 from art.estimators.classification.classifier import ClassifierMixin
-from art.utils import compute_success, to_categorical, check_and_transform_label_format, get_labels_np_array
+from art.estimators.estimator import BaseEstimator
+from art.utils import (
+    check_and_transform_label_format,
+    compute_success,
+    get_labels_np_array,
+    to_categorical,
+)
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_TYPE
@@ -67,7 +72,7 @@ class BoundaryAttack(EvasionAttack):
 
     def __init__(
         self,
-        estimator: "CLASSIFIER_TYPE",
+        estimator: CLASSIFIER_TYPE,
         batch_size: int = 64,
         targeted: bool = True,
         delta: float = 0.01,

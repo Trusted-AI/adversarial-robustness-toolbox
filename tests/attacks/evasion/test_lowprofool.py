@@ -16,26 +16,26 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 import logging
-import pytest
 
 import numpy as np
 import pandas as pd
+import pytest
 import torch
-import torch.nn as nn
-from torch import optim
-from torch.autograd import Variable
-from sklearn import datasets
-from sklearn.preprocessing import StandardScaler
-from sklearn.model_selection import StratifiedShuffleSplit
-from sklearn.linear_model import LogisticRegression
-from sklearn.svm import SVC
 from scipy.stats import pearsonr
+from sklearn import datasets
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import StratifiedShuffleSplit
+from sklearn.preprocessing import StandardScaler
+from sklearn.svm import SVC
+from torch import nn, optim
+from torch.autograd import Variable
 
 from art.attacks.evasion import LowProFool
-from art.estimators.classification.scikitlearn import ScikitlearnLogisticRegression
 from art.estimators.classification import PyTorchClassifier
-from art.estimators.classification.scikitlearn import ScikitlearnSVC
-
+from art.estimators.classification.scikitlearn import (
+    ScikitlearnLogisticRegression,
+    ScikitlearnSVC,
+)
 from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)
@@ -158,8 +158,8 @@ def test_general_iris_lr(iris_dataset):
     expected = 0.6
 
     logger.info(
-        "[Irises, Scikit-learn Logistic Regression] success rate of adversarial attack (expected >{:.2f}): "
-        "{:.2f}%".format(expected * 100, success_rate * 100)
+        f"[Irises, Scikit-learn Logistic Regression] success rate of adversarial attack (expected >{expected * 100:.2f}): "
+        f"{success_rate * 100:.2f}%"
     )
     assert success_rate > expected
 
@@ -200,8 +200,8 @@ def test_general_wines_lr(wine_dataset):
     expected = 0.6
 
     logger.info(
-        "[Wines, Scikit-learn Logistic Regression] success rate of adversarial attack (expected >{:.2f}):"
-        " {:.2f}%".format(expected * 100, success_rate * 100)
+        f"[Wines, Scikit-learn Logistic Regression] success rate of adversarial attack (expected >{expected * 100:.2f}):"
+        f" {success_rate * 100:.2f}%"
     )
     assert success_rate > expected
 
@@ -236,8 +236,8 @@ def test_general_cancer_lr(breast_cancer_dataset):
     expected = 0.6
 
     logger.info(
-        "[Breast cancer, Scikit-learn Logistic Regression] success rate of adversarial attack (expected >{:.2f}): "
-        "{:.2f}%".format(expected * 100, success_rate * 100)
+        f"[Breast cancer, Scikit-learn Logistic Regression] success rate of adversarial attack (expected >{expected * 100:.2f}): "
+        f"{success_rate * 100:.2f}%"
     )
     assert success_rate > expected
 
@@ -278,8 +278,8 @@ def test_general_iris_nn(iris_dataset):
     success_rate = np.sum(correct) / correct.shape[0]
     expected = 0.6
     logger.info(
-        "[Irises, PyTorch neural network] success rate of adversarial attack (expected >{:.2f}): "
-        "{:.2f}%".format(expected * 100, success_rate * 100)
+        f"[Irises, PyTorch neural network] success rate of adversarial attack (expected >{expected * 100:.2f}): "
+        f"{success_rate * 100:.2f}%"
     )
     assert success_rate > expected
 
@@ -314,8 +314,8 @@ def test_general_cancer_svc(breast_cancer_dataset):
     expected = 0.6
 
     logger.info(
-        "[Breast cancer, Scikit-learn SVC] success rate of adversarial attack (expected >{:.2f}): "
-        "{:.2f}%".format(expected * 100, success_rate * 100)
+        f"[Breast cancer, Scikit-learn SVC] success rate of adversarial attack (expected >{expected * 100:.2f}): "
+        f"{success_rate * 100:.2f}%"
     )
     assert success_rate > expected
 

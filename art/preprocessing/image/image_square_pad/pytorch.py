@@ -22,7 +22,7 @@ This module implements square padding for images and object detection bounding b
 from __future__ import annotations
 
 import logging
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 from tqdm.auto import tqdm
@@ -32,6 +32,7 @@ from art.preprocessing.preprocessing import PreprocessorPyTorch
 if TYPE_CHECKING:
 
     import torch
+
     from art.utils import CLIP_VALUES_TYPE
 
 logger = logging.getLogger(__name__)
@@ -52,7 +53,7 @@ class ImageSquarePadPyTorch(PreprocessorPyTorch):
         label_type: str = "classification",
         pad_mode: str = "constant",
         pad_kwargs: dict[str, Any] | None = None,
-        clip_values: "CLIP_VALUES_TYPE" | None = None,
+        clip_values: CLIP_VALUES_TYPE | None = None,
         apply_fit: bool = True,
         apply_predict: bool = False,
         verbose: bool = False,
@@ -84,9 +85,9 @@ class ImageSquarePadPyTorch(PreprocessorPyTorch):
 
     def forward(
         self,
-        x: "torch.Tensor",
-        y: "torch.Tensor" | list[dict[str, "torch.Tensor"]] | None = None,
-    ) -> tuple["torch.Tensor", "torch.Tensor" | list[dict[str, "torch.Tensor"]] | None]:
+        x: torch.Tensor,
+        y: torch.Tensor | list[dict[str, torch.Tensor]] | None = None,
+    ) -> tuple[torch.Tensor, torch.Tensor | list[dict[str, torch.Tensor]] | None]:
         """
         Square pad `x` and adjust bounding boxes for labels `y` accordingly.
 

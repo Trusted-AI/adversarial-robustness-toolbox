@@ -24,7 +24,7 @@ al. for adversarial training.
 | Paper link: https://arxiv.org/abs/1706.06083
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
 from typing import TYPE_CHECKING
@@ -37,8 +37,13 @@ from art.attacks.evasion.fast_gradient import FastGradientMethod
 from art.config import ART_NUMPY_DTYPE
 from art.estimators.classification.classifier import ClassifierMixin
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
-from art.utils import compute_success, get_labels_np_array, check_and_transform_label_format, compute_success_array
 from art.summary_writer import SummaryWriter
+from art.utils import (
+    check_and_transform_label_format,
+    compute_success,
+    compute_success_array,
+    get_labels_np_array,
+)
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_LOSS_GRADIENTS_TYPE, OBJECT_DETECTOR_TYPE
@@ -61,10 +66,10 @@ class ProjectedGradientDescentCommon(FastGradientMethod):
 
     def __init__(
         self,
-        estimator: "CLASSIFIER_LOSS_GRADIENTS_TYPE" | "OBJECT_DETECTOR_TYPE",
-        norm: int | float | str = np.inf,
-        eps: int | float | np.ndarray = 0.3,
-        eps_step: int | float | np.ndarray = 0.1,
+        estimator: CLASSIFIER_LOSS_GRADIENTS_TYPE | OBJECT_DETECTOR_TYPE,
+        norm: float | str = np.inf,
+        eps: float | np.ndarray = 0.3,
+        eps_step: float | np.ndarray = 0.1,
         decay: float | None = None,
         max_iter: int = 100,
         targeted: bool = False,
@@ -250,10 +255,10 @@ class ProjectedGradientDescentNumpy(ProjectedGradientDescentCommon):
 
     def __init__(
         self,
-        estimator: "CLASSIFIER_LOSS_GRADIENTS_TYPE" | "OBJECT_DETECTOR_TYPE",
-        norm: int | float | str = np.inf,
-        eps: int | float | np.ndarray = 0.3,
-        eps_step: int | float | np.ndarray = 0.1,
+        estimator: CLASSIFIER_LOSS_GRADIENTS_TYPE | OBJECT_DETECTOR_TYPE,
+        norm: float | str = np.inf,
+        eps: float | np.ndarray = 0.3,
+        eps_step: float | np.ndarray = 0.1,
         decay: float | None = None,
         max_iter: int = 100,
         targeted: bool = False,

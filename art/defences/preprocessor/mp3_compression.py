@@ -24,11 +24,10 @@ This module implements the MP3 compression defence `Mp3Compression`.
     see https://arxiv.org/abs/1902.06705.
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
 from io import BytesIO
-
 
 import numpy as np
 from tqdm.auto import tqdm
@@ -151,7 +150,7 @@ class Mp3Compression(Preprocessor):
         if x.dtype != object and self.channels_first:
             x_mp3 = np.swapaxes(x_mp3, 1, 2)
 
-        if x_orig_type != object and x.dtype == object and x.ndim == 2:  # noqa: E721
+        if x_orig_type != object and x.dtype == object and x.ndim == 2:
             x_mp3 = x_mp3.astype(x_orig_type)
 
         return x_mp3, y

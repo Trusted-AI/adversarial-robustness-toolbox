@@ -25,7 +25,7 @@ This module implements the CutMix data augmentation defence in TensorFlow.
     https://arxiv.org/abs/1902.06705
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
 from typing import TYPE_CHECKING
@@ -84,7 +84,7 @@ class CutMixTensorFlowV2(PreprocessorTensorFlowV2):
         self.verbose = verbose
         self._check_params()
 
-    def forward(self, x: "tf.Tensor", y: "tf.Tensor" | None = None) -> tuple["tf.Tensor", "tf.Tensor" | None]:
+    def forward(self, x: tf.Tensor, y: tf.Tensor | None = None) -> tuple[tf.Tensor, tf.Tensor | None]:
         """
         Apply CutMix data augmentation to sample `x`.
 

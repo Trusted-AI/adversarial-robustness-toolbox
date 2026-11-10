@@ -22,7 +22,7 @@ prioritize which parts of a sequential input should be perturbed based on salien
 | Paper link: https://arxiv.org/abs/1811.11875
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
 from typing import TYPE_CHECKING
@@ -30,14 +30,14 @@ from typing import TYPE_CHECKING
 import numpy as np
 from tqdm.auto import trange
 
-from art.config import ART_NUMPY_DTYPE
-from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
-from art.estimators.classification.classifier import ClassGradientsMixin
 from art.attacks.attack import EvasionAttack
+from art.config import ART_NUMPY_DTYPE
+from art.estimators.classification.classifier import ClassGradientsMixin
+from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
 from art.utils import (
+    check_and_transform_label_format,
     compute_success_array,
     get_labels_np_array,
-    check_and_transform_label_format,
 )
 
 if TYPE_CHECKING:
@@ -66,7 +66,7 @@ class FrameSaliencyAttack(EvasionAttack):
 
     def __init__(
         self,
-        classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
+        classifier: CLASSIFIER_NEURALNETWORK_TYPE,
         attacker: EvasionAttack,
         method: str = "iterative_saliency",
         frame_index: int = 1,
@@ -198,7 +198,7 @@ class FrameSaliencyAttack(EvasionAttack):
     ) -> np.ndarray:
         saliency_score = self.estimator.loss_gradient(x_adv, targets)
         saliency_score = np.swapaxes(saliency_score, 1, self.frame_index)
-        saliency_score = saliency_score.reshape((saliency_score.shape[:2] + (np.prod(saliency_score.shape[2:]),)))
+        saliency_score = saliency_score.reshape(saliency_score.shape[:2] + (np.prod(saliency_score.shape[2:]),))
         saliency_score = np.mean(np.abs(saliency_score), axis=2)
 
         if disregard is not None:
@@ -207,9 +207,11 @@ class FrameSaliencyAttack(EvasionAttack):
         return np.argsort(-saliency_score, axis=1)
 
     def _check_params(self) -> None:
-        from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent import ProjectedGradientDescent
-        from art.attacks.evasion.iterative_method import BasicIterativeMethod
         from art.attacks.evasion.fast_gradient import FastGradientMethod
+        from art.attacks.evasion.iterative_method import BasicIterativeMethod
+        from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent import (
+            ProjectedGradientDescent,
+        )
 
         if not isinstance(self.attacker, (ProjectedGradientDescent, BasicIterativeMethod, FastGradientMethod)):
             raise ValueError(

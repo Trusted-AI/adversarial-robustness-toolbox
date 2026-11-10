@@ -19,7 +19,7 @@
 This module implements the abstract base class for defences that adversarially train models.
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import abc
 from typing import TYPE_CHECKING
@@ -35,7 +35,7 @@ class Trainer(abc.ABC):
     Abstract base class for training defences.
     """
 
-    def __init__(self, classifier: "CLASSIFIER_LOSS_GRADIENTS_TYPE") -> None:
+    def __init__(self, classifier: CLASSIFIER_LOSS_GRADIENTS_TYPE) -> None:
         """
         Create a adversarial training object
         """
@@ -53,7 +53,7 @@ class Trainer(abc.ABC):
         raise NotImplementedError
 
     @property
-    def classifier(self) -> "CLASSIFIER_LOSS_GRADIENTS_TYPE":
+    def classifier(self) -> CLASSIFIER_LOSS_GRADIENTS_TYPE:
         """
         Access function to get the classifier.
 
@@ -61,7 +61,7 @@ class Trainer(abc.ABC):
         """
         return self._classifier
 
-    def get_classifier(self) -> "CLASSIFIER_LOSS_GRADIENTS_TYPE":
+    def get_classifier(self) -> CLASSIFIER_LOSS_GRADIENTS_TYPE:
         """
         Return the classifier trained via adversarial training.
 

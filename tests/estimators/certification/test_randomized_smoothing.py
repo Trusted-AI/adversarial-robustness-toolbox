@@ -15,26 +15,25 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-import pytest
+
 import numpy as np
+import pytest
 
 from art.attacks.evasion.fast_gradient import FastGradientMethod
 from art.estimators.certification.randomized_smoothing import (
     NumpyRandomizedSmoothing,
-    TensorFlowV2RandomizedSmoothing,
     PyTorchRandomizedSmoothing,
+    TensorFlowV2RandomizedSmoothing,
 )
 from art.utils import load_dataset, random_targets
-
 from tests.utils import (
+    ARTTestException,
+    get_image_classifier_kr,
     get_image_classifier_pt,
     get_image_classifier_tf,
-    get_image_classifier_kr,
     get_tabular_classifier_pt,
-    ARTTestException,
 )
 
 logger = logging.getLogger(__name__)

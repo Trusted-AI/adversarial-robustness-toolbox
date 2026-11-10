@@ -15,26 +15,30 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
 import unittest
+
 import keras.backend as k
 import numpy as np
 
 from art.attacks.evasion.hop_skip_jump import HopSkipJump
-from art.estimators.estimator import BaseEstimator
 from art.estimators.classification import ClassifierMixin
+from art.estimators.estimator import BaseEstimator
 
 # from art.estimators.classification.keras import KerasClassifier
 from art.utils import random_targets
-
-from tests.utils import TestBase
-from tests.utils import get_image_classifier_tf, get_image_classifier_kr, get_image_classifier_pt
+from tests.attacks.utils import backend_test_classifier_type_check_fail
 
 # from tests.utils import get_tabular_classifier_tf, get_tabular_classifier_kr
-from tests.utils import get_tabular_classifier_pt, master_seed
-from tests.attacks.utils import backend_test_classifier_type_check_fail
+from tests.utils import (
+    TestBase,
+    get_image_classifier_kr,
+    get_image_classifier_pt,
+    get_image_classifier_tf,
+    get_tabular_classifier_pt,
+    master_seed,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -725,7 +729,6 @@ class TestHopSkipJump(TestBase):
         # from sklearn.tree import DecisionTreeClassifier, ExtraTreeClassifier
         # from sklearn.ensemble import AdaBoostClassifier, BaggingClassifier, ExtraTreesClassifier
         # from sklearn.ensemble import GradientBoostingClassifier, RandomForestClassifier
-
         from art.estimators.classification.scikitlearn import SklearnClassifier
 
         scikitlearn_test_cases = [

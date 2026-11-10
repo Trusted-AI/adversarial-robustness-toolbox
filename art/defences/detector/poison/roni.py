@@ -21,10 +21,10 @@ This module implements the Reject on Negative Impact (RONI) defense by Nelson et
 | Paper link: https://people.eecs.berkeley.edu/~tygar/papers/SML/misleading.learners.pdf
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
-from collections.abc import Callable
 import logging
+from collections.abc import Callable
 from copy import deepcopy
 from typing import TYPE_CHECKING
 
@@ -62,7 +62,7 @@ class RONIDefense(PoisonFilteringDefence):
 
     def __init__(
         self,
-        classifier: "CLASSIFIER_TYPE",
+        classifier: CLASSIFIER_TYPE,
         x_train: np.ndarray,
         y_train: np.ndarray,
         x_val: np.ndarray,
@@ -169,7 +169,7 @@ class RONIDefense(PoisonFilteringDefence):
 
         return report, self.is_clean_lst
 
-    def is_suspicious(self, before_classifier: "CLASSIFIER_TYPE", perf_shift: float) -> bool:
+    def is_suspicious(self, before_classifier: CLASSIFIER_TYPE, perf_shift: float) -> bool:
         """
         Returns True if a given performance shift is suspicious
 
@@ -183,7 +183,7 @@ class RONIDefense(PoisonFilteringDefence):
 
         return bool(perf_shift < -self.eps)
 
-    def get_calibration_info(self, before_classifier: "CLASSIFIER_TYPE") -> tuple[float, float]:
+    def get_calibration_info(self, before_classifier: CLASSIFIER_TYPE) -> tuple[float, float]:
         """
         Calculate the median and standard deviation of the accuracy shifts caused
         by the calibration set.

@@ -16,15 +16,20 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import pytest
 import logging
 
-from art.attacks.evasion import BoundaryAttack
-from art.estimators.estimator import BaseEstimator
-from art.estimators.classification.classifier import ClassifierMixin
+import pytest
 
-from tests.attacks.utils import backend_targeted_tabular, backend_untargeted_tabular, backend_targeted_images
-from tests.attacks.utils import back_end_untargeted_images, backend_test_classifier_type_check_fail
+from art.attacks.evasion import BoundaryAttack
+from art.estimators.classification.classifier import ClassifierMixin
+from art.estimators.estimator import BaseEstimator
+from tests.attacks.utils import (
+    back_end_untargeted_images,
+    backend_targeted_images,
+    backend_targeted_tabular,
+    backend_test_classifier_type_check_fail,
+    backend_untargeted_tabular,
+)
 from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)

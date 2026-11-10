@@ -1,10 +1,9 @@
 import logging
 
+import jax.numpy as jnp
 import numpy as np
 import pytest
-from jax import random
-from jax import grad, jit, vmap
-import jax.numpy as jnp
+from jax import grad, jit, random, vmap
 from jax.scipy.special import logsumexp
 
 from art.experimental.estimators.classification.jax import JaxClassifier

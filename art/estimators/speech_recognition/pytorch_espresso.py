@@ -25,15 +25,18 @@ fairseq.
 from __future__ import annotations
 
 import ast
-from argparse import Namespace
 import logging
+from argparse import Namespace
 from typing import TYPE_CHECKING
 
 import numpy as np
 
 from art import config
 from art.estimators.pytorch import PyTorchEstimator
-from art.estimators.speech_recognition.speech_recognizer import SpeechRecognizerMixin, PytorchSpeechRecognizerMixin
+from art.estimators.speech_recognition.speech_recognizer import (
+    PytorchSpeechRecognizerMixin,
+    SpeechRecognizerMixin,
+)
 from art.utils import get_file
 
 if TYPE_CHECKING:
@@ -41,8 +44,8 @@ if TYPE_CHECKING:
     import torch
     from espresso.models import SpeechTransformerModel
 
-    from art.defences.preprocessor.preprocessor import Preprocessor
     from art.defences.postprocessor.postprocessor import Postprocessor
+    from art.defences.preprocessor.preprocessor import Preprocessor
     from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
 
 logger = logging.getLogger(__name__)
@@ -64,10 +67,10 @@ class PyTorchEspresso(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyTor
         self,
         espresso_config_filepath: str | None = None,
         model: str | None = None,
-        clip_values: "CLIP_VALUES_TYPE" | None = None,
-        preprocessing_defences: "Preprocessor" | list["Preprocessor"] | None = None,
-        postprocessing_defences: "Postprocessor" | list["Postprocessor"] | None = None,
-        preprocessing: "PREPROCESSING_TYPE" = None,
+        clip_values: CLIP_VALUES_TYPE | None = None,
+        preprocessing_defences: Preprocessor | list[Preprocessor] | None = None,
+        postprocessing_defences: Postprocessor | list[Postprocessor] | None = None,
+        preprocessing: PREPROCESSING_TYPE = None,
         device_type: str = "gpu",
         verbose: bool = True,
     ):
@@ -88,11 +91,11 @@ class PyTorchEspresso(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyTor
         :param device_type: Type of device to be used for model and tensors, if `cpu` run on CPU, if `gpu` run on GPU
                             if available otherwise run on CPU.
         """
+        import sentencepiece as spm
         import torch
         import yaml
         from fairseq import checkpoint_utils, tasks, utils
         from fairseq.data import encoders
-        import sentencepiece as spm
 
         # Super initialization
         super().__init__(
@@ -344,7 +347,7 @@ class PyTorchEspresso(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyTor
 
     def _transform_model_input(
         self,
-        x: np.ndarray | "torch.Tensor",
+        x: np.ndarray | torch.Tensor,
         y: np.ndarray | None = None,
         compute_gradient: bool = False,
     ) -> tuple[dict, list]:
@@ -463,7 +466,7 @@ class PyTorchEspresso(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyTor
 
     def _preprocess_transform_model_input(
         self,
-        x: "torch.Tensor",
+        x: torch.Tensor,
         y: np.ndarray,
     ) -> tuple[dict, list]:
         """
@@ -503,8 +506,8 @@ class PyTorchEspresso(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyTor
         return batch_dict, batch_idx
 
     def compute_loss_and_decoded_output(
-        self, masked_adv_input: "torch.Tensor", original_output: np.ndarray, **kwargs
-    ) -> tuple["torch.Tensor", np.ndarray]:
+        self, masked_adv_input: torch.Tensor, original_output: np.ndarray, **kwargs
+    ) -> tuple[torch.Tensor, np.ndarray]:
         """
         Compute loss function and decoded output.
 
@@ -580,7 +583,7 @@ class PyTorchEspresso(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyTor
         return self._input_shape  # type: ignore
 
     @property
-    def model(self) -> "SpeechTransformerModel":
+    def model(self) -> SpeechTransformerModel:
         """
         Get current model.
 
@@ -589,7 +592,7 @@ class PyTorchEspresso(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyTor
         return self._model
 
     @property
-    def device(self) -> "torch.device":
+    def device(self) -> torch.device:
         """
         Get current used device.
 

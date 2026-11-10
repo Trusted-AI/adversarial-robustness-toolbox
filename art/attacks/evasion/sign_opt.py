@@ -48,17 +48,21 @@ hard-label adversarial attack.
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
 import time
+from typing import TYPE_CHECKING
 
 import numpy as np
 from tqdm.auto import tqdm
 
 from art.attacks.attack import EvasionAttack
 from art.config import ART_NUMPY_DTYPE
-from art.estimators.estimator import BaseEstimator
 from art.estimators.classification.classifier import ClassifierMixin
-from art.utils import compute_success, check_and_transform_label_format, get_labels_np_array
+from art.estimators.estimator import BaseEstimator
+from art.utils import (
+    check_and_transform_label_format,
+    compute_success,
+    get_labels_np_array,
+)
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_TYPE
@@ -91,7 +95,7 @@ class SignOPTAttack(EvasionAttack):
 
     def __init__(
         self,
-        estimator: "CLASSIFIER_TYPE",
+        estimator: CLASSIFIER_TYPE,
         targeted: bool = True,
         epsilon: float = 0.001,
         num_trial: int = 100,
@@ -396,9 +400,12 @@ class SignOPTAttack(EvasionAttack):
             new_theta /= np.linalg.norm(new_theta)
             sign = 1
 
-            if self.targeted and self._is_label(x_0 + initial_lbd * new_theta, target):
-                sign = -1
-            elif not self.targeted and not self._is_label(x_0 + initial_lbd * new_theta, y_0):
+            if (
+                self.targeted
+                and self._is_label(x_0 + initial_lbd * new_theta, target)
+                or not self.targeted
+                and not self._is_label(x_0 + initial_lbd * new_theta, y_0)
+            ):
                 sign = -1
 
             queries += 1

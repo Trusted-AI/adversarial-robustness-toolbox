@@ -16,11 +16,14 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 import os
+
 import pytest
 import torch
 from ultralytics import YOLO
 
-from art.estimators.object_detection.pytorch_yolo_loss_wrapper import PyTorchYoloLossWrapper
+from art.estimators.object_detection.pytorch_yolo_loss_wrapper import (
+    PyTorchYoloLossWrapper,
+)
 
 os.environ["TORCH_FORCE_NO_WEIGHTS_ONLY_LOAD"] = "1"
 
@@ -159,8 +162,9 @@ def test_yolov10_loss_wrapper():
 
 @pytest.mark.only_with_platform("pytorch")
 def test_translate_predictions_yolov8_format():
-    import torch
     import numpy as np
+    import torch
+
     from art.estimators.object_detection.pytorch_yolo import PyTorchYolo
 
     # Create a dummy PyTorchYolo instance (model is not used for this test)
@@ -348,8 +352,8 @@ def test_yolov8_vs_yolov10_loss_functions():
 
 @pytest.mark.only_with_platform("pytorch")
 def test_yolov8_inference_mode():
-    import torch
     import numpy as np
+    import torch
 
     # Dummy model that mimics YOLO v8+ inference behavior
     class DummyYoloV8Model(torch.nn.Module):

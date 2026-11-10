@@ -25,7 +25,12 @@ from __future__ import annotations
 
 import numpy as np
 
-from art.attacks.evasion.laser_attack.utils import AdversarialObject, AdvObjectGenerator, DebugInfo, ImageGenerator
+from art.attacks.evasion.laser_attack.utils import (
+    AdversarialObject,
+    AdvObjectGenerator,
+    DebugInfo,
+    ImageGenerator,
+)
 
 
 def greedy_search(

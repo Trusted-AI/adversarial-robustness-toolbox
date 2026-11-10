@@ -22,7 +22,7 @@ This module implements the adversarial and imperceptible attack on automatic spe
 | Paper link: http://proceedings.mlr.press/v97/qin19a.html
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
 from typing import TYPE_CHECKING
@@ -31,7 +31,11 @@ import numpy as np
 import scipy.signal as ss
 
 from art.attacks.attack import EvasionAttack
-from art.estimators.estimator import BaseEstimator, LossGradientsMixin, NeuralNetworkMixin
+from art.estimators.estimator import (
+    BaseEstimator,
+    LossGradientsMixin,
+    NeuralNetworkMixin,
+)
 from art.estimators.pytorch import PyTorchEstimator
 from art.estimators.speech_recognition.speech_recognizer import SpeechRecognizerMixin
 from art.estimators.tensorflow import TensorFlowV2Estimator
@@ -76,8 +80,8 @@ class ImperceptibleASR(EvasionAttack):
 
     def __init__(
         self,
-        estimator: "SPEECH_RECOGNIZER_TYPE",
-        masker: "PsychoacousticMasker",
+        estimator: SPEECH_RECOGNIZER_TYPE,
+        masker: PsychoacousticMasker,
         eps: float = 2000.0,
         learning_rate_1: float = 100.0,
         max_iter_1: int = 1000,
@@ -255,8 +259,7 @@ class ImperceptibleASR(EvasionAttack):
                     if prediction[j] == y[j].upper():
                         # decrease max norm bound epsilon
                         perturbation_norm = np.max(np.abs(perturbation[j]))
-                        if epsilon[j] > perturbation_norm:
-                            epsilon[j] = perturbation_norm
+                        epsilon[j] = min(epsilon[j], perturbation_norm)
                         epsilon[j] *= self.decrease_factor_eps
                         # save current best adversarial example
                         x_adversarial[j] = x_perturbed[j]
@@ -432,8 +435,8 @@ class ImperceptibleASR(EvasionAttack):
         return np.array(gradients, dtype=dtype), loss
 
     def _loss_gradient_masking_threshold_tf(
-        self, perturbation: "Tensor", psd_maximum_stabilized: "Tensor", masking_threshold_stabilized: "Tensor"
-    ) -> "Tensor" | "Tensor":
+        self, perturbation: Tensor, psd_maximum_stabilized: Tensor, masking_threshold_stabilized: Tensor
+    ) -> Tensor:
         """
         Compute loss gradient of the masking threshold loss in TensorFlow.
 
@@ -499,9 +502,7 @@ class ImperceptibleASR(EvasionAttack):
 
         return loss_gradient, loss_value
 
-    def _approximate_power_spectral_density_tf(
-        self, perturbation: "Tensor", psd_maximum_stabilized: "Tensor"
-    ) -> "Tensor":
+    def _approximate_power_spectral_density_tf(self, perturbation: Tensor, psd_maximum_stabilized: Tensor) -> Tensor:
         """
         Approximate the power spectral density for a perturbation `perturbation` in TensorFlow.
 
@@ -530,8 +531,8 @@ class ImperceptibleASR(EvasionAttack):
         return tf1.transpose(psd_matrix_approximated, [0, 2, 1])
 
     def _approximate_power_spectral_density_torch(
-        self, perturbation: "PTensor", psd_maximum_stabilized: "PTensor"
-    ) -> "PTensor":
+        self, perturbation: PTensor, psd_maximum_stabilized: PTensor
+    ) -> PTensor:
         """
         Approximate the power spectral density for a perturbation `perturbation` in PyTorch.
 

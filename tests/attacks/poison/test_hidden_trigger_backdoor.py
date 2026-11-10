@@ -15,18 +15,19 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
+
 import numpy as np
 import pytest
 
-from art.attacks.poisoning.hidden_trigger_backdoor.hidden_trigger_backdoor import HiddenTriggerBackdoor
 from art.attacks.poisoning.backdoor_attack import PoisoningAttackBackdoor
+from art.attacks.poisoning.hidden_trigger_backdoor.hidden_trigger_backdoor import (
+    HiddenTriggerBackdoor,
+)
 from art.attacks.poisoning.perturbations import add_pattern_bd
-from art.estimators.classification.pytorch import PyTorchClassifier
 from art.estimators.classification.hugging_face import HuggingFaceClassifierPyTorch
-
+from art.estimators.classification.pytorch import PyTorchClassifier
 from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)

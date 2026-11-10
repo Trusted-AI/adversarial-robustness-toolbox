@@ -21,13 +21,13 @@ This module implements Gradient Matching clean-label attacks (a.k.a. Witches' Br
 | Paper link: https://arxiv.org/abs/2009.02276
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
-from tqdm.auto import trange, tqdm
+from tqdm.auto import tqdm, trange
 
 from art.attacks.attack import Attack
 from art.estimators import BaseEstimator, NeuralNetworkMixin
@@ -63,7 +63,7 @@ class GradientMatchingAttack(Attack):
 
     def __init__(
         self,
-        classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
+        classifier: CLASSIFIER_NEURALNETWORK_TYPE,
         percent_poison: float,
         epsilon: float = 0.1,
         max_trials: int = 8,
@@ -143,6 +143,7 @@ class GradientMatchingAttack(Attack):
     ):
         import torch
         from torch import nn
+
         from art.estimators.classification.pytorch import PyTorchClassifier
 
         if isinstance(self.substitute_classifier, PyTorchClassifier):

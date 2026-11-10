@@ -15,21 +15,21 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
 import unittest
 
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.datasets import load_digits
 import numpy as np
+from sklearn.datasets import load_digits
+from sklearn.tree import DecisionTreeClassifier
 
 from art.attacks.evasion.decision_tree_attack import DecisionTreeAttack
-from art.estimators.classification.scikitlearn import SklearnClassifier
-from art.estimators.classification.scikitlearn import ScikitlearnDecisionTreeClassifier
-
-from tests.utils import TestBase, master_seed
+from art.estimators.classification.scikitlearn import (
+    ScikitlearnDecisionTreeClassifier,
+    SklearnClassifier,
+)
 from tests.attacks.utils import backend_test_classifier_type_check_fail
+from tests.utils import TestBase, master_seed
 
 logger = logging.getLogger(__name__)
 

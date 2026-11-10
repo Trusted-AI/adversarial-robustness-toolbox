@@ -27,8 +27,11 @@ from typing import TYPE_CHECKING
 import numpy as np
 from scipy.stats import entropy
 
+from art.estimators.classification.classifier import (
+    ClassifierLossGradients,
+    ClassifierMixin,
+)
 from art.estimators.estimator import BaseEstimator
-from art.estimators.classification.classifier import ClassifierMixin, ClassifierLossGradients
 from art.utils import clip_and_round
 
 if TYPE_CHECKING:
@@ -49,7 +52,7 @@ class QueryEfficientGradientEstimationClassifier(ClassifierLossGradients, Classi
 
     def __init__(
         self,
-        classifier: "CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE",
+        classifier: CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE,
         num_basis: int,
         sigma: float,
         round_samples: float = 0.0,

@@ -22,13 +22,12 @@ This module implements a wrapper for video compression defence with FFmpeg.
     see https://arxiv.org/abs/1902.06705.
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
 import os
-from tempfile import TemporaryDirectory
-
 import warnings
+from tempfile import TemporaryDirectory
 
 import numpy as np
 from tqdm.auto import tqdm

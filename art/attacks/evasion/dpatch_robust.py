@@ -35,10 +35,10 @@ from typing import TYPE_CHECKING
 import numpy as np
 from tqdm.auto import trange
 
+from art import config
 from art.attacks.attack import EvasionAttack
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from art.estimators.object_detection.object_detector import ObjectDetectorMixin
-from art import config
 from art.summary_writer import SummaryWriter
 
 if TYPE_CHECKING:
@@ -77,7 +77,7 @@ class RobustDPatch(EvasionAttack):
 
     def __init__(
         self,
-        estimator: "OBJECT_DETECTOR_TYPE",
+        estimator: OBJECT_DETECTOR_TYPE,
         patch_shape: tuple[int, int, int] = (40, 40, 3),
         patch_location: tuple[int, int] = (0, 0),
         crop_range: tuple[int, int] = (0, 0),

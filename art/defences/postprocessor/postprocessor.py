@@ -19,7 +19,7 @@
 This module implements the abstract base class for defences that post-process classifier output.
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import abc
 
@@ -89,7 +89,6 @@ class Postprocessor(abc.ABC):
         :param preds: Training set to fit the postprocessor.
         :param kwargs: Other parameters.
         """
-        pass
 
     def set_params(self, **kwargs) -> None:
         """

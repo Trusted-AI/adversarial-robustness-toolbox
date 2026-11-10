@@ -21,11 +21,10 @@ Implementation of the High-Confidence-Low-Uncertainty (HCLU) adversarial example
 | Paper link: https://arxiv.org/abs/1812.02606
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import copy
 import logging
-
 
 import numpy as np
 from scipy.optimize import minimize

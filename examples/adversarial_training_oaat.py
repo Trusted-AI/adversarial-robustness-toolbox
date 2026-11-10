@@ -3,19 +3,19 @@ This is an example of how to use ART for adversarial training of a model with OA
 for defence against larger perturbations.
 """
 
-from PIL import Image
 import numpy as np
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
-import torchvision.transforms as transforms
-from torch.utils.data import Dataset, DataLoader
+from PIL import Image
+from torch import nn
+from torch.utils.data import DataLoader, Dataset
+from torchvision import transforms
 
-from art.estimators.classification import PyTorchClassifier
+from art.attacks.evasion import ProjectedGradientDescent
 from art.data_generators import PyTorchDataGenerator
 from art.defences.trainer import AdversarialTrainerOAATPyTorch
+from art.estimators.classification import PyTorchClassifier
 from art.utils import load_cifar10
-from art.attacks.evasion import ProjectedGradientDescent
 
 """
 For this example we choose the PreActResNet18 model as used in the paper
@@ -29,7 +29,7 @@ class BasicBlock(nn.Module):
     expansion = 1
 
     def __init__(self, in_planes, planes, stride=1):
-        super(BasicBlock, self).__init__()
+        super().__init__()
         self.conv1 = nn.Conv2d(in_planes, planes, kernel_size=3, stride=stride, padding=1, bias=False)
         self.bn1 = nn.BatchNorm2d(planes)
         self.conv2 = nn.Conv2d(planes, planes, kernel_size=3, stride=1, padding=1, bias=False)
@@ -55,7 +55,7 @@ class Bottleneck(nn.Module):
     expansion = 4
 
     def __init__(self, in_planes, planes, stride=1):
-        super(Bottleneck, self).__init__()
+        super().__init__()
         self.conv1 = nn.Conv2d(in_planes, planes, kernel_size=1, bias=False)
         self.bn1 = nn.BatchNorm2d(planes)
         self.conv2 = nn.Conv2d(planes, planes, kernel_size=3, stride=stride, padding=1, bias=False)
@@ -82,7 +82,7 @@ class Bottleneck(nn.Module):
 
 class ResNet(nn.Module):
     def __init__(self, block, num_blocks, num_classes=10):
-        super(ResNet, self).__init__()
+        super().__init__()
         self.in_planes = 64
 
         self.conv1 = nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=1, bias=False)

@@ -15,19 +15,16 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
 import unittest
 
 import numpy as np
-import torch.nn as nn
-import torch.optim as optim
+from torch import nn, optim
 
-from art.estimators.classification.pytorch import PyTorchClassifier
 from art.defences.preprocessor import PixelDefend
+from art.estimators.classification.pytorch import PyTorchClassifier
 from art.utils import load_mnist
-
 from tests.utils import master_seed
 
 logger = logging.getLogger(__name__)
@@ -35,7 +32,7 @@ logger = logging.getLogger(__name__)
 
 class ModelImage(nn.Module):
     def __init__(self):
-        super(ModelImage, self).__init__()
+        super().__init__()
         self.fc = nn.Linear(25, 6400)
 
     def forward(self, x):
@@ -48,7 +45,7 @@ class ModelImage(nn.Module):
 
 class Model(nn.Module):
     def __init__(self):
-        super(Model, self).__init__()
+        super().__init__()
         self.fc = nn.Linear(4, 1024)
 
     def forward(self, x):

@@ -22,7 +22,7 @@ This module implements square padding for images and object detection bounding b
 from __future__ import annotations
 
 import logging
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 from tqdm.auto import tqdm
@@ -31,6 +31,7 @@ from art.preprocessing.preprocessing import PreprocessorTensorFlowV2
 
 if TYPE_CHECKING:
     import tensorflow as tf
+
     from art.utils import CLIP_VALUES_TYPE
 
 logger = logging.getLogger(__name__)
@@ -51,7 +52,7 @@ class ImageSquarePadTensorFlowV2(PreprocessorTensorFlowV2):
         label_type: str = "classification",
         pad_mode: str = "CONSTANT",
         pad_kwargs: dict[str, Any] | None = None,
-        clip_values: "CLIP_VALUES_TYPE" | None = None,
+        clip_values: CLIP_VALUES_TYPE | None = None,
         apply_fit: bool = True,
         apply_predict: bool = False,
         verbose: bool = False,
@@ -82,9 +83,9 @@ class ImageSquarePadTensorFlowV2(PreprocessorTensorFlowV2):
 
     def forward(
         self,
-        x: "tf.Tensor",
-        y: "tf.Tensor" | list[dict[str, "tf.Tensor"]] | None = None,
-    ) -> tuple["tf.Tensor", "tf.Tensor" | list[dict[str, "tf.Tensor"]] | None]:
+        x: tf.Tensor,
+        y: tf.Tensor | list[dict[str, tf.Tensor]] | None = None,
+    ) -> tuple[tf.Tensor, tf.Tensor | list[dict[str, tf.Tensor]] | None]:
         """
         Square pad `x` and adjust bounding boxes for labels `y` accordingly.
 

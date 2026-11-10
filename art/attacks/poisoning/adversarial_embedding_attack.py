@@ -19,7 +19,7 @@
 This module implements clean-label attacks on Neural Networks.
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
 from typing import TYPE_CHECKING
@@ -62,7 +62,7 @@ class PoisoningAttackAdversarialEmbedding(PoisoningAttackTransformer):
 
     def __init__(
         self,
-        classifier: "CLASSIFIER_TYPE",
+        classifier: CLASSIFIER_TYPE,
         backdoor: PoisoningAttackBackdoor,
         feature_layer: int | str,
         target: np.ndarray | list[tuple[np.ndarray, np.ndarray]],
@@ -106,17 +106,17 @@ class PoisoningAttackAdversarialEmbedding(PoisoningAttackTransformer):
 
         if isinstance(self.estimator, KerasClassifier):
 
-            from keras.models import Model, clone_model
-            from keras.layers import (
-                GaussianNoise,
-                Dense,
-                BatchNormalization,
-                LeakyReLU,
-                Input,
-                Flatten,
-            )
-            from keras.optimizers import Adam
             import keras
+            from keras.layers import (
+                BatchNormalization,
+                Dense,
+                Flatten,
+                GaussianNoise,
+                Input,
+                LeakyReLU,
+            )
+            from keras.models import Model, clone_model
+            from keras.optimizers import Adam
 
             opt = Adam(learning_rate=self.learning_rate)
 
@@ -202,7 +202,7 @@ class PoisoningAttackAdversarialEmbedding(PoisoningAttackTransformer):
 
     def poison_estimator(
         self, x: np.ndarray, y: np.ndarray, batch_size: int = 64, nb_epochs: int = 10, **kwargs
-    ) -> "CLASSIFIER_TYPE":
+    ) -> CLASSIFIER_TYPE:
         """
         Train a poisoned model and return it
         :param x: Training data

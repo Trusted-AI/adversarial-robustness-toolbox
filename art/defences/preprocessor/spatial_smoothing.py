@@ -25,16 +25,15 @@ This module implements the local spatial smoothing defence in `SpatialSmoothing`
     https://arxiv.org/abs/1902.06705
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
-
 
 import numpy as np
 from scipy.ndimage import median_filter
 
-from art.utils import CLIP_VALUES_TYPE
 from art.defences.preprocessor.preprocessor import Preprocessor
+from art.utils import CLIP_VALUES_TYPE
 
 logger = logging.getLogger(__name__)
 

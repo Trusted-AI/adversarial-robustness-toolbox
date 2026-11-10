@@ -22,18 +22,18 @@ This module implements abstract base and mixin classes for estimators in ART.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 from tqdm.auto import trange
 
 if TYPE_CHECKING:
     # pylint: disable=cyclic-import
-    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE, ESTIMATOR_TYPE
     from art.data_generators import DataGenerator
-    from art.metrics.verification_decisions_trees import Tree
     from art.defences.postprocessor.postprocessor import Postprocessor
     from art.defences.preprocessor.preprocessor import Preprocessor
+    from art.metrics.verification_decisions_trees import Tree
+    from art.utils import CLIP_VALUES_TYPE, ESTIMATOR_TYPE, PREPROCESSING_TYPE
 
 
 class BaseEstimator(ABC):
@@ -53,10 +53,10 @@ class BaseEstimator(ABC):
     def __init__(
         self,
         model,
-        clip_values: "CLIP_VALUES_TYPE" | None,
-        preprocessing_defences: "Preprocessor" | list["Preprocessor"] | None = None,
-        postprocessing_defences: "Postprocessor" | list["Postprocessor"] | None = None,
-        preprocessing: "PREPROCESSING_TYPE" | "Preprocessor" = (0.0, 1.0),
+        clip_values: CLIP_VALUES_TYPE | None,
+        preprocessing_defences: Preprocessor | list[Preprocessor] | None = None,
+        postprocessing_defences: Postprocessor | list[Postprocessor] | None = None,
+        preprocessing: PREPROCESSING_TYPE | Preprocessor = (0.0, 1.0),
     ):
         """
         Initialize a `BaseEstimator` object.
@@ -78,7 +78,7 @@ class BaseEstimator(ABC):
         self.preprocessing = self._set_preprocessing(preprocessing)
         self.preprocessing_defences = self._set_preprocessing_defences(preprocessing_defences)
         self.postprocessing_defences = self._set_postprocessing_defences(postprocessing_defences)
-        self.preprocessing_operations: list["Preprocessor"] = []
+        self.preprocessing_operations: list[Preprocessor] = []
         BaseEstimator._update_preprocessing_operations(self)
         BaseEstimator._check_params(self)
 
@@ -97,7 +97,9 @@ class BaseEstimator(ABC):
         if self.preprocessing is None:
             pass
         elif isinstance(self.preprocessing, tuple):
-            from art.preprocessing.standardisation_mean_std.numpy import StandardisationMeanStd
+            from art.preprocessing.standardisation_mean_std.numpy import (
+                StandardisationMeanStd,
+            )
 
             self.preprocessing_operations.append(
                 StandardisationMeanStd(mean=self.preprocessing[0], std=self.preprocessing[1])
@@ -108,13 +110,15 @@ class BaseEstimator(ABC):
             raise ValueError("Preprocessing argument not recognised.")
 
     @staticmethod
-    def _set_preprocessing(preprocessing: "PREPROCESSING_TYPE" | "Preprocessor" | None) -> "Preprocessor" | None:
+    def _set_preprocessing(preprocessing: PREPROCESSING_TYPE | Preprocessor | None) -> Preprocessor | None:
         from art.defences.preprocessor.preprocessor import Preprocessor
 
         if preprocessing is None:
             return None
         if isinstance(preprocessing, tuple):
-            from art.preprocessing.standardisation_mean_std.numpy import StandardisationMeanStd
+            from art.preprocessing.standardisation_mean_std.numpy import (
+                StandardisationMeanStd,
+            )
 
             return StandardisationMeanStd(mean=preprocessing[0], std=preprocessing[1])  # type: ignore
         if isinstance(preprocessing, Preprocessor):
@@ -124,8 +128,8 @@ class BaseEstimator(ABC):
 
     @staticmethod
     def _set_preprocessing_defences(
-        preprocessing_defences: "Preprocessor" | list["Preprocessor"] | None,
-    ) -> list["Preprocessor"] | None:
+        preprocessing_defences: Preprocessor | list[Preprocessor] | None,
+    ) -> list[Preprocessor] | None:
         from art.defences.preprocessor.preprocessor import Preprocessor
 
         if isinstance(preprocessing_defences, Preprocessor):
@@ -135,8 +139,8 @@ class BaseEstimator(ABC):
 
     @staticmethod
     def _set_postprocessing_defences(
-        postprocessing_defences: "Postprocessor" | list["Postprocessor"] | None,
-    ) -> list["Postprocessor"] | None:
+        postprocessing_defences: Postprocessor | list[Postprocessor] | None,
+    ) -> list[Postprocessor] | None:
         from art.defences.postprocessor.postprocessor import Postprocessor
 
         if isinstance(postprocessing_defences, Postprocessor):
@@ -184,7 +188,7 @@ class BaseEstimator(ABC):
             params[key] = getattr(self, key)
         return params
 
-    def clone_for_refitting(self) -> "ESTIMATOR_TYPE":
+    def clone_for_refitting(self) -> ESTIMATOR_TYPE:
         """
         Clone estimator for refitting.
         """
@@ -280,7 +284,7 @@ class BaseEstimator(ABC):
         raise NotImplementedError
 
     @property
-    def clip_values(self) -> "CLIP_VALUES_TYPE" | None:
+    def clip_values(self) -> CLIP_VALUES_TYPE | None:
         """
         Return the clip values of the input samples.
 
@@ -454,7 +458,7 @@ class NeuralNetworkMixin(ABC):
         """
         raise NotImplementedError
 
-    def fit_generator(self, generator: "DataGenerator", nb_epochs: int = 20, **kwargs) -> None:
+    def fit_generator(self, generator: DataGenerator, nb_epochs: int = 20, **kwargs) -> None:
         """
         Fit the estimator using a `generator` yielding training batches. Implementations can
         provide framework-specific versions of this function to speed-up computation.
@@ -534,7 +538,7 @@ class DecisionTreeMixin(ABC):
     """
 
     @abstractmethod
-    def get_trees(self) -> list["Tree"]:
+    def get_trees(self) -> list[Tree]:
         """
         Get the decision trees.
 

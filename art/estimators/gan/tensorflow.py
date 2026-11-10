@@ -24,11 +24,13 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import numpy as np
+
 from art.estimators.tensorflow import TensorFlowV2Estimator
 
 if TYPE_CHECKING:
-    from art.utils import CLASSIFIER_TYPE, GENERATOR_TYPE
     import tensorflow as tf
+
+    from art.utils import CLASSIFIER_TYPE, GENERATOR_TYPE
 
 
 class TensorFlowV2GAN(TensorFlowV2Estimator):
@@ -38,8 +40,8 @@ class TensorFlowV2GAN(TensorFlowV2Estimator):
 
     def __init__(
         self,
-        generator: "GENERATOR_TYPE",
-        discriminator: "CLASSIFIER_TYPE",
+        generator: GENERATOR_TYPE,
+        discriminator: CLASSIFIER_TYPE,
         generator_loss=None,
         discriminator_loss=None,
         generator_optimizer_fct=None,
@@ -128,42 +130,42 @@ class TensorFlowV2GAN(TensorFlowV2Estimator):
                 )
 
     @property
-    def generator(self) -> "GENERATOR_TYPE":
+    def generator(self) -> GENERATOR_TYPE:
         """
         :return: the generator
         """
         return self._generator
 
     @property
-    def discriminator(self) -> "CLASSIFIER_TYPE":
+    def discriminator(self) -> CLASSIFIER_TYPE:
         """
         :return: the discriminator
         """
         return self._discriminator_classifier
 
     @property
-    def generator_loss(self) -> "tf.Tensor":
+    def generator_loss(self) -> tf.Tensor:
         """
         :return: the loss fct used for the generator
         """
         return self._generator_loss
 
     @property
-    def generator_optimizer_fct(self) -> "tf.Tensor":
+    def generator_optimizer_fct(self) -> tf.Tensor:
         """
         :return: the optimizer function for the generator
         """
         return self._generator_optimizer_fct
 
     @property
-    def discriminator_loss(self) -> "tf.Tensor":
+    def discriminator_loss(self) -> tf.Tensor:
         """
         :return: the loss fct used for the discriminator
         """
         return self._discriminator_loss
 
     @property
-    def discriminator_optimizer_fct(self) -> "tf.Tensor":
+    def discriminator_optimizer_fct(self) -> tf.Tensor:
         """
         :return: the optimizer function for the discriminator
         """

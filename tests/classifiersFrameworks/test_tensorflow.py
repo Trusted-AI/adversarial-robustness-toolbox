@@ -17,19 +17,18 @@
 # SOFTWARE.
 import numpy as np
 import pytest
-
-import tensorflow as tf
-
 import sklearn
 import sklearn.datasets
 import sklearn.model_selection
+import tensorflow as tf
 
-from art.estimators.classification.tensorflow import TensorFlowV2Classifier
-from art.estimators.classification.keras import KerasClassifier
-from art.defences.preprocessor.spatial_smoothing import SpatialSmoothing
-from art.defences.preprocessor.spatial_smoothing_tensorflow import SpatialSmoothingTensorFlowV2
 from art.attacks.evasion import FastGradientMethod, ProjectedGradientDescent
-
+from art.defences.preprocessor.spatial_smoothing import SpatialSmoothing
+from art.defences.preprocessor.spatial_smoothing_tensorflow import (
+    SpatialSmoothingTensorFlowV2,
+)
+from art.estimators.classification.keras import KerasClassifier
+from art.estimators.classification.tensorflow import TensorFlowV2Classifier
 from tests.attacks.utils import backend_test_defended_images
 from tests.utils import ARTTestException
 

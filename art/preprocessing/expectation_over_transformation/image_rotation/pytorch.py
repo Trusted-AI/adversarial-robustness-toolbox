@@ -78,8 +78,8 @@ class EoTImageRotationPyTorch(EoTPyTorch):
         self._check_params()
 
     def _transform(
-        self, x: "torch.Tensor", y: "torch.Tensor" | list[dict[str, "torch.Tensor"]] | None, **kwargs
-    ) -> tuple["torch.Tensor", "torch.Tensor" | list[dict[str, "torch.Tensor"]] | None]:
+        self, x: torch.Tensor, y: torch.Tensor | list[dict[str, torch.Tensor]] | None, **kwargs
+    ) -> tuple[torch.Tensor, torch.Tensor | list[dict[str, torch.Tensor]] | None]:
         """
         Transformation of an input image and its label by randomly sampled rotation.
 
@@ -116,11 +116,11 @@ class EoTImageRotationPyTorch(EoTPyTorch):
             max=self.clip_values[1],
         )
 
-        y_preprocess: "torch.Tensor" | list[dict[str, "torch.Tensor"]] | None
+        y_preprocess: torch.Tensor | list[dict[str, torch.Tensor]] | None
 
         if self.label_type == "object_detection" and y is not None:
 
-            y_od: list[dict[str, "torch.Tensor"]] = [{}]
+            y_od: list[dict[str, torch.Tensor]] = [{}]
 
             if isinstance(y, list):
                 if isinstance(y[0], dict):

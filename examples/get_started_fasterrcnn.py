@@ -15,19 +15,20 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-import os
-import cv2
-import numpy as np
-import matplotlib.pyplot as plt
-import torch
-import torchvision
 import argparse
 import json
-import yaml
+import os
 import pprint
 
-from art.estimators.object_detection import PyTorchFasterRCNN
+import cv2
+import matplotlib.pyplot as plt
+import numpy as np
+import torch
+import torchvision
+import yaml
+
 from art.attacks.evasion import RobustDPatch
+from art.estimators.object_detection import PyTorchFasterRCNN
 
 COCO_INSTANCE_CATEGORY_NAMES = [
     "__background__",
@@ -296,7 +297,7 @@ if __name__ == "__main__":
     predictions_adv = frcnn.predict(x=x_patch)
 
     for i in range(image.shape[0]):
-        print("\nPredictions adversarial image {}:".format(i))
+        print(f"\nPredictions adversarial image {i}:")
 
         # Process predictions
         predictions_adv_class, predictions_adv_boxes, predictions_adv_class = extract_predictions(predictions_adv[i])

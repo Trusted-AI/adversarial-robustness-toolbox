@@ -65,7 +65,7 @@ class StandardisationMeanStdTensorFlow(PreprocessorTensorFlowV2):
         self._broadcastable_mean: np.ndarray | None = None
         self._broadcastable_std: np.ndarray | None = None
 
-    def forward(self, x: "tf.Tensor", y: "tf.Tensor" | None = None) -> tuple["tf.Tensor", "tf.Tensor" | None]:
+    def forward(self, x: tf.Tensor, y: tf.Tensor | None = None) -> tuple[tf.Tensor, tf.Tensor | None]:
         """
         Apply standardisation with mean and standard deviation to input `x`.
 

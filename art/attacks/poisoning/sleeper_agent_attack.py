@@ -21,18 +21,20 @@ This module implements Sleeper Agent attack on Neural Networks.
 | Paper link: https://arxiv.org/abs/2106.08970
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
 import random
+from typing import TYPE_CHECKING
 
 import numpy as np
 from tqdm.auto import trange
 
 from art.attacks.poisoning.gradient_matching_attack import GradientMatchingAttack
 from art.estimators.classification.pytorch import PyTorchClassifier
-from art.preprocessing.standardisation_mean_std.pytorch import StandardisationMeanStdPyTorch
+from art.preprocessing.standardisation_mean_std.pytorch import (
+    StandardisationMeanStdPyTorch,
+)
 
 if TYPE_CHECKING:
 
@@ -50,7 +52,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
 
     def __init__(
         self,
-        classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
+        classifier: CLASSIFIER_NEURALNETWORK_TYPE,
         percent_poison: float,
         patch: np.ndarray,
         indices_target: list[int],
@@ -312,7 +314,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
         y_test: np.ndarray,
         batch_size: int = 128,
         epochs: int = 80,
-    ) -> "PyTorchClassifier":
+    ) -> PyTorchClassifier:
         """
         Creates a new model.
 
@@ -341,7 +343,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
 
     # This function is responsible for returning indices of poison images with maximum gradient norm
     def _select_poison_indices(
-        self, classifier: "CLASSIFIER_NEURALNETWORK_TYPE", x_samples: np.ndarray, y_samples: np.ndarray, num_poison: int
+        self, classifier: CLASSIFIER_NEURALNETWORK_TYPE, x_samples: np.ndarray, y_samples: np.ndarray, num_poison: int
     ) -> np.ndarray:
         """
         Select indices of poisoned samples

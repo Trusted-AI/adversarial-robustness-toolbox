@@ -19,11 +19,11 @@
 This module implements the abstract base classes for all attacks.
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import abc
 import logging
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
@@ -243,7 +243,7 @@ class PoisoningAttack(Attack):
     Abstract base class for poisoning attack classes
     """
 
-    def __init__(self, classifier: "CLASSIFIER_TYPE" | None) -> None:
+    def __init__(self, classifier: CLASSIFIER_TYPE | None) -> None:
         """
         :param classifier: A trained classifier (or none if no classifier is needed)
         """
@@ -268,7 +268,7 @@ class PoisoningAttackGenerator(Attack):
     These attacks have an additional method, `poison_estimator`, that returns the poisoned generator.
     """
 
-    def __init__(self, generator: "GENERATOR_TYPE") -> None:
+    def __init__(self, generator: GENERATOR_TYPE) -> None:
         """
         :param generator: A generator
         """
@@ -284,7 +284,7 @@ class PoisoningAttackGenerator(Attack):
         lambda_p: float,
         verbose: int,
         **kwargs,
-    ) -> "GENERATOR_TYPE":
+    ) -> GENERATOR_TYPE:
         """
         Returns a poisoned version of the generator used to initialize the attack
         :return: A poisoned generator
@@ -326,7 +326,7 @@ class PoisoningAttackTransformer(PoisoningAttack):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def poison_estimator(self, x: np.ndarray, y: np.ndarray, **kwargs) -> "CLASSIFIER_TYPE":
+    def poison_estimator(self, x: np.ndarray, y: np.ndarray, **kwargs) -> CLASSIFIER_TYPE:
         """
         Returns a poisoned version of the classifier used to initialize the attack
         :param x: Training data
@@ -418,7 +418,7 @@ class ExtractionAttack(Attack):
     """
 
     @abc.abstractmethod
-    def extract(self, x: np.ndarray, y: np.ndarray | None = None, **kwargs) -> "CLASSIFIER_TYPE":
+    def extract(self, x: np.ndarray, y: np.ndarray | None = None, **kwargs) -> CLASSIFIER_TYPE:
         """
         Extract models and return them as an ART classifier. This method should be overridden by all concrete extraction
         attack implementations.

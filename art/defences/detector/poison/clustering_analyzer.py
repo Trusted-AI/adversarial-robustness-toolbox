@@ -19,7 +19,7 @@
 This module implements methodologies to analyze clusters and determine whether they are poisonous.
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
 from typing import Any

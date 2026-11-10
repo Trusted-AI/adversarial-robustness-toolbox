@@ -45,19 +45,24 @@ This module implements Brendel and Bethge attack.
 
 from __future__ import annotations
 
+import logging
+
 # pylint: disable=invalid-name,missing-class-docstring,missing-function-docstring,old-non-ascii-name,unused-variable
 # pylint: disable=unused-argument,chained-comparison,no-else-return,no-else-break,no-else-raise
 from typing import TYPE_CHECKING
-import logging
 
 import numpy as np
 from numba.experimental import jitclass
 
 from art import config
-from art.utils import get_labels_np_array, check_and_transform_label_format, is_probability
 from art.attacks.attack import EvasionAttack
-from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from art.estimators.classification.classifier import ClassifierMixin
+from art.estimators.estimator import BaseEstimator, LossGradientsMixin
+from art.utils import (
+    check_and_transform_label_format,
+    get_labels_np_array,
+    is_probability,
+)
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_LOSS_GRADIENTS_TYPE
@@ -108,8 +113,7 @@ class BFGSB:  # pragma: no cover
                 else:
                     gv = min(qk[v] - var_l[v], _gfk[v])
 
-                if pg_norm < np.abs(gv):
-                    pg_norm = np.abs(gv)
+                pg_norm = max(pg_norm, np.abs(gv))
 
             if pg_norm < pgtol:
                 break
@@ -1366,7 +1370,6 @@ class LinfOptimizer(Optimizer):  # pragma: no cover
                     lambda_max = _lambda
                 else:
                     lambda_min = _lambda
-                #
                 if _active_bnorm == 0:
                     # update is stepping out of feasible region, fallback to binary search
                     _lambda = (lambda_max - lambda_min) / 2 + lambda_min
@@ -1984,8 +1987,8 @@ class BrendelBethgeAttack(EvasionAttack):
 
     def __init__(
         self,
-        estimator: "CLASSIFIER_LOSS_GRADIENTS_TYPE",
-        norm: int | float | str = np.inf,
+        estimator: CLASSIFIER_LOSS_GRADIENTS_TYPE,
+        norm: float | str = np.inf,
         targeted: bool = False,
         overshoot: float = 1.1,
         steps: int = 1000,
@@ -2016,7 +2019,10 @@ class BrendelBethgeAttack(EvasionAttack):
         :param init_size: Maximum number of random search steps to find initial adversarial example.
         :param batch_size: Batch size for evaluating the model for predictions and gradients.
         """
-        from art.estimators.classification import TensorFlowV2Classifier, PyTorchClassifier
+        from art.estimators.classification import (
+            PyTorchClassifier,
+            TensorFlowV2Classifier,
+        )
 
         if isinstance(estimator, TensorFlowV2Classifier):
             import tensorflow as tf
@@ -2054,7 +2060,7 @@ class BrendelBethgeAttack(EvasionAttack):
                 self._loss_fn = logits_difference
                 self._loss_object = logits_difference
 
-            estimator_bb: "CLASSIFIER_LOSS_GRADIENTS_TYPE" = TensorFlowV2Classifier(
+            estimator_bb: CLASSIFIER_LOSS_GRADIENTS_TYPE = TensorFlowV2Classifier(
                 model=estimator.model,
                 nb_classes=estimator.nb_classes,
                 input_shape=estimator.input_shape,
@@ -2527,7 +2533,7 @@ class BrendelBethgeAttack(EvasionAttack):
         current_sample: np.ndarray,
         original_sample: np.ndarray,
         target: int,
-        norm: int | float | str,
+        norm: float | str,
         clip_min: float,
         clip_max: float,
         threshold: float | None = None,
@@ -2592,7 +2598,7 @@ class BrendelBethgeAttack(EvasionAttack):
 
     @staticmethod
     def _interpolate(
-        current_sample: np.ndarray, original_sample: np.ndarray, alpha: float, norm: int | float | str
+        current_sample: np.ndarray, original_sample: np.ndarray, alpha: float, norm: float | str
     ) -> np.ndarray:
         """
         Interpolate a new sample based on the original and the current samples.

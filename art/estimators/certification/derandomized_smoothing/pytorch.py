@@ -32,17 +32,20 @@ Certified Patch Robustness via Smoothed Vision Transformers
 | Paper link Arxiv version (more detail): https://arxiv.org/pdf/2110.07719.pdf
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
+
 import importlib
 import logging
-from typing import Any, TYPE_CHECKING
 import random
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 from tqdm import tqdm
 
+from art.estimators.certification.derandomized_smoothing.derandomized import (
+    DeRandomizedSmoothingMixin,
+)
 from art.estimators.classification.pytorch import PyTorchClassifier
-from art.estimators.certification.derandomized_smoothing.derandomized import DeRandomizedSmoothingMixin
 from art.utils import check_and_transform_label_format
 
 if TYPE_CHECKING:
@@ -50,10 +53,13 @@ if TYPE_CHECKING:
     import torch
     import torchvision
     from timm.models.vision_transformer import VisionTransformer
-    from art.estimators.certification.derandomized_smoothing.vision_transformers.pytorch import PyTorchVisionTransformer
-    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
-    from art.defences.preprocessor import Preprocessor
+
     from art.defences.postprocessor import Postprocessor
+    from art.defences.preprocessor import Preprocessor
+    from art.estimators.certification.derandomized_smoothing.vision_transformers.pytorch import (
+        PyTorchVisionTransformer,
+    )
+    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -71,8 +77,8 @@ class PyTorchDeRandomizedSmoothing(DeRandomizedSmoothingMixin, PyTorchClassifier
 
     def __init__(
         self,
-        model: str | "VisionTransformer" | "torch.nn.Module",
-        loss: "torch.nn.modules.loss._Loss",
+        model: str | VisionTransformer | torch.nn.Module,
+        loss: torch.nn.modules.loss._Loss,
         input_shape: tuple[int, ...],
         nb_classes: int,
         ablation_size: int,
@@ -81,15 +87,15 @@ class PyTorchDeRandomizedSmoothing(DeRandomizedSmoothingMixin, PyTorchClassifier
         replace_last_layer: bool | None = None,
         drop_tokens: bool = True,
         load_pretrained: bool = True,
-        optimizer: "torch.optim.Optimizer" | None = None,
+        optimizer: torch.optim.Optimizer | None = None,
         optimizer_params: dict | None = None,
         channels_first: bool = True,
         threshold: float | None = None,
         logits: bool | None = True,
-        clip_values: "CLIP_VALUES_TYPE" | None = None,
-        preprocessing_defences: "Preprocessor" | list["Preprocessor"] | None = None,
-        postprocessing_defences: "Postprocessor" | list["Postprocessor"] | None = None,
-        preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
+        clip_values: CLIP_VALUES_TYPE | None = None,
+        preprocessing_defences: Preprocessor | list[Preprocessor] | None = None,
+        postprocessing_defences: Postprocessor | list[Postprocessor] | None = None,
+        preprocessing: PREPROCESSING_TYPE = (0.0, 1.0),
         device_type: str = "gpu",
         verbose: bool = True,
         **kwargs,
@@ -145,6 +151,7 @@ class PyTorchDeRandomizedSmoothing(DeRandomizedSmoothingMixin, PyTorchClassifier
 
             if isinstance(model, (VisionTransformer, str)):
                 import timm
+
                 from art.estimators.certification.derandomized_smoothing.vision_transformers.pytorch import (
                     PyTorchVisionTransformer,
                 )
@@ -271,8 +278,8 @@ class PyTorchDeRandomizedSmoothing(DeRandomizedSmoothingMixin, PyTorchClassifier
             logger.info(self.model)
 
         from art.estimators.certification.derandomized_smoothing.ablators.pytorch import (
-            ColumnAblatorPyTorch,
             BlockAblatorPyTorch,
+            ColumnAblatorPyTorch,
         )
 
         if TYPE_CHECKING:
@@ -408,7 +415,7 @@ class PyTorchDeRandomizedSmoothing(DeRandomizedSmoothingMixin, PyTorchClassifier
     @staticmethod
     def create_vision_transformer(
         variant: str, pretrained: bool = False, use_naflex: bool | None = None, **kwargs
-    ) -> "PyTorchVisionTransformer":
+    ) -> PyTorchVisionTransformer:
         """
         Creates a vision transformer using PyTorchViT which controls the forward pass of the model
 
@@ -420,6 +427,7 @@ class PyTorchDeRandomizedSmoothing(DeRandomizedSmoothingMixin, PyTorchClassifier
 
         from timm.models._builder import build_model_with_cfg
         from timm.models.vision_transformer import checkpoint_filter_fn
+
         from art.estimators.certification.derandomized_smoothing.vision_transformers.pytorch import (
             PyTorchVisionTransformer,
         )
@@ -444,7 +452,7 @@ class PyTorchDeRandomizedSmoothing(DeRandomizedSmoothingMixin, PyTorchClassifier
         verbose: bool = False,
         update_batchnorm: bool = True,
         batchnorm_update_epochs: int = 1,
-        transform: "torchvision.transforms.transforms.Compose" | None = None,
+        transform: torchvision.transforms.transforms.Compose | None = None,
         **kwargs,
     ) -> None:
         """
@@ -558,7 +566,7 @@ class PyTorchDeRandomizedSmoothing(DeRandomizedSmoothingMixin, PyTorchClassifier
                 scheduler.step()
 
     @staticmethod
-    def get_accuracy(preds: np.ndarray | "torch.Tensor", labels: np.ndarray | "torch.Tensor") -> np.ndarray:
+    def get_accuracy(preds: np.ndarray | torch.Tensor, labels: np.ndarray | torch.Tensor) -> np.ndarray:
         """
         Helper function to get the accuracy during training.
 
@@ -607,7 +615,7 @@ class PyTorchDeRandomizedSmoothing(DeRandomizedSmoothingMixin, PyTorchClassifier
         size_to_certify: int,
         batch_size: int = 128,
         verbose: bool = True,
-    ) -> tuple["torch.Tensor", "torch.Tensor"]:
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         """
         Evaluates the ViT's normal and certified performance over the supplied data.
 
@@ -687,7 +695,7 @@ class PyTorchDeRandomizedSmoothing(DeRandomizedSmoothingMixin, PyTorchClassifier
         return (accuracy / n_samples), (cert_sum / n_samples)
 
     def _predict_classifier(
-        self, x: np.ndarray | "torch.Tensor", batch_size: int, training_mode: bool, **kwargs
+        self, x: np.ndarray | torch.Tensor, batch_size: int, training_mode: bool, **kwargs
     ) -> np.ndarray:
         import torch
 
@@ -700,7 +708,7 @@ class PyTorchDeRandomizedSmoothing(DeRandomizedSmoothingMixin, PyTorchClassifier
 
         if self.algorithm == "levine2020":
             if not self.logits:
-                return np.asarray((outputs >= self.threshold))
+                return np.asarray(outputs >= self.threshold)
             return np.asarray(
                 (torch.nn.functional.softmax(torch.from_numpy(outputs), dim=1) >= self.threshold).type(  # type: ignore
                     torch.int

@@ -74,7 +74,7 @@ class EoTImageRotationTensorFlow(EoTTensorFlowV2):
         self.label_type = label_type
         self._check_params()
 
-    def _transform(self, x: "tf.Tensor", y: "tf.Tensor" | None, **kwargs) -> tuple["tf.Tensor", "tf.Tensor" | None]:
+    def _transform(self, x: tf.Tensor, y: tf.Tensor | None, **kwargs) -> tuple[tf.Tensor, tf.Tensor | None]:
         """
         Transformation of an input image and its label by randomly sampled rotation.
 

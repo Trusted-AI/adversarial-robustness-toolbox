@@ -53,11 +53,17 @@ from typing import TYPE_CHECKING
 import numpy as np
 from tqdm.auto import trange
 
-from art.config import ART_NUMPY_DTYPE
 from art.attacks.attack import EvasionAttack
-from art.estimators.estimator import BaseEstimator, LossGradientsMixin
+from art.config import ART_NUMPY_DTYPE
 from art.estimators.classification.classifier import ClassifierMixin
-from art.utils import check_and_transform_label_format, projection, random_sphere, is_probability, get_labels_np_array
+from art.estimators.estimator import BaseEstimator, LossGradientsMixin
+from art.utils import (
+    check_and_transform_label_format,
+    get_labels_np_array,
+    is_probability,
+    projection,
+    random_sphere,
+)
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_LOSS_GRADIENTS_TYPE
@@ -89,8 +95,8 @@ class AutoConjugateGradient(EvasionAttack):
 
     def __init__(
         self,
-        estimator: "CLASSIFIER_LOSS_GRADIENTS_TYPE",
-        norm: int | float | str = np.inf,
+        estimator: CLASSIFIER_LOSS_GRADIENTS_TYPE,
+        norm: float | str = np.inf,
         eps: float = 0.3,
         eps_step: float = 0.1,
         max_iter: int = 100,
@@ -116,7 +122,10 @@ class AutoConjugateGradient(EvasionAttack):
             "cross_entropy", or "difference_logits_ratio"
         :param verbose: Show progress bars.
         """
-        from art.estimators.classification import TensorFlowV2Classifier, PyTorchClassifier
+        from art.estimators.classification import (
+            PyTorchClassifier,
+            TensorFlowV2Classifier,
+        )
 
         if loss_type not in self._predefined_losses:
             raise ValueError(
@@ -636,7 +645,7 @@ class AutoConjugateGradient(EvasionAttack):
             raise ValueError("The argument batch_size has to be of type int and larger than zero.")
 
         if self.loss_type not in self._predefined_losses:
-            raise ValueError("The argument loss_type has to be either {}.".format(self._predefined_losses))
+            raise ValueError(f"The argument loss_type has to be either {self._predefined_losses}.")
 
         if not isinstance(self.verbose, bool):
             raise ValueError("The argument `verbose` has to be of type bool.")

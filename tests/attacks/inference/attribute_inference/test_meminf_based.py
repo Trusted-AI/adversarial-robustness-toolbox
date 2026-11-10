@@ -15,24 +15,24 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-import pytest
 
 import numpy as np
-from sklearn.tree import DecisionTreeClassifier
+import pytest
 from sklearn.preprocessing import StandardScaler
+from sklearn.tree import DecisionTreeClassifier
 
-from art.attacks.inference.attribute_inference.meminf_based import AttributeInferenceMembership
+from art.attacks.inference.attribute_inference.meminf_based import (
+    AttributeInferenceMembership,
+)
 from art.attacks.inference.membership_inference import (
+    LabelOnlyDecisionBoundary,
     MembershipInferenceBlackBox,
     MembershipInferenceBlackBoxRuleBased,
-    LabelOnlyDecisionBoundary,
 )
 from art.estimators.classification.scikitlearn import ScikitlearnDecisionTreeClassifier
 from art.estimators.regression import ScikitlearnRegressor
-
 from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)

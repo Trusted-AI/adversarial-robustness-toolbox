@@ -22,7 +22,7 @@ This module implements a wrapper for MP3 compression defence.
     see https://arxiv.org/abs/1902.06705.
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
 from typing import TYPE_CHECKING
@@ -105,9 +105,7 @@ class Mp3CompressionPyTorch(PreprocessorPyTorch):
 
         self._compression_pytorch_numpy = CompressionPyTorchNumpy
 
-    def forward(
-        self, x: "torch.Tensor", y: "torch.Tensor" | None = None
-    ) -> tuple["torch.Tensor", "torch.Tensor" | None]:
+    def forward(self, x: torch.Tensor, y: torch.Tensor | None = None) -> tuple[torch.Tensor, torch.Tensor | None]:
         """
         Apply MP3 compression to sample `x`.
 

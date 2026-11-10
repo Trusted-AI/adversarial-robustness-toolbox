@@ -21,7 +21,11 @@ import numpy as np
 import pytest
 
 from art.config import ART_NUMPY_DTYPE
-from art.preprocessing.image import ImageSquarePad, ImageSquarePadPyTorch, ImageSquarePadTensorFlowV2
+from art.preprocessing.image import (
+    ImageSquarePad,
+    ImageSquarePadPyTorch,
+    ImageSquarePadTensorFlowV2,
+)
 from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)

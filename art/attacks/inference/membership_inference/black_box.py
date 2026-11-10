@@ -20,22 +20,22 @@
 This module implements membership inference attacks.
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
-from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
+from sklearn.ensemble import GradientBoostingClassifier, RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.tree import DecisionTreeClassifier
+from sklearn.preprocessing import MinMaxScaler, RobustScaler, StandardScaler
 from sklearn.svm import SVC
-from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
+from sklearn.tree import DecisionTreeClassifier
 
 from art.attacks.attack import MembershipInferenceAttack
-from art.estimators.estimator import BaseEstimator
 from art.estimators.classification.classifier import ClassifierMixin
+from art.estimators.estimator import BaseEstimator
 from art.estimators.regression import RegressorMixin
 from art.utils import check_and_transform_label_format
 
@@ -66,7 +66,7 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
 
     def __init__(
         self,
-        estimator: "CLASSIFIER_TYPE" | "REGRESSOR_TYPE",
+        estimator: CLASSIFIER_TYPE | REGRESSOR_TYPE,
         input_type: str = "prediction",
         attack_model_type: str = "nn",
         attack_model: Any | None = None,
@@ -268,9 +268,9 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
 
         if self.default_model and self.attack_model_type == "nn":
             import torch
-            from torch import nn
-            from torch import optim
+            from torch import nn, optim
             from torch.utils.data import DataLoader
+
             from art.utils import to_cuda
 
             if self.scaler:
@@ -497,7 +497,8 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
         if self.default_model and self.attack_model_type == "nn":
             import torch
             from torch.utils.data import DataLoader
-            from art.utils import to_cuda, from_cuda
+
+            from art.utils import from_cuda, to_cuda
 
             if self.scaler:
                 features = self.scaler.transform(features)

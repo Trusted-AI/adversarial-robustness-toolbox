@@ -24,16 +24,13 @@ al. for adversarial training.
 | Paper link: https://arxiv.org/abs/1706.06083
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
 from typing import TYPE_CHECKING
 
 import numpy as np
 
-from art.estimators.classification.pytorch import PyTorchClassifier
-from art.estimators.classification.tensorflow import TensorFlowV2Classifier
-from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from art.attacks.attack import EvasionAttack
 from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent_numpy import (
     ProjectedGradientDescentNumpy,
@@ -44,6 +41,9 @@ from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent_p
 from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent_tensorflow_v2 import (
     ProjectedGradientDescentTensorFlowV2,
 )
+from art.estimators.classification.pytorch import PyTorchClassifier
+from art.estimators.classification.tensorflow import TensorFlowV2Classifier
+from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from art.summary_writer import SummaryWriter
 
 if TYPE_CHECKING:
@@ -79,10 +79,10 @@ class ProjectedGradientDescent(EvasionAttack):
 
     def __init__(
         self,
-        estimator: "CLASSIFIER_LOSS_GRADIENTS_TYPE" | "OBJECT_DETECTOR_TYPE",
-        norm: int | float | str = np.inf,
-        eps: int | float | np.ndarray = 0.3,
-        eps_step: int | float | np.ndarray = 0.1,
+        estimator: CLASSIFIER_LOSS_GRADIENTS_TYPE | OBJECT_DETECTOR_TYPE,
+        norm: float | str = np.inf,
+        eps: float | np.ndarray = 0.3,
+        eps_step: float | np.ndarray = 0.1,
         decay: float | None = None,
         max_iter: int = 100,
         targeted: bool = False,

@@ -15,16 +15,19 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from __future__ import absolute_import, division, print_function, unicode_literals
 
-import pytest
 import logging
 
-from art.defences.preprocessor import Mixup, Cutout
+import pytest
+
+from art.defences.preprocessor import Cutout, Mixup
 from art.defences.trainer import DPInstaHideTrainer
-from art.estimators.classification import PyTorchClassifier, TensorFlowV2Classifier, KerasClassifier
-from tests.utils import ARTTestException
-from tests.utils import get_image_classifier_hf
+from art.estimators.classification import (
+    KerasClassifier,
+    PyTorchClassifier,
+    TensorFlowV2Classifier,
+)
+from tests.utils import ARTTestException, get_image_classifier_hf
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +57,7 @@ def get_mnist_classifier(framework):
 
         elif framework == "tensorflow2":
             import tensorflow as tf
-            from tensorflow.keras import layers, Sequential
+            from tensorflow.keras import Sequential, layers
 
             model = Sequential()
             model.add(layers.Conv2D(1, kernel_size=(7, 7), activation="relu", input_shape=(28, 28, 1)))
@@ -71,7 +74,7 @@ def get_mnist_classifier(framework):
 
         elif framework in ("keras", "kerastf"):
             import tensorflow as tf
-            from tensorflow.keras import layers, Sequential
+            from tensorflow.keras import Sequential, layers
 
             model = Sequential()
             model.add(layers.Conv2D(1, kernel_size=(7, 7), activation="relu", input_shape=(28, 28, 1)))

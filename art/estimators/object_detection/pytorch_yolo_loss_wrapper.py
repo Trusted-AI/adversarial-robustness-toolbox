@@ -30,7 +30,7 @@ class PyTorchYoloLossWrapper(torch.nn.Module):
         self.model = model
         try:
             from ultralytics.models.yolo.detect import DetectionPredictor
-            from ultralytics.utils.loss import v8DetectionLoss, E2EDetectLoss
+            from ultralytics.utils.loss import E2EDetectLoss, v8DetectionLoss
 
             self.detection_predictor = DetectionPredictor()
             self.model.args = self.detection_predictor.args

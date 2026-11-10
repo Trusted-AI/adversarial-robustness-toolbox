@@ -38,10 +38,10 @@ import numpy as np
 from scipy.optimize import least_squares
 
 from art.attacks.attack import ExtractionAttack
-from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
+from art.estimators.classification.blackbox import BlackBoxClassifier
 from art.estimators.classification.classifier import ClassifierMixin
 from art.estimators.classification.keras import KerasClassifier
-from art.estimators.classification.blackbox import BlackBoxClassifier
+from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_TYPE
@@ -61,7 +61,7 @@ class FunctionallyEquivalentExtraction(ExtractionAttack):
 
     _estimator_requirements = (BaseEstimator, NeuralNetworkMixin, ClassifierMixin)
 
-    def __init__(self, classifier: "CLASSIFIER_TYPE", num_neurons: int | None = None) -> None:
+    def __init__(self, classifier: CLASSIFIER_TYPE, num_neurons: int | None = None) -> None:
         """
         Create a `FunctionallyEquivalentExtraction` instance.
 
@@ -430,15 +430,15 @@ class FunctionallyEquivalentExtraction(ExtractionAttack):
 # pylint: disable=invalid-name
 if __name__ == "__main__":
     import os
+
     import numpy as np
     import tensorflow as tf
-
-    from keras.models import Sequential, load_model
+    from keras.datasets import mnist
     from keras.layers import Dense, Input
     from keras.losses import CategoricalCrossentropy
+    from keras.models import Sequential, load_model
     from keras.optimizers import Adam
     from keras.utils import to_categorical
-    from keras.datasets import mnist
 
     # Keras 3.10+ runs in eager mode by default (do NOT disable it!)
     tf.keras.backend.set_floatx("float64")

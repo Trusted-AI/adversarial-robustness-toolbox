@@ -19,33 +19,33 @@
 This module implements the classifier `KerasClassifier` for Keras models.
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
 import os
+from collections.abc import Iterator
 from typing import (
-    Iterator,
-    Union,
     TYPE_CHECKING,
+    Union,
 )
 
 import numpy as np
 
 from art import config
-from art.estimators.keras import KerasEstimator
 from art.estimators.classification.classifier import (
-    ClassifierMixin,
     ClassGradientsMixin,
+    ClassifierMixin,
 )
+from art.estimators.keras import KerasEstimator
 from art.utils import check_and_transform_label_format
 
 if TYPE_CHECKING:
     import tensorflow as tf
 
-    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
     from art.data_generators import DataGenerator
-    from art.defences.preprocessor import Preprocessor
     from art.defences.postprocessor import Postprocessor
+    from art.defences.preprocessor import Preprocessor
+    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -68,10 +68,10 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         model: KERAS_MODEL_TYPE,
         use_logits: bool = False,
         channels_first: bool = False,
-        clip_values: "CLIP_VALUES_TYPE" | None = None,
-        preprocessing_defences: "Preprocessor" | list["Preprocessor"] | None = None,
-        postprocessing_defences: "Postprocessor" | list["Postprocessor"] | None = None,
-        preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
+        clip_values: CLIP_VALUES_TYPE | None = None,
+        preprocessing_defences: Preprocessor | list[Preprocessor] | None = None,
+        postprocessing_defences: Postprocessor | list[Postprocessor] | None = None,
+        preprocessing: PREPROCESSING_TYPE = (0.0, 1.0),
         input_layer: int = 0,
         output_layer: int = 0,
     ) -> None:
@@ -446,7 +446,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
             x=x_preprocessed, y=y_preprocessed, batch_size=batch_size, epochs=nb_epochs, verbose=int(verbose), **kwargs
         )
 
-    def fit_generator(self, generator: "DataGenerator", nb_epochs: int = 20, verbose: bool = False, **kwargs) -> None:
+    def fit_generator(self, generator: DataGenerator, nb_epochs: int = 20, verbose: bool = False, **kwargs) -> None:
         """
         Fit the classifier using the generator that yields batches as specified.
 
@@ -461,7 +461,9 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         from art.data_generators import KerasDataGenerator
 
         # Try to use the generator as a Keras native generator, otherwise use it through the `DataGenerator` interface
-        from art.preprocessing.standardisation_mean_std.numpy import StandardisationMeanStd
+        from art.preprocessing.standardisation_mean_std.numpy import (
+            StandardisationMeanStd,
+        )
 
         if isinstance(generator, KerasDataGenerator) and (
             self.preprocessing is None
@@ -536,7 +538,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
 
     def clone_for_refitting(
         self,
-    ) -> "KerasClassifier":
+    ) -> KerasClassifier:
         """
         Create a copy of the classifier that can be refit from scratch. Will inherit same architecture, optimizer and
         initialization as cloned model, but without weights.

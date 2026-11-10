@@ -22,7 +22,7 @@ predictions. It is an advanced version of the Boundary attack.
 | Paper link: https://arxiv.org/abs/1904.02144
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
 from typing import TYPE_CHECKING
@@ -30,11 +30,16 @@ from typing import TYPE_CHECKING
 import numpy as np
 from tqdm.auto import tqdm
 
-from art.config import ART_NUMPY_DTYPE
 from art.attacks.attack import EvasionAttack
-from art.estimators.estimator import BaseEstimator
+from art.config import ART_NUMPY_DTYPE
 from art.estimators.classification import ClassifierMixin
-from art.utils import compute_success, to_categorical, check_and_transform_label_format, get_labels_np_array
+from art.estimators.estimator import BaseEstimator
+from art.utils import (
+    check_and_transform_label_format,
+    compute_success,
+    get_labels_np_array,
+    to_categorical,
+)
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_TYPE
@@ -65,10 +70,10 @@ class HopSkipJump(EvasionAttack):
 
     def __init__(
         self,
-        classifier: "CLASSIFIER_TYPE",
+        classifier: CLASSIFIER_TYPE,
         batch_size: int = 64,
         targeted: bool = False,
-        norm: int | float | str = 2,
+        norm: float | str = 2,
         max_iter: int = 50,
         max_eval: int = 10000,
         init_eval: int = 100,
@@ -467,7 +472,7 @@ class HopSkipJump(EvasionAttack):
         current_sample: np.ndarray,
         original_sample: np.ndarray,
         target: int,
-        norm: int | float | str,
+        norm: float | str,
         clip_min: float,
         clip_max: float,
         threshold: float | None = None,
@@ -654,7 +659,7 @@ class HopSkipJump(EvasionAttack):
 
     @staticmethod
     def _interpolate(
-        current_sample: np.ndarray, original_sample: np.ndarray, alpha: float, norm: int | float | str
+        current_sample: np.ndarray, original_sample: np.ndarray, alpha: float, norm: float | str
     ) -> np.ndarray:
         """
         Interpolate a new sample based on the original and the current samples.

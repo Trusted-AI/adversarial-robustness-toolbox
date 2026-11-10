@@ -15,27 +15,29 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-import pytest
 
 import numpy as np
-import torch.nn as nn
-import torch.optim as optim
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.preprocessing import StandardScaler, OrdinalEncoder
+import pytest
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import OrdinalEncoder, StandardScaler
+from sklearn.tree import DecisionTreeClassifier
+from torch import nn, optim
 
-from art.attacks.inference.attribute_inference.black_box import AttributeInferenceBlackBox
-from art.estimators.classification.pytorch import PyTorchClassifier
-from art.estimators.estimator import BaseEstimator
+from art.attacks.inference.attribute_inference.black_box import (
+    AttributeInferenceBlackBox,
+)
 from art.estimators.classification import ClassifierMixin
-from art.estimators.classification.scikitlearn import ScikitlearnDecisionTreeClassifier, ScikitlearnClassifier
-from art.estimators.regression import ScikitlearnRegressor, RegressorMixin
+from art.estimators.classification.pytorch import PyTorchClassifier
+from art.estimators.classification.scikitlearn import (
+    ScikitlearnClassifier,
+    ScikitlearnDecisionTreeClassifier,
+)
+from art.estimators.estimator import BaseEstimator
+from art.estimators.regression import RegressorMixin, ScikitlearnRegressor
 from art.utils import check_and_transform_label_format
-
 from tests.attacks.utils import backend_test_classifier_type_check_fail
 from tests.utils import ARTTestException
 

@@ -24,8 +24,7 @@ from art.attacks.evasion import DPatch
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from art.estimators.object_detection.object_detector import ObjectDetectorMixin
 from tests.attacks.utils import backend_test_classifier_type_check_fail
-from tests.utils import master_seed
-from tests.utils import ARTTestException
+from tests.utils import ARTTestException, master_seed
 
 logger = logging.getLogger(__name__)
 

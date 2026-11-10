@@ -15,7 +15,6 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
 
@@ -23,7 +22,6 @@ import numpy as np
 import pytest
 
 from art.utils import load_dataset
-
 from tests.utils import ARTTestException, master_seed
 
 logger = logging.getLogger(__name__)
@@ -36,7 +34,9 @@ def test_tf_faster_rcnn(art_warning):
         master_seed(seed=1234, set_tensorflow=True)
 
         # Only import if object detection module is available
-        from art.estimators.object_detection.tensorflow_v2_faster_rcnn import TensorFlowV2FasterRCNN
+        from art.estimators.object_detection.tensorflow_v2_faster_rcnn import (
+            TensorFlowV2FasterRCNN,
+        )
 
         # Get test data
         (_, _), (x_test, _), _, _ = load_dataset("cifar10")
@@ -203,7 +203,9 @@ def test_tf_faster_rcnn(art_warning):
 @pytest.mark.only_with_platform("tensorflow2")
 def test_errors(art_warning):
     try:
-        from art.estimators.object_detection.tensorflow_v2_faster_rcnn import TensorFlowV2FasterRCNN
+        from art.estimators.object_detection.tensorflow_v2_faster_rcnn import (
+            TensorFlowV2FasterRCNN,
+        )
 
         (_, _), (x_test, _), _, _ = load_dataset("cifar10")
         input_shape = tuple(x_test.shape[1:])
@@ -243,8 +245,10 @@ def test_errors(art_warning):
 @pytest.mark.only_with_platform("tensorflow2")
 def test_preprocessing_defences(art_warning):
     try:
-        from art.estimators.object_detection.tensorflow_v2_faster_rcnn import TensorFlowV2FasterRCNN
         from art.defences.preprocessor.spatial_smoothing import SpatialSmoothing
+        from art.estimators.object_detection.tensorflow_v2_faster_rcnn import (
+            TensorFlowV2FasterRCNN,
+        )
 
         (_, _), (x_test, _), _, _ = load_dataset("cifar10")
         input_shape = tuple(x_test.shape[1:])
@@ -266,7 +270,9 @@ def test_preprocessing_defences(art_warning):
 @pytest.mark.only_with_platform("tensorflow2")
 def test_compute_losses(art_warning):
     try:
-        from art.estimators.object_detection.tensorflow_v2_faster_rcnn import TensorFlowV2FasterRCNN
+        from art.estimators.object_detection.tensorflow_v2_faster_rcnn import (
+            TensorFlowV2FasterRCNN,
+        )
 
         # Get test data
         (_, _), (x_test, _), _, _ = load_dataset("cifar10")
@@ -311,7 +317,9 @@ def test_compute_losses(art_warning):
 @pytest.mark.only_with_platform("tensorflow2")
 def test_compute_loss(art_warning):
     try:
-        from art.estimators.object_detection.tensorflow_v2_faster_rcnn import TensorFlowV2FasterRCNN
+        from art.estimators.object_detection.tensorflow_v2_faster_rcnn import (
+            TensorFlowV2FasterRCNN,
+        )
 
         # Get test data
         (_, _), (x_test, _), _, _ = load_dataset("cifar10")

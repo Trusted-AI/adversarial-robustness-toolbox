@@ -13,18 +13,18 @@ Note: If pytorchyolo throws an error in pytorchyolo/utils/loss.py, add before li
         gain = gain.to(torch.int64)
 """
 
-import requests
-import numpy as np
-from PIL import Image
 from io import BytesIO
-import torch
-
-from art.estimators.object_detection.pytorch_yolo import PyTorchYolo
-from art.attacks.evasion import ProjectedGradientDescent
 
 import cv2
 import matplotlib
 import matplotlib.pyplot as plt
+import numpy as np
+import requests
+import torch
+from PIL import Image
+
+from art.attacks.evasion import ProjectedGradientDescent
+from art.estimators.object_detection.pytorch_yolo import PyTorchYolo
 
 """
 #################        Helper functions and labels          #################
@@ -190,8 +190,8 @@ MODEL = "yolov5"  # OR yolov5
 
 if MODEL == "yolov3":
 
-    from pytorchyolo.utils.loss import compute_loss
     from pytorchyolo.models import load_model
+    from pytorchyolo.utils.loss import compute_loss
 
     class Yolo(torch.nn.Module):
         def __init__(self, model):
@@ -274,8 +274,8 @@ attack = ProjectedGradientDescent(estimator=detector, eps=eps, eps_step=2, max_i
 image_adv_chw = attack.generate(x=image_chw, y=None)
 image_adv = np.transpose(image_adv_chw, (0, 2, 3, 1))
 
-print("\nThe attack budget eps is {}".format(eps))
-print("The resulting maximal difference in pixel values is {}.".format(np.amax(np.abs(image_chw - image_adv_chw))))
+print(f"\nThe attack budget eps is {eps}")
+print(f"The resulting maximal difference in pixel values is {np.amax(np.abs(image_chw - image_adv_chw))}.")
 
 plt.axis("off")
 plt.title("adversarial image")

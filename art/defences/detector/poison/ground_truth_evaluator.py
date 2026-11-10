@@ -19,11 +19,10 @@
 This module implements classes to evaluate the performance of poison detection methods.
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import json
 import logging
-
 
 import numpy as np
 

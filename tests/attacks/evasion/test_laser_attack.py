@@ -19,11 +19,17 @@
 Test LaserAttack.
 """
 
-from typing import Callable, Tuple, Any
+from collections.abc import Callable
+from typing import Any, Tuple
 
 import numpy as np
 import pytest
-from art.attacks.evasion.laser_attack.laser_attack import LaserBeam, LaserBeamGenerator, LaserBeamAttack
+
+from art.attacks.evasion.laser_attack.laser_attack import (
+    LaserBeam,
+    LaserBeamAttack,
+    LaserBeamGenerator,
+)
 from art.attacks.evasion.laser_attack.utils import ImageGenerator
 from tests.utils import ARTTestException
 
@@ -95,7 +101,7 @@ def fixture_less_or_equal():
 
 
 @pytest.fixture(name="image_shape")
-def fixture_image_shape() -> Tuple[int, int, int]:
+def fixture_image_shape() -> tuple[int, int, int]:
     """
     Image shape used for the tests.
 

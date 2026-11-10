@@ -54,7 +54,7 @@ class FeatureAdversariesNumpy(EvasionAttack):
 
     def __init__(
         self,
-        classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
+        classifier: CLASSIFIER_NEURALNETWORK_TYPE,
         delta: float | None = None,
         layer: int | None = None,
         batch_size: int = 32,

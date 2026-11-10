@@ -15,16 +15,16 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-import pytest
 
 import numpy as np
+import pytest
 
-from art.attacks.inference.attribute_inference.white_box_decision_tree import AttributeInferenceWhiteBoxDecisionTree
+from art.attacks.inference.attribute_inference.white_box_decision_tree import (
+    AttributeInferenceWhiteBoxDecisionTree,
+)
 from art.estimators.classification.scikitlearn import ScikitlearnDecisionTreeClassifier
-
 from tests.attacks.utils import backend_test_classifier_type_check_fail
 from tests.utils import ARTTestException
 

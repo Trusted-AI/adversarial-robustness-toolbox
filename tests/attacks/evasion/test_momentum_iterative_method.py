@@ -23,7 +23,6 @@ import pytest
 
 from art.attacks.evasion import MomentumIterativeMethod
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
-
 from tests.attacks.utils import backend_test_classifier_type_check_fail
 from tests.utils import ARTTestException
 

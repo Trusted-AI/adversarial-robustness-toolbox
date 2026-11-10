@@ -72,9 +72,7 @@ class StandardisationMeanStdPyTorch(PreprocessorPyTorch):
         self._broadcastable_mean: np.ndarray | None = None
         self._broadcastable_std: np.ndarray | None = None
 
-    def forward(
-        self, x: "torch.Tensor", y: "torch.Tensor" | None = None
-    ) -> tuple["torch.Tensor", "torch.Tensor" | None]:
+    def forward(self, x: torch.Tensor, y: torch.Tensor | None = None) -> tuple[torch.Tensor, torch.Tensor | None]:
         """
         Apply standardisation with mean and standard deviation to input `x`.
 

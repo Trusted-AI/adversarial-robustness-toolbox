@@ -24,12 +24,14 @@ This module implements the BEYOND detector for adversarial examples detection.
 from __future__ import annotations
 
 import math
-from typing import TYPE_CHECKING, Callable
+from collections.abc import Callable
+from typing import TYPE_CHECKING
 
 import numpy as np
 
 if TYPE_CHECKING:
     import torch
+
     from art.utils import CLASSIFIER_NEURALNETWORK_TYPE
 
 
@@ -48,8 +50,8 @@ class BeyondDetectorPyTorch(EvasionDetector):
 
     def __init__(
         self,
-        target_classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
-        ssl_classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
+        target_classifier: CLASSIFIER_NEURALNETWORK_TYPE,
+        ssl_classifier: CLASSIFIER_NEURALNETWORK_TYPE,
         augmentations: Callable,
         aug_num: int = 50,
         alpha: float = 0.8,
@@ -87,7 +89,7 @@ class BeyondDetectorPyTorch(EvasionDetector):
         self.percentile = percentile  # determine the threshold
         self.threshold: float | None = None
 
-    def _multi_transform(self, img: "torch.Tensor") -> "torch.Tensor":
+    def _multi_transform(self, img: torch.Tensor) -> torch.Tensor:
         import torch
 
         return torch.stack([self.img_augmentations(img) for _ in range(self.aug_num)], dim=1)

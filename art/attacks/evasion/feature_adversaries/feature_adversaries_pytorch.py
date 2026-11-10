@@ -66,15 +66,15 @@ class FeatureAdversariesPyTorch(EvasionAttack):
 
     def __init__(
         self,
-        estimator: "PYTORCH_ESTIMATOR_TYPE",
+        estimator: PYTORCH_ESTIMATOR_TYPE,
         delta: float,
-        optimizer: "Optimizer" | None = None,
+        optimizer: Optimizer | None = None,
         optimizer_kwargs: dict | None = None,
         lambda_: float = 0.0,
         layer: int | str | tuple[int, ...] | tuple[str, ...] = -1,
         max_iter: int = 100,
         batch_size: int = 32,
-        step_size: int | float | None = None,
+        step_size: float | None = None,
         random_start: bool = False,
         verbose: bool = True,
     ):
@@ -108,7 +108,7 @@ class FeatureAdversariesPyTorch(EvasionAttack):
         self.verbose = verbose
         self._check_params()
 
-    def _generate_batch(self, x: "torch.Tensor", y: "torch.Tensor") -> "torch.Tensor":
+    def _generate_batch(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
         """
         Generate adversarial batch.
 

@@ -22,7 +22,7 @@ Wang et al. (2019).
 | Paper link: https://people.cs.uchicago.edu/~ravenben/publications/pdf/backdoor-sp19.pdf
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
 from typing import TYPE_CHECKING
@@ -31,12 +31,14 @@ import numpy as np
 from tqdm.auto import tqdm
 
 from art.config import ART_NUMPY_DTYPE
-from art.estimators.poison_mitigation.neural_cleanse.neural_cleanse import NeuralCleanseMixin
-from art.estimators.classification.keras import KerasClassifier, KERAS_MODEL_TYPE
+from art.estimators.classification.keras import KERAS_MODEL_TYPE, KerasClassifier
+from art.estimators.poison_mitigation.neural_cleanse.neural_cleanse import (
+    NeuralCleanseMixin,
+)
 
 if TYPE_CHECKING:
-    from art.defences.preprocessor import Preprocessor
     from art.defences.postprocessor import Postprocessor
+    from art.defences.preprocessor import Preprocessor
     from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
 
 logger = logging.getLogger(__name__)
@@ -70,15 +72,15 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier):
         model: KERAS_MODEL_TYPE,
         use_logits: bool = False,
         channels_first: bool = False,
-        clip_values: "CLIP_VALUES_TYPE" | None = None,
-        preprocessing_defences: "Preprocessor" | list["Preprocessor"] | None = None,
-        postprocessing_defences: "Postprocessor" | list["Postprocessor"] | None = None,
-        preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
+        clip_values: CLIP_VALUES_TYPE | None = None,
+        preprocessing_defences: Preprocessor | list[Preprocessor] | None = None,
+        postprocessing_defences: Postprocessor | list[Postprocessor] | None = None,
+        preprocessing: PREPROCESSING_TYPE = (0.0, 1.0),
         input_layer: int = 0,
         output_layer: int = 0,
         steps: int = 1000,
         init_cost: float = 1e-3,
-        norm: int | float = 2,
+        norm: float = 2,
         learning_rate: float = 0.1,
         attack_success_threshold: float = 0.99,
         patience: int = 5,
@@ -123,12 +125,12 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier):
         :param cost_multiplier: How much to change the cost in the Neural Cleanse optimization
         :param batch_size: The batch size for optimizations in the Neural Cleanse optimization
         """
-        import tensorflow as tf
-        from tensorflow.keras.layers import Lambda
         import keras.backend as K
-        from keras.optimizers import Adam
+        import tensorflow as tf
         from keras.losses import categorical_crossentropy
         from keras.metrics import categorical_accuracy
+        from keras.optimizers import Adam
+        from tensorflow.keras.layers import Lambda
 
         super().__init__(
             model=model,
@@ -248,8 +250,8 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier):
         Generates a possible backdoor for the model. Returns the pattern and the mask
         :return: A tuple of the pattern and mask for the model.
         """
-        import tensorflow as tf
         import keras.backend as K
+        import tensorflow as tf
         from tensorflow.keras.preprocessing.image import ImageDataGenerator
 
         self.reset()

@@ -15,15 +15,21 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
 import unittest
 
 import numpy as np
 
-from art.estimators.classification.classifier import ClassGradientsMixin, ClassifierMixin
-from art.estimators.estimator import BaseEstimator, LossGradientsMixin, NeuralNetworkMixin
+from art.estimators.classification.classifier import (
+    ClassGradientsMixin,
+    ClassifierMixin,
+)
+from art.estimators.estimator import (
+    BaseEstimator,
+    LossGradientsMixin,
+    NeuralNetworkMixin,
+)
 from tests.utils import TestBase, master_seed
 
 logger = logging.getLogger(__name__)
@@ -33,7 +39,7 @@ class ClassifierInstance(ClassifierMixin, BaseEstimator):
     estimator_params = BaseEstimator.estimator_params + ClassifierMixin.estimator_params
 
     def __init__(self, clip_values=None, channels_first=True):
-        super(ClassifierInstance, self).__init__(model=None, clip_values=clip_values)
+        super().__init__(model=None, clip_values=clip_values)
 
     def fit(self, x, y, **kwargs):
         pass
@@ -59,7 +65,7 @@ class ClassifierNeuralNetworkInstance(
     )
 
     def __init__(self, clip_values, channels_first=True):
-        super(ClassifierNeuralNetworkInstance, self).__init__(
+        super().__init__(
             model=None, clip_values=clip_values, channels_first=channels_first
         )
 

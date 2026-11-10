@@ -15,7 +15,6 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
 
@@ -35,8 +34,10 @@ logger = logging.getLogger(__name__)
 def test_imperceptible_asr_pytorch(art_warning, expected_values, use_amp, device_type):
     import torch
 
+    from art.attacks.evasion.imperceptible_asr.imperceptible_asr_pytorch import (
+        ImperceptibleASRPyTorch,
+    )
     from art.estimators.speech_recognition.pytorch_deep_speech import PyTorchDeepSpeech
-    from art.attacks.evasion.imperceptible_asr.imperceptible_asr_pytorch import ImperceptibleASRPyTorch
     from art.preprocessing.audio import LFilterPyTorch
 
     try:
@@ -143,9 +144,11 @@ def test_imperceptible_asr_pytorch(art_warning, expected_values, use_amp, device
 def test_imperceptible_asr_pytorch_mp3compression_pytorch(art_warning, expected_values, use_amp, device_type):
     import torch
 
-    from art.estimators.speech_recognition.pytorch_deep_speech import PyTorchDeepSpeech
-    from art.attacks.evasion.imperceptible_asr.imperceptible_asr_pytorch import ImperceptibleASRPyTorch
+    from art.attacks.evasion.imperceptible_asr.imperceptible_asr_pytorch import (
+        ImperceptibleASRPyTorch,
+    )
     from art.defences.preprocessor import Mp3CompressionPyTorch
+    from art.estimators.speech_recognition.pytorch_deep_speech import PyTorchDeepSpeech
 
     try:
         # Skip test if gpu is not available and use_amp is true
@@ -232,8 +235,12 @@ def test_imperceptible_asr_pytorch_mp3compression_pytorch(art_warning, expected_
 @pytest.mark.skip_framework("tensorflow", "keras", "kerastf", "non_dl_frameworks")
 def test_check_params(art_warning):
     try:
-        from art.estimators.speech_recognition.pytorch_deep_speech import PyTorchDeepSpeech
-        from art.attacks.evasion.imperceptible_asr.imperceptible_asr_pytorch import ImperceptibleASRPyTorch
+        from art.attacks.evasion.imperceptible_asr.imperceptible_asr_pytorch import (
+            ImperceptibleASRPyTorch,
+        )
+        from art.estimators.speech_recognition.pytorch_deep_speech import (
+            PyTorchDeepSpeech,
+        )
 
         speech_recognizer = PyTorchDeepSpeech(
             pretrained_model="librispeech",

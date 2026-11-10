@@ -21,7 +21,7 @@ This module implements model inversion attacks.
 | Paper link: https://dl.acm.org/doi/10.1145/2810103.2813677
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
 from typing import TYPE_CHECKING
@@ -29,11 +29,14 @@ from typing import TYPE_CHECKING
 import numpy as np
 from tqdm.auto import trange
 
-from art.config import ART_NUMPY_DTYPE
-from art.estimators.classification.classifier import ClassifierMixin, ClassGradientsMixin
-from art.estimators.estimator import BaseEstimator
 from art.attacks.attack import InferenceAttack
-from art.utils import get_labels_np_array, check_and_transform_label_format
+from art.config import ART_NUMPY_DTYPE
+from art.estimators.classification.classifier import (
+    ClassGradientsMixin,
+    ClassifierMixin,
+)
+from art.estimators.estimator import BaseEstimator
+from art.utils import check_and_transform_label_format, get_labels_np_array
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE
@@ -63,7 +66,7 @@ class MIFace(InferenceAttack):
 
     def __init__(
         self,
-        classifier: "CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE",
+        classifier: CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE,
         max_iter: int = 10000,
         window_length: int = 100,
         threshold: float = 0.99,

@@ -17,19 +17,18 @@
 # SOFTWARE.
 import numpy as np
 import pytest
-
+import sklearn.datasets
 import torch
 import torch.nn.functional as F
-import torch.nn as nn
-import torch.optim as optim
-import sklearn.datasets
+from torch import nn, optim
 
-from art.estimators.classification.pytorch import PyTorchClassifier
+from art.attacks.evasion.fast_gradient import FastGradientMethod
+from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent import (
+    ProjectedGradientDescent,
+)
 from art.defences.preprocessor.spatial_smoothing import SpatialSmoothing
 from art.defences.preprocessor.spatial_smoothing_pytorch import SpatialSmoothingPyTorch
-from art.attacks.evasion.fast_gradient import FastGradientMethod
-from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent import ProjectedGradientDescent
-
+from art.estimators.classification.pytorch import PyTorchClassifier
 from tests.attacks.utils import backend_test_defended_images
 from tests.utils import ARTTestException
 
@@ -237,7 +236,7 @@ def test_pytorch_binary_pgd(art_warning, get_mnist_dataset):
 
     class BasicModel(nn.Module):
         def __init__(self):
-            super(BasicModel, self).__init__()
+            super().__init__()
             self.layer_1 = nn.Linear(20, 32)
             self.layer_2 = nn.Linear(32, 1)
 

@@ -21,7 +21,7 @@ This module implements the transforming defence mechanism of defensive distillat
 | Paper link: https://arxiv.org/abs/1511.04508
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
 from typing import TYPE_CHECKING
@@ -46,7 +46,7 @@ class DefensiveDistillation(Transformer):
 
     params = ["batch_size", "nb_epochs"]
 
-    def __init__(self, classifier: "CLASSIFIER_TYPE", batch_size: int = 128, nb_epochs: int = 10) -> None:
+    def __init__(self, classifier: CLASSIFIER_TYPE, batch_size: int = 128, nb_epochs: int = 10) -> None:
         """
         Create an instance of the defensive distillation defence.
 
@@ -60,7 +60,7 @@ class DefensiveDistillation(Transformer):
         self.nb_epochs = nb_epochs
         self._check_params()
 
-    def __call__(self, x: np.ndarray, transformed_classifier: "CLASSIFIER_TYPE") -> "CLASSIFIER_TYPE":
+    def __call__(self, x: np.ndarray, transformed_classifier: CLASSIFIER_TYPE) -> CLASSIFIER_TYPE:
         """
         Perform the defensive distillation defence mechanism and return a robuster classifier.
 
@@ -95,7 +95,6 @@ class DefensiveDistillation(Transformer):
         """
         No parameters to learn for this method; do nothing.
         """
-        pass
 
     def _check_params(self) -> None:
         if not isinstance(self.batch_size, int) or self.batch_size <= 0:

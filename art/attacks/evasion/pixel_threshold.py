@@ -24,14 +24,16 @@ The Pixel Attack is a generalisation of One Pixel Attack.
 """
 
 # pylint: disable=wrong-import-position
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
 from itertools import product
-from packaging.version import parse
 from typing import TYPE_CHECKING
 
 import numpy as np
+import scipy
+from packaging.version import parse
+from scipy._lib._util import check_random_state
 
 # Currently, a modified version of SciPy's differential evolution is used in
 # code. An ideal version would be using the import as follows,
@@ -39,10 +41,7 @@ import numpy as np
 # In the meantime, the modified implementation is used which is defined in the
 # lines `453-1457`.
 # Otherwise, may use Tensorflow's implementation of DE.
-
 from six import string_types
-import scipy
-from scipy._lib._util import check_random_state
 
 scipy_version = list(parse(scipy.__version__.lower()).release)
 if scipy_version[1] >= 8:
@@ -50,13 +49,13 @@ if scipy_version[1] >= 8:
 else:
     from scipy.optimize.optimize import _status_message
 from scipy.optimize import OptimizeResult, minimize  # noqa
-from tqdm.auto import tqdm  # noqa
+from tqdm.auto import tqdm
 
-from art.config import ART_NUMPY_DTYPE  # noqa
-from art.attacks.attack import EvasionAttack  # noqa
-from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin  # noqa
-from art.estimators.classification.classifier import ClassifierMixin  # noqa
-from art.utils import check_and_transform_label_format  # noqa
+from art.config import ART_NUMPY_DTYPE
+from art.attacks.attack import EvasionAttack
+from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
+from art.estimators.classification.classifier import ClassifierMixin
+from art.utils import check_and_transform_label_format
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_NEURALNETWORK_TYPE
@@ -77,7 +76,7 @@ class PixelThreshold(EvasionAttack):
 
     def __init__(
         self,
-        classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
+        classifier: CLASSIFIER_NEURALNETWORK_TYPE,
         th: int | None = None,
         es: int = 0,
         max_iter: int = 100,
@@ -364,7 +363,7 @@ class PixelAttack(PixelThreshold):
 
     def __init__(
         self,
-        classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
+        classifier: CLASSIFIER_NEURALNETWORK_TYPE,
         th: int | None = None,
         es: int = 1,
         max_iter: int = 100,
@@ -445,7 +444,7 @@ class ThresholdAttack(PixelThreshold):
 
     def __init__(
         self,
-        classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
+        classifier: CLASSIFIER_NEURALNETWORK_TYPE,
         th: int | None = None,
         es: int = 0,
         max_iter: int = 100,
@@ -487,8 +486,6 @@ class ThresholdAttack(PixelThreshold):
 
 class CMAEarlyStoppingException(Exception):
     """Raised when CMA is stopping early after successful optimisation."""
-
-    pass
 
 
 # TODO: Make the attack compatible with current version of SciPy Optimize

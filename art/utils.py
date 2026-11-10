@@ -19,9 +19,8 @@
 Module providing convenience functions.
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
-from collections.abc import Callable
 import logging
 import math
 import os
@@ -30,6 +29,7 @@ import sys
 import tarfile
 import warnings
 import zipfile
+from collections.abc import Callable
 from functools import wraps
 from inspect import signature
 from typing import TYPE_CHECKING, Optional, Tuple, Union
@@ -50,21 +50,25 @@ logger = logging.getLogger(__name__)
 # ------------------------------------------------------------------------------------------------- CONSTANTS AND TYPES
 
 
-DATASET_TYPE = Tuple[  # pylint: disable=invalid-name
-    Tuple[np.ndarray, np.ndarray], Tuple[np.ndarray, np.ndarray], float, float
+DATASET_TYPE = tuple[  # pylint: disable=invalid-name
+    tuple[np.ndarray, np.ndarray], tuple[np.ndarray, np.ndarray], float, float
 ]
-CLIP_VALUES_TYPE = Tuple[Union[int, float, np.ndarray], Union[int, float, np.ndarray]]  # pylint: disable=invalid-name
+CLIP_VALUES_TYPE = tuple[int | float | np.ndarray, int | float | np.ndarray]  # pylint: disable=invalid-name
 
 if TYPE_CHECKING:
     # pylint: disable=cyclic-import
     from art.defences.preprocessor.preprocessor import Preprocessor
 
     PREPROCESSING_TYPE = Optional[  # pylint: disable=invalid-name
-        Union[
-            Tuple[Union[int, float, np.ndarray], Union[int, float, np.ndarray]], Preprocessor, Tuple[Preprocessor, ...]
-        ]
+        tuple[int | float | np.ndarray, int | float | np.ndarray] | Preprocessor | tuple[Preprocessor, ...]
     ]
 
+    from art.estimators.certification.deep_z import PytorchDeepZ
+    from art.estimators.certification.derandomized_smoothing.ablators import (
+        BlockAblator,
+        ColumnAblator,
+    )
+    from art.estimators.certification.interval import PyTorchIBPClassifier
     from art.estimators.classification.blackbox import BlackBoxClassifier
     from art.estimators.classification.catboost import CatBoostARTClassifier
     from art.estimators.classification.classifier import (
@@ -78,10 +82,11 @@ if TYPE_CHECKING:
     from art.estimators.classification.ensemble import EnsembleClassifier
     from art.estimators.classification.GPy import GPyGaussianProcessClassifier
     from art.estimators.classification.keras import KerasClassifier
-    from art.experimental.estimators.classification.jax import JaxClassifier
     from art.estimators.classification.lightgbm import LightGBMClassifier
     from art.estimators.classification.pytorch import PyTorchClassifier
-    from art.estimators.classification.query_efficient_bb import QueryEfficientGradientEstimationClassifier
+    from art.estimators.classification.query_efficient_bb import (
+        QueryEfficientGradientEstimationClassifier,
+    )
     from art.estimators.classification.scikitlearn import (
         ScikitlearnAdaBoostClassifier,
         ScikitlearnBaggingClassifier,
@@ -97,23 +102,25 @@ if TYPE_CHECKING:
     )
     from art.estimators.classification.tensorflow import TensorFlowV2Classifier
     from art.estimators.classification.xgboost import XGBoostClassifier
-    from art.estimators.certification.deep_z import PytorchDeepZ
-    from art.estimators.certification.interval import PyTorchIBPClassifier
-    from art.estimators.certification.derandomized_smoothing.ablators import BlockAblator, ColumnAblator
     from art.estimators.generation.tensorflow import TensorFlowV2Generator
-    from art.estimators.object_detection.object_detector import ObjectDetector
-    from art.estimators.object_detection.pytorch_object_detector import PyTorchObjectDetector
-    from art.estimators.object_detection.pytorch_faster_rcnn import PyTorchFasterRCNN
-    from art.estimators.object_detection.pytorch_yolo import PyTorchYolo
-    from art.estimators.object_detection.tensorflow_v2_faster_rcnn import TensorFlowV2FasterRCNN
-    from art.estimators.pytorch import PyTorchEstimator
     from art.estimators.keras import KerasEstimator
-    from art.estimators.regression.scikitlearn import ScikitlearnRegressor
-    from art.estimators.regression.pytorch import PyTorchRegressor
-    from art.estimators.regression.keras import KerasRegressor
+    from art.estimators.object_detection.object_detector import ObjectDetector
+    from art.estimators.object_detection.pytorch_faster_rcnn import PyTorchFasterRCNN
+    from art.estimators.object_detection.pytorch_object_detector import (
+        PyTorchObjectDetector,
+    )
+    from art.estimators.object_detection.pytorch_yolo import PyTorchYolo
+    from art.estimators.object_detection.tensorflow_v2_faster_rcnn import (
+        TensorFlowV2FasterRCNN,
+    )
+    from art.estimators.pytorch import PyTorchEstimator
     from art.estimators.regression.blackbox import BlackBoxRegressor
+    from art.estimators.regression.keras import KerasRegressor
+    from art.estimators.regression.pytorch import PyTorchRegressor
+    from art.estimators.regression.scikitlearn import ScikitlearnRegressor
     from art.estimators.speech_recognition.pytorch_deep_speech import PyTorchDeepSpeech
     from art.estimators.tensorflow import TensorFlowV2Estimator
+    from art.experimental.estimators.classification.jax import JaxClassifier
 
     CLASSIFIER_LOSS_GRADIENTS_TYPE = Union[  # pylint: disable=invalid-name
         ClassifierLossGradients,
@@ -368,7 +375,7 @@ def deprecated_keyword_arg(identifier: str, end_version: str, *, reason: str = "
 # ----------------------------------------------------------------------------------------------------- MATH OPERATIONS
 
 
-def projection_l1_1(values: np.ndarray, eps: int | float | np.ndarray) -> np.ndarray:
+def projection_l1_1(values: np.ndarray, eps: float | np.ndarray) -> np.ndarray:
     """
     This function computes the orthogonal projections of a batch of points on L1-balls of given radii
     The batch size is  m = values.shape[0].  The points are flattened to dimension
@@ -453,7 +460,7 @@ def projection_l1_1(values: np.ndarray, eps: int | float | np.ndarray) -> np.nda
     return proj
 
 
-def projection_l1_2(values: np.ndarray, eps: int | float | np.ndarray) -> np.ndarray:
+def projection_l1_2(values: np.ndarray, eps: float | np.ndarray) -> np.ndarray:
     """
     This function computes the orthogonal projections of a batch of points on L1-balls of given radii
     The batch size is  m = values.shape[0].  The points are flattened to dimension
@@ -508,8 +515,8 @@ def projection_l1_2(values: np.ndarray, eps: int | float | np.ndarray) -> np.nda
 
 def projection(
     values: np.ndarray,
-    eps: int | float | np.ndarray,
-    norm_p: int | float | str,
+    eps: float | np.ndarray,
+    norm_p: float | str,
     *,
     suboptimal: bool = True,
 ) -> np.ndarray:
@@ -566,8 +573,8 @@ def projection(
 def random_sphere(
     nb_points: int,
     nb_dims: int,
-    radius: int | float | np.ndarray,
-    norm: int | float | str,
+    radius: float | np.ndarray,
+    norm: float | str,
 ) -> np.ndarray:
     """
     Generate uniformly at random `m x n`-dimension points in the `norm`-norm ball with radius `radius` and centered
@@ -617,9 +624,9 @@ def random_sphere(
 def uniform_sample_from_sphere_or_ball(
     nb_points: int,
     nb_dims: int,
-    radius: int | float | np.ndarray,
+    radius: float | np.ndarray,
     sample_space: str = "ball",
-    norm: int | float | str = 2,
+    norm: float | str = 2,
 ) -> np.ndarray:
     """
     Generate a sample of  <nb_points>  distributed independently and uniformly on the sphere (with respect to the given
@@ -726,7 +733,7 @@ def tanh_to_original(
 # --------------------------------------------------------------------------------------------------- LABELS OPERATIONS
 
 
-def to_categorical(labels: Union[np.ndarray, list[float]], nb_classes: int | None = None) -> np.ndarray:
+def to_categorical(labels: np.ndarray | list[float], nb_classes: int | None = None) -> np.ndarray:
     """
     Convert an array of labels to binary class matrix.
 
@@ -870,7 +877,7 @@ def random_targets(labels: np.ndarray, nb_classes: int) -> np.ndarray:
     return to_categorical(result, nb_classes)
 
 
-def least_likely_class(x: np.ndarray, classifier: "CLASSIFIER_TYPE") -> np.ndarray:
+def least_likely_class(x: np.ndarray, classifier: CLASSIFIER_TYPE) -> np.ndarray:
     """
     Compute the least likely class predictions for sample `x`. This strategy for choosing attack targets was used in
     (Kurakin et al., 2016).
@@ -884,7 +891,7 @@ def least_likely_class(x: np.ndarray, classifier: "CLASSIFIER_TYPE") -> np.ndarr
     return to_categorical(np.argmin(classifier.predict(x), axis=1), nb_classes=classifier.nb_classes)
 
 
-def second_most_likely_class(x: np.ndarray, classifier: "CLASSIFIER_TYPE") -> np.ndarray:
+def second_most_likely_class(x: np.ndarray, classifier: CLASSIFIER_TYPE) -> np.ndarray:
     """
     Compute the second most likely class predictions for sample `x`. This strategy can be used for choosing target
     labels for an attack to improve its chances to succeed.
@@ -987,7 +994,7 @@ def remove_attacked_feature(attack_feature: int | slice, non_numerical_features:
 
 
 def compute_success_array(
-    classifier: "CLASSIFIER_TYPE",
+    classifier: CLASSIFIER_TYPE,
     x_clean: np.ndarray,
     labels: np.ndarray,
     x_adv: np.ndarray,
@@ -1025,7 +1032,7 @@ def compute_success_array(
 
 
 def compute_success(
-    classifier: "CLASSIFIER_TYPE",
+    classifier: CLASSIFIER_TYPE,
     x_clean: np.ndarray,
     labels: np.ndarray,
     x_adv: np.ndarray,
@@ -1559,7 +1566,7 @@ def load_dataset(
 
 
 def _extract(full_path: str, path: str) -> bool:
-    archive: Union[zipfile.ZipFile, tarfile.TarFile]
+    archive: zipfile.ZipFile | tarfile.TarFile
     if full_path.endswith("tar"):  # pragma: no cover
         if tarfile.is_tarfile(full_path):
             archive = tarfile.open(full_path, "r:")
@@ -1590,7 +1597,7 @@ def _extract(full_path: str, path: str) -> bool:
 
 
 def get_file(
-    filename: str, url: Union[str, list[str]], path: str | None = None, extract: bool = False, verbose: bool = False
+    filename: str, url: str | list[str], path: str | None = None, extract: bool = False, verbose: bool = False
 ) -> str:
     """
     Downloads a file from a URL if it not already in the cache. The file at indicated by `url` is downloaded to the
@@ -1635,6 +1642,7 @@ def get_file(
             for url_i in url_list:
                 try:
                     import ssl
+
                     from six.moves.urllib.error import HTTPError, URLError
                     from six.moves.urllib.request import urlopen
 
@@ -1699,7 +1707,7 @@ def make_directory(dir_path: str) -> None:
         os.makedirs(dir_path)
 
 
-def clip_and_round(x: np.ndarray, clip_values: "CLIP_VALUES_TYPE" | None, round_samples: float) -> np.ndarray:
+def clip_and_round(x: np.ndarray, clip_values: CLIP_VALUES_TYPE | None, round_samples: float) -> np.ndarray:
     """
     Rounds the input to the correct level of granularity.
     Useful to ensure data passed to classifier can be represented
@@ -1724,7 +1732,7 @@ def preprocess(
     x: np.ndarray,
     y: np.ndarray,
     nb_classes: int = 10,
-    clip_values: "CLIP_VALUES_TYPE" | None = None,
+    clip_values: CLIP_VALUES_TYPE | None = None,
 ) -> tuple[np.ndarray, np.ndarray]:
     """
     Scales `x` to [0, 1] and converts `y` to class categorical confidences.
@@ -1747,7 +1755,7 @@ def preprocess(
     return normalized_x, categorical_y
 
 
-def segment_by_class(data: Union[np.ndarray, list[int]], classes: np.ndarray, num_classes: int) -> list[np.ndarray]:
+def segment_by_class(data: np.ndarray | list[int], classes: np.ndarray, num_classes: int) -> list[np.ndarray]:
     """
     Returns segmented data according to specified features.
 
@@ -1769,11 +1777,11 @@ def segment_by_class(data: Union[np.ndarray, list[int]], classes: np.ndarray, nu
 
 
 def performance_diff(
-    model1: "CLASSIFIER_TYPE",
-    model2: "CLASSIFIER_TYPE",
+    model1: CLASSIFIER_TYPE,
+    model2: CLASSIFIER_TYPE,
     test_data: np.ndarray,
     test_labels: np.ndarray,
-    perf_function: Union[str, Callable] = "accuracy",
+    perf_function: str | Callable = "accuracy",
     **kwargs,
 ) -> float:
     """
@@ -1870,7 +1878,7 @@ def pad_sequence_input(x: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
 # -------------------------------------------------------------------------------------------------------- CUDA SUPPORT
 
 
-def to_cuda(x: "torch.Tensor") -> "torch.Tensor":
+def to_cuda(x: torch.Tensor) -> torch.Tensor:
     """
     Move the tensor from the CPU to the GPU if a GPU is available.
 
@@ -1885,7 +1893,7 @@ def to_cuda(x: "torch.Tensor") -> "torch.Tensor":
     return x
 
 
-def from_cuda(x: "torch.Tensor") -> "torch.Tensor":
+def from_cuda(x: torch.Tensor) -> torch.Tensor:
     """
     Move the tensor from the GPU to the CPU if a GPU is available.
 

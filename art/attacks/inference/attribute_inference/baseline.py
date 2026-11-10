@@ -19,24 +19,28 @@
 This module implements attribute inference attacks.
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
-from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
-from sklearn.ensemble import GradientBoostingClassifier, GradientBoostingRegressor
-from sklearn.linear_model import LogisticRegression, LinearRegression
-from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
-from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
-from sklearn.svm import SVC, SVR
-from sklearn.preprocessing import OneHotEncoder, OrdinalEncoder
 from sklearn.compose import ColumnTransformer
+from sklearn.ensemble import (
+    GradientBoostingClassifier,
+    GradientBoostingRegressor,
+    RandomForestClassifier,
+    RandomForestRegressor,
+)
+from sklearn.linear_model import LinearRegression, LogisticRegression
+from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
+from sklearn.preprocessing import OneHotEncoder, OrdinalEncoder
+from sklearn.svm import SVC, SVR
+from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 
+from art.attacks.attack import AttributeInferenceAttack
 from art.estimators.classification.classifier import ClassifierMixin
 from art.estimators.regression import RegressorMixin
-from art.attacks.attack import AttributeInferenceAttack
 from art.utils import (
     check_and_transform_label_format,
     float_to_categorical,
@@ -70,7 +74,7 @@ class AttributeInferenceBaseline(AttributeInferenceAttack):
     def __init__(
         self,
         attack_model_type: str = "nn",
-        attack_model: "CLASSIFIER_TYPE" | "REGRESSOR_TYPE" | None = None,
+        attack_model: CLASSIFIER_TYPE | REGRESSOR_TYPE | None = None,
         attack_feature: int | slice = 0,
         is_continuous: bool | None = False,
         non_numerical_features: list[int] | None = None,
@@ -215,9 +219,9 @@ class AttributeInferenceBaseline(AttributeInferenceAttack):
 
         if self._attack_model_type == "nn":
             import torch
-            from torch import nn
-            from torch import optim
+            from torch import nn, optim
             from torch.utils.data import DataLoader
+
             from art.utils import to_cuda
 
             if self._is_continuous:
@@ -335,7 +339,8 @@ class AttributeInferenceBaseline(AttributeInferenceAttack):
 
         if self._attack_model_type == "nn":
             from torch.utils.data import DataLoader
-            from art.utils import to_cuda, from_cuda
+
+            from art.utils import from_cuda, to_cuda
 
             self.attack_model.eval()  # type: ignore
             predictions: np.ndarray = np.array([])

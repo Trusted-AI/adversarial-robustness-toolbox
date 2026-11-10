@@ -22,25 +22,25 @@ Method attack and extends it to other norms, therefore it is called the Fast Gra
 | Paper link: https://arxiv.org/abs/1412.6572
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
 from typing import TYPE_CHECKING
 
 import numpy as np
 
-from art.config import ART_NUMPY_DTYPE
 from art.attacks.attack import EvasionAttack
-from art.estimators.estimator import BaseEstimator, LossGradientsMixin
+from art.config import ART_NUMPY_DTYPE
 from art.estimators.classification.classifier import ClassifierMixin
+from art.estimators.estimator import BaseEstimator, LossGradientsMixin
+from art.summary_writer import SummaryWriter
 from art.utils import (
+    check_and_transform_label_format,
     compute_success,
     get_labels_np_array,
-    random_sphere,
     projection,
-    check_and_transform_label_format,
+    random_sphere,
 )
-from art.summary_writer import SummaryWriter
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_LOSS_GRADIENTS_TYPE
@@ -71,10 +71,10 @@ class FastGradientMethod(EvasionAttack):
 
     def __init__(
         self,
-        estimator: "CLASSIFIER_LOSS_GRADIENTS_TYPE",
-        norm: int | float | str = np.inf,
-        eps: int | float | np.ndarray = 0.3,
-        eps_step: int | float | np.ndarray = 0.1,
+        estimator: CLASSIFIER_LOSS_GRADIENTS_TYPE,
+        norm: float | str = np.inf,
+        eps: float | np.ndarray = 0.3,
+        eps_step: float | np.ndarray = 0.1,
         targeted: bool = False,
         num_random_init: int = 0,
         batch_size: int = 32,
@@ -472,9 +472,7 @@ class FastGradientMethod(EvasionAttack):
 
         return grad
 
-    def _apply_perturbation(
-        self, x: np.ndarray, perturbation: np.ndarray, eps_step: int | float | np.ndarray
-    ) -> np.ndarray:
+    def _apply_perturbation(self, x: np.ndarray, perturbation: np.ndarray, eps_step: float | np.ndarray) -> np.ndarray:
 
         perturbation_step = eps_step * perturbation
         if perturbation_step.dtype != object:
@@ -504,8 +502,8 @@ class FastGradientMethod(EvasionAttack):
         x_init: np.ndarray,
         y: np.ndarray,
         mask: np.ndarray | None,
-        eps: int | float | np.ndarray,
-        eps_step: int | float | np.ndarray,
+        eps: float | np.ndarray,
+        eps_step: float | np.ndarray,
         project: bool,
         random_init: bool,
         batch_id_ext: int | None = None,

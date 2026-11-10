@@ -21,9 +21,8 @@ import numpy as np
 import pytest
 
 from art.attacks.evasion import BrendelBethgeAttack
-from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from art.estimators.classification.classifier import ClassifierMixin
-
+from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from tests.attacks.utils import backend_test_classifier_type_check_fail
 from tests.utils import ARTTestException
 

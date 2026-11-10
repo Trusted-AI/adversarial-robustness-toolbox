@@ -19,7 +19,7 @@
 This module implements the abstract base class for all evasion detectors.
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import abc
 from typing import Any
@@ -38,7 +38,6 @@ class EvasionDetector(abc.ABC):
         """
         Create an evasion detector object.
         """
-        pass
 
     @abc.abstractmethod
     def fit(self, x: np.ndarray, y: np.ndarray, batch_size: int = 128, nb_epochs: int = 20, **kwargs) -> None:

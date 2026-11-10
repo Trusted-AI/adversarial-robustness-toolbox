@@ -32,20 +32,20 @@ with their adversarial counterpart.
     evaluations are required to assess its effectiveness case by case (see https://arxiv.org/abs/1902.06705).
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
 from typing import TYPE_CHECKING
 
 import numpy as np
-from tqdm.auto import trange, tqdm
+from tqdm.auto import tqdm, trange
 
 from art.defences.trainer.trainer import Trainer
 
 if TYPE_CHECKING:
-    from art.utils import CLASSIFIER_LOSS_GRADIENTS_TYPE
     from art.attacks.attack import EvasionAttack
     from art.data_generators import DataGenerator
+    from art.utils import CLASSIFIER_LOSS_GRADIENTS_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -71,8 +71,8 @@ class AdversarialTrainer(Trainer):
 
     def __init__(
         self,
-        classifier: "CLASSIFIER_LOSS_GRADIENTS_TYPE",
-        attacks: "EvasionAttack" | list["EvasionAttack"],
+        classifier: CLASSIFIER_LOSS_GRADIENTS_TYPE,
+        attacks: EvasionAttack | list[EvasionAttack],
         ratio: float = 0.5,
     ) -> None:
         """
@@ -101,7 +101,7 @@ class AdversarialTrainer(Trainer):
         self.x_augmented: np.ndarray | None = None
         self.y_augmented: np.ndarray | None = None
 
-    def fit_generator(self, generator: "DataGenerator", nb_epochs: int = 20, **kwargs) -> None:
+    def fit_generator(self, generator: DataGenerator, nb_epochs: int = 20, **kwargs) -> None:
         """
         Train a model adversarially using a data generator.
         See class documentation for more information on the exact procedure.

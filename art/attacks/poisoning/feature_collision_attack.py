@@ -19,10 +19,10 @@
 This module implements clean-label attacks on Neural Networks.
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
-from functools import reduce
 import logging
+from functools import reduce
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -68,7 +68,7 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
 
     def __init__(
         self,
-        classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
+        classifier: CLASSIFIER_NEURALNETWORK_TYPE,
         target: np.ndarray,
         feature_layer: str | int,
         learning_rate: float = 500 * 255.0,
@@ -272,7 +272,7 @@ def get_class_name(obj: object) -> str:
     return module + "." + obj.__class__.__name__
 
 
-def tensor_norm(tensor, norm_type: int | float | str = 2):  # pylint: disable=inconsistent-return-statements
+def tensor_norm(tensor, norm_type: float | str = 2):  # pylint: disable=inconsistent-return-statements
     """
     Compute the norm of a tensor.
 

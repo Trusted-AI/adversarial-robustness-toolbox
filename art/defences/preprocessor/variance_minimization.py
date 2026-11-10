@@ -25,7 +25,7 @@ This module implements the total variance minimization defence `TotalVarMin`.
     https://arxiv.org/abs/1902.06705
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
 from typing import TYPE_CHECKING
@@ -63,7 +63,7 @@ class TotalVarMin(Preprocessor):
         lamb: float = 0.5,
         solver: str = "L-BFGS-B",
         max_iter: int = 10,
-        clip_values: "CLIP_VALUES_TYPE" | None = None,
+        clip_values: CLIP_VALUES_TYPE | None = None,
         apply_fit: bool = False,
         apply_predict: bool = True,
         verbose: bool = False,

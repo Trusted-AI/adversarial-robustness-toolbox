@@ -15,7 +15,6 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
 import unittest
@@ -24,9 +23,9 @@ import keras.backend as k
 import numpy as np
 
 from art.attacks.evasion.elastic_net import ElasticNet
-from art.estimators.estimator import BaseEstimator
 from art.estimators.classification.classifier import ClassGradientsMixin
 from art.estimators.classification.keras import KerasClassifier
+from art.estimators.estimator import BaseEstimator
 from art.utils import random_targets, to_categorical
 from tests.attacks.utils import backend_test_classifier_type_check_fail
 from tests.utils import (
@@ -628,7 +627,7 @@ class TestElasticNet(TestBase):
         # Test targeted attack
         targets = random_targets(self.y_test_iris, nb_classes=3)
         attack = ElasticNet(classifier, targeted=True, max_iter=10, verbose=False)
-        x_test_adv = attack.generate(self.x_test_iris, **{"y": targets})
+        x_test_adv = attack.generate(self.x_test_iris, y=targets)
         expected_x_test_adv = np.asarray([0.88713187, 0.5239736, 0.49900988, 0.05677444])
         np.testing.assert_array_almost_equal(x_test_adv[0, :], expected_x_test_adv, decimal=6)
         self.assertLessEqual(np.amax(x_test_adv), 1.0)
@@ -794,7 +793,7 @@ class TestElasticNet(TestBase):
             # Test targeted attack
             targets = random_targets(self.y_test_iris, nb_classes=3)
             attack = ElasticNet(classifier, targeted=True, max_iter=2, verbose=False)
-            x_test_adv = attack.generate(self.x_test_iris, **{"y": targets})
+            x_test_adv = attack.generate(self.x_test_iris, y=targets)
             self.assertFalse((self.x_test_iris == x_test_adv).all())
             self.assertLessEqual(np.amax(x_test_adv), 1.0)
             self.assertGreaterEqual(np.amin(x_test_adv), 0.0)

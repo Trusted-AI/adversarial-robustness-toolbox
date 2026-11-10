@@ -46,16 +46,19 @@ This module implements helper functions for GRAPHITE attacks.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
 import math
+from typing import TYPE_CHECKING
+
 import numpy as np
-from art.estimators.estimator import BaseEstimator
+
 from art.estimators.classification import ClassifierMixin
+from art.estimators.estimator import BaseEstimator
 from art.utils import get_labels_np_array
 
 if TYPE_CHECKING:
-    from art.utils import CLASSIFIER_NEURALNETWORK_TYPE
     import torch
+
+    from art.utils import CLASSIFIER_NEURALNETWORK_TYPE
 
 
 def dist2pixels(dist: float, width: float, obj_width: float = 30) -> float:
@@ -302,15 +305,15 @@ def get_transformed_images(
 
 
 def transform_wb(
-    x: "torch.Tensor",
-    x_adv: "torch.Tensor",
-    mask: "torch.Tensor",
+    x: torch.Tensor,
+    x_adv: torch.Tensor,
+    mask: torch.Tensor,
     xform: tuple[float, float, float, int, float, float, float, float, float],
     net_size: tuple[int, int],
     clip_min: float,
     clip_max: float,
     pts: np.ndarray | None,
-) -> "torch.Tensor":
+) -> torch.Tensor:
     """
     Get transformed image, white-box setting.
 
@@ -324,8 +327,8 @@ def transform_wb(
     :param pts: A set of points that will set the crop size in the perspective transform.
     :return: Transformed image.
     """
-    import torch
     import cv2
+    import torch
     from kornia.enhance import adjust_gamma
 
     angle, dist, gamma, blur, crop_percent, crop_off_x, crop_off_y, obj_width, focal = xform
@@ -369,9 +372,7 @@ def transform_wb(
     return convert_to_network_wb(x_adv, net_size, clip_min, clip_max)
 
 
-def convert_to_network_wb(
-    x: "torch.Tensor", net_size: tuple[int, int], clip_min: float, clip_max: float
-) -> "torch.Tensor":
+def convert_to_network_wb(x: torch.Tensor, net_size: tuple[int, int], clip_min: float, clip_max: float) -> torch.Tensor:
     """
     Convert image to network format.
 
@@ -428,7 +429,7 @@ def get_perspective_transform(
 
 
 def get_perspective_transform_wb(
-    img: "torch.Tensor",
+    img: torch.Tensor,
     angle: float,
     width: int,
     height: int,
@@ -438,7 +439,7 @@ def get_perspective_transform_wb(
     crop_off_x: float,
     crop_off_y: float,
     pts: np.ndarray | None = None,
-) -> "torch.Tensor":
+) -> torch.Tensor:
     """
     Computes perspective transform for whitebox attack.
 
@@ -585,14 +586,10 @@ def get_offset_and_crop_size(
         new_pt = np.matmul(h_mat, point)
         new_pt /= new_pt[2, 0]
 
-        if new_pt[0, 0] < min_x:
-            min_x = new_pt[0, 0]
-        if new_pt[0, 0] > max_x:
-            max_x = new_pt[0, 0]
-        if new_pt[1, 0] < min_y:
-            min_y = new_pt[1, 0]
-        if new_pt[1, 0] > max_y:
-            max_y = new_pt[1, 0]
+        min_x = min(min_x, new_pt[0, 0])
+        max_x = max(max_x, new_pt[0, 0])
+        min_y = min(min_y, new_pt[1, 0])
+        max_y = max(max_y, new_pt[1, 0])
 
     if pts_flag:
         if (max_x - min_x) / (max_y - min_y) < width / height:  # result is tall and narrow
@@ -624,7 +621,7 @@ def get_offset_and_crop_size(
 
 
 def run_predictions(
-    estimator: "CLASSIFIER_NEURALNETWORK_TYPE",
+    estimator: CLASSIFIER_NEURALNETWORK_TYPE,
     imgs: list[np.ndarray],
     target: int,
     batch_size: int,
@@ -642,7 +639,7 @@ def run_predictions(
     """
     img_tensor = np.zeros((batch_size, imgs[0].shape[0], imgs[0].shape[1], imgs[0].shape[2]), dtype=np.float32)
     num_successes = 0
-    tar_tensor = np.ones((batch_size)) * target
+    tar_tensor = np.ones(batch_size) * target
 
     count = 0
     for i, img in enumerate(imgs):

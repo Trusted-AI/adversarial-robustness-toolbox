@@ -23,12 +23,13 @@ their own generators following the :class:`.DataGenerator` interface. For large,
 :class:`.NumpyDataGenerator` class can be flexibly used with `fit_generator` on framework-specific classifiers.
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import abc
 import inspect
 import logging
-from typing import Any, Generator, Iterator, TYPE_CHECKING
+from collections.abc import Generator, Iterator
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
@@ -181,10 +182,10 @@ class KerasDataGenerator(DataGenerator):
     def __init__(
         self,
         iterator: (
-            "keras.utils.Sequence"
-            | "tf.keras.utils.Sequence"
-            | "keras.preprocessing.image.ImageDataGenerator"
-            | "tf.keras.preprocessing.image.ImageDataGenerator"
+            keras.utils.Sequence
+            | tf.keras.utils.Sequence
+            | keras.preprocessing.image.ImageDataGenerator
+            | tf.keras.preprocessing.image.ImageDataGenerator
             | Generator
         ),
         size: int | None,
@@ -221,7 +222,7 @@ class PyTorchDataGenerator(DataGenerator):
     Wrapper class on top of the PyTorch native data loader :class:`torch.utils.data.DataLoader`.
     """
 
-    def __init__(self, iterator: "torch.utils.data.DataLoader", size: int, batch_size: int) -> None:
+    def __init__(self, iterator: torch.utils.data.DataLoader, size: int, batch_size: int) -> None:
         """
         Create a data generator wrapper on top of a PyTorch :class:`DataLoader`.
 
@@ -263,7 +264,7 @@ class TensorFlowV2DataGenerator(DataGenerator):
     Wrapper class on top of the TensorFlow v2 native iterators :class:`tf.data.Iterator`.
     """
 
-    def __init__(self, iterator: "tf.data.Dataset", size: int, batch_size: int) -> None:
+    def __init__(self, iterator: tf.data.Dataset, size: int, batch_size: int) -> None:
         """
         Create a data generator wrapper for TensorFlow. Supported iterators: initializable, reinitializable, feedable.
 

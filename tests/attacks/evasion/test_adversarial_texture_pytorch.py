@@ -15,17 +15,16 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-import os
 import logging
+import os
 
 import numpy as np
 import pytest
 
 from art.attacks.evasion import AdversarialTexturePyTorch
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
-from art.estimators.object_tracking.object_tracker import ObjectTrackerMixin
 from art.estimators.object_tracking import PyTorchGoturn
-
+from art.estimators.object_tracking.object_tracker import ObjectTrackerMixin
 from tests.attacks.utils import backend_test_classifier_type_check_fail
 from tests.utils import ARTTestException
 
@@ -44,9 +43,10 @@ def fix_get_mnist_subset(get_mnist_dataset):
 @pytest.mark.skip_framework("tensorflow", "keras", "kerastf", "non_dl_frameworks")
 def test_generate(art_warning, fix_get_mnist_subset, fix_get_goturn, framework):
     try:
+        from pathlib import Path
+
         import torch
         from scripts.train import GoturnTrain
-        from pathlib import Path
 
         _device = "cpu"
 
@@ -107,9 +107,10 @@ def test_generate(art_warning, fix_get_mnist_subset, fix_get_goturn, framework):
 @pytest.mark.skip_framework("tensorflow", "keras", "kerastf", "non_dl_frameworks")
 def test_generate_patch_points(art_warning, fix_get_mnist_subset, fix_get_goturn, framework):
     try:
+        from pathlib import Path
+
         import torch
         from scripts.train import GoturnTrain
-        from pathlib import Path
 
         _device = "cpu"
 

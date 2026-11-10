@@ -24,8 +24,8 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-import numpy as np
 import cv2
+import numpy as np
 from tqdm.auto import tqdm
 
 from art.preprocessing.preprocessing import Preprocessor
@@ -52,7 +52,7 @@ class ImageResize(Preprocessor):
         channels_first: bool = False,
         label_type: str = "classification",
         interpolation: int = cv2.INTER_LINEAR,
-        clip_values: "CLIP_VALUES_TYPE" | None = None,
+        clip_values: CLIP_VALUES_TYPE | None = None,
         apply_fit: bool = True,
         apply_predict: bool = False,
         verbose: bool = False,

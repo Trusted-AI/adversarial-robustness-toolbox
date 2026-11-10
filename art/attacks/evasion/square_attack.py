@@ -24,19 +24,19 @@ This module implements the `SquareAttack` attack.
 from __future__ import annotations
 
 import bisect
-from collections.abc import Callable
 import logging
 import math
 import random
+from collections.abc import Callable
 from typing import TYPE_CHECKING
 
 import numpy as np
 from tqdm.auto import trange
 
-from art.config import ART_NUMPY_DTYPE
 from art.attacks.attack import EvasionAttack
-from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
+from art.config import ART_NUMPY_DTYPE
 from art.estimators.classification.classifier import ClassifierMixin
+from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
 from art.utils import check_and_transform_label_format, get_labels_np_array
 
 if TYPE_CHECKING:
@@ -68,8 +68,8 @@ class SquareAttack(EvasionAttack):
 
     def __init__(
         self,
-        estimator: "CLASSIFIER_TYPE",
-        norm: int | float | str = np.inf,
+        estimator: CLASSIFIER_TYPE,
+        norm: float | str = np.inf,
         adv_criterion: Callable[[np.ndarray, np.ndarray], bool] | None = None,
         loss: Callable[[np.ndarray, np.ndarray], np.ndarray] | None = None,
         max_iter: int = 100,

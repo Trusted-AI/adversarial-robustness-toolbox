@@ -30,6 +30,7 @@ from art.preprocessing.preprocessing import PreprocessorTensorFlowV2
 
 if TYPE_CHECKING:
     import tensorflow as tf
+
     from art.utils import CLIP_VALUES_TYPE
 
 logger = logging.getLogger(__name__)
@@ -51,7 +52,7 @@ class ImageResizeTensorFlowV2(PreprocessorTensorFlowV2):
         channels_first: bool = False,
         label_type: str = "classification",
         interpolation: str = "bilinear",
-        clip_values: "CLIP_VALUES_TYPE" | None = None,
+        clip_values: CLIP_VALUES_TYPE | None = None,
         apply_fit: bool = True,
         apply_predict: bool = False,
         verbose: bool = False,
@@ -83,9 +84,9 @@ class ImageResizeTensorFlowV2(PreprocessorTensorFlowV2):
 
     def forward(
         self,
-        x: "tf.Tensor",
-        y: "tf.Tensor" | list[dict[str, "tf.Tensor"]] | None = None,
-    ) -> tuple["tf.Tensor", "tf.Tensor" | list[dict[str, "tf.Tensor"]] | None]:
+        x: tf.Tensor,
+        y: tf.Tensor | list[dict[str, tf.Tensor]] | None = None,
+    ) -> tuple[tf.Tensor, tf.Tensor | list[dict[str, tf.Tensor]] | None]:
         """
         Resize `x` and adjust bounding boxes for labels `y` accordingly.
 

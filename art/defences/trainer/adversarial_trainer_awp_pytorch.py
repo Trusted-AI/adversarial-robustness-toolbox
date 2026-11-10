@@ -21,20 +21,20 @@ This is a PyTorch implementation of the Adversarial Weight Perturbation (AWP) pr
 | Paper link: https://proceedings.neurips.cc/paper/2020/file/1ef91c212e30e14bf125e9374262401f-Paper.pdf
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
 import time
+from collections import OrderedDict
 from typing import TYPE_CHECKING
 
-from collections import OrderedDict
 import numpy as np
 from tqdm.auto import trange
 
+from art.attacks.attack import EvasionAttack
+from art.data_generators import DataGenerator
 from art.defences.trainer.adversarial_trainer_awp import AdversarialTrainerAWP
 from art.estimators.classification.pytorch import PyTorchClassifier
-from art.data_generators import DataGenerator
-from art.attacks.attack import EvasionAttack
 from art.utils import check_and_transform_label_format
 
 if TYPE_CHECKING:
@@ -90,7 +90,7 @@ class AdversarialTrainerAWPPyTorch(AdversarialTrainerAWP):
         validation_data: tuple[np.ndarray, np.ndarray] | None = None,
         batch_size: int = 128,
         nb_epochs: int = 20,
-        scheduler: "torch.optim.lr_scheduler._LRScheduler" | None = None,
+        scheduler: torch.optim.lr_scheduler._LRScheduler | None = None,
         **kwargs,
     ):
         """
@@ -197,7 +197,7 @@ class AdversarialTrainerAWPPyTorch(AdversarialTrainerAWP):
         generator: DataGenerator,
         validation_data: tuple[np.ndarray, np.ndarray] | None = None,
         nb_epochs: int = 20,
-        scheduler: "torch.optim.lr_scheduler._LRScheduler" | None = None,
+        scheduler: torch.optim.lr_scheduler._LRScheduler | None = None,
         **kwargs,
     ):
         """
@@ -308,8 +308,8 @@ class AdversarialTrainerAWPPyTorch(AdversarialTrainerAWP):
         :return: Tuple containing batch data loss, batch data accuracy and number of samples in the batch
         """
         import torch
-        from torch import nn
         import torch.nn.functional as F
+        from torch import nn
 
         if self._classifier.optimizer is None:
             raise ValueError("Optimizer of classifier is currently None, but is required for adversarial training.")
@@ -385,8 +385,8 @@ class AdversarialTrainerAWPPyTorch(AdversarialTrainerAWP):
         return train_loss, train_acc, train_n
 
     def _weight_perturbation(
-        self, x_batch: "torch.Tensor", x_batch_pert: "torch.Tensor", y_batch: "torch.Tensor"
-    ) -> dict[str, "torch.Tensor"]:
+        self, x_batch: torch.Tensor, x_batch_pert: torch.Tensor, y_batch: torch.Tensor
+    ) -> dict[str, torch.Tensor]:
         """
         Calculate wight perturbation for a batch of data.
         See class documentation for more information on the exact procedure.
@@ -397,8 +397,8 @@ class AdversarialTrainerAWPPyTorch(AdversarialTrainerAWP):
         :return: dict containing names of classifier model's layers as keys and parameters as values
         """
         import torch
-        from torch import nn
         import torch.nn.functional as F
+        from torch import nn
 
         w_perturb = OrderedDict()
         params_dict, _ = self._calculate_model_params(self._classifier)
@@ -443,7 +443,7 @@ class AdversarialTrainerAWPPyTorch(AdversarialTrainerAWP):
     @staticmethod
     def _calculate_model_params(
         p_classifier: PyTorchClassifier,
-    ) -> tuple[dict[str, dict[str, "torch.Tensor"]], "torch.Tensor"]:
+    ) -> tuple[dict[str, dict[str, torch.Tensor]], torch.Tensor]:
         """
         Calculates a given model's different layers' parameters' shape and norm, and model parameter norm.
 
@@ -454,7 +454,7 @@ class AdversarialTrainerAWPPyTorch(AdversarialTrainerAWP):
         """
         import torch
 
-        params_dict: dict[str, dict[str, "torch.Tensor"]] = OrderedDict()
+        params_dict: dict[str, dict[str, torch.Tensor]] = OrderedDict()
         list_params = []
         for name, param in p_classifier.model.state_dict().items():
             if len(param.size()) <= 1:
@@ -472,7 +472,7 @@ class AdversarialTrainerAWPPyTorch(AdversarialTrainerAWP):
         return params_dict, model_all_params_norm
 
     def _modify_classifier(
-        self, p_classifier: PyTorchClassifier, list_keys: list[str], w_perturb: dict[str, "torch.Tensor"], op: str
+        self, p_classifier: PyTorchClassifier, list_keys: list[str], w_perturb: dict[str, torch.Tensor], op: str
     ) -> None:
         """
         Modify the model's weight parameters according to the weight perturbations.

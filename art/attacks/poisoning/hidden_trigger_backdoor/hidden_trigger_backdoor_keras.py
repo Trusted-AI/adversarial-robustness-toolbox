@@ -21,7 +21,7 @@ This module implements a Hidden Trigger Backdoor attack on Neural Networks.
 | Paper link: https://arxiv.org/abs/1910.00033
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
 from typing import TYPE_CHECKING
@@ -31,10 +31,10 @@ from tqdm.auto import trange
 
 from art.attacks.attack import PoisoningAttackWhiteBox
 from art.attacks.poisoning.backdoor_attack import PoisoningAttackBackdoor
+from art.attacks.poisoning.hidden_trigger_backdoor.loss_meter import LossMeter
 from art.estimators import BaseEstimator, NeuralNetworkMixin
 from art.estimators.classification.classifier import ClassifierMixin
 from art.estimators.classification.keras import KerasClassifier
-from art.attacks.poisoning.hidden_trigger_backdoor.loss_meter import LossMeter
 from art.utils import check_and_transform_label_format
 
 if TYPE_CHECKING:
@@ -58,7 +58,7 @@ class HiddenTriggerBackdoorKeras(PoisoningAttackWhiteBox):
 
     def __init__(
         self,
-        classifier: "KerasClassifier" | "TensorFlowV2Classifier",
+        classifier: KerasClassifier | TensorFlowV2Classifier,
         target: np.ndarray,
         source: np.ndarray,
         feature_layer: str | int,

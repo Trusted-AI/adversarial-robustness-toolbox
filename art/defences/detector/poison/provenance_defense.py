@@ -21,7 +21,7 @@ This module implements methods performing poisoning detection based on data prov
 | Paper link: https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=8473440
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
 from copy import deepcopy
@@ -32,7 +32,7 @@ from sklearn.model_selection import train_test_split
 
 from art.defences.detector.poison.ground_truth_evaluator import GroundTruthEvaluator
 from art.defences.detector.poison.poison_filtering_defence import PoisonFilteringDefence
-from art.utils import segment_by_class, performance_diff
+from art.utils import performance_diff, segment_by_class
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_TYPE
@@ -61,7 +61,7 @@ class ProvenanceDefense(PoisonFilteringDefence):
 
     def __init__(
         self,
-        classifier: "CLASSIFIER_TYPE",
+        classifier: CLASSIFIER_TYPE,
         x_train: np.ndarray,
         y_train: np.ndarray,
         p_train: np.ndarray,

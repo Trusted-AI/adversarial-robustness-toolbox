@@ -21,27 +21,29 @@ This module implements Randomized Smoothing applied to classifier predictions.
 | Paper link: https://arxiv.org/abs/1902.02918
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
+import warnings
 from typing import TYPE_CHECKING
 
-import warnings
-from tqdm.auto import trange
 import numpy as np
+from tqdm.auto import trange
 
 from art.config import ART_NUMPY_DTYPE
+from art.estimators.certification.randomized_smoothing.randomized_smoothing import (
+    RandomizedSmoothingMixin,
+)
 from art.estimators.classification.pytorch import PyTorchClassifier
-from art.estimators.certification.randomized_smoothing.randomized_smoothing import RandomizedSmoothingMixin
 from art.utils import check_and_transform_label_format
 
 if TYPE_CHECKING:
 
     import torch
 
-    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
-    from art.defences.preprocessor import Preprocessor
     from art.defences.postprocessor import Postprocessor
+    from art.defences.preprocessor import Preprocessor
+    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -58,16 +60,16 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
 
     def __init__(
         self,
-        model: "torch.nn.Module",
-        loss: "torch.nn.modules.loss._Loss",
+        model: torch.nn.Module,
+        loss: torch.nn.modules.loss._Loss,
         input_shape: tuple[int, ...],
         nb_classes: int,
-        optimizer: "torch.optim.Optimizer" | None = None,
+        optimizer: torch.optim.Optimizer | None = None,
         channels_first: bool = True,
-        clip_values: "CLIP_VALUES_TYPE" | None = None,
-        preprocessing_defences: "Preprocessor" | list["Preprocessor"] | None = None,
-        postprocessing_defences: "Postprocessor" | list["Postprocessor"] | None = None,
-        preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
+        clip_values: CLIP_VALUES_TYPE | None = None,
+        preprocessing_defences: Preprocessor | list[Preprocessor] | None = None,
+        postprocessing_defences: Postprocessor | list[Postprocessor] | None = None,
+        preprocessing: PREPROCESSING_TYPE = (0.0, 1.0),
         device_type: str = "gpu",
         sample_size: int = 32,
         scale: float = 0.1,
@@ -137,7 +139,7 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
         nb_epochs: int = 10,
         training_mode: bool = True,
         drop_last: bool = False,
-        scheduler: "torch.optim.lr_scheduler._LRScheduler" | None = None,
+        scheduler: torch.optim.lr_scheduler._LRScheduler | None = None,
         verbose: bool = False,
         **kwargs,
     ) -> None:
@@ -159,7 +161,7 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
                and providing it takes no effect.
         """
         import torch
-        from torch.utils.data import TensorDataset, DataLoader
+        from torch.utils.data import DataLoader, TensorDataset
 
         # Set model mode
         self._model.train(mode=training_mode)
@@ -242,7 +244,7 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
 
     def loss_gradient(  # type: ignore
         self, x: np.ndarray, y: np.ndarray, training_mode: bool = False, **kwargs
-    ) -> np.ndarray | "torch.Tensor":
+    ) -> np.ndarray | torch.Tensor:
         """
         Compute the gradient of the loss function w.r.t. `x`.
 
