@@ -435,7 +435,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                             "Try dropping the last incomplete batch by setting drop_last=True in "
                             "method PyTorchClassifier.fit."
                         )
-                    raise err
+                    raise
 
                 # Form the loss function
                 loss = self._loss(model_outputs[-1], y_batch)
@@ -1161,7 +1161,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
                         result = []
                         if isinstance(self._model, torch.nn.Sequential):
-                            for _, module_ in self._model._modules.items():
+                            for module_ in self._model._modules.values():
                                 x = module_(x)
                                 result.append(x)
 
@@ -1192,7 +1192,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
                         result = []
                         if isinstance(self._model, torch.nn.Module):
-                            for name, _ in self._model._modules.items():
+                            for name in self._model._modules:
                                 result.append(name)
 
                         else:  # pragma: no cover

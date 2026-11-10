@@ -193,7 +193,7 @@ class DeepPartitionEnsemble(EnsembleClassifier):
                 current_x = x[np.array(partition_ind[i])]
                 current_y = y[np.array(partition_ind[i])]
 
-                if train_dict is not None and i in train_dict.keys():
+                if train_dict is not None and i in train_dict:
                     self.classifiers[i].fit(current_x, current_y, **train_dict[i])
                 else:
                     self.classifiers[i].fit(current_x, current_y, batch_size=batch_size, nb_epochs=nb_epochs, **kwargs)

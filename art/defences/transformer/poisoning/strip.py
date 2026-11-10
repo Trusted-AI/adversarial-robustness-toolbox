@@ -74,9 +74,11 @@ class STRIP(Transformer):
         self.classifier.__class__ = type(
             base_cls_name,
             (STRIPMixin, base_cls),
-            dict(
-                num_samples=num_samples, false_acceptance_rate=false_acceptance_rate, predict_fn=self.classifier.predict
-            ),
+            {
+                "num_samples": num_samples,
+                "false_acceptance_rate": false_acceptance_rate,
+                "predict_fn": self.classifier.predict,
+            },
         )
 
         return self.classifier  # type: ignore

@@ -485,15 +485,15 @@ class GRAPHITEWhiteboxPyTorch(EvasionAttack):
                         0, pixelwise_avg_grads.shape[1] - self.patch_removal_size + 0.0001, self.patch_removal_interval
                     ):
                         patch_grad = pixelwise_avg_grads[
-                            int(round(i)) : int(round(i + self.patch_removal_size)),
-                            int(round(j)) : int(round(j + self.patch_removal_size)),
+                            round(i) : round(i + self.patch_removal_size),
+                            round(j) : round(j + self.patch_removal_size),
                         ].sum()
 
                         if (
                             mask_tensor[
                                 0,
-                                int(round(i)) : int(round(i + self.patch_removal_size)),
-                                int(round(j)) : int(round(j + self.patch_removal_size)),
+                                round(i) : round(i + self.patch_removal_size),
+                                round(j) : round(j + self.patch_removal_size),
                             ].sum()
                             > 0
                         ):
@@ -501,8 +501,8 @@ class GRAPHITEWhiteboxPyTorch(EvasionAttack):
                                 patch_grad
                                 / mask_tensor[
                                     0,
-                                    int(round(i)) : int(round(i + self.patch_removal_size)),
-                                    int(round(j)) : int(round(j + self.patch_removal_size)),
+                                    round(i) : round(i + self.patch_removal_size),
+                                    round(j) : round(j + self.patch_removal_size),
                                 ].sum()
                             )  # TODO1
                             if min_patch_grad is None or patch_grad.item() < min_patch_grad:
@@ -513,19 +513,19 @@ class GRAPHITEWhiteboxPyTorch(EvasionAttack):
                 i, j = min_patch_grad_idx
                 mask_tensor[
                     0,
-                    int(round(i)) : int(round(i + self.patch_removal_size)),
-                    int(round(j)) : int(round(j + self.patch_removal_size)),
+                    round(i) : round(i + self.patch_removal_size),
+                    round(j) : round(j + self.patch_removal_size),
                 ] = 0
                 if img.size()[0] == 3:
                     mask_tensor[
                         1,
-                        int(round(i)) : int(round(i + self.patch_removal_size)),
-                        int(round(j)) : int(round(j + self.patch_removal_size)),
+                        round(i) : round(i + self.patch_removal_size),
+                        round(j) : round(j + self.patch_removal_size),
                     ] = 0
                     mask_tensor[
                         2,
-                        int(round(i)) : int(round(i + self.patch_removal_size)),
-                        int(round(j)) : int(round(j + self.patch_removal_size)),
+                        round(i) : round(i + self.patch_removal_size),
+                        round(j) : round(j + self.patch_removal_size),
                     ] = 0
 
             rounds += 1

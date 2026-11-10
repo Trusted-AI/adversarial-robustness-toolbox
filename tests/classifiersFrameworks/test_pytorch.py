@@ -82,7 +82,7 @@ def _test_preprocessing_defences_forward(
 def _test_preprocessing_defences_backward(
     get_default_mnist_subset, image_dl_estimator, device_type, preprocessing_defences
 ):
-    (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
+    (_, _), (x_test_mnist, _y_test_mnist) = get_default_mnist_subset
 
     classifier_, _ = image_dl_estimator()
 
@@ -251,7 +251,7 @@ def test_pytorch_binary_pgd(art_warning, get_mnist_dataset):
         x, y = sklearn.datasets.make_classification(
             n_samples=10000, n_features=20, n_informative=5, n_redundant=2, n_repeated=0, n_classes=2
         )
-        train_x, test_x, train_y, test_y = sklearn.model_selection.train_test_split(x, y, test_size=0.2)
+        train_x, test_x, train_y, _test_y = sklearn.model_selection.train_test_split(x, y, test_size=0.2)
         train_x = train_x.astype(np.float32)
         train_y = train_y.astype(np.float32)
         test_x = test_x.astype(np.float32)
@@ -281,7 +281,7 @@ def test_pytorch_binary_pgd(art_warning, get_mnist_dataset):
 @pytest.mark.parametrize("device_type", ["cpu"])
 # Function to evaluate custom loss gradient for sequential models
 def test_custom_loss_gradient_sequential(get_default_mnist_subset, image_dl_estimator, device_type):
-    (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
+    (_, _), (x_test_mnist, _y_test_mnist) = get_default_mnist_subset
     classifier, _ = image_dl_estimator(functional=True)
     loss_function = torch.norm
     poison_image = x_test_mnist[0:1]
@@ -309,7 +309,7 @@ def test_custom_loss_gradient_sequential(get_default_mnist_subset, image_dl_esti
 @pytest.mark.parametrize("device_type", ["cpu"])
 # Function to evaluate custom loss gradient for modular models
 def test_custom_loss_gradient_modular(get_default_mnist_subset, image_dl_estimator, device_type):
-    (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
+    (_, _), (x_test_mnist, _y_test_mnist) = get_default_mnist_subset
     classifier, _ = image_dl_estimator(functional=False)
     loss_function = torch.norm
     poison_image = x_test_mnist[0:1]
@@ -337,7 +337,7 @@ def test_custom_loss_gradient_modular(get_default_mnist_subset, image_dl_estimat
 @pytest.mark.parametrize("device_type", ["cpu"])
 # Function to evaluate get activation for sequential models
 def test_get_activation_sequential(get_default_mnist_subset, image_dl_estimator, device_type):
-    (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
+    (_, _), (x_test_mnist, _y_test_mnist) = get_default_mnist_subset
     classifier, _ = image_dl_estimator(functional=True)
     batch_size = x_test_mnist.shape[0]
     N = len(classifier.layer_names)
@@ -362,7 +362,7 @@ def test_get_activation_sequential(get_default_mnist_subset, image_dl_estimator,
 @pytest.mark.parametrize("device_type", ["cpu"])
 # Function to evaluate get activation for modular models
 def test_get_activation_modular(get_default_mnist_subset, image_dl_estimator, device_type):
-    (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
+    (_, _), (x_test_mnist, _y_test_mnist) = get_default_mnist_subset
     classifier, _ = image_dl_estimator(functional=False)
     batch_size = x_test_mnist.shape[0]
     m = nn.Softmax(dim=1)

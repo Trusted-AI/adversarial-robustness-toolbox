@@ -90,7 +90,7 @@ def test_poison_multiple_layers(art_warning, get_default_mnist_subset, image_dl_
 @pytest.mark.skip_framework("non_dl_frameworks", "tensorflow", "keras", "kerastf")
 def test_check_params(art_warning, get_default_mnist_subset, image_dl_estimator):
     try:
-        (x_train, y_train), (_, _) = get_default_mnist_subset
+        (x_train, _y_train), (_, _) = get_default_mnist_subset
         classifier, _ = image_dl_estimator(functional=True)
         target = np.expand_dims(x_train[3], 0)
         with pytest.raises(ValueError):

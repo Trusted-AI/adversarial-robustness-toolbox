@@ -150,7 +150,7 @@ def random_cutout(x_nhwc, mask_size, seed=None):
     """
     import tensorflow as tf
 
-    batch_size, height, width, channels = tf.unstack(tf.shape(x_nhwc))
+    batch_size, height, width, _channels = tf.unstack(tf.shape(x_nhwc))
     mask_height, mask_width = mask_size
 
     if seed is None:

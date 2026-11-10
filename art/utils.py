@@ -1209,14 +1209,11 @@ def load_cifar10(
         :return: `(data, labels)`
         """
         with open(fpath, "rb") as file_:
-            if sys.version_info < (3,):
-                content = six.moves.cPickle.load(file_)
-            else:
-                content = six.moves.cPickle.load(file_, encoding="bytes")
-                content_decoded = {}
-                for key, value in content.items():
-                    content_decoded[key.decode("utf8")] = value
-                content = content_decoded
+            content = six.moves.cPickle.load(file_, encoding="bytes")
+            content_decoded = {}
+            for key, value in content.items():
+                content_decoded[key.decode("utf8")] = value
+            content = content_decoded
         data = content["data"]
         labels = content["labels"]
 

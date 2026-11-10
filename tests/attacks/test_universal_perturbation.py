@@ -63,7 +63,7 @@ class TestUniversalPerturbation(TestBase):
         x_test_original = self.x_test_mnist.copy()
 
         # Build TensorFlowClassifier
-        tfc, sess = get_image_classifier_tf()
+        tfc, _sess = get_image_classifier_tf()
 
         # Attack
         up = UniversalPerturbation(

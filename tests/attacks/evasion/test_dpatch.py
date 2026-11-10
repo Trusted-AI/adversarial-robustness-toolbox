@@ -40,7 +40,7 @@ def fix_get_mnist_subset(get_mnist_dataset):
 @pytest.mark.framework_agnostic
 def test_generate(art_warning, fix_get_mnist_subset, fix_get_rcnn):
     try:
-        _, _, x_test_mnist, y_test_mnist = fix_get_mnist_subset
+        _, _, x_test_mnist, _y_test_mnist = fix_get_mnist_subset
 
         frcnn = fix_get_rcnn
         attack = DPatch(
@@ -80,7 +80,7 @@ def test_generate(art_warning, fix_get_mnist_subset, fix_get_rcnn):
 @pytest.mark.framework_agnostic
 def test_augment_images_with_patch(art_warning, random_location, image_format, fix_get_mnist_subset):
     try:
-        x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist = fix_get_mnist_subset
+        x_train_mnist, _y_train_mnist, _x_test_mnist, _y_test_mnist = fix_get_mnist_subset
 
         # TODO this master_seed should be removed as it is already set in conftest.py. expected values will
         # need to be updated accordingly

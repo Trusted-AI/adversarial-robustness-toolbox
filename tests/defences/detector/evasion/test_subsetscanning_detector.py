@@ -19,7 +19,6 @@
 A unittest class for testing the subset scanning detector.
 """
 
-
 import logging
 
 import numpy as np

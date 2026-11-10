@@ -198,9 +198,8 @@ class Attack(abc.ABC):
         for param in self.attack_params:
             if hasattr(self, param):
                 param_str += f"{param}={getattr(self, param)}, "
-            elif hasattr(self, "_attack"):
-                if hasattr(self._attack, param):
-                    param_str += f"{param}={getattr(self._attack, param)}, "
+            elif hasattr(self, "_attack") and hasattr(self._attack, param):
+                param_str += f"{param}={getattr(self._attack, param)}, "
         return f"{type(self).__name__}({param_str})"
 
 

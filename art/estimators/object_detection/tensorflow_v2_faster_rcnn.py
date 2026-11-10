@@ -110,8 +110,10 @@ class TensorFlowV2FasterRCNN(ObjectDetectorMixin, TensorFlowV2Estimator):
             if filename is None or url is None:
                 filename, url = (
                     "faster_rcnn_resnet50_v1_640x640_coco17_tpu-8",
-                    "http://download.tensorflow.org/models/object_detection/tf2/20200711/"
-                    "faster_rcnn_resnet50_v1_640x640_coco17_tpu-8.tar.gz",
+                    (
+                        "http://download.tensorflow.org/models/object_detection/tf2/20200711/"
+                        "faster_rcnn_resnet50_v1_640x640_coco17_tpu-8.tar.gz"
+                    ),
                 )
 
             model = self._load_model(filename=filename, url=url, is_training=is_training)

@@ -117,9 +117,8 @@ class PixelThreshold(EvasionAttack):
             self.img_channels = self.estimator.input_shape[-1]
 
     def _check_params(self) -> None:
-        if self.th is not None:
-            if self.th <= 0:
-                raise ValueError("The perturbation size `eps` has to be positive.")
+        if self.th is not None and self.th <= 0:
+            raise ValueError("The perturbation size `eps` has to be positive.")
 
         if not isinstance(self.es, int):
             raise ValueError("The flag `es` has to be of type int.")

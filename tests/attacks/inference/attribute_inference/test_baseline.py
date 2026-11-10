@@ -46,7 +46,7 @@ def test_baseline(art_warning, get_iris_dataset, model_type):
 
         values = [0.0, 1.0, 2.0]
 
-        (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = get_iris_dataset
+        (x_train_iris, _y_train_iris), (x_test_iris, _y_test_iris) = get_iris_dataset
 
         # training data without attacked feature
         x_train_for_attack = np.delete(x_train_iris, attack_feature, 1)
@@ -93,7 +93,7 @@ def test_baseline_continuous(art_warning, get_iris_dataset, model_type):
     try:
         attack_feature = 2  # petal length
 
-        (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = get_iris_dataset
+        (x_train_iris, _y_train_iris), (x_test_iris, _y_test_iris) = get_iris_dataset
 
         # training data without attacked feature
         x_train_for_attack = np.delete(x_train_iris, attack_feature, 1)
@@ -141,7 +141,7 @@ def test_baseline_slice(art_warning, get_iris_dataset, model_type):
 
         values = [0.0, 1.0, 2.0]
 
-        (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = get_iris_dataset
+        (x_train_iris, _y_train_iris), (x_test_iris, _y_test_iris) = get_iris_dataset
 
         # training data without attacked feature
         x_train_for_attack = np.delete(x_train_iris, attack_feature, 1)
@@ -196,7 +196,7 @@ def test_baseline_no_values(art_warning, get_iris_dataset, model_type):
             x[(x > 0.2) & (x <= 0.5)] = 1.0
             x[x <= 0.2] = 0.0
 
-        (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = get_iris_dataset
+        (x_train_iris, _y_train_iris), (x_test_iris, _y_test_iris) = get_iris_dataset
         # training data without attacked feature
         x_train_for_attack = np.delete(x_train_iris, attack_feature, 1)
         # only attacked feature
@@ -258,7 +258,7 @@ def test_baseline_encoder(art_warning, get_iris_dataset, model_type):
 
         values = [0.0, 1.0, 2.0]
 
-        (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = get_iris_dataset
+        (x_train_iris, _y_train_iris), (x_test_iris, _y_test_iris) = get_iris_dataset
 
         # training data without attacked feature
         x_train_for_attack = np.delete(x_train_iris, attack_feature, 1)
@@ -357,7 +357,7 @@ def test_baseline_no_encoder(art_warning, get_iris_dataset, model_type):
 
         values = [0.0, 1.0, 2.0]
 
-        (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = get_iris_dataset
+        (x_train_iris, _y_train_iris), (x_test_iris, _y_test_iris) = get_iris_dataset
 
         # training data without attacked feature
         x_train_for_attack = np.delete(x_train_iris, attack_feature, 1)
@@ -447,7 +447,7 @@ def test_baseline_no_encoder_after_feature(art_warning, get_iris_dataset, model_
 
         values = [0.0, 1.0, 2.0]
 
-        (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = get_iris_dataset
+        (x_train_iris, _y_train_iris), (x_test_iris, _y_test_iris) = get_iris_dataset
 
         # training data without attacked feature
         x_train_for_attack = np.delete(x_train_iris, attack_feature, 1)
@@ -539,7 +539,7 @@ def test_baseline_no_encoder_after_feature_slice(art_warning, get_iris_dataset, 
             x[x == 1.0] = "B"
             x[x == 0.0] = "C"
 
-        (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = get_iris_dataset
+        (x_train_iris, _y_train_iris), (x_test_iris, _y_test_iris) = get_iris_dataset
 
         # training data without attacked feature
         x_train_for_attack = np.delete(x_train_iris, orig_attack_feature, 1)
@@ -632,7 +632,7 @@ def test_baseline_no_encoder_remove_attack_feature(art_warning, get_iris_dataset
 
         values = [0.0, 1.0, 2.0]
 
-        (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = get_iris_dataset
+        (x_train_iris, _y_train_iris), (x_test_iris, _y_test_iris) = get_iris_dataset
 
         # training data without attacked feature
         x_train_for_attack = np.delete(x_train_iris, attack_feature, 1)
@@ -704,7 +704,7 @@ def test_baseline_no_encoder_remove_attack_feature(art_warning, get_iris_dataset
 
 def test_check_params(art_warning, get_iris_dataset):
     try:
-        (x_train, y_train), (_, _) = get_iris_dataset
+        (x_train, _y_train), (_, _) = get_iris_dataset
 
         with pytest.raises(ValueError):
             AttributeInferenceBaseline(attack_feature="a")

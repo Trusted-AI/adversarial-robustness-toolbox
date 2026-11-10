@@ -487,7 +487,7 @@ class ZooAttack(EvasionAttack):
                         "coordinate updates `nb_parallel`."
                     ) from error
 
-                raise error
+                raise
 
         # Create the batch of modifications to run
         for i in range(self.nb_parallel * self._current_noise.shape[0]):

@@ -118,58 +118,58 @@ class GroundTruthEvaluator:
         fp_rate = self.calculate_and_print(false_positive, false_positive + true_negative, "false-positive rate")
         fn_rate = self.calculate_and_print(false_negative, true_positive + false_negative, "false-negative rate")
 
-        dic_tp = dict(
-            rate=round(tp_rate, 2),
-            numerator=true_positive,
-            denominator=(true_positive + false_negative),
-        )
+        dic_tp = {
+            "rate": round(tp_rate, 2),
+            "numerator": true_positive,
+            "denominator": (true_positive + false_negative),
+        }
         if (true_positive + false_negative) == 0:
-            dic_tp = dict(
-                rate=-1,
-                numerator=true_positive,
-                denominator=(true_positive + false_negative),
-            )
+            dic_tp = {
+                "rate": -1,
+                "numerator": true_positive,
+                "denominator": (true_positive + false_negative),
+            }
 
-        dic_tn = dict(
-            rate=round(tn_rate, 2),
-            numerator=true_negative,
-            denominator=(false_positive + true_negative),
-        )
+        dic_tn = {
+            "rate": round(tn_rate, 2),
+            "numerator": true_negative,
+            "denominator": (false_positive + true_negative),
+        }
         if (false_positive + true_negative) == 0:
-            dic_tn = dict(
-                rate=-1,
-                numerator=true_negative,
-                denominator=(false_positive + true_negative),
-            )
+            dic_tn = {
+                "rate": -1,
+                "numerator": true_negative,
+                "denominator": (false_positive + true_negative),
+            }
 
-        dic_fp = dict(
-            rate=round(fp_rate, 2),
-            numerator=false_positive,
-            denominator=(false_positive + true_negative),
-        )
+        dic_fp = {
+            "rate": round(fp_rate, 2),
+            "numerator": false_positive,
+            "denominator": (false_positive + true_negative),
+        }
         if (false_positive + true_negative) == 0:
-            dic_fp = dict(
-                rate=-1,
-                numerator=false_positive,
-                denominator=(false_positive + true_negative),
-            )
+            dic_fp = {
+                "rate": -1,
+                "numerator": false_positive,
+                "denominator": (false_positive + true_negative),
+            }
 
-        dic_fn = dict(
-            rate=round(fn_rate, 2),
-            numerator=false_negative,
-            denominator=(true_positive + false_negative),
-        )
+        dic_fn = {
+            "rate": round(fn_rate, 2),
+            "numerator": false_negative,
+            "denominator": (true_positive + false_negative),
+        }
         if (true_positive + false_negative) == 0:
-            dic_fn = dict(
-                rate=-1,
-                numerator=false_negative,
-                denominator=(true_positive + false_negative),
-            )
+            dic_fn = {
+                "rate": -1,
+                "numerator": false_negative,
+                "denominator": (true_positive + false_negative),
+            }
 
-        dic_class.update(dict(TruePositive=dic_tp))
-        dic_class.update(dict(TrueNegative=dic_tn))
-        dic_class.update(dict(FalsePositive=dic_fp))
-        dic_class.update(dict(FalseNegative=dic_fn))
+        dic_class.update({"TruePositive": dic_tp})
+        dic_class.update({"TrueNegative": dic_tn})
+        dic_class.update({"FalsePositive": dic_fp})
+        dic_class.update({"FalseNegative": dic_fn})
 
         return dic_class
 

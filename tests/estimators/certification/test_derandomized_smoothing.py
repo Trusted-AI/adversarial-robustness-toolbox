@@ -270,7 +270,7 @@ def test_pytorch_mnist_certification(art_warning, fix_get_mnist_data):
             )
 
             preds = classifier.predict(np.copy(fix_get_mnist_data[0]))
-            cert, cert_and_correct, top_predicted_class_argmax = classifier.ablator.certify(
+            cert, _cert_and_correct, _top_predicted_class_argmax = classifier.ablator.certify(
                 preds, label=fix_get_mnist_data[1], size_to_certify=size_to_certify
             )
             if ablation_type == "column":
@@ -358,7 +358,7 @@ def test_tf2_mnist_certification(art_warning, fix_get_mnist_data):
             x = np.squeeze(x)
             x = np.expand_dims(x, axis=-1)
             preds = classifier.predict(x)
-            cert, cert_and_correct, top_predicted_class_argmax = classifier.ablator.certify(
+            cert, _cert_and_correct, _top_predicted_class_argmax = classifier.ablator.certify(
                 preds, label=fix_get_mnist_data[1], size_to_certify=size_to_certify
             )
 

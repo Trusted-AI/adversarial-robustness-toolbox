@@ -38,7 +38,7 @@ def test_white_box(art_warning, decision_tree_estimator, get_iris_dataset):
         values = [0.14, 0.42, 0.71]  # rounded down
         priors = [50 / 150, 54 / 150, 46 / 150]
 
-        (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = get_iris_dataset
+        (x_train_iris, _y_train_iris), (x_test_iris, _y_test_iris) = get_iris_dataset
         x_train_for_attack = np.delete(x_train_iris, attack_feature, 1)
         x_train_feature = x_train_iris[:, attack_feature]
         x_test_for_attack = np.delete(x_test_iris, attack_feature, 1)

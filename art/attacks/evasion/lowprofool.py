@@ -226,9 +226,9 @@ class LowProFool(EvasionAttack):
             # Apply a custom function to call on the provided data.
             try:
                 self.importance_vec = np.array(self.importance(x, y))
-            except Exception as exception:
+            except Exception:
                 logger.exception("Provided importance function has failed.")
-                raise exception
+                raise
 
             if not isinstance(self.importance_vec, np.ndarray):
                 self.importance_vec = None

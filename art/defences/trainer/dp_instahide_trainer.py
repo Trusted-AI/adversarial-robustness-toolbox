@@ -29,17 +29,12 @@ from __future__ import annotations
 import logging
 import sys
 import time
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 import numpy as np
 from tqdm.auto import trange
 
 from art.defences.trainer.trainer import Trainer
-
-if sys.version_info >= (3, 8):
-    from typing import Literal
-else:
-    from typing import Literal
 
 if TYPE_CHECKING:
     from art.data_generators import DataGenerator

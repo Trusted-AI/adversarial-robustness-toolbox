@@ -96,7 +96,7 @@ class TestDeepFool(TestBase):
         x_test_original = self.x_test_mnist.copy()
 
         # Create basic CNN on MNIST using TensorFlow
-        classifier, sess = get_image_classifier_tf(from_logits=True)
+        classifier, _sess = get_image_classifier_tf(from_logits=True)
 
         scores = get_labels_np_array(classifier.predict(self.x_train_mnist))
         sum2 = np.sum(np.argmax(scores, axis=1) == np.argmax(self.y_train_mnist, axis=1))

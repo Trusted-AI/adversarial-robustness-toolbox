@@ -201,7 +201,7 @@ if MODEL == "yolov3":
         def forward(self, x, targets=None):
             if self.training:
                 outputs = self.model(x)
-                loss, loss_components = compute_loss(outputs, targets, self.model)
+                loss, _loss_components = compute_loss(outputs, targets, self.model)
                 loss_components_dict = {"loss_total": loss}
                 return loss_components_dict
             else:
@@ -242,7 +242,7 @@ elif MODEL == "yolov5":
         def forward(self, x, targets=None):
             if self.training:
                 outputs = self.model.model.model(x)
-                loss, loss_items = self.compute_loss(outputs, targets)
+                loss, _loss_items = self.compute_loss(outputs, targets)
                 loss_components_dict = {"loss_total": loss}
                 return loss_components_dict
             else:

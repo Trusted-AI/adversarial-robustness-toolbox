@@ -63,7 +63,7 @@ def test_pytorch_goturn(art_warning):
         )
 
         y_init = np.array([[48, 79, 80, 110], [48, 79, 80, 110]])
-        x_list = list()
+        x_list = []
         for i in range(2):
             x_list.append(np.random.random_integers(0, 255, size=(4 + i, 277, 277, 3)).astype(float))
 

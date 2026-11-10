@@ -289,7 +289,7 @@ def test_certification_function(art_warning, fix_get_mnist_data, fix_get_cifar10
             output_shape=(3, 224, 224),
         )
         pred_counts = torch.from_numpy(np.asarray([[20, 5, 1], [10, 5, 1], [1, 16, 1]]))
-        cert, cert_and_correct, top_predicted_class = col_ablator.certify(
+        cert, cert_and_correct, _top_predicted_class = col_ablator.certify(
             pred_counts=pred_counts,
             size_to_certify=4,
             label=0,
@@ -539,7 +539,7 @@ def test_equivalence(art_warning, fix_get_cifar10_data):
                 # x = self.pos_drop(x) # B, N, C
                 if patch_mask is not None:
                     # patch_mask is B, K
-                    B, N, C = x.shape
+                    _B, _N, C = x.shape
                     if len(patch_mask.shape) == 1:  # not a separate one per batch
                         x = x[:, patch_mask]
                     else:

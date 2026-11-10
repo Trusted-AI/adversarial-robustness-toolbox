@@ -76,7 +76,7 @@ def test_generate(art_warning, fix_get_mnist_subset, fix_get_goturn, framework):
         )
 
         y_init = np.array([[48, 79, 80, 110], [48, 79, 80, 110]])
-        x_list = list()
+        x_list = []
         for i in range(2):
             x_list.append(np.random.random_integers(0, 255, size=(4, 277, 277, 3)).astype(float) / 255.0)
 
@@ -140,7 +140,7 @@ def test_generate_patch_points(art_warning, fix_get_mnist_subset, fix_get_goturn
         )
 
         y_init = np.array([[48, 79, 80, 110], [48, 79, 80, 110]])
-        x_list = list()
+        x_list = []
         nb_frames = 4
         for i in range(2):
             x_list.append(np.random.random_integers(0, 255, size=(4, 277, 277, 3)).astype(float) / 255.0)

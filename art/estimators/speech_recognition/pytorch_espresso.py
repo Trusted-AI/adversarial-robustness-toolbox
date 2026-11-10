@@ -132,8 +132,10 @@ class PyTorchEspresso(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyTor
             if model == "librispeech_transformer":
                 config_filename, config_url = (
                     "libri960_transformer.yaml",
-                    "https://github.com/YiwenShaoStephen/espresso/releases/download/v0.1-alpha/"
-                    "libri960_transformer.yaml",
+                    (
+                        "https://github.com/YiwenShaoStephen/espresso/releases/download/v0.1-alpha/"
+                        "libri960_transformer.yaml"
+                    ),
                 )
                 model_filename, model_url = (
                     "checkpoint_best.pt",
@@ -141,13 +143,17 @@ class PyTorchEspresso(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyTor
                 )
                 sp_filename, sp_url = (
                     "train_960_unigram5000.model",
-                    "https://github.com/YiwenShaoStephen/espresso/releases/download/v0.1-alpha/"
-                    "train_960_unigram5000.model",
+                    (
+                        "https://github.com/YiwenShaoStephen/espresso/releases/download/v0.1-alpha/"
+                        "train_960_unigram5000.model"
+                    ),
                 )
                 dict_filename, dict_url = (
                     "train_960_unigram5000_units.txt",
-                    "https://github.com/YiwenShaoStephen/espresso/releases/download/v0.1-alpha/"
-                    "train_960_unigram5000_units.txt",
+                    (
+                        "https://github.com/YiwenShaoStephen/espresso/releases/download/v0.1-alpha/"
+                        "train_960_unigram5000_units.txt"
+                    ),
                 )
             else:  # pragma: no cover
                 raise ValueError("Model not recognised.")

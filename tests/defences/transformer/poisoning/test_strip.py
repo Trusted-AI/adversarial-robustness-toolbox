@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 @pytest.mark.framework_agnostic
 def test_strip(art_warning, get_default_mnist_subset, image_dl_estimator):
     try:
-        (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
+        (x_train_mnist, y_train_mnist), (x_test_mnist, _y_test_mnist) = get_default_mnist_subset
 
         classifier, _ = image_dl_estimator()
 

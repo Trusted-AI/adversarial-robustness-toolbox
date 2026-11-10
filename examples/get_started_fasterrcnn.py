@@ -184,7 +184,7 @@ def plot_image_with_boxes(img, boxes, pred_cls):
 def get_loss(frcnn, x, y):
     frcnn._model.train()
     transform = torchvision.transforms.Compose([torchvision.transforms.ToTensor()])
-    image_tensor_list = list()
+    image_tensor_list = []
 
     for i in range(x.shape[0]):
         if frcnn.clip_values is not None:

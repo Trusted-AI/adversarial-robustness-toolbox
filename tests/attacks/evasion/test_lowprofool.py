@@ -290,7 +290,7 @@ def test_general_cancer_svc(breast_cancer_dataset):
     Check whether the produced adversaries are correct,
     given SVC and breast cancer wisconsin dataset.
     """
-    (x_train, y_train, x_valid, y_valid), _, clip_values = breast_cancer_dataset
+    (x_train, y_train, x_valid, y_valid), _, _clip_values = breast_cancer_dataset
 
     svc_clf = SVC()
     svc_clf.fit(x_train, y_train)
@@ -325,7 +325,7 @@ def test_fit_importances(iris_dataset):
     """
     Check whether feature importance is calculated properly.
     """
-    (x_train, y_train, x_valid, y_valid), _, clip_values = iris_dataset
+    (x_train, y_train, _x_valid, _y_valid), _, clip_values = iris_dataset
 
     def pearson_correlations(x, y):
         correlations = [pearsonr(x[:, col], y)[0] for col in range(x.shape[1])]
@@ -395,7 +395,7 @@ def test_clipping(iris_dataset):
     """
     Check weather adversaries are clipped properly.
     """
-    (x_train, y_train, x_valid, y_valid), _, clip_values = iris_dataset
+    (x_train, y_train, _x_valid, _y_valid), _, clip_values = iris_dataset
 
     # Setup classifier
     lr_clf = LogisticRegression(penalty=None)

@@ -64,7 +64,7 @@ class TestIterativeAttack(TestBase):
         )
 
     def test_3_tensorflow_mnist(self):
-        classifier, sess = get_image_classifier_tf()
+        classifier, _sess = get_image_classifier_tf()
 
         scores = get_labels_np_array(classifier.predict(self.x_train_mnist))
         acc = np.sum(np.argmax(scores, axis=1) == np.argmax(self.y_train_mnist, axis=1)) / self.y_train_mnist.shape[0]
@@ -199,7 +199,7 @@ class TestIterativeAttack(TestBase):
         self._test_mnist_targeted(classifier, self.x_test_mnist)
 
     def test_4_tensorflow_mnist_targeted(self):
-        classifier, sess = get_image_classifier_tf()
+        classifier, _sess = get_image_classifier_tf()
         self._test_mnist_targeted(classifier, self.x_test_mnist)
 
     def test_7_pytorch_mnist_targeted(self):

@@ -41,9 +41,6 @@ from art.estimators.certification.deep_z.deep_z import (
 )
 from art.estimators.classification.pytorch import PyTorchClassifier
 
-if sys.version_info < (3, 8):
-    from functools import reduce
-
 if TYPE_CHECKING:
     from art.defences.postprocessor import Postprocessor
     from art.defences.preprocessor import Preprocessor
@@ -306,10 +303,7 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
 
         for sample in x_preprocessed:
             if self.concrete_to_zonotope is None:
-                if sys.version_info >= (3, 8):
-                    eps_bound = np.eye(math.prod(self.input_shape)) * bound
-                else:
-                    eps_bound = np.eye(reduce(lambda x, y: x * y, self.input_shape)) * bound
+                eps_bound = np.eye(math.prod(self.input_shape)) * bound
 
                 processed_sample, eps_bound = self.pre_process(cent=np.copy(sample), eps=eps_bound)
                 processed_sample = np.expand_dims(processed_sample, axis=0)

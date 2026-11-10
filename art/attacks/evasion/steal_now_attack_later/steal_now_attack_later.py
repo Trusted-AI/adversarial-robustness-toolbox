@@ -402,7 +402,7 @@ class SNAL(EvasionAttack):
                 x_2 = x_1 + tile_size
                 y_2 = y_1 + tile_size
                 tile_mat[(idx_i, idx_j)] = TileArray(
-                    list([x_1, y_1, x_2, y_2]), self.threshold_objs, tile_size, buffer_depth, self.estimator.device
+                    [x_1, y_1, x_2, y_2], self.threshold_objs, tile_size, buffer_depth, self.estimator.device
                 )
 
         # init guess
@@ -613,7 +613,7 @@ class SNAL(EvasionAttack):
                 r_tile = torch.cat([r_tile, t_tile], dim=0)
                 r_mask = torch.cat([r_mask, t_mask], dim=0)
 
-            for _, obj in tile_mat.items():
+            for obj in tile_mat.values():
                 # select n_samples
                 while r_tile.shape[0] < int(1.5 * n_samples):
                     t_tile, t_mask = generate_tile(patches, masks, tile_size, [1, 2])

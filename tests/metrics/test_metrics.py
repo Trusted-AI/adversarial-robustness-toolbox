@@ -322,7 +322,7 @@ class TestMetrics(unittest.TestCase):
         nb_train = 1000
         nb_test = 100
         batch_size = 3
-        (x_train, y_train), (x_test, y_test), _, _ = load_mnist()
+        (x_train, _y_train), (x_test, _y_test), _, _ = load_mnist()
 
         x_train = x_train[0:nb_train]
         x_test = x_test[0:nb_test]

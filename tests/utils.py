@@ -19,7 +19,6 @@
 Module providing convenience functions specifically for unit tests.
 """
 
-
 import json
 import logging
 import os
@@ -104,7 +103,7 @@ class TestBase(unittest.TestCase):
     def tearDown(self):
         time_end = time.time() - self.time_start
         test_name = ".".join(self.id().split(" ")[0].split(".")[-2:])
-        logger.info("%s: completed in %.3f seconds" % (test_name, time_end))
+        logger.info(f"{test_name}: completed in {time_end:.3f} seconds")
 
         # Check that the test data has not been modified, only catches changes in attack.generate if self has been used
         np.testing.assert_array_almost_equal(
@@ -158,7 +157,7 @@ def check_adverse_predicted_sample_y(y_pred_adv, y_non_adv):
 def is_valid_framework(framework):
     if framework not in art_supported_frameworks:
         raise Exception(
-            "Framework value {0} is unsupported. Please use one of these valid values: {1}".format(
+            "Framework value {} is unsupported. Please use one of these valid values: {}".format(
                 framework, " ".join(art_supported_frameworks)
             )
         )
@@ -1445,11 +1444,11 @@ def get_tabular_classifier_scikit_list(clipped=False, model_list_names=None):
     if model_list_names is None:
         model_dict_names = available_models
     else:
-        model_dict_names = dict()
+        model_dict_names = {}
         for name in model_list_names:
             model_dict_names[name] = available_models[name]
 
-    classifier_list = list()
+    classifier_list = []
 
     if clipped:
         for model_name, model_class in model_dict_names.items():

@@ -306,9 +306,9 @@ class ShadowModels:
                             randomize_features_fn=randomize_features_fn,
                         )
                         break
-                    except RuntimeError as err:
+                    except RuntimeError:
                         if tries == max_retries - 1:
-                            raise err
+                            raise
 
                 x.append(random_record)
                 y.append(one_hot_label)

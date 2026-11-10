@@ -49,4 +49,4 @@ for epsilon in epsilon_values:
     # Evaluate the classifier on the adversarial examples
     preds = np.argmax(classifier.predict(x_test_adv), axis=1)
     acc = np.sum(preds == np.argmax(y_test, axis=1)) / y_test.shape[0]
-    print("Test accuracy on adversarial sample (epsilon = %.2f): %.2f%%" % (epsilon, acc * 100))
+    print(f"Test accuracy on adversarial sample (epsilon = {epsilon:.2f}): {acc * 100:.2f}%")

@@ -180,7 +180,7 @@ else:
     # load data #
     #############
 
-    x_list = list()
+    x_list = []
 
     for path in [
         os.path.join(working_dir, "goturn-pytorch", "test", "8"),
@@ -190,7 +190,7 @@ else:
         filelist = glob.glob(path + "/*.jpg")
         filelist.sort()
 
-        img_list = list()
+        img_list = []
         for fname in filelist:
             img = Image.open(fname).resize((277, 277), Image.BILINEAR)
             img = np.array(img)
@@ -208,7 +208,7 @@ else:
         num_frames_min = 10000000
         for x_i in x_list:
             num_frames_min = min(num_frames_min, x_i.shape[0])
-        x_list_new = list()
+        x_list_new = []
         for x_i in x_list:
             x_i_new = x_i[0:num_frames_min, :, :, :]
             x_list_new.append(x_i_new)

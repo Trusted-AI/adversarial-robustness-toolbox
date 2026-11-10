@@ -28,10 +28,7 @@ from typing import TYPE_CHECKING, Any
 import numpy as np
 
 # Ensure compatibility with Python 2 and 3 when using ABCMeta
-if sys.version_info >= (3, 4):
-    ABC = abc.ABC
-else:
-    ABC = abc.ABCMeta("ABC", (), {})
+ABC = abc.ABC
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_TYPE

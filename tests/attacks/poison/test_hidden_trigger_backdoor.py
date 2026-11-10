@@ -57,7 +57,7 @@ def test_poison(art_warning, get_default_mnist_subset, image_dl_estimator, frame
 
         backdoor = PoisoningAttackBackdoor(mod)
         target = y_train[0]
-        diff_index = list(set(np.arange(len(y_train))) - set(np.where(np.all(y_train == target, axis=1))[0]))[0]
+        diff_index = next(iter(set(np.arange(len(y_train))) - set(np.where(np.all(y_train == target, axis=1))[0])))
         source = y_train[diff_index]
         attack = HiddenTriggerBackdoor(
             classifier,
@@ -83,7 +83,7 @@ def test_poison(art_warning, get_default_mnist_subset, image_dl_estimator, frame
 @pytest.mark.skip_framework("non_dl_frameworks")
 def test_check_params(art_warning, get_default_mnist_subset, image_dl_estimator, framework):
     try:
-        (x_train, y_train), (_, _) = get_default_mnist_subset
+        (_x_train, y_train), (_, _) = get_default_mnist_subset
         functional = True
         if framework == "huggingface":
             functional = False
@@ -107,7 +107,7 @@ def test_check_params(art_warning, get_default_mnist_subset, image_dl_estimator,
 
         backdoor = PoisoningAttackBackdoor(mod)
         target = y_train[0]
-        diff_index = list(set(np.arange(len(y_train))) - set(np.where(np.all(y_train == target, axis=1))[0]))[0]
+        diff_index = next(iter(set(np.arange(len(y_train))) - set(np.where(np.all(y_train == target, axis=1))[0])))
         source = y_train[diff_index]
 
         # Test non-array target

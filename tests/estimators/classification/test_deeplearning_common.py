@@ -24,7 +24,7 @@ def test_get_activations(art_warning, get_default_mnist_subset, framework, image
     try:
         classifier, _ = image_dl_estimator(from_logits=True)
 
-        (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
+        (_, _), (x_test_mnist, _y_test_mnist) = get_default_mnist_subset
 
         batch_size = 128
         for i, name in enumerate(classifier.layer_names):
@@ -60,7 +60,7 @@ def test_fit(art_warning, get_default_mnist_subset, default_batch_size, image_dl
         (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
         labels = np.argmax(y_test_mnist, axis=1)
-        classifier, sess = image_dl_estimator(from_logits=True)
+        classifier, _sess = image_dl_estimator(from_logits=True)
 
         accuracy = np.sum(np.argmax(classifier.predict(x_test_mnist), axis=1) == labels) / x_test_mnist.shape[0]
         np.testing.assert_array_almost_equal(accuracy, 0.32, decimal=0.06)
@@ -78,7 +78,7 @@ def test_predict(
     art_warning, framework, get_default_mnist_subset, image_dl_estimator, expected_values, store_expected_values
 ):
     try:
-        (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
+        (_, _), (x_test_mnist, _y_test_mnist) = get_default_mnist_subset
 
         classifier, _ = image_dl_estimator(from_logits=True)
 
@@ -92,7 +92,7 @@ def test_predict(
 def test_shapes(art_warning, get_default_mnist_subset, image_dl_estimator):
     try:
         (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
-        classifier, sess = image_dl_estimator(from_logits=True)
+        classifier, _sess = image_dl_estimator(from_logits=True)
 
         predictions = classifier.predict(x_test_mnist)
         assert predictions.shape == y_test_mnist.shape
@@ -416,12 +416,12 @@ def test_class_gradient(
     expected_values,
 ):
     try:
-        (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
+        (_, _), (x_test_mnist, _y_test_mnist) = get_default_mnist_subset
 
         classifier, _ = image_dl_estimator(from_logits=True)
 
         (
-            grad_1_all_labels,
+            _grad_1_all_labels,
             grad_2_all_labels,
             grad_1_label5,
             grad_2_label5,

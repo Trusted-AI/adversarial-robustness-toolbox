@@ -94,9 +94,8 @@ class AttributeInferenceMembership(AttributeInferenceAttack):
         if not values:
             raise ValueError("`values` cannot be None or empty")
 
-        if y is not None:
-            if y.shape[0] != x.shape[0]:
-                raise ValueError("Number of rows in x and y do not match")
+        if y is not None and y.shape[0] != x.shape[0]:
+            raise ValueError("Number of rows in x and y do not match")
 
         # single index
         if isinstance(self.attack_feature, int):

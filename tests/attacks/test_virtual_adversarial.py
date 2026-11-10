@@ -63,7 +63,7 @@ class TestVirtualAdversarial(TestBase):
         self._test_backend_mnist(classifier, self.x_test_mnist, self.y_test_mnist)
 
     def test_3_tensorflow_mnist(self):
-        classifier, sess = get_image_classifier_tf(from_logits=False)
+        classifier, _sess = get_image_classifier_tf(from_logits=False)
 
         scores = get_labels_np_array(classifier.predict(self.x_train_mnist))
         acc = np.sum(np.argmax(scores, axis=1) == np.argmax(self.y_train_mnist, axis=1)) / self.y_train_mnist.shape[0]

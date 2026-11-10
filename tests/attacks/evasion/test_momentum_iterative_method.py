@@ -40,7 +40,7 @@ def fix_get_mnist_subset(get_mnist_dataset):
 @pytest.mark.skip_framework("tensorflow")  # See issue #2439
 def test_images(art_warning, fix_get_mnist_subset, image_dl_estimator_for_attack, framework):
     try:
-        x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist = fix_get_mnist_subset
+        x_train_mnist, _y_train_mnist, _x_test_mnist, _y_test_mnist = fix_get_mnist_subset
         classifier = image_dl_estimator_for_attack(MomentumIterativeMethod)
 
         attack = MomentumIterativeMethod(classifier, eps=0.3, eps_step=0.1, decay=1.0, max_iter=10)
@@ -58,7 +58,7 @@ def test_images(art_warning, fix_get_mnist_subset, image_dl_estimator_for_attack
 @pytest.mark.skip_framework("tensorflow")  # See issue #2439
 def test_images_targeted(art_warning, fix_get_mnist_subset, image_dl_estimator_for_attack, framework):
     try:
-        x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist = fix_get_mnist_subset
+        x_train_mnist, y_train_mnist, _x_test_mnist, _y_test_mnist = fix_get_mnist_subset
         classifier = image_dl_estimator_for_attack(MomentumIterativeMethod)
 
         attack = MomentumIterativeMethod(classifier, eps=0.3, eps_step=0.1, decay=1.0, max_iter=10)

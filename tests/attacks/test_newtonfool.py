@@ -56,7 +56,7 @@ class TestNewtonFool(TestBase):
         x_test_original = self.x_test_mnist.copy()
 
         # Build TensorFlowClassifier
-        tfc, sess = get_image_classifier_tf()
+        tfc, _sess = get_image_classifier_tf()
 
         # Attack
         nf = NewtonFool(tfc, max_iter=5, batch_size=100, verbose=False)

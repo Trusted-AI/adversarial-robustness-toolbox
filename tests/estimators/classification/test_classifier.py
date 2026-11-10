@@ -65,9 +65,7 @@ class ClassifierNeuralNetworkInstance(
     )
 
     def __init__(self, clip_values, channels_first=True):
-        super().__init__(
-            model=None, clip_values=clip_values, channels_first=channels_first
-        )
+        super().__init__(model=None, clip_values=clip_values, channels_first=channels_first)
 
     def class_gradient(self, x, label=None, **kwargs):
         pass

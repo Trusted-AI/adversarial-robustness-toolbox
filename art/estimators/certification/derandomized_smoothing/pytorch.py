@@ -535,7 +535,7 @@ class PyTorchDeRandomizedSmoothing(DeRandomizedSmoothingMixin, PyTorchClassifier
                             "Try dropping the last incomplete batch by setting drop_last=True in "
                             "method PyTorchClassifier.fit."
                         )
-                    raise err
+                    raise
 
                 loss = self.loss(model_outputs, o_batch)
                 acc = self.get_accuracy(preds=model_outputs, labels=o_batch)

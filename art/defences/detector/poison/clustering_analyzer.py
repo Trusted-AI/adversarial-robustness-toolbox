@@ -91,7 +91,7 @@ class ClusteringAnalyzer:
             for cluster_id in range(nb_clusters):
                 ptc = sizes[cluster_id] / total_dp_in_class
                 susp = np.isin(cluster_id, poison_clusters[0])
-                dict_i = dict(ptc_data_in_cluster=round(ptc, 2), suspicious_cluster=susp)
+                dict_i = {"ptc_data_in_cluster": round(ptc, 2), "suspicious_cluster": susp}
 
                 dict_cluster: dict[str, dict[str, int]] = {"cluster_" + str(cluster_id): dict_i}
                 report_class.update(dict_cluster)
@@ -144,8 +144,8 @@ class ClusteringAnalyzer:
             cluster1_is_poison = False
 
             dict_k = {}
-            dict_cluster_0 = dict(cluster0_distance_to_its_class=str(cluster0_distance))
-            dict_cluster_1 = dict(cluster1_distance_to_its_class=str(cluster1_distance))
+            dict_cluster_0 = {"cluster0_distance_to_its_class": str(cluster0_distance)}
+            dict_cluster_1 = {"cluster1_distance_to_its_class": str(cluster1_distance)}
             for k, center in enumerate(cluster_centers):
                 if k == i:
                     pass
@@ -167,7 +167,7 @@ class ClusteringAnalyzer:
                     dict_k.update(dict_cluster_0)
                     dict_k.update(dict_cluster_1)
 
-            report_class = dict(cluster_0=dict_cluster_0, cluster_1=dict_cluster_1)
+            report_class = {"cluster_0": dict_cluster_0, "cluster_1": dict_cluster_1}
             report["Class_" + str(i)] = report_class
 
             poison_clusters = []
@@ -244,7 +244,7 @@ class ClusteringAnalyzer:
             for cluster_id in range(nb_clusters):
                 ptc = sizes[cluster_id] / total_dp_in_class
                 susp = np.isin(cluster_id, poison_clusters[0])
-                dict_i = dict(ptc_data_in_cluster=round(ptc, 2), suspicious_cluster=susp)
+                dict_i = {"ptc_data_in_cluster": round(ptc, 2), "suspicious_cluster": susp}
 
                 dict_cluster = {"cluster_" + str(cluster_id): dict_i}
                 report_class.update(dict_cluster)
@@ -315,11 +315,11 @@ class ClusteringAnalyzer:
 
             # Generate report for class
             silhouette_avg = round(silhouette_score(activations, clusters), r_silhouette)
-            dict_i: dict[str, Any] = dict(
-                sizes_clusters=str(bins),
-                ptc_cluster=str(percentages),
-                avg_silhouette_score=str(silhouette_avg),
-            )
+            dict_i: dict[str, Any] = {
+                "sizes_clusters": str(bins),
+                "ptc_cluster": str(percentages),
+                "avg_silhouette_score": str(silhouette_avg),
+            }
 
             if np.shape(poison_clusters)[1] != 0:
                 # Relative size of the clusters is suspicious

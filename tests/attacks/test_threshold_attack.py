@@ -22,7 +22,6 @@ This module tests the Threshold Attack.
     https://arxiv.org/abs/1906.06026
 """
 
-
 import logging
 import unittest
 
@@ -74,7 +73,7 @@ class TestThresholdAttack(TestBase):
         Test with the TensorFlowClassifier. (Untargeted Attack)
         :return:
         """
-        classifier, sess = get_image_classifier_tf()
+        classifier, _sess = get_image_classifier_tf()
         self._test_attack(classifier, self.x_test_mnist, self.y_test_mnist, False)
 
     def test_4_pytorch_mnist(self):
@@ -99,7 +98,7 @@ class TestThresholdAttack(TestBase):
         Test with the TensorFlowClassifier. (Targeted Attack)
         :return:
         """
-        classifier, sess = get_image_classifier_tf()
+        classifier, _sess = get_image_classifier_tf()
         self._test_attack(classifier, self.x_test_mnist, self.y_test_mnist, True)
 
     def test_5_pytorch_mnist_targeted(self):

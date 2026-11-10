@@ -26,7 +26,6 @@ The Pixel Attack is a generalisation of One Pixel Attack.
     https://arxiv.org/abs/1906.06026
 """
 
-
 import logging
 import unittest
 
@@ -115,7 +114,7 @@ class TestPixelAttack(TestBase):
         Test with the TensorFlowClassifier. (Targeted Attack)
         :return:
         """
-        classifier, sess = get_image_classifier_tf()
+        classifier, _sess = get_image_classifier_tf()
         self._test_attack(classifier, self.x_test_mnist, self.y_test_mnist, True)
 
     # def test_5_pytorch_mnist_targeted(self):

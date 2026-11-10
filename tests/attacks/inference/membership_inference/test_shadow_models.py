@@ -270,7 +270,7 @@ def test_shadow_model_disjoint(art_warning):
 
         shadow_models = ShadowModels(art_classifier, num_shadow_models=2, disjoint_datasets=True)
         shadow_dataset = shadow_models.generate_shadow_dataset(x_shadow, to_categorical(y_shadow, 4))
-        (mem_x, mem_y, mem_pred), (nonmem_x, nonmem_y, nonmem_pred) = shadow_dataset
+        (mem_x, _mem_y, _mem_pred), (_nonmem_x, _nonmem_y, _nonmem_pred) = shadow_dataset
         models = shadow_models.get_shadow_models()
         train_sets = shadow_models.get_shadow_models_train_sets()
 
@@ -298,7 +298,7 @@ def test_shadow_model_overlap(art_warning):
 
         shadow_models = ShadowModels(art_classifier, num_shadow_models=2)
         shadow_dataset = shadow_models.generate_shadow_dataset(x_shadow, to_categorical(y_shadow, 4))
-        (mem_x, mem_y, mem_pred), (nonmem_x, nonmem_y, nonmem_pred) = shadow_dataset
+        (mem_x, _mem_y, _mem_pred), (_nonmem_x, _nonmem_y, _nonmem_pred) = shadow_dataset
         models = shadow_models.get_shadow_models()
         train_sets = shadow_models.get_shadow_models_train_sets()
 

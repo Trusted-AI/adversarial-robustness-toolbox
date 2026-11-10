@@ -35,7 +35,7 @@ def x_target():
 @pytest.mark.skip_framework("keras", "pytorch", "scikitlearn", "kerastf")
 def test_poison_estimator_trail(art_warning, get_default_mnist_subset, image_dl_gan, x_target):
     try:
-        (train_images, y_train_images), _ = get_default_mnist_subset
+        (train_images, _y_train_images), _ = get_default_mnist_subset
         train_images = train_images * (2.0 / 255) - 1.0
 
         gan, _ = image_dl_gan()

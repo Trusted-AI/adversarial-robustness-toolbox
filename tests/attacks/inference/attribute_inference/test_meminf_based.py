@@ -482,7 +482,7 @@ def test_meminf_label_only(art_warning, decision_tree_estimator, get_iris_datase
 def test_errors(art_warning, tabular_dl_estimator_for_attack, get_iris_dataset):
     try:
         classifier = tabular_dl_estimator_for_attack(AttributeInferenceMembership)
-        (x_train, y_train), (x_test, y_test) = get_iris_dataset
+        (x_train, y_train), (_x_test, y_test) = get_iris_dataset
         meminf_attack = MembershipInferenceBlackBox(classifier, attack_model_type="nn")
 
         with pytest.raises(ValueError):

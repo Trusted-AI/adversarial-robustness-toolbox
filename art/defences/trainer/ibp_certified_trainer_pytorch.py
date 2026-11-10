@@ -27,6 +27,7 @@ from __future__ import annotations
 import logging
 import random
 import sys
+from typing import TYPE_CHECKING, Any, TypedDict
 
 import numpy as np
 from sklearn.utils import shuffle
@@ -38,30 +39,20 @@ from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent i
 from art.defences.trainer.trainer import Trainer
 from art.utils import check_and_transform_label_format
 
-if sys.version_info >= (3, 8):
-    from typing import TYPE_CHECKING, Any, TypedDict
-else:
-    from typing import TYPE_CHECKING, Any
-
 if TYPE_CHECKING:
     from art.utils import IBP_CERTIFIER_TYPE
 
     # if we use python 3.8 or higher use the more informative TypedDict for type hinting
-    if sys.version_info >= (3, 8):
+    class PGDParamDict(TypedDict):
+        """
+        A TypedDict class to define the types in the pgd_params dictionary.
+        """
 
-        class PGDParamDict(TypedDict):
-            """
-            A TypedDict class to define the types in the pgd_params dictionary.
-            """
-
-            eps: float
-            eps_step: float
-            max_iter: int
-            num_random_init: int
-            batch_size: int
-
-    else:
-        PGDParamDict: dict[str, int | float]
+        eps: float
+        eps_step: float
+        max_iter: int
+        num_random_init: int
+        batch_size: int
 
 
 logger = logging.getLogger(__name__)

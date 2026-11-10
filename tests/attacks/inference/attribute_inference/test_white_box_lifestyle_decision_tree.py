@@ -39,7 +39,7 @@ def test_white_box_lifestyle(art_warning, decision_tree_estimator, get_iris_data
         values = [0.14, 0.42, 0.71]  # rounded down
         priors = [50 / 150, 54 / 150, 46 / 150]
 
-        (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = get_iris_dataset
+        (x_train_iris, _y_train_iris), (x_test_iris, _y_test_iris) = get_iris_dataset
         x_train_for_attack = np.delete(x_train_iris, attack_feature, 1)
         x_train_feature = x_train_iris[:, attack_feature]
         x_test_for_attack = np.delete(x_test_iris, attack_feature, 1)
@@ -64,7 +64,7 @@ def test_white_box_lifestyle(art_warning, decision_tree_estimator, get_iris_data
 def test_white_box_lifestyle_regression(art_warning, get_diabetes_dataset):
     try:
         attack_feature = 0  # age
-        (x_train_diabetes, y_train_diabetes), (x_test_diabetes, y_test_diabetes) = get_diabetes_dataset
+        (x_train_diabetes, y_train_diabetes), (x_test_diabetes, _y_test_diabetes) = get_diabetes_dataset
 
         bins = [
             -0.96838121,

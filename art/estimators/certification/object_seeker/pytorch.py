@@ -25,7 +25,7 @@ from __future__ import annotations
 
 import logging
 import sys
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 import numpy as np
 
@@ -37,11 +37,6 @@ from art.estimators.object_detection import (
     PyTorchYolo,
 )
 from art.utils import non_maximum_suppression
-
-if sys.version_info >= (3, 8):
-    from typing import Literal
-else:
-    from typing import Literal
 
 if TYPE_CHECKING:
 

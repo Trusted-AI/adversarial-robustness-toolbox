@@ -216,7 +216,7 @@ class AdversarialPatchNumpy(EvasionAttack):
                 x, self.patch, mask=mask
             )
 
-            num_batches = int(math.ceil(x.shape[0] / self.batch_size))
+            num_batches = math.ceil(x.shape[0] / self.batch_size)
             patch_gradients = np.zeros_like(self.patch)
 
             for i_batch in range(num_batches):

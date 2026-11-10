@@ -119,11 +119,11 @@ class SpatialTransformation(EvasionAttack):
             nb_instances = len(x)
 
             # Determine grids
-            max_num_pixel_trans_x = int(round(x.shape[1] * self.max_translation / 100.0))
-            max_num_pixel_trans_y = int(round(x.shape[2] * self.max_translation / 100.0))
+            max_num_pixel_trans_x = round(x.shape[1] * self.max_translation / 100.0)
+            max_num_pixel_trans_y = round(x.shape[2] * self.max_translation / 100.0)
 
             grid_trans_x = [
-                int(round(g))
+                round(g)
                 for g in list(
                     np.linspace(
                         -max_num_pixel_trans_x,
@@ -133,7 +133,7 @@ class SpatialTransformation(EvasionAttack):
                 )
             ]
             grid_trans_y = [
-                int(round(g))
+                round(g)
                 for g in list(
                     np.linspace(
                         -max_num_pixel_trans_y,

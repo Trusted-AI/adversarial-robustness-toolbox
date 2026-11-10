@@ -105,7 +105,7 @@ class TestSaliencyMap(TestBase):
         x_test_original = self.x_test_mnist.copy()
 
         # Create basic CNN on MNIST using TensorFlow
-        classifier, sess = get_image_classifier_tf()
+        classifier, _sess = get_image_classifier_tf()
 
         scores = get_labels_np_array(classifier.predict(self.x_train_mnist))
         accuracy = np.sum(np.argmax(scores, axis=1) == np.argmax(self.y_train_mnist, axis=1)) / self.n_train

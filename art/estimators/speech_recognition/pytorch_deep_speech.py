@@ -193,8 +193,10 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
                 elif pretrained_model == "librispeech":
                     filename, url = (
                         "librispeech_pretrained_v2.pth",
-                        "https://github.com/SeanNaren/deepspeech.pytorch/releases/download/v2.0/"
-                        "librispeech_pretrained_v2.pth",
+                        (
+                            "https://github.com/SeanNaren/deepspeech.pytorch/releases/download/v2.0/"
+                            "librispeech_pretrained_v2.pth"
+                        ),
                     )
 
                 elif pretrained_model == "tedlium":  # pragma: no cover
@@ -209,8 +211,10 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
                     if filename is None or url is None:
                         filename, url = (
                             "librispeech_pretrained_v2.pth",
-                            "https://github.com/SeanNaren/deepspeech.pytorch/releases/download/v2.0/"
-                            "librispeech_pretrained_v2.pth",
+                            (
+                                "https://github.com/SeanNaren/deepspeech.pytorch/releases/download/v2.0/"
+                                "librispeech_pretrained_v2.pth"
+                            ),
                         )
 
                 else:  # pragma: no cover
@@ -234,8 +238,10 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
                 elif pretrained_model == "librispeech":
                     filename, url = (
                         "librispeech_pretrained_v3.ckpt",
-                        "https://github.com/SeanNaren/deepspeech.pytorch/releases/download/V3.0/"
-                        "librispeech_pretrained_v3.ckpt",
+                        (
+                            "https://github.com/SeanNaren/deepspeech.pytorch/releases/download/V3.0/"
+                            "librispeech_pretrained_v3.ckpt"
+                        ),
                     )
 
                 elif pretrained_model == "tedlium":  # pragma: no cover
@@ -250,8 +256,10 @@ class PyTorchDeepSpeech(PytorchSpeechRecognizerMixin, SpeechRecognizerMixin, PyT
                     if filename is None or url is None:
                         filename, url = (
                             "librispeech_pretrained_v3.ckpt",
-                            "https://github.com/SeanNaren/deepspeech.pytorch/releases/download/V3.0/"
-                            "librispeech_pretrained_v3.ckpt",
+                            (
+                                "https://github.com/SeanNaren/deepspeech.pytorch/releases/download/V3.0/"
+                                "librispeech_pretrained_v3.ckpt"
+                            ),
                         )
 
                 else:  # pragma: no cover

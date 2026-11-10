@@ -55,7 +55,7 @@ def test_poison(art_warning, get_default_mnist_subset, image_dl_estimator, frame
         art_warning(e)
 
 
-@pytest.mark.parametrize("params", [dict(pp_poison=-0.2), dict(pp_poison=1.2)])
+@pytest.mark.parametrize("params", [{"pp_poison": -0.2}, {"pp_poison": 1.2}])
 @pytest.mark.skip_framework(
     "non_dl_frameworks",
 )

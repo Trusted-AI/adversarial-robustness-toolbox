@@ -23,7 +23,7 @@ from __future__ import annotations
 
 import logging
 import sys
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 import numpy as np
 from sklearn import metrics
@@ -34,11 +34,6 @@ from art.defences.detector.evasion.subsetscanning.scanner import Scanner
 from art.defences.detector.evasion.subsetscanning.scoring_functions import (
     ScoringFunctions,
 )
-
-if sys.version_info >= (3, 8):
-    from typing import Literal
-else:
-    from typing import Literal
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_NEURALNETWORK_TYPE

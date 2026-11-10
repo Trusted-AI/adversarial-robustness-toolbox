@@ -123,7 +123,7 @@ class BFGSB:  # pragma: no cover
             qk1 = self._subspace_min(qk, var_l, u, x_cp, _gfk.copy(), Hk)
             pk = qk1 - qk
 
-            alpha_k, fc, gc, old_fval, old_old_fval, gfkp1, fnev = self._line_search_wolfe(
+            alpha_k, _fc, _gc, old_fval, old_old_fval, gfkp1, fnev = self._line_search_wolfe(
                 fun_and_jac, qk, pk, _gfk, old_fval, old_old_fval, var_l, u, args
             )
             func_calls += fnev

@@ -61,7 +61,7 @@ class TestWasserstein(TestBase):
     #     )
 
     def test_tensorflow_mnist(self):
-        classifier, sess = get_image_classifier_tf()
+        classifier, _sess = get_image_classifier_tf()
 
         scores = get_labels_np_array(classifier.predict(self.x_train_mnist))
         acc = np.sum(np.argmax(scores, axis=1) == np.argmax(self.y_train_mnist, axis=1)) / self.y_train_mnist.shape[0]

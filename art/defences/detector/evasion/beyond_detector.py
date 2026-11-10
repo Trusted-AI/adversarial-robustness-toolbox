@@ -112,7 +112,7 @@ class BeyondDetectorPyTorch(EvasionDetector):
         self.model_classifier.eval()  # type: ignore
         self.projector.eval()  # type: ignore
 
-        number_batch = int(math.ceil(len(samples) / batch_size))
+        number_batch = math.ceil(len(samples) / batch_size)
 
         similarities_list = []
 

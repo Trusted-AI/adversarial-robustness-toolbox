@@ -209,7 +209,7 @@ class CompositeAdversarialAttackPyTorch(EvasionAttack):
         for i in range(6):
             if (
                 not isinstance(self.epsilons[i], tuple)
-                or not len(self.epsilons[i]) == 2
+                or len(self.epsilons[i]) != 2
                 or not (isinstance(self.epsilons[i][0], float) and isinstance(self.epsilons[i][1], float))
             ):
                 logger.info(

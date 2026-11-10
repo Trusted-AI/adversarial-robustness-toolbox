@@ -198,13 +198,13 @@ def get_transform_params(
         dist = np.random.uniform(focal + dist_range[0], focal + dist_range[1])
         gamma = np.random.uniform(gamma_range[0], gamma_range[1])
         flip_flag = np.random.uniform(0.0, 1.0)
-        if int(round(flip_flag)) == 1:
+        if round(flip_flag) == 1:
             gamma = 1.0 / gamma
 
         crop_percent = np.random.uniform(crop_percent_range[0], crop_percent_range[1])
         crop_off_x = np.random.uniform(off_x_range[0], off_x_range[1])
         crop_off_y = np.random.uniform(off_y_range[0], off_y_range[1])
-        blur = blur_kernels[int(math.floor(np.random.uniform(0.0, 1.0) * len(blur_kernels)))]
+        blur = blur_kernels[math.floor(np.random.uniform(0.0, 1.0) * len(blur_kernels))]
         xform = (angle, dist, gamma, blur, crop_percent, crop_off_x, crop_off_y, obj_width, focal)
         transforms.append(xform)
 
@@ -530,10 +530,10 @@ def _get_perspective_transform(
 
     if height > width:  # tall and narrow
         crop_x = int(crop_size)
-        crop_y = int(round(crop_size / width * height))
+        crop_y = round(crop_size / width * height)
     else:  # wide and short or square
         crop_y = int(crop_size)
-        crop_x = int(round(crop_size / height * width))
+        crop_x = round(crop_size / height * width)
 
     return perspective_mat, crop_x, crop_y
 
@@ -595,27 +595,27 @@ def get_offset_and_crop_size(
         if (max_x - min_x) / (max_y - min_y) < width / height:  # result is tall and narrow
             diff_in_size = (max_y - min_y) / height * width - (max_x - min_x)
             orig_size = max_y - min_y if width > height else (max_y - min_y) / height * width
-            crop_size = int(round(orig_size * (1.0 - crop_percent)))
-            y_off = -min_y - int(round(crop_percent / 2 * orig_size))
-            x_off = -min_x + int(round(diff_in_size / 2 - crop_percent / 2 * orig_size))
+            crop_size = round(orig_size * (1.0 - crop_percent))
+            y_off = -min_y - round(crop_percent / 2 * orig_size)
+            x_off = -min_x + round(diff_in_size / 2 - crop_percent / 2 * orig_size)
 
         else:  # result is wide and short
             diff_in_size = (max_x - min_x) / width * height - (max_y - min_y)
             orig_size = max_x - min_x if height > width else (max_x - min_x) / width * height
-            crop_size = int(round(orig_size * (1.0 - crop_percent)))
-            x_off = -min_x - int(round(crop_percent / 2 * orig_size))
-            y_off = -min_y + int(round(diff_in_size / 2 - crop_percent / 2 * orig_size))
+            crop_size = round(orig_size * (1.0 - crop_percent))
+            x_off = -min_x - round(crop_percent / 2 * orig_size)
+            y_off = -min_y + round(diff_in_size / 2 - crop_percent / 2 * orig_size)
 
         return x_off + crop_off_x * crop_size, y_off + crop_off_y * crop_size, crop_size
 
     min_x -= int((width * ratio - (max_x - min_x)) // 2)
     min_y -= int((height * ratio - (max_y - min_y)) // 2)
 
-    crop_size = int(round((1.0 - crop_percent) * min(width, height) * ratio))
+    crop_size = round((1.0 - crop_percent) * min(width, height) * ratio)
 
     return (
-        -min_x - int(round(crop_percent / 2 * width * ratio)),
-        -min_y - int(round(crop_percent / 2 * height * ratio)),
+        -min_x - round(crop_percent / 2 * width * ratio),
+        -min_y - round(crop_percent / 2 * height * ratio),
         crop_size,
     )
 

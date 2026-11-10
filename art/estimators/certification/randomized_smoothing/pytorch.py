@@ -205,7 +205,7 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
                             "Try dropping the last incomplete batch by setting drop_last=True in "
                             "method PyTorchClassifier.fit."
                         )
-                    raise err
+                    raise
 
                 # Form the loss function
                 loss = self._loss(model_outputs[-1], y_batch)
