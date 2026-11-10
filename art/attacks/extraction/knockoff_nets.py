@@ -418,6 +418,6 @@ class KnockoffNets(ExtractionAttack):
             raise ValueError("Reward type must be in ['cert', 'div', 'loss', 'all'].")
 
         if not isinstance(self.verbose, bool):
-            raise ValueError("The argument `verbose` has to be of type bool.")
+            raise TypeError("The argument `verbose` has to be of type bool.")
         if not isinstance(self.use_probability, bool):
-            raise ValueError("The argument `use_probability` has to be of type bool.")
+            raise TypeError("The argument `use_probability` has to be of type bool.")

@@ -56,9 +56,9 @@ class TestVirtualAdversarial(TestBase):
         classifier = get_image_classifier_kr()
 
         scores = classifier._model.evaluate(self.x_train_mnist, self.y_train_mnist)
-        logging.info("[Keras, MNIST] Accuracy on training set: %.2f%%", (scores[1] * 100))
+        logger.info("[Keras, MNIST] Accuracy on training set: %.2f%%", (scores[1] * 100))
         scores = classifier._model.evaluate(self.x_test_mnist, self.y_test_mnist)
-        logging.info("[Keras, MNIST] Accuracy on test set: %.2f%%", (scores[1] * 100))
+        logger.info("[Keras, MNIST] Accuracy on test set: %.2f%%", (scores[1] * 100))
 
         self._test_backend_mnist(classifier, self.x_test_mnist, self.y_test_mnist)
 

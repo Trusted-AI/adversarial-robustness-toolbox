@@ -275,9 +275,8 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
                 "__name__" in dir(self._model.loss) and self._model.loss.__name__ in ["sparse_categorical_crossentropy"]
             )
             or isinstance(self._model.loss, tf.keras.losses.SparseCategoricalCrossentropy)
-        ):
-            if y_preprocessed.ndim > 1 and y_preprocessed.shape[1] > 1:
-                y_preprocessed = np.argmax(y_preprocessed, axis=1)
+        ) and (y_preprocessed.ndim > 1 and y_preprocessed.shape[1] > 1):
+            y_preprocessed = np.argmax(y_preprocessed, axis=1)
 
         # Convert to tensors
         x_tf = tf.convert_to_tensor(x_preprocessed)

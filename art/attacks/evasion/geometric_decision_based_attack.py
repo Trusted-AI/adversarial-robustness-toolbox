@@ -451,4 +451,4 @@ class GeoDA(EvasionAttack):
         #     raise ValueError("The argument `targeted` has to be of type bool.")
 
         if not isinstance(self.verbose, bool):
-            raise ValueError("The argument `verbose` has to be of type bool.")
+            raise TypeError("The argument `verbose` has to be of type bool.")

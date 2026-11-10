@@ -28,7 +28,7 @@ This module implements the total variance minimization defence `TotalVarMin`.
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 import numpy as np
 from scipy.optimize import minimize
@@ -54,7 +54,7 @@ class TotalVarMin(Preprocessor):
         see https://arxiv.org/abs/1902.06705
     """
 
-    params = ["prob", "norm", "lamb", "solver", "max_iter", "clip_values", "verbose"]
+    params: ClassVar[list[str]] = ["prob", "norm", "lamb", "solver", "max_iter", "clip_values", "verbose"]
 
     def __init__(
         self,
@@ -227,4 +227,4 @@ class TotalVarMin(Preprocessor):
                 raise ValueError("Invalid `clip_values`: min >= max.")
 
         if not isinstance(self.verbose, bool):
-            raise ValueError("The argument `verbose` has to be of type bool.")
+            raise TypeError("The argument `verbose` has to be of type bool.")

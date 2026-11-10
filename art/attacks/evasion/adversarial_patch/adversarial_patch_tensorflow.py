@@ -479,9 +479,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
 
         for i_iter in trange(self.max_iter, desc="Adversarial Patch TensorFlow v2", disable=not self.verbose):
             if mask is None:
-                counter = 0
                 for images, target in dataset:
-                    counter += 1
                     _ = self._train_step(images=images, target=target, mask=None)
             else:
                 for images, target, mask_i in dataset:

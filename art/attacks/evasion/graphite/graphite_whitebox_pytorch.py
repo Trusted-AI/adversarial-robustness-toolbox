@@ -206,11 +206,11 @@ class GRAPHITEWhiteboxPyTorch(EvasionAttack):
             )
 
         if not isinstance(obj_width, int) and not isinstance(obj_width, float):
-            raise ValueError("obj_width must be int or float")
+            raise TypeError("obj_width must be int or float")
         obj_width = float(obj_width)
 
         if not isinstance(focal, int) and not isinstance(focal, float):
-            raise ValueError("focal must be int or float")
+            raise TypeError("focal must be int or float")
         focal = float(focal)
 
         # Check the mask

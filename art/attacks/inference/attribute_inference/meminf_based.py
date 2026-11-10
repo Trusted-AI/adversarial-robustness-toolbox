@@ -84,9 +84,12 @@ class AttributeInferenceMembership(AttributeInferenceAttack):
         :type values: list
         :return: The inferred feature values.
         """
-        if self.estimator.input_shape is not None:
-            if isinstance(self.attack_feature, int) and self.estimator.input_shape[0] != x.shape[1] + 1:
-                raise ValueError("Number of features in x + 1 does not match input_shape of the estimator")
+        if (
+            self.estimator.input_shape is not None
+            and isinstance(self.attack_feature, int)
+            and self.estimator.input_shape[0] != x.shape[1] + 1
+        ):
+            raise ValueError("Number of features in x + 1 does not match input_shape of the estimator")
 
         if "values" not in kwargs:
             raise ValueError("Missing parameter `values`.")
@@ -149,4 +152,4 @@ class AttributeInferenceMembership(AttributeInferenceAttack):
         super()._check_params()
 
         if not isinstance(self.membership_attack, MembershipInferenceAttack):
-            raise ValueError("membership_attack should be a sub-class of MembershipInferenceAttack")
+            raise TypeError("membership_attack should be a sub-class of MembershipInferenceAttack")

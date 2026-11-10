@@ -22,7 +22,7 @@ This module implements resizing for images and object detection bounding boxes.
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 import cv2
 import numpy as np
@@ -41,9 +41,9 @@ class ImageResize(Preprocessor):
     This module implements resizing for images and object detection bounding boxes.
     """
 
-    params = ["height", "width", "channels_first", "label_type", "interpolation", "clip_values", "verbose"]
+    params: ClassVar[list[str]] = ["height", "width", "channels_first", "label_type", "interpolation", "clip_values", "verbose"]
 
-    label_types = ["classification", "object_detection"]
+    label_types: ClassVar[list[str]] = ["classification", "object_detection"]
 
     def __init__(
         self,

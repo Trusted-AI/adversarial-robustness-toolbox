@@ -24,6 +24,8 @@ import pytest
 from art.attacks.evasion import ProjectedGradientDescent
 from art.defences.trainer import AdversarialTrainerTRADESPyTorch
 
+logger = logging.getLogger(__name__)
+
 
 @pytest.fixture()
 def get_adv_trainer(framework, image_dl_estimator):
@@ -79,7 +81,7 @@ def test_adversarial_trainer_trades_pytorch_fit_and_predict(get_adv_trainer, fix
 
     trainer = get_adv_trainer()
     if trainer is None:
-        logging.warning("Couldn't perform  this test because no trainer is defined for this framework configuration")
+        logger.warning("Couldn't perform  this test because no trainer is defined for this framework configuration")
         return
 
     predictions = np.argmax(trainer.predict(x_test_mnist), axis=1)
@@ -127,7 +129,7 @@ def test_adversarial_trainer_trades_pytorch_fit_generator_and_predict(
 
     trainer = get_adv_trainer()
     if trainer is None:
-        logging.warning("Couldn't perform  this test because no trainer is defined for this framework configuration")
+        logger.warning("Couldn't perform  this test because no trainer is defined for this framework configuration")
         return
 
     predictions = np.argmax(trainer.predict(x_test_mnist), axis=1)

@@ -24,7 +24,7 @@ This module implements STRIP: A Defence Against Trojan Attacks on Deep Neural Ne
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 import numpy as np
 
@@ -44,7 +44,7 @@ class STRIP(Transformer):
     | Paper link: https://arxiv.org/abs/1902.06531
     """
 
-    params = [
+    params: ClassVar[list[str]] = [
         "num_samples",
         "false_acceptance_rate",
     ]

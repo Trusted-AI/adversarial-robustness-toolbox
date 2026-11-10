@@ -143,6 +143,6 @@ class BadDetGlobalMisclassificationAttack(PoisoningAttackObjectDetector):
 
     def _check_params(self) -> None:
         if not isinstance(self.backdoor, PoisoningAttackBackdoor):
-            raise ValueError("Backdoor must be of type PoisoningAttackBackdoor")
+            raise TypeError("Backdoor must be of type PoisoningAttackBackdoor")
         if not 0 < self.percent_poison <= 1:
             raise ValueError("percent_poison must be between 0 and 1")

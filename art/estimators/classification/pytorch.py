@@ -1192,8 +1192,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
                         result = []
                         if isinstance(self._model, torch.nn.Module):
-                            for name in self._model._modules:
-                                result.append(name)
+                            result.extend(self._model._modules)
 
                         else:  # pragma: no cover
                             raise TypeError("The input model must inherit from `nn.Module`.")

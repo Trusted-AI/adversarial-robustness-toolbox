@@ -28,6 +28,7 @@ This module implements the Cutout data augmentation defence.
 from __future__ import annotations
 
 import logging
+from typing import ClassVar
 
 import numpy as np
 from tqdm.auto import trange
@@ -48,7 +49,7 @@ class Cutout(Preprocessor):
         https://arxiv.org/abs/1902.06705
     """
 
-    params = ["length", "channels_first", "verbose"]
+    params: ClassVar[list[str]] = ["length", "channels_first", "verbose"]
 
     def __init__(
         self,

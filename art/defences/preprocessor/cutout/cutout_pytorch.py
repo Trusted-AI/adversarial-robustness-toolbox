@@ -28,7 +28,7 @@ This module implements the Cutout data augmentation defence in PyTorch.
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 from tqdm.auto import trange
 
@@ -52,7 +52,7 @@ class CutoutPyTorch(PreprocessorPyTorch):
         https://arxiv.org/abs/1902.06705
     """
 
-    params = ["length", "channels_first", "verbose"]
+    params: ClassVar[list[str]] = ["length", "channels_first", "verbose"]
 
     def __init__(
         self,

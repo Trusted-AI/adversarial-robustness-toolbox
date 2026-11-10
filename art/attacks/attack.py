@@ -23,7 +23,7 @@ from __future__ import annotations
 
 import abc
 import logging
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
 
 import numpy as np
 
@@ -72,9 +72,8 @@ class InputFilter(abc.ABCMeta):  # pragma: no cover
                 if "y" in kwargs:
                     if kwargs["y"] is not None and not isinstance(kwargs["y"], np.ndarray):
                         kwargs["y"] = np.array(kwargs["y"])
-                elif len(args) == 2:
-                    if not isinstance(args[1], np.ndarray):
-                        lst[1] = np.array(args[1])
+                elif len(args) == 2 and not isinstance(args[1], np.ndarray):
+                    lst[1] = np.array(args[1])
 
                 if len(args) > 0:
                     args = tuple(lst)
@@ -96,7 +95,7 @@ class Attack(abc.ABC):
     Abstract base class for all attack abstract base classes.
     """
 
-    attack_params: list[str] = []
+    attack_params: ClassVar[list[str]] = []
     # The _estimator_requirements define the requirements an estimator must satisfy to be used as a target for an
     # attack. They should be a tuple of requirements, where each requirement is either a class the estimator must
     # inherit from, or a tuple of classes which define a union, i.e. the estimator must inherit from at least one class
@@ -168,7 +167,7 @@ class Attack(abc.ABC):
     def _check_params(self) -> None:
 
         if not isinstance(self._summary_writer_arg, (bool, str, SummaryWriter)):
-            raise ValueError("The argument `summary_writer` has to be either of type bool or str.")
+            raise TypeError("The argument `summary_writer` has to be either of type bool or str.")
 
     @staticmethod
     def is_estimator_valid(estimator, estimator_requirements) -> bool:
@@ -487,7 +486,7 @@ class AttributeInferenceAttack(InferenceAttack):
     @staticmethod
     def _check_attack_feature(attack_feature: int | slice) -> None:
         if not isinstance(attack_feature, int) and not isinstance(attack_feature, slice):
-            raise ValueError("Attack feature must be either an integer or a slice object.")
+            raise TypeError("Attack feature must be either an integer or a slice object.")
 
         if isinstance(attack_feature, int) and attack_feature < 0:
             raise ValueError("Attack feature index must be non-negative.")

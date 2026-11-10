@@ -472,22 +472,22 @@ class RobustDPatch(EvasionAttack):
             raise ValueError("The length of patch shape must be 3.")
 
         if not isinstance(self.learning_rate, float):
-            raise ValueError("The learning rate must be of type float.")
+            raise TypeError("The learning rate must be of type float.")
         if self.learning_rate <= 0.0:
             raise ValueError("The learning rate must be greater than 0.0.")
 
         if not isinstance(self.max_iter, int):
-            raise ValueError("The number of optimization steps must be of type int.")
+            raise TypeError("The number of optimization steps must be of type int.")
         if self.max_iter <= 0:
             raise ValueError("The number of optimization steps must be greater than 0.")
 
         if not isinstance(self.batch_size, int):
-            raise ValueError("The batch size must be of type int.")
+            raise TypeError("The batch size must be of type int.")
         if self.batch_size <= 0:
             raise ValueError("The batch size must be greater than 0.")
 
         if not isinstance(self.verbose, bool):
-            raise ValueError("The argument `verbose` has to be of type bool.")
+            raise TypeError("The argument `verbose` has to be of type bool.")
 
         if not isinstance(self.patch_location, (tuple, list)) or not all(
             isinstance(s, int) for s in self.patch_location
@@ -534,9 +534,9 @@ class RobustDPatch(EvasionAttack):
             raise ValueError("At least one of the rotation sampling weights must be strictly greater than zero.")
 
         if not isinstance(self.sample_size, int):
-            raise ValueError("The EOT sample size must be of type int.")
+            raise TypeError("The EOT sample size must be of type int.")
         if self.sample_size <= 0:
             raise ValueError("The EOT sample size must be greater than 0.")
 
         if not isinstance(self.targeted, bool):
-            raise ValueError("The argument `targeted` has to be of type bool.")
+            raise TypeError("The argument `targeted` has to be of type bool.")

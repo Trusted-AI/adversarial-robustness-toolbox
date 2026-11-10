@@ -127,7 +127,8 @@ def test_pickle(art_warning, get_default_mnist_subset, image_dl_estimator):
         )
         myclassifier_2.fit(x_train_mnist, y_train_mnist, batch_size=100, nb_epochs=1)
 
-        pickle.dump(myclassifier_2, open(full_path, "wb"))
+        with open(full_path, "wb") as f:
+            pickle.dump(myclassifier_2, f)
 
         with open(full_path, "rb") as f:
             loaded_model = pickle.load(f)

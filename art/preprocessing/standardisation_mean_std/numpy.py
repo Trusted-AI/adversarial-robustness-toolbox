@@ -22,6 +22,7 @@ This module implements the standardisation with mean and standard deviation.
 from __future__ import annotations
 
 import logging
+from typing import ClassVar
 
 import numpy as np
 
@@ -37,7 +38,7 @@ class StandardisationMeanStd(Preprocessor):
     Implement the standardisation with mean and standard deviation.
     """
 
-    params = ["mean", "std", "apply_fit", "apply_predict"]
+    params: ClassVar[list[str]] = ["mean", "std", "apply_fit", "apply_predict"]
 
     def __init__(
         self,

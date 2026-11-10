@@ -28,6 +28,7 @@ This module implements the local spatial smoothing defence in `SpatialSmoothing`
 from __future__ import annotations
 
 import logging
+from typing import ClassVar
 
 import numpy as np
 from scipy.ndimage import median_filter
@@ -49,7 +50,7 @@ class SpatialSmoothing(Preprocessor):
         https://arxiv.org/abs/1902.06705
     """
 
-    params = ["window_size", "channels_first", "clip_values"]
+    params: ClassVar[list[str]] = ["window_size", "channels_first", "clip_values"]
 
     def __init__(
         self,

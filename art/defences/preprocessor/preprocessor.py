@@ -22,7 +22,7 @@ This module implements the abstract base class for defences that pre-process inp
 from __future__ import annotations
 
 import abc
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
 
 import numpy as np
 
@@ -41,7 +41,7 @@ class Preprocessor(abc.ABC):
         To modify, override `estimate_gradient`
     """
 
-    params: list[str] = []
+    params: ClassVar[list[str]] = []
 
     def __init__(self, is_fitted: bool = False, apply_fit: bool = True, apply_predict: bool = True) -> None:
         """

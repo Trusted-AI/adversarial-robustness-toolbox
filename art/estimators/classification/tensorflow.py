@@ -678,7 +678,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         from art.config import ART_NUMPY_DTYPE
 
         if not isinstance(self._model, tf.keras.models.Sequential):  # pragma: no cover
-            raise ValueError("Method get_activations is not supported for non-Sequential models.")
+            raise TypeError("Method get_activations is not supported for non-Sequential models.")
 
         i_layer = None
         if self.layer_names is None:  # pragma: no cover

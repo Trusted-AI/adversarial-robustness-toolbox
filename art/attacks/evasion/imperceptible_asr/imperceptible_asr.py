@@ -574,60 +574,60 @@ class ImperceptibleASR(EvasionAttack):
             raise ValueError("The perturbation max norm bound `eps` has to be positive.")
 
         if not isinstance(self.alpha, float):
-            raise ValueError("The value of alpha must be of type float.")
+            raise TypeError("The value of alpha must be of type float.")
         if self.alpha <= 0.0:
             raise ValueError("The value of alpha must be positive")
 
         if not isinstance(self.max_iter_1, int):
-            raise ValueError("The maximum number of iterations for stage 1 must be of type int.")
+            raise TypeError("The maximum number of iterations for stage 1 must be of type int.")
         if self.max_iter_1 <= 0:
             raise ValueError("The maximum number of iterations for stage 1 must be greater than 0.")
 
         if not isinstance(self.max_iter_2, int):
-            raise ValueError("The maximum number of iterations for stage 2 must be of type int.")
+            raise TypeError("The maximum number of iterations for stage 2 must be of type int.")
         if self.max_iter_2 < 0:
             raise ValueError("The maximum number of iterations for stage 2 must be non-negative.")
 
         if not isinstance(self.learning_rate_1, float):
-            raise ValueError("The learning rate for stage 1 must be of type float.")
+            raise TypeError("The learning rate for stage 1 must be of type float.")
         if self.learning_rate_1 <= 0.0:
             raise ValueError("The learning rate for stage 1 must be greater than 0.0.")
 
         if not isinstance(self.learning_rate_2, float):
-            raise ValueError("The learning rate for stage 2 must be of type float.")
+            raise TypeError("The learning rate for stage 2 must be of type float.")
         if self.learning_rate_2 <= 0.0:
             raise ValueError("The learning rate for stage 2 must be greater than 0.0.")
 
         if not isinstance(self.loss_theta_min, float):
-            raise ValueError("The loss_theta_min threshold must be of type float.")
+            raise TypeError("The loss_theta_min threshold must be of type float.")
 
         if not isinstance(self.decrease_factor_eps, float):
-            raise ValueError("The factor to decrease eps must be of type float.")
+            raise TypeError("The factor to decrease eps must be of type float.")
         if self.decrease_factor_eps <= 0.0:
             raise ValueError("The factor to decrease eps must be greater than 0.0.")
 
         if not isinstance(self.num_iter_decrease_eps, int):
-            raise ValueError("The number of iterations must be of type int.")
+            raise TypeError("The number of iterations must be of type int.")
         if self.num_iter_decrease_eps <= 0:
             raise ValueError("The number of iterations must be greater than 0.")
 
         if not isinstance(self.num_iter_decrease_alpha, int):
-            raise ValueError("The number of iterations must be of type int.")
+            raise TypeError("The number of iterations must be of type int.")
         if self.num_iter_decrease_alpha <= 0:
             raise ValueError("The number of iterations must be greater than 0.")
 
         if not isinstance(self.increase_factor_alpha, float):
-            raise ValueError("The factor to increase alpha must be of type float.")
+            raise TypeError("The factor to increase alpha must be of type float.")
         if self.increase_factor_alpha <= 0.0:
             raise ValueError("The factor to increase alpha must be greater than 0.0.")
 
         if not isinstance(self.num_iter_increase_alpha, int):
-            raise ValueError("The number of iterations must be of type int.")
+            raise TypeError("The number of iterations must be of type int.")
         if self.num_iter_increase_alpha <= 0:
             raise ValueError("The number of iterations must be greater than 0.")
 
         if not isinstance(self.decrease_factor_alpha, float):
-            raise ValueError("The factor to decrease alpha must be of type float.")
+            raise TypeError("The factor to decrease alpha must be of type float.")
         if self.decrease_factor_alpha <= 0.0:
             raise ValueError("The factor to decrease alpha must be greater than 0.0.")
 

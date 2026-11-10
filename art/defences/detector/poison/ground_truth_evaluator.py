@@ -86,7 +86,7 @@ class GroundTruthEvaluator:
                 elif assignment == clean and bl_var == poison:
                     errors.append(3)
                 else:
-                    raise Exception("Analyze_correctness entered wrong class")
+                    raise ValueError("Analyze_correctness entered wrong class")
 
             errors_array = np.asarray(errors)
             logger.debug("-------------------%d---------------", class_i)

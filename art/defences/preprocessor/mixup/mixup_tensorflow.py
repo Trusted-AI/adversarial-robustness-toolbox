@@ -28,7 +28,7 @@ This module implements the Mixup data augmentation defence in TensorFlow.
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 import numpy as np
 
@@ -52,7 +52,7 @@ class MixupTensorFlowV2(PreprocessorTensorFlowV2):
         https://arxiv.org/abs/1902.06705
     """
 
-    params = ["num_classes", "alpha", "num_mix"]
+    params: ClassVar[list[str]] = ["num_classes", "alpha", "num_mix"]
 
     def __init__(
         self,

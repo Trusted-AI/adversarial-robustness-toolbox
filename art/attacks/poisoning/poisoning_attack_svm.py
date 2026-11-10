@@ -259,4 +259,4 @@ class PoisoningAttackSVM(PoisoningAttackWhiteBox):
             raise ValueError("Value of max_iter must be strictly positive.")
 
         if not isinstance(self.verbose, bool):
-            raise ValueError("The argument `verbose` has to be of type bool.")
+            raise TypeError("The argument `verbose` has to be of type bool.")

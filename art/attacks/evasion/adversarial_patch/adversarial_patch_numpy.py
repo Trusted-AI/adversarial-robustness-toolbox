@@ -277,34 +277,34 @@ class AdversarialPatchNumpy(EvasionAttack):
 
     def _check_params(self) -> None:
         if not isinstance(self.rotation_max, (float, int)):
-            raise ValueError("The maximum rotation of the random patches must be of type float.")
+            raise TypeError("The maximum rotation of the random patches must be of type float.")
         if self.rotation_max < 0 or self.rotation_max > 180.0:
             raise ValueError("The maximum rotation of the random patches must be between 0 and 180 degrees.")
 
         if not isinstance(self.scale_min, float):
-            raise ValueError("The minimum scale of the random patched must be of type float.")
+            raise TypeError("The minimum scale of the random patched must be of type float.")
         if self.scale_min < 0 or self.scale_min > self.scale_max:
             raise ValueError(
                 "The minimum scale of the random patched must be greater than 0 and less than the maximum scaling."
             )
 
         if not isinstance(self.scale_max, float):
-            raise ValueError("The maximum scale of the random patched must be of type float.")
+            raise TypeError("The maximum scale of the random patched must be of type float.")
         if self.scale_max > 1:
             raise ValueError("The maximum scale of the random patched must not be greater than 1.")
 
         if not isinstance(self.learning_rate, float):
-            raise ValueError("The learning rate must be of type float.")
+            raise TypeError("The learning rate must be of type float.")
         if self.learning_rate <= 0.0:
             raise ValueError("The learning rate must be greater than 0.0.")
 
         if not isinstance(self.max_iter, int):
-            raise ValueError("The number of optimization steps must be of type int.")
+            raise TypeError("The number of optimization steps must be of type int.")
         if self.max_iter <= 0:
             raise ValueError("The number of optimization steps must be greater than 0.")
 
         if not isinstance(self.batch_size, int):
-            raise ValueError("The batch size must be of type int.")
+            raise TypeError("The batch size must be of type int.")
         if self.batch_size <= 0:
             raise ValueError("The batch size must be greater than 0.")
 
@@ -315,7 +315,7 @@ class AdversarialPatchNumpy(EvasionAttack):
             )
 
         if not isinstance(self.verbose, bool):
-            raise ValueError("The argument `verbose` has to be of type bool.")
+            raise TypeError("The argument `verbose` has to be of type bool.")
 
     def _get_circular_patch_mask(self, sharpness: int = 40) -> np.ndarray:
         """

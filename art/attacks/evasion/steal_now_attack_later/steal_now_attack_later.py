@@ -27,7 +27,7 @@ Black-box Adversarial Attacks
 import logging
 import random
 from collections.abc import Callable
-from typing import TYPE_CHECKING, Optional, Tuple
+from typing import TYPE_CHECKING, Optional
 
 import numpy as np
 

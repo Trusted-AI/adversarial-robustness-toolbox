@@ -132,9 +132,8 @@ class TestDetectorClassifier(TestBase):
 
     def test_save(self):
         model = self.detector_classifier
-        t_file = tempfile.NamedTemporaryFile()
-        full_path = t_file.name
-        t_file.close()
+        with tempfile.NamedTemporaryFile() as t_file:
+            full_path = t_file.name
         base_name = os.path.basename(full_path)
         dir_name = os.path.dirname(full_path)
         model.save(base_name, path=dir_name)

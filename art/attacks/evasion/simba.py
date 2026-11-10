@@ -350,10 +350,10 @@ class SimBA(EvasionAttack):
             raise ValueError("The attack type has to be `px` or `dct`.")
 
         if not isinstance(self.targeted, bool):
-            raise ValueError("`targeted` has to be a Boolean value.")
+            raise TypeError("`targeted` has to be a Boolean value.")
 
         if not isinstance(self.verbose, bool):
-            raise ValueError("The argument `verbose` has to be of type bool.")
+            raise TypeError("The argument `verbose` has to be of type bool.")
 
     def _block_order(self, img_size, channels, initial_size=2, stride=1):
         """

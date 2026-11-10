@@ -2644,7 +2644,7 @@ class BrendelBethgeAttack(EvasionAttack):
             raise ValueError('The argument norm has to be either 1, 2, np.inf, or "inf".')
 
         if not isinstance(self.targeted, bool):
-            raise ValueError("The argument `targeted` has to be of type `bool`.")
+            raise TypeError("The argument `targeted` has to be of type `bool`.")
 
         if not isinstance(self.overshoot, float) or self.overshoot < 1.0:
             raise ValueError("The argument `overshoot` has to be of `float` and larger than 1.")

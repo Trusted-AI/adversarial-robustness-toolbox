@@ -169,7 +169,7 @@ class BadDetObjectGenerationAttack(PoisoningAttackObjectDetector):
 
     def _check_params(self) -> None:
         if not isinstance(self.backdoor, PoisoningAttackBackdoor):
-            raise ValueError("Backdoor must be of type PoisoningAttackBackdoor")
+            raise TypeError("Backdoor must be of type PoisoningAttackBackdoor")
         if self.bbox_height <= 0:
             raise ValueError("bbox_height must be positive")
         if self.bbox_width <= 0:

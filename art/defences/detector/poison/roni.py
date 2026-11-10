@@ -26,7 +26,7 @@ from __future__ import annotations
 import logging
 from collections.abc import Callable
 from copy import deepcopy
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 import numpy as np
 from sklearn.model_selection import train_test_split
@@ -49,7 +49,7 @@ class RONIDefense(PoisonFilteringDefence):
     | Textbook link: https://people.eecs.berkeley.edu/~adj/publications/paper-files/EECS-2010-140.pdf
     """
 
-    defence_params = [
+    defence_params: ClassVar[list[str]] = [
         "classifier",
         "x_train",
         "y_train",

@@ -26,7 +26,7 @@ from __future__ import annotations
 import logging
 import random
 import types
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
 
 import numpy as np
 
@@ -49,7 +49,7 @@ class TargetedUniversalPerturbation(EvasionAttack):
     | Paper link: https://arxiv.org/abs/1911.06502
     """
 
-    attacks_dict = {
+    attacks_dict: ClassVar[dict[str, str]] = {
         "fgsm": "art.attacks.evasion.fast_gradient.FastGradientMethod",
         "simba": "art.attacks.evasion.simba.SimBA",
     }

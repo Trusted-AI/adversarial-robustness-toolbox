@@ -28,7 +28,7 @@ from __future__ import annotations
 
 import logging
 from itertools import product
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 import numpy as np
 import scipy
@@ -121,16 +121,16 @@ class PixelThreshold(EvasionAttack):
             raise ValueError("The perturbation size `eps` has to be positive.")
 
         if not isinstance(self.es, int):
-            raise ValueError("The flag `es` has to be of type int.")
+            raise TypeError("The flag `es` has to be of type int.")
 
         if not isinstance(self.targeted, bool):
-            raise ValueError("The flag `targeted` has to be of type bool.")
+            raise TypeError("The flag `targeted` has to be of type bool.")
 
         if not isinstance(self.verbose, bool):
-            raise ValueError("The flag `verbose` has to be of type bool.")
+            raise TypeError("The flag `verbose` has to be of type bool.")
 
         if not isinstance(self.verbose_es, bool):  # pragma: no cover
-            raise ValueError("The argument `verbose` has to be of type bool.")
+            raise TypeError("The argument `verbose` has to be of type bool.")
         if self.estimator.clip_values is None:
             raise ValueError("This attack requires estimator clip values to be defined.")
 
@@ -944,7 +944,7 @@ class DifferentialEvolutionSolver:  # pragma: no cover
     """
 
     # Dispatch of mutation strategy method (binomial or exponential).
-    _binomial = {
+    _binomial: ClassVar[dict[str, str]] = {
         "best1bin": "_best1",
         "randtobest1bin": "_randtobest1",
         "currenttobest1bin": "_currenttobest1",
@@ -952,7 +952,7 @@ class DifferentialEvolutionSolver:  # pragma: no cover
         "rand2bin": "_rand2",
         "rand1bin": "_rand1",
     }
-    _exponential = {
+    _exponential: ClassVar[dict[str, str]] = {
         "best1exp": "_best1",
         "rand1exp": "_rand1",
         "randtobest1exp": "_randtobest1",

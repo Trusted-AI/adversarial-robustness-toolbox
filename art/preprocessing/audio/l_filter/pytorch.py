@@ -24,7 +24,7 @@ This module implements the filter function for audio signals in PyTorch. It prov
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 import numpy as np
 from tqdm.auto import tqdm
@@ -47,12 +47,12 @@ class LFilterPyTorch(PreprocessorPyTorch):
     `torchaudio.functional.lfilter` function in the `torchaudio` package.
     """
 
-    params = ["numerator_coef", "denominator_coef", "verbose"]
+    params: ClassVar[list[str]] = ["numerator_coef", "denominator_coef", "verbose"]
 
     def __init__(
         self,
-        numerator_coef: np.ndarray = np.array([1.0]),
-        denominator_coef: np.ndarray = np.array([1.0]),
+        numerator_coef: np.ndarray | None = None,
+        denominator_coef: np.ndarray | None = None,
         clip_values: CLIP_VALUES_TYPE | None = None,
         apply_fit: bool = False,
         apply_predict: bool = True,
@@ -62,10 +62,10 @@ class LFilterPyTorch(PreprocessorPyTorch):
         """
         Create an instance of LFilterPyTorch.
 
-        :param numerator_coef: The numerator coefficient vector in a 1-D sequence.
+        :param numerator_coef: The numerator coefficient vector in a 1-D sequence. Defaults to `np.array([1.0])`.
         :param denominator_coef: The denominator coefficient vector in a 1-D sequence. By simply setting the array of
-                                 denominator coefficients to np.array([1.0]), this preprocessor can be used to apply a
-                                 FIR filter.
+                                 denominator coefficients to np.array([1.0]) (default), this preprocessor can be used
+                                 to apply a FIR filter.
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
         :param apply_fit: True if applied during fitting/training.
@@ -81,8 +81,8 @@ class LFilterPyTorch(PreprocessorPyTorch):
             apply_predict=apply_predict,
         )
 
-        self.numerator_coef = numerator_coef
-        self.denominator_coef = denominator_coef
+        self.numerator_coef = numerator_coef if numerator_coef is not None else np.array([1.0])
+        self.denominator_coef = denominator_coef if denominator_coef is not None else np.array([1.0])
         self.clip_values = clip_values
         self.verbose = verbose
         self._check_params()
@@ -159,10 +159,10 @@ class LFilterPyTorch(PreprocessorPyTorch):
                 raise ValueError("Invalid `clip_values`: min >= max.")
 
         if not isinstance(self.numerator_coef, np.ndarray):
-            raise ValueError("The numerator coefficient vector has to be of type `np.ndarray`.")
+            raise TypeError("The numerator coefficient vector has to be of type `np.ndarray`.")
 
         if not isinstance(self.verbose, bool):
-            raise ValueError("The argument `verbose` has to be of type bool.")
+            raise TypeError("The argument `verbose` has to be of type bool.")
 
         if len(self.denominator_coef) != len(self.numerator_coef):
             raise ValueError(

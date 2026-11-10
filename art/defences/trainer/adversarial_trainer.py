@@ -91,7 +91,7 @@ class AdversarialTrainer(Trainer):
         elif isinstance(attacks, list):
             self.attacks = attacks
         else:
-            raise ValueError("Only EvasionAttack instances or list of attacks supported.")
+            raise TypeError("Only EvasionAttack instances or list of attacks supported.")
 
         if ratio <= 0 or ratio > 1:
             raise ValueError("The `ratio` of adversarial samples in each batch has to be between 0 and 1.")

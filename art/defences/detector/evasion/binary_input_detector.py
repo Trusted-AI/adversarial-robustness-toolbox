@@ -23,7 +23,7 @@ detectors.
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 import numpy as np
 
@@ -41,7 +41,7 @@ class BinaryInputDetector(EvasionDetector):
     the user and trains it on data labeled as clean (label 0) or adversarial (label 1).
     """
 
-    defence_params = ["detector"]
+    defence_params: ClassVar[list[str]] = ["detector"]
 
     def __init__(self, detector: CLASSIFIER_NEURALNETWORK_TYPE) -> None:
         """

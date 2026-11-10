@@ -22,7 +22,7 @@ This module implements abstract base and mixin classes for estimators in ART.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
 
 import numpy as np
 from tqdm.auto import trange
@@ -42,7 +42,7 @@ class BaseEstimator(ABC):
     the highest abstraction of a machine learning model in ART.
     """
 
-    estimator_params = [
+    estimator_params: ClassVar[list[str]] = [
         "model",
         "clip_values",
         "preprocessing_defences",
@@ -215,12 +215,12 @@ class BaseEstimator(ABC):
         if isinstance(self.preprocessing_operations, list):
             for preprocess in self.preprocessing_operations:
                 if not isinstance(preprocess, Preprocessor):  # pragma: no cover
-                    raise ValueError(
+                    raise TypeError(
                         "All preprocessing defences have to be instance of "
                         "art.defences.preprocessor.preprocessor.Preprocessor."
                     )
         else:  # pragma: no cover
-            raise ValueError(
+            raise TypeError(
                 "All preprocessing defences have to be instance of "
                 "art.defences.preprocessor.preprocessor.Preprocessor."
             )
@@ -228,7 +228,7 @@ class BaseEstimator(ABC):
         if isinstance(self.postprocessing_defences, list):
             for postproc_defence in self.postprocessing_defences:
                 if not isinstance(postproc_defence, Postprocessor):  # pragma: no cover
-                    raise ValueError(
+                    raise TypeError(
                         "All postprocessing defences have to be instance of "
                         "art.defences.postprocessor.postprocessor.Postprocessor."
                     )
@@ -421,7 +421,7 @@ class NeuralNetworkMixin(ABC):
     has to be mixed in with class `BaseEstimator`.
     """
 
-    estimator_params = ["channels_first"]
+    estimator_params: ClassVar[list[str]] = ["channels_first"]
 
     def __init__(self, channels_first: bool, **kwargs) -> None:
         """
@@ -469,7 +469,7 @@ class NeuralNetworkMixin(ABC):
         from art.data_generators import DataGenerator
 
         if not isinstance(generator, DataGenerator):
-            raise ValueError(
+            raise TypeError(
                 f"Expected instance of `DataGenerator` for `fit_generator`, got {type(generator)} instead."
             )
 

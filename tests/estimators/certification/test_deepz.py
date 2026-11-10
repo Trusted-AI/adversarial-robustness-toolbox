@@ -80,26 +80,20 @@ def test_mnist_certification(art_warning, fix_get_mnist_data):
         model=ptc.model, clip_values=(0, 1), loss=torch.nn.CrossEntropyLoss(), input_shape=(1, 28, 28), nb_classes=10
     )
 
-    correct_upper_bounds = np.asarray(
-        json.load(
-            open(
-                os.path.join(
-                    os.path.dirname(os.path.dirname(__file__)),
-                    "certification/output_results/mini_nets/mnist_ub_results_0.05.json",
-                )
-            )
+    with open(
+        os.path.join(
+            os.path.dirname(os.path.dirname(__file__)),
+            "certification/output_results/mini_nets/mnist_ub_results_0.05.json",
         )
-    )
-    correct_lower_bounds = np.asarray(
-        json.load(
-            open(
-                os.path.join(
-                    os.path.dirname(os.path.dirname(__file__)),
-                    "certification/output_results/mini_nets/mnist_lb_results_0.05.json",
-                )
-            )
+    ) as f:
+        correct_upper_bounds = np.asarray(json.load(f))
+    with open(
+        os.path.join(
+            os.path.dirname(os.path.dirname(__file__)),
+            "certification/output_results/mini_nets/mnist_lb_results_0.05.json",
         )
-    )
+    ) as f:
+        correct_lower_bounds = np.asarray(json.load(f))
 
     num_cert = 0
     correct = 0
@@ -181,26 +175,20 @@ def test_cifar_certification(art_warning, fix_get_cifar10_data):
         model=ptc.model, clip_values=(0, 1), loss=torch.nn.CrossEntropyLoss(), input_shape=(3, 32, 32), nb_classes=10
     )
 
-    correct_upper_bounds = np.asarray(
-        json.load(
-            open(
-                os.path.join(
-                    os.path.dirname(os.path.dirname(__file__)),
-                    "certification/output_results/mini_nets/cifar10_ub_results_0.004.json",
-                )
-            )
+    with open(
+        os.path.join(
+            os.path.dirname(os.path.dirname(__file__)),
+            "certification/output_results/mini_nets/cifar10_ub_results_0.004.json",
         )
-    )
-    correct_lower_bounds = np.asarray(
-        json.load(
-            open(
-                os.path.join(
-                    os.path.dirname(os.path.dirname(__file__)),
-                    "certification/output_results/mini_nets/cifar10_lb_results_0.004.json",
-                )
-            )
+    ) as f:
+        correct_upper_bounds = np.asarray(json.load(f))
+    with open(
+        os.path.join(
+            os.path.dirname(os.path.dirname(__file__)),
+            "certification/output_results/mini_nets/cifar10_lb_results_0.004.json",
         )
-    )
+    ) as f:
+        correct_lower_bounds = np.asarray(json.load(f))
 
     num_cert = 0
     correct = 0

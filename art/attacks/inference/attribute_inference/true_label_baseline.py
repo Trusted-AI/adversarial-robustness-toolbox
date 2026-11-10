@@ -416,11 +416,9 @@ class AttributeInferenceBaselineTrueLabel(AttributeInferenceAttack):
                     predictions = check_and_transform_label_format(
                         predictions, nb_classes=len(self._values), return_one_hot=True
                     )
-                i = 0
-                for column in predictions.T:
+                for i, column in enumerate(predictions.T):
                     for index in range(len(self._values[i])):
                         np.place(column, [column == index], self._values[i][index])
-                    i += 1
         return np.array(predictions)
 
     def _get_attack_dataset(self, feature, label=None):
@@ -459,7 +457,7 @@ class AttributeInferenceBaselineTrueLabel(AttributeInferenceAttack):
         super()._check_params()
 
         if not isinstance(self._is_continuous, bool):
-            raise ValueError("is_continuous must be a boolean.")
+            raise TypeError("is_continuous must be a boolean.")
 
         if self._attack_model_type not in ["nn", "rf", "gb", "lr", "dt", "knn", "svm"]:
             raise ValueError("Illegal value for parameter `attack_model_type`.")

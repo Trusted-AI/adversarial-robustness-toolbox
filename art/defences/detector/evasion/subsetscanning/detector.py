@@ -23,7 +23,7 @@ from __future__ import annotations
 
 import logging
 import sys
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, ClassVar, Literal
 
 import numpy as np
 from sklearn import metrics
@@ -48,7 +48,7 @@ class SubsetScanningDetector(EvasionDetector):
     | Paper link: https://www.cs.cmu.edu/~neill/papers/mcfowland13a.pdf
     """
 
-    defence_params = ["classifier", "bgd_data", "layer", "scoring_function", "verbose"]
+    defence_params: ClassVar[list[str]] = ["classifier", "bgd_data", "layer", "scoring_function", "verbose"]
 
     def __init__(
         self,

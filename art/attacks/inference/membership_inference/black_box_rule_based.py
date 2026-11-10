@@ -70,9 +70,8 @@ class MembershipInferenceBlackBoxRuleBased(MembershipInferenceAttack):
         if y is None:  # pragma: no cover
             raise ValueError("MembershipInferenceBlackBoxRuleBased requires true labels `y`.")
 
-        if self.estimator.input_shape is not None:  # pragma: no cover
-            if self.estimator.input_shape[0] != x.shape[1]:
-                raise ValueError("Shape of x does not match input_shape of classifier")
+        if self.estimator.input_shape is not None and self.estimator.input_shape[0] != x.shape[1]:  # pragma: no cover
+            raise ValueError("Shape of x does not match input_shape of classifier")
 
         if "probabilities" in kwargs:
             probabilities = kwargs.get("probabilities")

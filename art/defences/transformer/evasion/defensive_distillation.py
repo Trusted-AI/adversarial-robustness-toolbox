@@ -24,7 +24,7 @@ This module implements the transforming defence mechanism of defensive distillat
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 import numpy as np
 
@@ -44,7 +44,7 @@ class DefensiveDistillation(Transformer):
     | Paper link: https://arxiv.org/abs/1511.04508
     """
 
-    params = ["batch_size", "nb_epochs"]
+    params: ClassVar[list[str]] = ["batch_size", "nb_epochs"]
 
     def __init__(self, classifier: CLASSIFIER_TYPE, batch_size: int = 128, nb_epochs: int = 10) -> None:
         """

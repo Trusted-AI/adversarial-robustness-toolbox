@@ -22,7 +22,7 @@ This module implements Expectation over Transformation preprocessing for image r
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 import numpy as np
 
@@ -40,9 +40,9 @@ class EoTImageRotationTensorFlow(EoTTensorFlowV2):
     This module implements Expectation over Transformation preprocessing for image rotation in TensorFlow.
     """
 
-    params = ["nb_samples", "angles", "clip_values", "label_type"]
+    params: ClassVar[list[str]] = ["nb_samples", "angles", "clip_values", "label_type"]
 
-    label_types = ["classification"]
+    label_types: ClassVar[list[str]] = ["classification"]
 
     def __init__(
         self,

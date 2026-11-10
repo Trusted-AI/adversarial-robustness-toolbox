@@ -199,10 +199,10 @@ class PyTorchDeRandomizedSmoothing(DeRandomizedSmoothingMixin, PyTorchClassifier
                         converted_optimizer: torch.optim.Adam | torch.optim.SGD
                         opt_state_dict = optimizer.state_dict()
                         if isinstance(optimizer, torch.optim.Adam):
-                            logging.info("Converting Adam Optimiser")
+                            logger.info("Converting Adam Optimiser")
                             converted_optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)  # type: ignore
                         elif isinstance(optimizer, torch.optim.SGD):
-                            logging.info("Converting SGD Optimiser")
+                            logger.info("Converting SGD Optimiser")
                             converted_optimizer = torch.optim.SGD(model.parameters(), lr=1e-4)  # type: ignore
                         else:
                             raise ValueError("Optimiser not supported for conversion")
@@ -210,7 +210,7 @@ class PyTorchDeRandomizedSmoothing(DeRandomizedSmoothingMixin, PyTorchClassifier
 
                 self.to_reshape = False
                 if not isinstance(model, PyTorchVisionTransformer):
-                    raise ValueError("Vision transformer is not of PyTorchViT. Error occurred in PyTorchViT creation.")
+                    raise TypeError("Vision transformer is not of PyTorchViT. Error occurred in PyTorchViT creation.")
 
                 if model.default_cfg["input_size"][0] != input_shape[0]:  # type: ignore
                     raise ValueError(

@@ -414,4 +414,4 @@ class ElasticNet(EvasionAttack):
             raise ValueError("The decision rule only supports `EN`, `L1`, `L2`.")
 
         if not isinstance(self.verbose, bool):
-            raise ValueError("The argument `verbose` has to be of type bool.")
+            raise TypeError("The argument `verbose` has to be of type bool.")

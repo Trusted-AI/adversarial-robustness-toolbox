@@ -28,6 +28,7 @@ import logging
 import os
 import warnings
 from tempfile import TemporaryDirectory
+from typing import ClassVar
 
 import numpy as np
 from tqdm.auto import tqdm
@@ -46,7 +47,7 @@ class VideoCompression(Preprocessor):
     parameter. More information on the constant rate factor: https://trac.ffmpeg.org/wiki/Encode/H.264.
     """
 
-    params = ["video_format", "constant_rate_factor", "channels_first", "verbose"]
+    params: ClassVar[list[str]] = ["video_format", "constant_rate_factor", "channels_first", "verbose"]
 
     def __init__(
         self,
@@ -146,4 +147,4 @@ class VideoCompression(Preprocessor):
             raise ValueError("Constant rate factor must be an integer in the range [0, 51].")
 
         if not isinstance(self.verbose, bool):
-            raise ValueError("The argument `verbose` has to be of type bool.")
+            raise TypeError("The argument `verbose` has to be of type bool.")

@@ -458,9 +458,10 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
         if y is None and self.use_label:
             raise ValueError("y must be provided")
 
-        if self.estimator.input_shape is not None and x is not None:  # pragma: no cover
-            if self.estimator.input_shape[0] != x.shape[1]:
-                raise ValueError("Shape of x does not match input_shape of estimator")
+        if (
+            self.estimator.input_shape is not None and x is not None and self.estimator.input_shape[0] != x.shape[1]
+        ):  # pragma: no cover
+            raise ValueError("Shape of x does not match input_shape of estimator")
 
         if y is not None and not self._regressor_model:
             y = check_and_transform_label_format(y, nb_classes=self.estimator.nb_classes, return_one_hot=True)
@@ -646,13 +647,11 @@ class MembershipInferenceBlackBox(MembershipInferenceAttack):
         if self.input_type not in ["prediction", "loss"]:
             raise ValueError("Illegal value for parameter `input_type`.")
 
-        if self._regressor_model:
-            if self.input_type != "loss":
-                raise ValueError("Illegal value for parameter `input_type` when estimator is a regressor.")
+        if self._regressor_model and self.input_type != "loss":
+            raise ValueError("Illegal value for parameter `input_type` when estimator is a regressor.")
 
         if self.attack_model_type not in ["nn", "rf", "gb", "lr", "dt", "knn", "svm"]:
             raise ValueError("Illegal value for parameter `attack_model_type`.")
 
-        if self.attack_model:
-            if ClassifierMixin not in type(self.attack_model).__mro__:
-                raise TypeError("Attack model must be of type Classifier.")
+        if self.attack_model and ClassifierMixin not in type(self.attack_model).__mro__:
+            raise TypeError("Attack model must be of type Classifier.")

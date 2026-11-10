@@ -46,6 +46,8 @@ if TYPE_CHECKING:
     from art.defences.preprocessor import Preprocessor
     from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
 
+logger = logging.getLogger(__name__)
+
 
 class ConvertedModel(torch.nn.Module):
     """
@@ -99,7 +101,7 @@ class ConvertedModel(torch.nn.Module):
             elif isinstance(module, torch.nn.modules.activation.ReLU):
                 self.ops.append(ZonoReLU(device=self.device))
             else:
-                raise ValueError("Supported Operations are Conv2D, Linear, and RelU")
+                raise TypeError("Supported Operations are Conv2D, Linear, and RelU")
 
         for op_num, op in enumerate(self.ops):
             # as reshapes are not modules we infer when the reshape from convolutional to dense occurs
@@ -256,10 +258,10 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
         if optimizer is not None:
             opt_state_dict = optimizer.state_dict()
             if isinstance(optimizer, torch.optim.Adam):
-                logging.info("Converting Adam Optimiser")
+                logger.info("Converting Adam Optimiser")
                 converted_optimizer = torch.optim.Adam(converted_model.parameters(), lr=1e-4)
             elif isinstance(optimizer, torch.optim.SGD):
-                logging.info("Converting SGD Optimiser")
+                logger.info("Converting SGD Optimiser")
                 converted_optimizer = torch.optim.SGD(converted_model.parameters(), lr=1e-4)
             else:
                 raise ValueError("Optimiser not supported for conversion")

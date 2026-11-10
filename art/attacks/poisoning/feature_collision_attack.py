@@ -115,7 +115,7 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
             self.target_feature_rep = self.estimator.get_activations(self.target, self.feature_layer, 1, framework=True)
             self.poison_feature_rep = self.estimator.get_activations(self.target, self.feature_layer, 1, framework=True)
         else:
-            raise ValueError("Type of estimator currently not supported.")
+            raise TypeError("Type of estimator currently not supported.")
         self.attack_loss = tensor_norm(self.poison_feature_rep - self.target_feature_rep)
 
     def poison(self, x: np.ndarray, y: np.ndarray | None = None, **kwargs) -> tuple[np.ndarray, np.ndarray]:
@@ -187,7 +187,7 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
         if isinstance(self.estimator, PyTorchClassifier):
             attack_grad = self.estimator.custom_loss_gradient(self.attack_loss, poison, self.target, self.feature_layer)
         else:
-            raise ValueError("The type of the estimator is not supported.")
+            raise TypeError("The type of the estimator is not supported.")
 
         poison -= self.learning_rate * attack_grad[0]
 
@@ -254,7 +254,7 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
             raise ValueError("Watermark must be between 0 and 1")
 
         if not isinstance(self.verbose, bool):
-            raise ValueError("The argument `verbose` has to be of type bool.")
+            raise TypeError("The argument `verbose` has to be of type bool.")
 
 
 def get_class_name(obj: object) -> str:

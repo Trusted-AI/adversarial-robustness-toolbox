@@ -28,7 +28,7 @@ This module implements the Cutout data augmentation defence in TensorFlow.
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 from art.defences.preprocessor.preprocessor import PreprocessorTensorFlowV2
 
@@ -50,7 +50,7 @@ class CutoutTensorFlowV2(PreprocessorTensorFlowV2):
         https://arxiv.org/abs/1902.06705
     """
 
-    params = ["length", "channels_first", "verbose"]
+    params: ClassVar[list[str]] = ["length", "channels_first", "verbose"]
 
     def __init__(
         self,

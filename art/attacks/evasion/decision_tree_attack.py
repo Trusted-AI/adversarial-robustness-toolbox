@@ -22,6 +22,7 @@ This module implements attacks on Decision Trees.
 from __future__ import annotations
 
 import logging
+from typing import ClassVar
 
 import numpy as np
 from tqdm.auto import trange
@@ -41,7 +42,7 @@ class DecisionTreeAttack(EvasionAttack):
     | Paper link: https://arxiv.org/abs/1605.07277
     """
 
-    attack_params = ["classifier", "offset", "verbose"]
+    attack_params: ClassVar[list[str]] = ["classifier", "offset", "verbose"]
     _estimator_requirements = (ScikitlearnDecisionTreeClassifier,)
 
     def __init__(
@@ -168,4 +169,4 @@ class DecisionTreeAttack(EvasionAttack):
             raise ValueError("The offset parameter must be strictly positive.")
 
         if not isinstance(self.verbose, bool):
-            raise ValueError("The argument `verbose` has to be of type bool.")
+            raise TypeError("The argument `verbose` has to be of type bool.")

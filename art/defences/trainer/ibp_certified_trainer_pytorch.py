@@ -143,7 +143,7 @@ class AdversarialTrainerCertifiedIBPPyTorch(Trainer):
         from art.estimators.certification.interval.pytorch import PyTorchIBPClassifier
 
         if not isinstance(classifier, PyTorchIBPClassifier):
-            raise ValueError(
+            raise TypeError(
                 "The classifier to pass in should be of type PyTorchIBPClassifier which can be found in "
                 "art.estimators.certification.interval.pytorch.PyTorchIBPClassifier"
             )

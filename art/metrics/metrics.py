@@ -79,10 +79,11 @@ def get_crafter(classifier: CLASSIFIER_TYPE, attack: str, params: dict[str, Any]
     :return: An attack instance.
     """
     try:
-        crafter = SUPPORTED_METHODS[attack]["class"](classifier)
-    except Exception:  # pragma: no cover
+        attack_class = SUPPORTED_METHODS[attack]["class"]
+    except KeyError as err:  # pragma: no cover
         logger.warning("Available attacks include %s.", ", ".join(SUPPORTED_METHODS.keys()))
-        raise NotImplementedError(f"{attack} crafting method not supported.") from Exception
+        raise NotImplementedError(f"{attack} crafting method not supported.") from err
+    crafter = attack_class(classifier)
 
     if "params" in SUPPORTED_METHODS[attack]:
         crafter.set_params(**SUPPORTED_METHODS[attack]["params"])
@@ -413,7 +414,7 @@ def clever_t(
         grad_target_class = classifier.class_gradient(rand_pool_batch, label=target_class)
 
         if np.isnan(grad_pred_class).any() or np.isnan(grad_target_class).any():  # pragma: no cover
-            raise Exception("The classifier results NaN gradients.")
+            raise RuntimeError("The classifier results NaN gradients.")
 
         grad = grad_pred_class - grad_target_class
         grad = np.reshape(grad, (pool_factor, -1))

@@ -476,7 +476,7 @@ class PyTorchIntervalBounds:
             up_x = x + bounds[1]
             lb_x = x - bounds[0]
         else:
-            raise ValueError("Bounds must be a float, list, or numpy array.")
+            raise TypeError("Bounds must be a float, list, or numpy array.")
 
         final_batched_input = np.concatenate((lb_x, up_x), axis=1)
 

@@ -155,7 +155,7 @@ class XGBoostClassifier(ClassifierDecisionTree):
         elif isinstance(self._model, xgboost.XGBClassifier):
             y_prediction = self._model.predict_proba(x_preprocessed)
         else:
-            raise ValueError("Type of model not recognized.")
+            raise TypeError("Type of model not recognized.")
 
         # Apply postprocessing
         y_prediction = self._apply_postprocessing(preds=y_prediction, fit=False)

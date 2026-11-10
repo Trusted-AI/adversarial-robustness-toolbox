@@ -357,9 +357,8 @@ def test_input_shape(art_warning, image_dl_estimator, mnist_shape):
 def test_save_1(art_warning, image_dl_estimator):
     try:
         classifier, _ = image_dl_estimator(from_logits=True)
-        t_file = tempfile.NamedTemporaryFile()
-        model_path = t_file.name
-        t_file.close()
+        with tempfile.NamedTemporaryFile() as t_file:
+            model_path = t_file.name
         filename = "model_to_save.keras"
         classifier.save(filename, path=model_path)
 

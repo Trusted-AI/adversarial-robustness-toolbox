@@ -21,6 +21,7 @@ Module providing convenience functions.
 
 from __future__ import annotations
 
+import contextlib
 import logging
 import math
 import os
@@ -32,7 +33,7 @@ import zipfile
 from collections.abc import Callable
 from functools import wraps
 from inspect import signature
-from typing import TYPE_CHECKING, Optional, Tuple, Union
+from typing import TYPE_CHECKING
 
 import numpy as np
 import six
@@ -59,9 +60,9 @@ if TYPE_CHECKING:
     # pylint: disable=cyclic-import
     from art.defences.preprocessor.preprocessor import Preprocessor
 
-    PREPROCESSING_TYPE = Optional[  # pylint: disable=invalid-name
-        tuple[int | float | np.ndarray, int | float | np.ndarray] | Preprocessor | tuple[Preprocessor, ...]
-    ]
+    PREPROCESSING_TYPE = (  # pylint: disable=invalid-name
+        tuple[int | float | np.ndarray, int | float | np.ndarray] | Preprocessor | tuple[Preprocessor, ...] | None
+    )
 
     from art.estimators.certification.deep_z import PytorchDeepZ
     from art.estimators.certification.derandomized_smoothing.ablators import (
@@ -80,7 +81,7 @@ if TYPE_CHECKING:
     )
     from art.estimators.classification.detector_classifier import DetectorClassifier
     from art.estimators.classification.ensemble import EnsembleClassifier
-    from art.estimators.classification.GPy import GPyGaussianProcessClassifier
+    from art.estimators.classification.gpy import GPyGaussianProcessClassifier
     from art.estimators.classification.keras import KerasClassifier
     from art.estimators.classification.lightgbm import LightGBMClassifier
     from art.estimators.classification.pytorch import PyTorchClassifier
@@ -122,139 +123,129 @@ if TYPE_CHECKING:
     from art.estimators.tensorflow import TensorFlowV2Estimator
     from art.experimental.estimators.classification.jax import JaxClassifier
 
-    CLASSIFIER_LOSS_GRADIENTS_TYPE = Union[  # pylint: disable=invalid-name
-        ClassifierLossGradients,
-        EnsembleClassifier,
-        GPyGaussianProcessClassifier,
-        KerasClassifier,
-        JaxClassifier,
-        PyTorchClassifier,
-        ScikitlearnLogisticRegression,
-        ScikitlearnSVC,
-        TensorFlowV2Classifier,
-        QueryEfficientGradientEstimationClassifier,
-    ]
+    CLASSIFIER_LOSS_GRADIENTS_TYPE = (  # pylint: disable=invalid-name
+        ClassifierLossGradients
+        | EnsembleClassifier
+        | GPyGaussianProcessClassifier
+        | KerasClassifier
+        | JaxClassifier
+        | PyTorchClassifier
+        | ScikitlearnLogisticRegression
+        | ScikitlearnSVC
+        | TensorFlowV2Classifier
+        | QueryEfficientGradientEstimationClassifier
+    )
 
-    CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE = Union[  # pylint: disable=invalid-name
-        ClassifierClassLossGradients,
-        EnsembleClassifier,
-        GPyGaussianProcessClassifier,
-        KerasClassifier,
-        PyTorchClassifier,
-        ScikitlearnLogisticRegression,
-        ScikitlearnSVC,
-        TensorFlowV2Classifier,
-    ]
+    CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE = (  # pylint: disable=invalid-name
+        ClassifierClassLossGradients
+        | EnsembleClassifier
+        | GPyGaussianProcessClassifier
+        | KerasClassifier
+        | PyTorchClassifier
+        | ScikitlearnLogisticRegression
+        | ScikitlearnSVC
+        | TensorFlowV2Classifier
+    )
 
-    CLASSIFIER_NEURALNETWORK_TYPE = Union[  # pylint: disable=invalid-name
-        ClassifierNeuralNetwork,
-        DetectorClassifier,
-        EnsembleClassifier,
-        KerasClassifier,
-        PyTorchClassifier,
-        TensorFlowV2Classifier,
-    ]
+    CLASSIFIER_NEURALNETWORK_TYPE = (  # pylint: disable=invalid-name
+        ClassifierNeuralNetwork
+        | DetectorClassifier
+        | EnsembleClassifier
+        | KerasClassifier
+        | PyTorchClassifier
+        | TensorFlowV2Classifier
+    )
 
-    CLASSIFIER_DECISION_TREE_TYPE = Union[  # pylint: disable=invalid-name
-        ClassifierDecisionTree,
-        LightGBMClassifier,
-        ScikitlearnDecisionTreeClassifier,
-        ScikitlearnExtraTreesClassifier,
-        ScikitlearnGradientBoostingClassifier,
-        ScikitlearnRandomForestClassifier,
-        XGBoostClassifier,
-    ]
+    CLASSIFIER_DECISION_TREE_TYPE = (  # pylint: disable=invalid-name
+        ClassifierDecisionTree
+        | LightGBMClassifier
+        | ScikitlearnDecisionTreeClassifier
+        | ScikitlearnExtraTreesClassifier
+        | ScikitlearnGradientBoostingClassifier
+        | ScikitlearnRandomForestClassifier
+        | XGBoostClassifier
+    )
 
-    CLASSIFIER_TYPE = Union[  # pylint: disable=invalid-name
-        Classifier,
-        BlackBoxClassifier,
-        CatBoostARTClassifier,
-        DetectorClassifier,
-        EnsembleClassifier,
-        GPyGaussianProcessClassifier,
-        KerasClassifier,
-        JaxClassifier,
-        LightGBMClassifier,
-        PyTorchClassifier,
-        ScikitlearnClassifier,
-        ScikitlearnDecisionTreeClassifier,
-        ScikitlearnExtraTreeClassifier,
-        ScikitlearnAdaBoostClassifier,
-        ScikitlearnBaggingClassifier,
-        ScikitlearnExtraTreesClassifier,
-        ScikitlearnGradientBoostingClassifier,
-        ScikitlearnRandomForestClassifier,
-        ScikitlearnLogisticRegression,
-        ScikitlearnSVC,
-        TensorFlowV2Classifier,
-        XGBoostClassifier,
-        CLASSIFIER_NEURALNETWORK_TYPE,
-    ]
+    CLASSIFIER_TYPE = (  # pylint: disable=invalid-name
+        Classifier
+        | BlackBoxClassifier
+        | CatBoostARTClassifier
+        | DetectorClassifier
+        | EnsembleClassifier
+        | GPyGaussianProcessClassifier
+        | KerasClassifier
+        | JaxClassifier
+        | LightGBMClassifier
+        | PyTorchClassifier
+        | ScikitlearnClassifier
+        | ScikitlearnDecisionTreeClassifier
+        | ScikitlearnExtraTreeClassifier
+        | ScikitlearnAdaBoostClassifier
+        | ScikitlearnBaggingClassifier
+        | ScikitlearnExtraTreesClassifier
+        | ScikitlearnGradientBoostingClassifier
+        | ScikitlearnRandomForestClassifier
+        | ScikitlearnLogisticRegression
+        | ScikitlearnSVC
+        | TensorFlowV2Classifier
+        | XGBoostClassifier
+        | CLASSIFIER_NEURALNETWORK_TYPE
+    )
 
-    GENERATOR_TYPE = Union[TensorFlowV2Generator]  # pylint: disable=invalid-name
+    GENERATOR_TYPE = TensorFlowV2Generator  # pylint: disable=invalid-name
 
-    REGRESSOR_TYPE = Union[  # pylint: disable=invalid-name
-        ScikitlearnRegressor, ScikitlearnDecisionTreeRegressor, PyTorchRegressor, KerasRegressor, BlackBoxRegressor
-    ]
+    REGRESSOR_TYPE = (  # pylint: disable=invalid-name
+        ScikitlearnRegressor | ScikitlearnDecisionTreeRegressor | PyTorchRegressor | KerasRegressor | BlackBoxRegressor
+    )
 
-    OBJECT_DETECTOR_TYPE = Union[  # pylint: disable=invalid-name
-        ObjectDetector,
-        PyTorchObjectDetector,
-        PyTorchFasterRCNN,
-        PyTorchYolo,
-        TensorFlowV2FasterRCNN,
-    ]
+    OBJECT_DETECTOR_TYPE = (  # pylint: disable=invalid-name
+        ObjectDetector | PyTorchObjectDetector | PyTorchFasterRCNN | PyTorchYolo | TensorFlowV2FasterRCNN
+    )
 
-    SPEECH_RECOGNIZER_TYPE = Union[PyTorchDeepSpeech,]  # pylint: disable=invalid-name
+    SPEECH_RECOGNIZER_TYPE = PyTorchDeepSpeech  # pylint: disable=invalid-name
 
-    PYTORCH_ESTIMATOR_TYPE = Union[  # pylint: disable=invalid-name
-        PyTorchClassifier,
-        PyTorchDeepSpeech,
-        PyTorchEstimator,
-        PyTorchObjectDetector,
-        PyTorchFasterRCNN,
-        PyTorchYolo,
-        PyTorchRegressor,
-    ]
+    PYTORCH_ESTIMATOR_TYPE = (  # pylint: disable=invalid-name
+        PyTorchClassifier
+        | PyTorchDeepSpeech
+        | PyTorchEstimator
+        | PyTorchObjectDetector
+        | PyTorchFasterRCNN
+        | PyTorchYolo
+        | PyTorchRegressor
+    )
 
-    PYTORCH_OBJECT_DETECTOR_TYPE = Union[PyTorchObjectDetector]  # pylint: disable=invalid-name
+    PYTORCH_OBJECT_DETECTOR_TYPE = PyTorchObjectDetector  # pylint: disable=invalid-name
 
-    KERAS_ESTIMATOR_TYPE = Union[  # pylint: disable=invalid-name
-        KerasClassifier,
-        KerasEstimator,
-        KerasRegressor,
-    ]
+    KERAS_ESTIMATOR_TYPE = KerasClassifier | KerasEstimator | KerasRegressor  # pylint: disable=invalid-name
 
-    TENSORFLOWV2_ESTIMATOR_TYPE = Union[  # pylint: disable=invalid-name
-        TensorFlowV2Classifier,
-        TensorFlowV2Estimator,
-        TensorFlowV2FasterRCNN,
-    ]
+    TENSORFLOWV2_ESTIMATOR_TYPE = (  # pylint: disable=invalid-name
+        TensorFlowV2Classifier | TensorFlowV2Estimator | TensorFlowV2FasterRCNN
+    )
 
-    ESTIMATOR_TYPE = Union[  # pylint: disable=invalid-name
-        CLASSIFIER_TYPE,
-        REGRESSOR_TYPE,
-        OBJECT_DETECTOR_TYPE,
-        SPEECH_RECOGNIZER_TYPE,
-        PYTORCH_ESTIMATOR_TYPE,
-        KERAS_ESTIMATOR_TYPE,
-        TENSORFLOWV2_ESTIMATOR_TYPE,
-    ]
+    ESTIMATOR_TYPE = (  # pylint: disable=invalid-name
+        CLASSIFIER_TYPE
+        | REGRESSOR_TYPE
+        | OBJECT_DETECTOR_TYPE
+        | SPEECH_RECOGNIZER_TYPE
+        | PYTORCH_ESTIMATOR_TYPE
+        | KERAS_ESTIMATOR_TYPE
+        | TENSORFLOWV2_ESTIMATOR_TYPE
+    )
 
-    CLONABLE = Union[  # pylint: disable=invalid-name
-        ScikitlearnClassifier,
-        PyTorchClassifier,
-        TensorFlowV2Classifier,
-        KerasEstimator,
-        PyTorchRegressor,
-        ScikitlearnRegressor,
-        XGBoostClassifier,
-    ]
+    CLONABLE = (  # pylint: disable=invalid-name
+        ScikitlearnClassifier
+        | PyTorchClassifier
+        | TensorFlowV2Classifier
+        | KerasEstimator
+        | PyTorchRegressor
+        | ScikitlearnRegressor
+        | XGBoostClassifier
+    )
 
-    ABLATOR_TYPE = Union[BlockAblator, ColumnAblator]  # pylint: disable=invalid-name
+    ABLATOR_TYPE = BlockAblator | ColumnAblator  # pylint: disable=invalid-name
 
-    CERTIFIER_TYPE = Union[PytorchDeepZ]  # pylint: disable=invalid-name
-    IBP_CERTIFIER_TYPE = Union[PyTorchIBPClassifier]  # pylint: disable=invalid-name
+    CERTIFIER_TYPE = PytorchDeepZ  # pylint: disable=invalid-name
+    IBP_CERTIFIER_TYPE = PyTorchIBPClassifier  # pylint: disable=invalid-name
 
 # --------------------------------------------------------------------------------------------------------- DEPRECATION
 
@@ -988,9 +979,12 @@ def remove_attacked_feature(attack_feature: int | slice, non_numerical_features:
                                     (i.e., strings)
     :return:
     """
-    if non_numerical_features is not None and isinstance(attack_feature, int):
-        if attack_feature in non_numerical_features:
-            non_numerical_features.remove(attack_feature)
+    if (
+        non_numerical_features is not None
+        and isinstance(attack_feature, int)
+        and attack_feature in non_numerical_features
+    ):
+        non_numerical_features.remove(attack_feature)
 
 
 def compute_success_array(
@@ -1475,7 +1469,7 @@ def load_nursery(
             return 2
         if value == "spec_prior":
             return 3
-        raise Exception(f"Bad label value: {value}")
+        raise ValueError(f"Bad label value: {value}")
 
     data["label"] = data["label"].apply(modify_label)
     data["children"] = data["children"].apply(lambda x: 4 if x == "more" else x)
@@ -1564,33 +1558,34 @@ def load_dataset(
 
 def _extract(full_path: str, path: str) -> bool:
     archive: zipfile.ZipFile | tarfile.TarFile
-    if full_path.endswith("tar"):  # pragma: no cover
-        if tarfile.is_tarfile(full_path):
-            archive = tarfile.open(full_path, "r:")
-    elif full_path.endswith("tar.gz"):  # pragma: no cover
-        if tarfile.is_tarfile(full_path):
-            archive = tarfile.open(full_path, "r:gz")
-    elif full_path.endswith("zip"):  # pragma: no cover
-        if zipfile.is_zipfile(full_path):
-            archive = zipfile.ZipFile(full_path)  # pylint: disable=consider-using-with
+    with contextlib.ExitStack() as stack:
+        if full_path.endswith("tar"):  # pragma: no cover
+            if tarfile.is_tarfile(full_path):
+                archive = stack.enter_context(tarfile.open(full_path, "r:"))
+        elif full_path.endswith("tar.gz"):  # pragma: no cover
+            if tarfile.is_tarfile(full_path):
+                archive = stack.enter_context(tarfile.open(full_path, "r:gz"))
+        elif full_path.endswith("zip"):  # pragma: no cover
+            if zipfile.is_zipfile(full_path):
+                archive = stack.enter_context(zipfile.ZipFile(full_path))
+            else:
+                return False
         else:
             return False
-    else:
-        return False
 
-    try:
-        for entry in archive.getmembers():  # type: ignore
-            if os.path.isabs(entry.name) or ".." in entry.name:
-                raise ValueError(f"Illegal tar archive entry: {entry.name}")
-        archive.extractall(path)
-    except (tarfile.TarError, RuntimeError, KeyboardInterrupt):  # pragma: no cover
-        if os.path.exists(path):
-            if os.path.isfile(path):
-                os.remove(path)
-            else:
-                shutil.rmtree(path)
-        raise
-    return True
+        try:
+            for entry in archive.getmembers():  # type: ignore
+                if os.path.isabs(entry.name) or ".." in entry.name:
+                    raise ValueError(f"Illegal tar archive entry: {entry.name}")
+            archive.extractall(path)
+        except (tarfile.TarError, RuntimeError, KeyboardInterrupt):  # pragma: no cover
+            if os.path.exists(path):
+                if os.path.isfile(path):
+                    os.remove(path)
+                else:
+                    shutil.rmtree(path)
+            raise
+        return True
 
 
 def get_file(
@@ -1645,7 +1640,7 @@ def get_file(
 
                     try:
                         context = ssl.create_default_context()
-                    except Exception:  # pragma: no cover
+                    except OSError:  # pragma: no cover
                         context = None
 
                     try:

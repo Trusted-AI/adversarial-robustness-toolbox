@@ -22,7 +22,7 @@ This module implements square padding for images and object detection bounding b
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
 
 import numpy as np
 from tqdm.auto import tqdm
@@ -42,9 +42,9 @@ class ImageSquarePadTensorFlowV2(PreprocessorTensorFlowV2):
     This module implements square padding for images and object detection bounding boxes in TensorFlow v2.
     """
 
-    params = ["channels_first", "label_type", "pad_mode", "pad_kwargs", "clip_values", "verbose"]
+    params: ClassVar[list[str]] = ["channels_first", "label_type", "pad_mode", "pad_kwargs", "clip_values", "verbose"]
 
-    label_types = ["classification", "object_detection"]
+    label_types: ClassVar[list[str]] = ["classification", "object_detection"]
 
     def __init__(
         self,

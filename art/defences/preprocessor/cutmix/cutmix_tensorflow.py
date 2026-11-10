@@ -28,7 +28,7 @@ This module implements the CutMix data augmentation defence in TensorFlow.
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 import numpy as np
 from tqdm.auto import tqdm
@@ -53,7 +53,7 @@ class CutMixTensorFlowV2(PreprocessorTensorFlowV2):
         https://arxiv.org/abs/1902.06705
     """
 
-    params = ["num_classes", "alpha", "probability", "channels_first", "verbose"]
+    params: ClassVar[list[str]] = ["num_classes", "alpha", "probability", "channels_first", "verbose"]
 
     def __init__(
         self,

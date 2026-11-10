@@ -22,7 +22,7 @@ Provides black-box gradient estimation using NES.
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 import numpy as np
 from scipy.stats import entropy
@@ -48,7 +48,7 @@ class QueryEfficientGradientEstimationClassifier(ClassifierLossGradients, Classi
     | Paper link: https://arxiv.org/abs/1712.07113
     """
 
-    estimator_params = ["num_basis", "sigma", "round_samples"]
+    estimator_params: ClassVar[list[str]] = ["num_basis", "sigma", "round_samples"]
 
     def __init__(
         self,

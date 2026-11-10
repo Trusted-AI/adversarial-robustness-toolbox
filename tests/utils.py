@@ -29,6 +29,7 @@ import warnings
 
 import numpy as np
 import sklearn
+from packaging.version import parse
 
 from art.estimators.classification.tensorflow import TensorFlowV2Classifier
 from art.estimators.gan.tensorflow import TensorFlowV2GAN
@@ -156,7 +157,7 @@ def check_adverse_predicted_sample_y(y_pred_adv, y_non_adv):
 
 def is_valid_framework(framework):
     if framework not in art_supported_frameworks:
-        raise Exception(
+        raise ValueError(
             "Framework value {} is unsupported. Please use one of these valid values: {}".format(
                 framework, " ".join(art_supported_frameworks)
             )
@@ -1420,10 +1421,10 @@ def get_tabular_classifier_scikit_list(clipped=False, model_list_names=None):
         ScikitlearnSVC,
     )
 
-    sklearn_version = list(map(int, sklearn.__version__.split(".")))
-    if sklearn_version[0] == 1 and sklearn_version[1] == 8:
+    sklearn_version = parse(sklearn.__version__)
+    if sklearn_version.major == 1 and sklearn_version.minor == 8:
         suffix = "-eq-1.8.0"
-    elif sklearn_version[0] == 1 and sklearn_version[1] == 9:
+    elif sklearn_version.major == 1 and sklearn_version.minor == 9:
         suffix = "-eq-1.9.1"
     else:
         suffix = ""
@@ -1452,29 +1453,27 @@ def get_tabular_classifier_scikit_list(clipped=False, model_list_names=None):
 
     if clipped:
         for model_name, model_class in model_dict_names.items():
-            model = pickle.load(
-                open(
-                    os.path.join(
-                        os.path.dirname(os.path.dirname(__file__)),
-                        "utils/resources/models/scikit/",
-                        "scikit-" + model_name + "-iris-clipped" + suffix + ".pickle",
-                    ),
-                    "rb",
-                )
-            )
+            with open(
+                os.path.join(
+                    os.path.dirname(os.path.dirname(__file__)),
+                    "utils/resources/models/scikit/",
+                    "scikit-" + model_name + "-iris-clipped" + suffix + ".pickle",
+                ),
+                "rb",
+            ) as f:
+                model = pickle.load(f)
             classifier_list.append(model_class(model=model, clip_values=(0, 1)))
     else:
         for model_name, model_class in model_dict_names.items():
-            model = pickle.load(
-                open(
-                    os.path.join(
-                        os.path.dirname(os.path.dirname(__file__)),
-                        "utils/resources/models/scikit/",
-                        "scikit-" + model_name + "-iris-unclipped" + suffix + ".pickle",
-                    ),
-                    "rb",
-                )
-            )
+            with open(
+                os.path.join(
+                    os.path.dirname(os.path.dirname(__file__)),
+                    "utils/resources/models/scikit/",
+                    "scikit-" + model_name + "-iris-unclipped" + suffix + ".pickle",
+                ),
+                "rb",
+            ) as f:
+                model = pickle.load(f)
             classifier_list.append(model_class(model=model, clip_values=None))
 
     return classifier_list

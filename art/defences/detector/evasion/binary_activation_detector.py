@@ -23,7 +23,7 @@ detectors.
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 import numpy as np
 
@@ -41,7 +41,7 @@ class BinaryActivationDetector(EvasionDetector):
     the user and is trained on the values of the activations of a classifier at a given layer.
     """
 
-    defence_params = ["classifier", "detector", "layer"]
+    defence_params: ClassVar[list[str]] = ["classifier", "detector", "layer"]
 
     def __init__(
         self,

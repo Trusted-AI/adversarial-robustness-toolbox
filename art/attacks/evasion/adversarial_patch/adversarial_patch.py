@@ -219,40 +219,40 @@ class AdversarialPatch(EvasionAttack):
 
     def _check_params(self) -> None:
         if not isinstance(self._attack.rotation_max, (float, int)):
-            raise ValueError("The maximum rotation of the random patches must be of type float.")
+            raise TypeError("The maximum rotation of the random patches must be of type float.")
         if self._attack.rotation_max < 0 or self._attack.rotation_max > 180.0:
             raise ValueError("The maximum rotation of the random patches must be between 0 and 180 degrees.")
 
         if not isinstance(self._attack.scale_min, float):
-            raise ValueError("The minimum scale of the random patched must be of type float.")
+            raise TypeError("The minimum scale of the random patched must be of type float.")
         if self._attack.scale_min < 0 or self._attack.scale_min >= self._attack.scale_max:
             raise ValueError(
                 "The minimum scale of the random patched must be greater than 0 and less than the maximum scaling."
             )
 
         if not isinstance(self._attack.scale_max, float):
-            raise ValueError("The maximum scale of the random patched must be of type float.")
+            raise TypeError("The maximum scale of the random patched must be of type float.")
         if self._attack.scale_max > 1:
             raise ValueError("The maximum scale of the random patched must not be greater than 1.")
 
         if not isinstance(self._attack.learning_rate, float):
-            raise ValueError("The learning rate must be of type float.")
+            raise TypeError("The learning rate must be of type float.")
 
         if not self._attack.learning_rate > 0.0:
             raise ValueError("The learning rate must be greater than 0.0.")
 
         if not isinstance(self._attack.max_iter, int):
-            raise ValueError("The number of optimization steps must be of type int.")
+            raise TypeError("The number of optimization steps must be of type int.")
         if not self._attack.max_iter > 0:
             raise ValueError("The number of optimization steps must be greater than 0.")
 
         if not isinstance(self._attack.batch_size, int):
-            raise ValueError("The batch size must be of type int.")
+            raise TypeError("The batch size must be of type int.")
         if not self._attack.batch_size > 0:
             raise ValueError("The batch size must be greater than 0.")
 
         if not isinstance(self._attack.targeted, bool):
-            raise ValueError("The argument `targeted` has to be of type bool.")
+            raise TypeError("The argument `targeted` has to be of type bool.")
 
         if not isinstance(self._attack.verbose, bool):
-            raise ValueError("The argument `verbose` has to be of type bool.")
+            raise TypeError("The argument `verbose` has to be of type bool.")

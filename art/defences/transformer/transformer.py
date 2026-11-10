@@ -22,7 +22,7 @@ This module implements the abstract base class for defences that transform a cla
 from __future__ import annotations
 
 import abc
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 import numpy as np
 
@@ -35,7 +35,7 @@ class Transformer(abc.ABC):
     Abstract base class for transformation defences.
     """
 
-    params: list[str] = []
+    params: ClassVar[list[str]] = []
 
     def __init__(self, classifier: CLASSIFIER_TYPE) -> None:
         """

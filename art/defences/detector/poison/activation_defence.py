@@ -30,7 +30,7 @@ from __future__ import annotations
 import copy
 import logging
 import os
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
 
 import numpy as np
 from sklearn.cluster import KMeans, MiniBatchKMeans
@@ -59,7 +59,7 @@ class ActivationDefence(PoisonFilteringDefence):
         in general, see https://arxiv.org/abs/1902.06705
     """
 
-    defence_params = [
+    defence_params: ClassVar[list[str]] = [
         "nb_clusters",
         "clustering_method",
         "nb_dims",
@@ -68,9 +68,9 @@ class ActivationDefence(PoisonFilteringDefence):
         "generator",
         "ex_re_threshold",
     ]
-    valid_clustering = ["KMeans"]
-    valid_reduce = ["PCA", "FastICA", "TSNE"]
-    valid_analysis = ["smaller", "distance", "relative-size", "silhouette-scores"]
+    valid_clustering: ClassVar[list[str]] = ["KMeans"]
+    valid_reduce: ClassVar[list[str]] = ["PCA", "FastICA", "TSNE"]
+    valid_analysis: ClassVar[list[str]] = ["smaller", "distance", "relative-size", "silhouette-scores"]
 
     TOO_SMALL_ACTIVATIONS = 32  # Threshold used to print a warning when activations are not enough
 
@@ -685,7 +685,7 @@ class ActivationDefence(PoisonFilteringDefence):
             activations = np.reshape(activations, (activations.shape[0], -1))
             nodes_last_layer = activations.shape[1]
         else:
-            raise ValueError("activations is None or tensor.")
+            raise TypeError("activations is None or tensor.")
 
         if nodes_last_layer <= self.TOO_SMALL_ACTIVATIONS:
             logger.warning(

@@ -242,14 +242,17 @@ class ProjectedGradientDescent(EvasionAttack):
             if (self.eps_step <= 0).any():
                 raise ValueError("The perturbation step-size `eps_step` has to be positive.")
 
-        if isinstance(self.eps, np.ndarray) and isinstance(self.eps_step, np.ndarray):
-            if self.eps.shape != self.eps_step.shape:
-                raise ValueError(
-                    "The perturbation size `eps` and the perturbation step-size `eps_step` must have the same shape."
-                )
+        if (
+            isinstance(self.eps, np.ndarray)
+            and isinstance(self.eps_step, np.ndarray)
+            and self.eps.shape != self.eps_step.shape
+        ):
+            raise ValueError(
+                "The perturbation size `eps` and the perturbation step-size `eps_step` must have the same shape."
+            )
 
         if not isinstance(self.targeted, bool):
-            raise ValueError("The flag `targeted` has to be of type bool.")
+            raise TypeError("The flag `targeted` has to be of type bool.")
 
         if not isinstance(self.num_random_init, int):
             raise TypeError("The number of random initialisations has to be of type integer.")
@@ -264,4 +267,4 @@ class ProjectedGradientDescent(EvasionAttack):
             raise ValueError("The number of iterations `max_iter` has to be a nonnegative integer.")
 
         if not isinstance(self.verbose, bool):
-            raise ValueError("The verbose has to be a Boolean.")
+            raise TypeError("The verbose has to be a Boolean.")

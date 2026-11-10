@@ -22,7 +22,7 @@ import unittest
 import GPy
 import numpy as np
 
-from art.estimators.classification.GPy import GPyGaussianProcessClassifier
+from art.estimators.classification.gpy import GPyGaussianProcessClassifier
 from tests.utils import TestBase, master_seed
 
 logger = logging.getLogger(__name__)

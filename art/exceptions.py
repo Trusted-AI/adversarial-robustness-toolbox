@@ -21,8 +21,6 @@ Module containing ART's exceptions.
 
 from __future__ import annotations
 
-from typing import Type
-
 
 class EstimatorError(TypeError):
     """

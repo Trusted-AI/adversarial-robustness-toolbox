@@ -23,7 +23,7 @@ from __future__ import annotations
 
 import abc
 import sys
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
 
 import numpy as np
 
@@ -39,7 +39,7 @@ class PoisonFilteringDefence(ABC):
     Base class for all poison filtering defences.
     """
 
-    defence_params = ["classifier"]
+    defence_params: ClassVar[list[str]] = ["classifier"]
 
     def __init__(self, classifier: CLASSIFIER_TYPE, x_train: np.ndarray, y_train: np.ndarray) -> None:
         """

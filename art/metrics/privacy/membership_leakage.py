@@ -80,7 +80,7 @@ def PDTP(  # pylint: disable=invalid-name
     if not isinstance(target_estimator, supported_classifiers) or not isinstance(
         extra_estimator, supported_classifiers
     ):
-        raise ValueError("PDTP metric only supports classifiers of type PyTorch, TensorFlowV2 and ScikitLearn.")
+        raise TypeError("PDTP metric only supports classifiers of type PyTorch, TensorFlowV2 and ScikitLearn.")
     if target_estimator.input_shape[0] != x.shape[1]:
         raise ValueError("Shape of x does not match input_shape of classifier")
     y = check_and_transform_label_format(y, nb_classes=target_estimator.nb_classes)

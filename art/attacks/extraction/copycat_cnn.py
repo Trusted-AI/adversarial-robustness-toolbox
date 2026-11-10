@@ -166,4 +166,4 @@ class CopycatCNN(ExtractionAttack):
             raise ValueError("The number of queries submitted to the victim classifier must be a positive integer.")
 
         if not isinstance(self.use_probability, bool):
-            raise ValueError("The argument `use_probability` has to be of type bool.")
+            raise TypeError("The argument `use_probability` has to be of type bool.")

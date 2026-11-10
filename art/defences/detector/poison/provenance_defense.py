@@ -25,7 +25,7 @@ from __future__ import annotations
 
 import logging
 from copy import deepcopy
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 import numpy as np
 from sklearn.model_selection import train_test_split
@@ -47,7 +47,7 @@ class ProvenanceDefense(PoisonFilteringDefence):
     | Paper link: https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=8473440
     """
 
-    defence_params = [
+    defence_params: ClassVar[list[str]] = [
         "classifier",
         "x_train",
         "y_train",

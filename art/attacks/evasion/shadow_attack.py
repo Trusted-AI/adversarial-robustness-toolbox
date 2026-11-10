@@ -254,49 +254,49 @@ class ShadowAttack(EvasionAttack):
 
     def _check_params(self) -> None:
         if not isinstance(self.sigma, (int, float)):
-            raise ValueError("The sigma must be of type int or float.")
+            raise TypeError("The sigma must be of type int or float.")
 
         if self.sigma <= 0:
             raise ValueError("The sigma must larger than zero.")
 
         if not isinstance(self.nb_steps, int):
-            raise ValueError("The number of steps must be of type int.")
+            raise TypeError("The number of steps must be of type int.")
 
         if self.nb_steps <= 0:
             raise ValueError("The number of steps must larger than zero.")
 
         if not isinstance(self.learning_rate, float):
-            raise ValueError("The learning rate must be of type float.")
+            raise TypeError("The learning rate must be of type float.")
 
         if self.learning_rate <= 0:
             raise ValueError("The learning rate must larger than zero.")
 
         if not isinstance(self.lambda_tv, float):
-            raise ValueError("The lambda_tv must be of type float.")
+            raise TypeError("The lambda_tv must be of type float.")
 
         if self.lambda_tv < 0:
             raise ValueError("The lambda_tv must larger than zero.")
 
         if not isinstance(self.lambda_c, float):
-            raise ValueError("The lambda_c must be of type float.")
+            raise TypeError("The lambda_c must be of type float.")
 
         if self.lambda_c < 0:
             raise ValueError("The lambda_c must larger than zero.")
 
         if not isinstance(self.lambda_s, float):
-            raise ValueError("The lambda_s must be of type float.")
+            raise TypeError("The lambda_s must be of type float.")
 
         if self.lambda_s < 0:
             raise ValueError("The lambda_s must larger than zero.")
 
         if not isinstance(self.batch_size, int):
-            raise ValueError("The batch size must be of type int.")
+            raise TypeError("The batch size must be of type int.")
 
         if self.batch_size <= 0:
             raise ValueError("The sigma must larger than zero.")
 
         if not isinstance(self.targeted, bool):
-            raise ValueError("The targeted argument must be of type bool.")
+            raise TypeError("The targeted argument must be of type bool.")
 
         if not isinstance(self.verbose, bool):
-            raise ValueError("The argument `verbose` has to be of type bool.")
+            raise TypeError("The argument `verbose` has to be of type bool.")

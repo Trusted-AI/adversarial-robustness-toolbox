@@ -118,7 +118,7 @@ class SpectralSignatureDefense(PoisonFilteringDefence):
             self.x_train, layer=nb_layers - 1, batch_size=self.batch_size
         )
         if not isinstance(features_x_poisoned, np.ndarray):
-            raise ValueError("Wrong type detected.")
+            raise TypeError("Wrong type detected.")
 
         if features_x_poisoned is not None:
             # flatten activations across batch

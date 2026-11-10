@@ -28,6 +28,7 @@ from __future__ import annotations
 
 import logging
 from io import BytesIO
+from typing import ClassVar
 
 import numpy as np
 from tqdm.auto import tqdm
@@ -42,7 +43,7 @@ class Mp3Compression(Preprocessor):
     Implement the MP3 compression defense approach.
     """
 
-    params = ["channels_first", "sample_rate", "verbose"]
+    params: ClassVar[list[str]] = ["channels_first", "sample_rate", "verbose"]
 
     def __init__(
         self,
@@ -160,4 +161,4 @@ class Mp3Compression(Preprocessor):
             raise ValueError("Sample rate be must a positive integer.")
 
         if not isinstance(self.verbose, bool):
-            raise ValueError("The argument `verbose` has to be of type bool.")
+            raise TypeError("The argument `verbose` has to be of type bool.")

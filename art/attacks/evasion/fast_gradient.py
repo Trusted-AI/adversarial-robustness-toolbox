@@ -122,10 +122,9 @@ class FastGradientMethod(EvasionAttack):
 
         :param x: An array with the original inputs.
         """
-        if isinstance(self.eps, np.ndarray):
-            # Ensure the eps array is broadcastable
-            if self.eps.ndim > x.ndim:  # pragma: no cover
-                raise ValueError("The `eps` shape must be broadcastable to input shape.")
+        # Ensure the eps array is broadcastable
+        if isinstance(self.eps, np.ndarray) and self.eps.ndim > x.ndim:  # pragma: no cover
+            raise ValueError("The `eps` shape must be broadcastable to input shape.")
 
     def _minimal_perturbation(self, x: np.ndarray, y: np.ndarray, mask: np.ndarray | None) -> np.ndarray:
         """
@@ -148,11 +147,10 @@ class FastGradientMethod(EvasionAttack):
             batch_labels = y[batch_index_1:batch_index_2]
 
             mask_batch = mask
-            if mask is not None:
-                # Here we need to make a distinction: if the masks are different for each input, we need to index
-                # those for the current batch. Otherwise, (i.e. mask is meant to be broadcasted), keep it as it is.
-                if len(mask.shape) == len(x.shape):
-                    mask_batch = mask[batch_index_1:batch_index_2]
+            # Here we need to make a distinction: if the masks are different for each input, we need to index
+            # those for the current batch. Otherwise, (i.e. mask is meant to be broadcasted), keep it as it is.
+            if mask is not None and len(mask.shape) == len(x.shape):
+                mask_batch = mask[batch_index_1:batch_index_2]
 
             # Get perturbation
             perturbation = self._compute_perturbation(batch, batch_labels, mask_batch)
@@ -366,14 +364,17 @@ class FastGradientMethod(EvasionAttack):
             if (self.eps_step <= 0).any():
                 raise ValueError("The perturbation step-size `eps_step` has to be positive.")
 
-        if isinstance(self.eps, np.ndarray) and isinstance(self.eps_step, np.ndarray):
-            if self.eps.shape != self.eps_step.shape:
-                raise ValueError(
-                    "The perturbation size `eps` and the perturbation step-size `eps_step` must have the same shape."
-                )
+        if (
+            isinstance(self.eps, np.ndarray)
+            and isinstance(self.eps_step, np.ndarray)
+            and self.eps.shape != self.eps_step.shape
+        ):
+            raise ValueError(
+                "The perturbation size `eps` and the perturbation step-size `eps_step` must have the same shape."
+            )
 
         if not isinstance(self.targeted, bool):
-            raise ValueError("The flag `targeted` has to be of type bool.")
+            raise TypeError("The flag `targeted` has to be of type bool.")
 
         if not isinstance(self.num_random_init, int):
             raise TypeError("The number of random initialisations has to be of type integer")
@@ -385,7 +386,7 @@ class FastGradientMethod(EvasionAttack):
             raise ValueError("The batch size `batch_size` has to be positive.")
 
         if not isinstance(self.minimal, bool):
-            raise ValueError("The flag `minimal` has to be of type bool.")
+            raise TypeError("The flag `minimal` has to be of type bool.")
 
     def _compute_perturbation(
         self,
@@ -539,11 +540,10 @@ class FastGradientMethod(EvasionAttack):
             batch_labels = y[batch_index_1:batch_index_2]
 
             mask_batch = mask
-            if mask is not None:
-                # Here we need to make a distinction: if the masks are different for each input, we need to index
-                # those for the current batch. Otherwise, (i.e. mask is meant to be broadcasted), keep it as it is.
-                if len(mask.shape) == len(x.shape):
-                    mask_batch = mask[batch_index_1:batch_index_2]
+            # Here we need to make a distinction: if the masks are different for each input, we need to index
+            # those for the current batch. Otherwise, (i.e. mask is meant to be broadcasted), keep it as it is.
+            if mask is not None and len(mask.shape) == len(x.shape):
+                mask_batch = mask[batch_index_1:batch_index_2]
 
             # Get perturbation
             perturbation = self._compute_perturbation(batch, batch_labels, mask_batch, decay, momentum)

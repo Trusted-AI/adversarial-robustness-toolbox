@@ -28,6 +28,7 @@ This module implements the CutMix data augmentation defence.
 from __future__ import annotations
 
 import logging
+from typing import ClassVar
 
 import numpy as np
 from tqdm.auto import tqdm
@@ -49,7 +50,7 @@ class CutMix(Preprocessor):
         https://arxiv.org/abs/1902.06705
     """
 
-    params = ["num_classes", "alpha", "probability", "channels_first", "verbose"]
+    params: ClassVar[list[str]] = ["num_classes", "alpha", "probability", "channels_first", "verbose"]
 
     def __init__(
         self,

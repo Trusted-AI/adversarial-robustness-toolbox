@@ -29,7 +29,7 @@ from __future__ import annotations
 
 import logging
 from io import BytesIO
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 import numpy as np
 from tqdm.auto import tqdm
@@ -59,7 +59,7 @@ class JpegCompression(Preprocessor):
         https://arxiv.org/abs/1902.06705
     """
 
-    params = ["quality", "channels_first", "clip_values", "verbose"]
+    params: ClassVar[list[str]] = ["quality", "channels_first", "clip_values", "verbose"]
 
     def __init__(
         self,
@@ -189,4 +189,4 @@ class JpegCompression(Preprocessor):
             raise ValueError("'clip_values' max value must be either 1 or 255.")
 
         if not isinstance(self.verbose, bool):
-            raise ValueError("The argument `verbose` has to be of type bool.")
+            raise TypeError("The argument `verbose` has to be of type bool.")

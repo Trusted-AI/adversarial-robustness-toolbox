@@ -126,7 +126,7 @@ class TestSVMAttack(unittest.TestCase):
     #     self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
 
     def test_unsupported_kernel(self):
-        (x_train, y_train), (x_test, y_test), min_, max_ = self.iris
+        (x_train, y_train), (x_test, y_test), _min, _max = self.iris
         model = SVC(kernel="sigmoid", gamma="auto")
         with self.assertRaises(TypeError):
             _ = PoisoningAttackSVM(
@@ -177,7 +177,7 @@ class TestSVMAttack(unittest.TestCase):
             self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
 
     def test_classifier_type_check_fail(self):
-        (x_train, y_train), (x_test, y_test), min_, max_ = self.iris
+        (x_train, y_train), (x_test, y_test), _min, _max = self.iris
         backend_test_classifier_type_check_fail(
             PoisoningAttackSVM,
             [ScikitlearnSVC],

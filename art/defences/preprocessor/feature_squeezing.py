@@ -28,6 +28,7 @@ This module implements the feature squeezing defence in `FeatureSqueezing`.
 from __future__ import annotations
 
 import logging
+from typing import ClassVar
 
 import numpy as np
 
@@ -48,7 +49,7 @@ class FeatureSqueezing(Preprocessor):
         see https://arxiv.org/abs/1902.06705
     """
 
-    params = ["clip_values", "bit_depth"]
+    params: ClassVar[list[str]] = ["clip_values", "bit_depth"]
 
     def __init__(
         self,

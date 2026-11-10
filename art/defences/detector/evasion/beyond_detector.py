@@ -25,7 +25,7 @@ from __future__ import annotations
 
 import math
 from collections.abc import Callable
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 import numpy as np
 
@@ -46,7 +46,7 @@ class BeyondDetectorPyTorch(EvasionDetector):
     | Paper link: https://openreview.net/pdf?id=S4LqI6CcJ3
     """
 
-    defence_params = ["target_model", "ssl_model", "augmentations", "aug_num", "alpha", "var_K", "percentile"]
+    defence_params: ClassVar[list[str]] = ["target_model", "ssl_model", "augmentations", "aug_num", "alpha", "var_K", "percentile"]
 
     def __init__(
         self,

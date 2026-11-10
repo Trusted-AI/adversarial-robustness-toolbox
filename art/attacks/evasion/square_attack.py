@@ -153,9 +153,8 @@ class SquareAttack(EvasionAttack):
 
         x_adv = x.astype(ART_NUMPY_DTYPE)
 
-        if isinstance(self.estimator, ClassifierMixin):
-            if y is not None:
-                y = check_and_transform_label_format(y, nb_classes=self.estimator.nb_classes)
+        if isinstance(self.estimator, ClassifierMixin) and y is not None:
+            y = check_and_transform_label_format(y, nb_classes=self.estimator.nb_classes)
 
         if y is None:
             # Use model predictions as true labels
@@ -164,11 +163,12 @@ class SquareAttack(EvasionAttack):
             if isinstance(self.estimator, ClassifierMixin):
                 y = get_labels_np_array(y)
 
-        if isinstance(self.estimator, ClassifierMixin):
-            if self.estimator.nb_classes == 2 and y.shape[1] == 1:  # pragma: no cover
-                raise ValueError(
-                    "This attack has not yet been tested for binary classification with a single output classifier."
-                )
+        if (
+            isinstance(self.estimator, ClassifierMixin) and self.estimator.nb_classes == 2 and y.shape[1] == 1
+        ):  # pragma: no cover
+            raise ValueError(
+                "This attack has not yet been tested for binary classification with a single output classifier."
+            )
 
         if self.estimator.channels_first:
             channels = x.shape[1]
@@ -527,4 +527,4 @@ class SquareAttack(EvasionAttack):
             raise ValueError("The argument batch_size has to be of type int and larger than zero.")
 
         if not isinstance(self.verbose, bool):
-            raise ValueError("The argument `verbose` has to be of type bool.")
+            raise TypeError("The argument `verbose` has to be of type bool.")

@@ -371,8 +371,7 @@ class FunctionallyEquivalentExtraction(ExtractionAttack):
             e_i = np.zeros((self.num_neurons, 1), dtype=NUMPY_DTYPE)
             e_i[i, 0] = unit_vector_scale
 
-            def f_v(v_i):
-                # pylint: disable=cell-var-from-loop
+            def f_v(v_i, e_i=e_i):
                 return np.squeeze(np.matmul(-a0_pairwise_ratios_inverse.T, np.expand_dims(v_i, axis=0).T) - e_i)
 
             v_0 = np.random.normal(0, 1, self.num_features)

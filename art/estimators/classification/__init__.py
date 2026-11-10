@@ -15,7 +15,7 @@ from art.estimators.classification.classifier import (
 from art.estimators.classification.deep_partition_ensemble import DeepPartitionEnsemble
 from art.estimators.classification.detector_classifier import DetectorClassifier
 from art.estimators.classification.ensemble import EnsembleClassifier
-from art.estimators.classification.GPy import GPyGaussianProcessClassifier
+from art.estimators.classification.gpy import GPyGaussianProcessClassifier
 from art.estimators.classification.hugging_face import HuggingFaceClassifierPyTorch
 from art.estimators.classification.keras import KerasClassifier
 from art.estimators.classification.lightgbm import LightGBMClassifier

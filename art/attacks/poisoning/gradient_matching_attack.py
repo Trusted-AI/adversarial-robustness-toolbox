@@ -149,7 +149,7 @@ class GradientMatchingAttack(Attack):
         if isinstance(self.substitute_classifier, PyTorchClassifier):
             classifier = self.substitute_classifier
         else:
-            raise Exception("This method requires `PyTorchClassifier` as `substitute_classifier`'s type")
+            raise TypeError("This method requires `PyTorchClassifier` as `substitute_classifier`'s type")
 
         num_poison = len(x_poison)
         len_noise = np.prod(x_poison.shape[1:])

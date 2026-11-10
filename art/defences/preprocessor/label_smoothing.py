@@ -28,6 +28,7 @@ vector of hard labels.
 from __future__ import annotations
 
 import logging
+from typing import ClassVar
 
 import numpy as np
 
@@ -49,7 +50,7 @@ class LabelSmoothing(Preprocessor):
         see https://arxiv.org/abs/1902.06705  .
     """
 
-    params = ["max_value"]
+    params: ClassVar[list[str]] = ["max_value"]
 
     def __init__(
         self,

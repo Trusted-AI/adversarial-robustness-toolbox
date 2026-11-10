@@ -1207,7 +1207,7 @@ class ScikitlearnSVC(ClassGradientsMixin, LossGradientsMixin, ScikitlearnClassif
             gradients = self._apply_preprocessing_gradient(x, gradients)
 
         else:
-            raise ValueError("Type of `self.model` not supported for class-gradients.")
+            raise TypeError("Type of `self.model` not supported for class-gradients.")
 
         return gradients
 

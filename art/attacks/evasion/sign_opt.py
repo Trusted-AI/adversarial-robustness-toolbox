@@ -600,7 +600,7 @@ class SignOPTAttack(EvasionAttack):
 
     def _check_params(self) -> None:
         if not isinstance(self.targeted, bool):
-            raise ValueError("The argument `targeted` has to be of type bool.")
+            raise TypeError("The argument `targeted` has to be of type bool.")
 
         if self.epsilon <= 0:
             raise ValueError("The initial step size for the step towards the target must be positive.")
@@ -626,4 +626,4 @@ class SignOPTAttack(EvasionAttack):
             raise ValueError("The value of beta must be positive.")
 
         if not isinstance(self.verbose, bool):
-            raise ValueError("The argument `verbose` has to be of type bool.")
+            raise TypeError("The argument `verbose` has to be of type bool.")

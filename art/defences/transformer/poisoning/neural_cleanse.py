@@ -24,7 +24,7 @@ This module implements Neural Cleanse (Wang et. al. 2019)
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 import numpy as np
 
@@ -46,7 +46,7 @@ class NeuralCleanse(Transformer):
     | Paper link: https://people.cs.uchicago.edu/~ravenben/publications/pdf/backdoor-sp19.pdf
     """
 
-    params = [
+    params: ClassVar[list[str]] = [
         "steps",
         "init_cost",
         "norm",

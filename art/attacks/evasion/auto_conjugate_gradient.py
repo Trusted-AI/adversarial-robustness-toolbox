@@ -48,7 +48,7 @@ from __future__ import annotations
 import abc
 import logging
 import math
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 import numpy as np
 from tqdm.auto import trange
@@ -91,7 +91,7 @@ class AutoConjugateGradient(EvasionAttack):
         "verbose",
     ]
     _estimator_requirements = (BaseEstimator, LossGradientsMixin, ClassifierMixin)
-    _predefined_losses = [None, "cross_entropy", "difference_logits_ratio"]
+    _predefined_losses: ClassVar[list[str | None]] = [None, "cross_entropy", "difference_logits_ratio"]
 
     def __init__(
         self,
@@ -636,7 +636,7 @@ class AutoConjugateGradient(EvasionAttack):
             raise ValueError("The argument max_iter has to be of type int and larger than zero.")
 
         if not isinstance(self.targeted, bool):
-            raise ValueError("The argument targeted has to be of bool.")
+            raise TypeError("The argument targeted has to be of bool.")
 
         if not isinstance(self.nb_random_init, int) or self.nb_random_init <= 0:
             raise ValueError("The argument nb_random_init has to be of type int and larger than zero.")
@@ -648,7 +648,7 @@ class AutoConjugateGradient(EvasionAttack):
             raise ValueError(f"The argument loss_type has to be either {self._predefined_losses}.")
 
         if not isinstance(self.verbose, bool):
-            raise ValueError("The argument `verbose` has to be of type bool.")
+            raise TypeError("The argument `verbose` has to be of type bool.")
 
 
 def get_beta(gradk, gradk_1, cgradk_1):

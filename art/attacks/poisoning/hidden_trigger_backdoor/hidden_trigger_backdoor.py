@@ -177,7 +177,7 @@ class HiddenTriggerBackdoor(PoisoningAttackWhiteBox):
             )
 
         else:
-            raise ValueError("Only Pytorch, Keras, and TensorFlowV2 classifiers are supported")
+            raise TypeError("Only Pytorch, Keras, and TensorFlowV2 classifiers are supported")
 
     def poison(self, x: np.ndarray, y: np.ndarray | None = None, **kwargs) -> tuple[np.ndarray, np.ndarray]:
         """
@@ -196,7 +196,7 @@ class HiddenTriggerBackdoor(PoisoningAttackWhiteBox):
     def _check_params(self) -> None:
 
         if not isinstance(self.target, np.ndarray) or not isinstance(self.source, np.ndarray):
-            raise ValueError("Target and source must be arrays")
+            raise TypeError("Target and source must be arrays")
 
         if np.array_equal(self.target, self.source):
             raise ValueError("Target and source values can't be the same")
@@ -213,9 +213,8 @@ class HiddenTriggerBackdoor(PoisoningAttackWhiteBox):
         if not isinstance(self.feature_layer, (str, int)):
             raise TypeError("Feature layer should be a string or int")
 
-        if isinstance(self.feature_layer, int):
-            if not 0 <= self.feature_layer < len(self.estimator.layer_names):
-                raise ValueError("feature_layer is not a non-negative integer")
+        if isinstance(self.feature_layer, int) and not 0 <= self.feature_layer < len(self.estimator.layer_names):
+            raise ValueError("feature_layer is not a non-negative integer")
 
         if self.decay_coeff <= 0:
             raise ValueError("Decay coefficient must be positive")
@@ -224,4 +223,4 @@ class HiddenTriggerBackdoor(PoisoningAttackWhiteBox):
             raise ValueError("poison_percent must be between 0 (exclusive) and 1 (inclusive)")
 
         if not isinstance(self.verbose, bool):
-            raise ValueError("The argument `verbose` has to be of type bool.")
+            raise TypeError("The argument `verbose` has to be of type bool.")

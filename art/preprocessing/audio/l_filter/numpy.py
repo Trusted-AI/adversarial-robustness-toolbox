@@ -24,7 +24,7 @@ the `scipy` package.
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 import numpy as np
 from scipy.signal import lfilter
@@ -45,12 +45,12 @@ class LFilter(Preprocessor):
     function in the `scipy` package.
     """
 
-    params = ["numerator_coef", "denominator_coef", "axis", "initial_cond", "verbose"]
+    params: ClassVar[list[str]] = ["numerator_coef", "denominator_coef", "axis", "initial_cond", "verbose"]
 
     def __init__(
         self,
-        numerator_coef: np.ndarray = np.array([1.0]),
-        denominator_coef: np.ndarray = np.array([1.0]),
+        numerator_coef: np.ndarray | None = None,
+        denominator_coef: np.ndarray | None = None,
         axis: int = -1,
         initial_cond: np.ndarray | None = None,
         clip_values: CLIP_VALUES_TYPE | None = None,
@@ -61,10 +61,10 @@ class LFilter(Preprocessor):
         """
         Create an instance of LFilter.
 
-        :param numerator_coef: The numerator coefficient vector in a 1-D sequence.
+        :param numerator_coef: The numerator coefficient vector in a 1-D sequence. Defaults to `np.array([1.0])`.
         :param denominator_coef: The denominator coefficient vector in a 1-D sequence. By simply setting the array of
-                                 denominator coefficients to np.array([1.0]), this preprocessor can be used to apply a
-                                 FIR filter.
+                                 denominator coefficients to np.array([1.0]) (default), this preprocessor can be used
+                                 to apply a FIR filter.
         :param axis: The axis of the input data array along which to apply the linear filter. The filter is applied to
                      each subarray along this axis.
         :param initial_cond: Initial conditions for the filter delays.
@@ -76,8 +76,8 @@ class LFilter(Preprocessor):
         """
         super().__init__(is_fitted=True, apply_fit=apply_fit, apply_predict=apply_predict)
 
-        self.numerator_coef = numerator_coef
-        self.denominator_coef = denominator_coef
+        self.numerator_coef = numerator_coef if numerator_coef is not None else np.array([1.0])
+        self.denominator_coef = denominator_coef if denominator_coef is not None else np.array([1.0])
         self.axis = axis
         self.initial_cond = initial_cond
         self.clip_values = clip_values
@@ -191,13 +191,13 @@ class LFilter(Preprocessor):
                 raise ValueError("Invalid `clip_values`: min >= max.")
 
         if not isinstance(self.numerator_coef, np.ndarray):
-            raise ValueError("The numerator coefficient vector has to be of type `np.ndarray`.")
+            raise TypeError("The numerator coefficient vector has to be of type `np.ndarray`.")
 
         if not isinstance(self.axis, int):
-            raise ValueError("The axis of the input data array has to be of type `int`.")
+            raise TypeError("The axis of the input data array has to be of type `int`.")
 
         if self.initial_cond is not None and not isinstance(self.initial_cond, np.ndarray):
             raise ValueError("The initial conditions for the filter delays must be of type `np.ndarray`.")
 
         if not isinstance(self.verbose, bool):
-            raise ValueError("The argument `verbose` has to be of type bool.")
+            raise TypeError("The argument `verbose` has to be of type bool.")

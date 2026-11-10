@@ -25,7 +25,7 @@ prioritize which parts of a sequential input should be perturbed based on salien
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 import numpy as np
 from tqdm.auto import trange
@@ -54,7 +54,7 @@ class FrameSaliencyAttack(EvasionAttack):
     | Paper link: https://arxiv.org/abs/1811.11875
     """
 
-    method_list = ["iterative_saliency", "iterative_saliency_refresh", "one_shot"]
+    method_list: ClassVar[list[str]] = ["iterative_saliency", "iterative_saliency_refresh", "one_shot"]
     attack_params = EvasionAttack.attack_params + [
         "attacker",
         "method",
@@ -214,7 +214,7 @@ class FrameSaliencyAttack(EvasionAttack):
         )
 
         if not isinstance(self.attacker, (ProjectedGradientDescent, BasicIterativeMethod, FastGradientMethod)):
-            raise ValueError(
+            raise TypeError(
                 "The attacker must be either of class 'ProjectedGradientDescent', 'BasicIterativeMethod' or "
                 "'FastGradientMethod'"
             )
@@ -232,4 +232,4 @@ class FrameSaliencyAttack(EvasionAttack):
             raise Warning("Different classifiers given for computation of saliency scores and adversarial noise.")
 
         if not isinstance(self.verbose, bool):
-            raise ValueError("The argument `verbose` has to be of type bool.")
+            raise TypeError("The argument `verbose` has to be of type bool.")

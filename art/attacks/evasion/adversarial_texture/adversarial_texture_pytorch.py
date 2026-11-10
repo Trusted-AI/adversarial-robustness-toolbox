@@ -602,4 +602,4 @@ class AdversarialTexturePyTorch(EvasionAttack):
             raise ValueError("The batch size `batch_size` has to be of type int and larger than zero.")
 
         if not isinstance(self.verbose, bool):
-            raise ValueError("The argument `verbose` has to be of type bool.")
+            raise TypeError("The argument `verbose` has to be of type bool.")

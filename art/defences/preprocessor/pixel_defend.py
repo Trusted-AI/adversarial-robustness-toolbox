@@ -29,7 +29,7 @@ manifold.
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 import numpy as np
 from tqdm.auto import tqdm
@@ -55,7 +55,7 @@ class PixelDefend(Preprocessor):
         https://arxiv.org/abs/1902.06705
     """
 
-    params = ["clip_values", "eps", "pixel_cnn", "verbose"]
+    params: ClassVar[list[str]] = ["clip_values", "eps", "pixel_cnn", "verbose"]
 
     def __init__(
         self,
@@ -170,4 +170,4 @@ class PixelDefend(Preprocessor):
             raise ValueError("The batch size `batch_size` has to be positive.")
 
         if not isinstance(self.verbose, bool):
-            raise ValueError("The argument `verbose` has to be of type bool.")
+            raise TypeError("The argument `verbose` has to be of type bool.")

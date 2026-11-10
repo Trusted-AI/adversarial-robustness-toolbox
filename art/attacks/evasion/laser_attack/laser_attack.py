@@ -64,7 +64,7 @@ class LaserAttack(EvasionAttack):
         estimator,
         iterations: int,
         laser_generator: AdvObjectGenerator,
-        image_generator: ImageGenerator = ImageGenerator(),
+        image_generator: ImageGenerator | None = None,
         random_initializations: int = 1,
         optimisation_algorithm: Callable = greedy_search,
         debug: DebugInfo | None = None,
@@ -84,7 +84,7 @@ class LaserAttack(EvasionAttack):
         self.random_initializations = random_initializations
         self.optimisation_algorithm = optimisation_algorithm
         self._laser_generator = laser_generator
-        self._image_generator = image_generator
+        self._image_generator = image_generator if image_generator is not None else ImageGenerator()
         self._debug = debug
 
         self._check_params()
@@ -269,7 +269,7 @@ class LaserBeam(AdversarialObject):
             return LaserBeam.from_numpy(self.to_numpy() * other)
         if isinstance(other, list):
             return LaserBeam.from_numpy(self.to_numpy() * np.array(other))
-        raise Exception("Not accepted value.")
+        raise TypeError("Not accepted value.")
 
     def __rmul__(self, other) -> LaserBeam:
         return self * other
@@ -374,7 +374,7 @@ class LaserBeamAttack(LaserAttack):
         max_laser_beam: LaserBeam | tuple[float, float, float, int],
         min_laser_beam: LaserBeam | tuple[float, float, float, int] = (380.0, 0.0, 1.0, 1),
         random_initializations: int = 1,
-        image_generator: ImageGenerator = ImageGenerator(),
+        image_generator: ImageGenerator | None = None,
         debug: DebugInfo | None = None,
     ) -> None:
         """

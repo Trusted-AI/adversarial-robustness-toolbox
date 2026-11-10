@@ -679,4 +679,4 @@ class ZooAttack(EvasionAttack):
             raise ValueError("The batch size must be an integer greater than zero.")
 
         if not isinstance(self.verbose, bool):
-            raise ValueError("The argument `verbose` has to be of type bool.")
+            raise TypeError("The argument `verbose` has to be of type bool.")

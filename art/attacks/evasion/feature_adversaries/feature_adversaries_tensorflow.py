@@ -214,20 +214,20 @@ class FeatureAdversariesTensorFlowV2(EvasionAttack):
         Apply attack-specific checks.
         """
         if not isinstance(self.delta, float):
-            raise ValueError("The value of delta must be of type float.")
+            raise TypeError("The value of delta must be of type float.")
         if self.delta <= 0:
             raise ValueError("The maximum deviation value delta has to be positive.")
 
         if not isinstance(self.lambda_, float):
-            raise ValueError("The value of lambda_ must be of type float.")
+            raise TypeError("The value of lambda_ must be of type float.")
         if self.lambda_ < 0.0:
             raise ValueError("The regularization parameter `lambda_` has to be non-negative.")
 
         if not isinstance(self.layer[0], (int, str)):
-            raise ValueError("The value of the representation layer must be integer or string.")
+            raise TypeError("The value of the representation layer must be integer or string.")
 
         if not isinstance(self.max_iter, int):
-            raise ValueError("The value of max_iter must be of type int.")
+            raise TypeError("The value of max_iter must be of type int.")
         if self.max_iter <= 0:
             raise ValueError("The maximum number of iterations has to be a positive.")
 

@@ -27,7 +27,7 @@ from __future__ import annotations
 import logging
 import random
 import types
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
 
 import numpy as np
 from tqdm.auto import tqdm
@@ -51,7 +51,7 @@ class UniversalPerturbation(EvasionAttack):
     | Paper link: https://arxiv.org/abs/1610.08401
     """
 
-    attacks_dict = {
+    attacks_dict: ClassVar[dict[str, str]] = {
         "carlini": "art.attacks.evasion.carlini.CarliniL2Method",
         "carlini_inf": "art.attacks.evasion.carlini.CarliniLInfMethod",
         "deepfool": "art.attacks.evasion.deepfool.DeepFool",
@@ -272,4 +272,4 @@ class UniversalPerturbation(EvasionAttack):
             raise ValueError("The batch_size must be a positive integer.")
 
         if not isinstance(self.verbose, bool):
-            raise ValueError("The argument `verbose` has to be of type bool.")
+            raise TypeError("The argument `verbose` has to be of type bool.")

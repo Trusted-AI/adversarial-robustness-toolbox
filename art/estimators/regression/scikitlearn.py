@@ -119,7 +119,7 @@ class ScikitlearnRegressor(RegressorMixin, ScikitlearnEstimator):
         if callable(getattr(self.model, "predict", None)):
             y_pred = self.model.predict(x_preprocessed)
         else:
-            raise ValueError("The provided model does not have the method `predict`.")
+            raise TypeError("The provided model does not have the method `predict`.")
 
         # Apply postprocessing
         predictions = self._apply_postprocessing(preds=y_pred, fit=False)

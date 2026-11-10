@@ -247,7 +247,7 @@ def add_images(image1: np.ndarray, image2: np.ndarray) -> np.ndarray:
     :returns: Resultant image.
     """
     if image1.shape != image2.shape:
-        raise Exception("Wrong size")
+        raise ValueError("Wrong size")
     return np.clip(image1 + image2, 0, 1)
 
 

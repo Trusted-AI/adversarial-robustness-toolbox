@@ -404,4 +404,4 @@ class LowProFool(EvasionAttack):
             )
 
         if not isinstance(self.verbose, bool):
-            raise ValueError("The argument `verbose` has to be of type bool.")
+            raise TypeError("The argument `verbose` has to be of type bool.")

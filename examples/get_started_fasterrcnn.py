@@ -300,7 +300,7 @@ if __name__ == "__main__":
         print(f"\nPredictions adversarial image {i}:")
 
         # Process predictions
-        predictions_adv_class, predictions_adv_boxes, predictions_adv_class = extract_predictions(predictions_adv[i])
+        predictions_adv_class, predictions_adv_boxes, _ = extract_predictions(predictions_adv[i])
 
         # Plot predictions
         plot_image_with_boxes(img=x_patch[i].copy(), boxes=predictions_adv_boxes, pred_cls=predictions_adv_class)

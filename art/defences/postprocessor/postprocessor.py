@@ -22,6 +22,7 @@ This module implements the abstract base class for defences that post-process cl
 from __future__ import annotations
 
 import abc
+from typing import ClassVar
 
 import numpy as np
 
@@ -32,7 +33,7 @@ class Postprocessor(abc.ABC):
     evaluation for loss gradients or the calculation of class gradients.
     """
 
-    params: list[str] = []
+    params: ClassVar[list[str]] = []
 
     def __init__(self, is_fitted: bool = False, apply_fit: bool = True, apply_predict: bool = True) -> None:
         """

@@ -721,7 +721,7 @@ class Wasserstein(EvasionAttack):
 
     def _check_params(self) -> None:
         if not isinstance(self.targeted, bool):
-            raise ValueError("The flag `targeted` has to be of type bool.")
+            raise TypeError("The flag `targeted` has to be of type bool.")
 
         if self.regularization <= 0:
             raise ValueError("The entropy regularization has to be greater than 0.")
@@ -776,4 +776,4 @@ class Wasserstein(EvasionAttack):
             raise ValueError("The batch size `batch_size` has to be positive.")
 
         if not isinstance(self.verbose, bool):
-            raise ValueError("The argument `verbose` has to be of type bool.")
+            raise TypeError("The argument `verbose` has to be of type bool.")

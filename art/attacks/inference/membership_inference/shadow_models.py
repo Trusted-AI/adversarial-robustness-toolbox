@@ -221,9 +221,12 @@ class ShadowModels:
 
             if class_confidence >= best_class_confidence:
                 # Record accepted, sample randomly
-                if class_confidence > min_confidence and np.argmax(y) == target_class:
-                    if self._rng.random() < class_confidence:
-                        return x
+                if (
+                    class_confidence > min_confidence
+                    and np.argmax(y) == target_class
+                    and self._rng.random() < class_confidence
+                ):
+                    return x
 
                 best_x = x
                 best_class_confidence = class_confidence

@@ -107,7 +107,7 @@ class SleeperAgentAttack(GradientMatchingAttack):
             epsilon_normalised = epsilon * (clip_values_normalised[1] - clip_values_normalised[0])  # type: ignore
             patch_normalised = (patch - classifier.preprocessing.mean) / classifier.preprocessing.std
         else:
-            raise ValueError("classifier.preprocessing not an instance of pytorch")
+            raise TypeError("classifier.preprocessing not an instance of pytorch")
 
         super().__init__(
             classifier,

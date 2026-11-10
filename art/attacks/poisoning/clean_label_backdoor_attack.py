@@ -146,8 +146,8 @@ class PoisoningAttackCleanLabelBackdoor(PoisoningAttackBlackBox):
 
     def _check_params(self) -> None:
         if not isinstance(self.backdoor, PoisoningAttackBackdoor):
-            raise ValueError("Backdoor must be of type PoisoningAttackBackdoor")
+            raise TypeError("Backdoor must be of type PoisoningAttackBackdoor")
         if not isinstance(self.attack, ProjectedGradientDescent):
-            raise ValueError("There was an issue creating the PGD attack")
+            raise TypeError("There was an issue creating the PGD attack")
         if not 0 < self.pp_poison < 1:
             raise ValueError("pp_poison must be between 0 and 1")

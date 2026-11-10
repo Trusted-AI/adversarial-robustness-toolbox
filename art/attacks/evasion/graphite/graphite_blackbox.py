@@ -221,11 +221,11 @@ class GRAPHITEBlackbox(EvasionAttack):
             )
 
         if not isinstance(obj_width, int) and not isinstance(obj_width, float):
-            raise ValueError("obj_width must be int or float")
+            raise TypeError("obj_width must be int or float")
         obj_width = float(obj_width)
 
         if not isinstance(focal, int) and not isinstance(focal, float):
-            raise ValueError("focal must be int or float")
+            raise TypeError("focal must be int or float")
         focal = float(focal)
 
         # Check the mask
@@ -838,7 +838,7 @@ class GRAPHITEBlackbox(EvasionAttack):
             raise ValueError("Heatmap patch size must be positive.")
 
         if not isinstance(self.heat_patch_size[0], int) or not isinstance(self.heat_patch_size[1], int):
-            raise ValueError("Heatmap patch size must be a tuple of two integers.")
+            raise TypeError("Heatmap patch size must be a tuple of two integers.")
 
         if (
             min(self.heat_patch_stride) <= 0

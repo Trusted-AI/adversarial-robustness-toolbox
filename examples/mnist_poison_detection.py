@@ -143,9 +143,7 @@ def main():
     print("done :) ")
 
 
-def generate_backdoor(
-    x_clean, y_clean, percent_poison, backdoor_type="pattern", sources=np.arange(10), targets=(np.arange(10) + 1) % 10
-):
+def generate_backdoor(x_clean, y_clean, percent_poison, backdoor_type="pattern", sources=None, targets=None):
     """
     Creates a backdoor in MNIST images by adding a pattern or pixel to the image and changing the label to a targeted
     class. Default parameters poison each digit so that it gets classified to the next digit.
@@ -170,6 +168,11 @@ def generate_backdoor(
     both legitimate and poisoned.
     :rtype: `tuple`
     """
+
+    if sources is None:
+        sources = np.arange(10)
+    if targets is None:
+        targets = (np.arange(10) + 1) % 10
 
     max_val = np.max(x_clean)
 

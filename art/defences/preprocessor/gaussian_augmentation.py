@@ -22,7 +22,7 @@ This module implements the Gaussian augmentation defence in `GaussianAugmentatio
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 import numpy as np
 
@@ -43,7 +43,7 @@ class GaussianAugmentation(Preprocessor):
     `augmentation` is true, and only when performing prediction otherwise.
     """
 
-    params = [
+    params: ClassVar[list[str]] = [
         "sigma",
         "augmentation",
         "ratio",

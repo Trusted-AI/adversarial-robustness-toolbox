@@ -24,6 +24,8 @@ import pytest
 from art.attacks.evasion import ProjectedGradientDescent
 from art.defences.trainer import AdversarialTrainerAWPPyTorch
 
+logger = logging.getLogger(__name__)
+
 
 @pytest.fixture()
 def get_adv_trainer_awppgd(framework, image_dl_estimator):
@@ -114,7 +116,7 @@ def test_adversarial_trainer_awppgd_pytorch_fit_and_predict(get_adv_trainer_awpp
 
     trainer = get_adv_trainer_awppgd()
     if trainer is None:
-        logging.warning("Couldn't perform  this test because no trainer is defined for this framework configuration")
+        logger.warning("Couldn't perform  this test because no trainer is defined for this framework configuration")
         return
 
     predictions = np.argmax(trainer.predict(x_test_mnist), axis=1)
@@ -161,7 +163,7 @@ def test_adversarial_trainer_awptrades_pytorch_fit_and_predict(
 
     trainer = get_adv_trainer_awptrades()
     if trainer is None:
-        logging.warning("Couldn't perform  this test because no trainer is defined for this framework configuration")
+        logger.warning("Couldn't perform  this test because no trainer is defined for this framework configuration")
         return
 
     predictions = np.argmax(trainer.predict(x_test_mnist), axis=1)
@@ -209,7 +211,7 @@ def test_adversarial_trainer_awppgd_pytorch_fit_generator_and_predict(
 
     trainer = get_adv_trainer_awppgd()
     if trainer is None:
-        logging.warning("Couldn't perform  this test because no trainer is defined for this framework configuration")
+        logger.warning("Couldn't perform  this test because no trainer is defined for this framework configuration")
         return
 
     predictions = np.argmax(trainer.predict(x_test_mnist), axis=1)
@@ -257,7 +259,7 @@ def test_adversarial_trainer_awptrades_pytorch_fit_generator_and_predict(
 
     trainer = get_adv_trainer_awptrades()
     if trainer is None:
-        logging.warning("Couldn't perform  this test because no trainer is defined for this framework configuration")
+        logger.warning("Couldn't perform  this test because no trainer is defined for this framework configuration")
         return
 
     predictions = np.argmax(trainer.predict(x_test_mnist), axis=1)

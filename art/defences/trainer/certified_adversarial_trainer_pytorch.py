@@ -130,7 +130,7 @@ class AdversarialTrainerCertifiedPytorch(Trainer):
         from art.estimators.certification.deep_z.pytorch import PytorchDeepZ
 
         if not isinstance(classifier, PytorchDeepZ):
-            raise ValueError(
+            raise TypeError(
                 "The classifier to pass in should be of type PytorchDeepZ which can be found in "
                 "art.estimators.certification.deep_z.pytorch.PytorchDeepZ"
             )

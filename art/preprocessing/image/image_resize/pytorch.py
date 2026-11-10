@@ -22,7 +22,7 @@ This module implements resizing for images and object detection bounding boxes i
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 from tqdm.auto import tqdm
 
@@ -42,9 +42,9 @@ class ImageResizePyTorch(PreprocessorPyTorch):
     This module implements resizing for images and object detection bounding boxes in PyTorch.
     """
 
-    params = ["height", "width", "channels_first", "label_type", "interpolation", "clip_values", "verbose"]
+    params: ClassVar[list[str]] = ["height", "width", "channels_first", "label_type", "interpolation", "clip_values", "verbose"]
 
-    label_types = ["classification", "object_detection"]
+    label_types: ClassVar[list[str]] = ["classification", "object_detection"]
 
     def __init__(
         self,

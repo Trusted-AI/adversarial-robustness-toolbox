@@ -20,7 +20,7 @@ Test LaserAttack.
 """
 
 from collections.abc import Callable
-from typing import Any, Tuple
+from typing import Any
 
 import numpy as np
 import pytest
