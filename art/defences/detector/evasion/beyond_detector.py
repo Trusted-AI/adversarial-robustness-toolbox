@@ -46,7 +46,15 @@ class BeyondDetectorPyTorch(EvasionDetector):
     | Paper link: https://openreview.net/pdf?id=S4LqI6CcJ3
     """
 
-    defence_params: ClassVar[list[str]] = ["target_model", "ssl_model", "augmentations", "aug_num", "alpha", "var_K", "percentile"]
+    defence_params: ClassVar[list[str]] = [
+        "target_model",
+        "ssl_model",
+        "augmentations",
+        "aug_num",
+        "alpha",
+        "var_K",
+        "percentile",
+    ]
 
     def __init__(
         self,

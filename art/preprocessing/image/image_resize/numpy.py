@@ -41,7 +41,15 @@ class ImageResize(Preprocessor):
     This module implements resizing for images and object detection bounding boxes.
     """
 
-    params: ClassVar[list[str]] = ["height", "width", "channels_first", "label_type", "interpolation", "clip_values", "verbose"]
+    params: ClassVar[list[str]] = [
+        "height",
+        "width",
+        "channels_first",
+        "label_type",
+        "interpolation",
+        "clip_values",
+        "verbose",
+    ]
 
     label_types: ClassVar[list[str]] = ["classification", "object_detection"]
 

@@ -41,7 +41,15 @@ class ImageResizeTensorFlowV2(PreprocessorTensorFlowV2):
     This module implements resizing for images and object detection bounding boxes in TensorFlow v2.
     """
 
-    params: ClassVar[list[str]] = ["height", "width", "channels_first", "label_type", "interpolation", "clip_values", "verbose"]
+    params: ClassVar[list[str]] = [
+        "height",
+        "width",
+        "channels_first",
+        "label_type",
+        "interpolation",
+        "clip_values",
+        "verbose",
+    ]
 
     label_types: ClassVar[list[str]] = ["classification", "object_detection"]
 

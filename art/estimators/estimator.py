@@ -469,9 +469,7 @@ class NeuralNetworkMixin(ABC):
         from art.data_generators import DataGenerator
 
         if not isinstance(generator, DataGenerator):
-            raise TypeError(
-                f"Expected instance of `DataGenerator` for `fit_generator`, got {type(generator)} instead."
-            )
+            raise TypeError(f"Expected instance of `DataGenerator` for `fit_generator`, got {type(generator)} instead.")
 
         for i in range(nb_epochs):
             for _ in trange(
