@@ -71,7 +71,7 @@ def test_check_params(art_warning, image_dl_estimator_for_attack):
         with pytest.raises(ValueError):
             _ = FeatureAdversariesNumpy(classifier, delta=-1.0)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = FeatureAdversariesNumpy(classifier, delta=1.0, layer=1.0)
 
         with pytest.raises(ValueError):

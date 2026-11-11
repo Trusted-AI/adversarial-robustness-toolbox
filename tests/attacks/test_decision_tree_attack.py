@@ -73,7 +73,7 @@ class TestDecisionTreeAttack(TestBase):
         with self.assertRaises(ValueError):
             _ = DecisionTreeAttack(clf_art, offset=-1)
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TypeError):
             _ = DecisionTreeAttack(clf_art, verbose="False")
 
     def test_classifier_type_check_fail(self):

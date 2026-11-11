@@ -144,7 +144,7 @@ def test_check_params(art_warning):
         with pytest.raises(ValueError):
             _ = JpegCompression(clip_values=(0, 1, 2))
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = JpegCompression(clip_values=(0, 1), verbose="False")
 
     except ARTTestException as e:

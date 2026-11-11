@@ -112,7 +112,7 @@ def test_check_params(art_warning, image_dl_estimator_for_attack):
         with pytest.raises(ValueError):
             _ = FeatureAdversariesPyTorch(classifier, delta=1.0, step_size=None, optimizer=None)
 
-        with pytest.raises(TypeError):
+        with pytest.raises(ValueError):
             _ = FeatureAdversariesPyTorch(classifier, delta=1.0, step_size="test")
         with pytest.raises(ValueError):
             _ = FeatureAdversariesPyTorch(classifier, delta=1.0, step_size=-1)

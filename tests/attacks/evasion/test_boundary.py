@@ -110,7 +110,7 @@ def test_check_params(art_warning, image_dl_estimator_for_attack):
         with pytest.raises(ValueError):
             _ = BoundaryAttack(classifier, min_epsilon=-1)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = BoundaryAttack(classifier, verbose="true")
 
     except ARTTestException as e:

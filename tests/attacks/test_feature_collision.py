@@ -99,7 +99,7 @@ class TestFeatureCollision(TestBase):
         with self.assertRaises(ValueError):
             _ = FeatureCollisionAttack(krc, target=self.x_train_mnist, feature_layer=1, watermark=1)
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TypeError):
             _ = FeatureCollisionAttack(krc, target=self.x_train_mnist, feature_layer=1, verbose="true")
 
 

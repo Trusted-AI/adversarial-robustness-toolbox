@@ -541,7 +541,7 @@ class TestWasserstein(TestBase):
         with self.assertRaises(ValueError):
             _ = Wasserstein(ptc, batch_size=-1)
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TypeError):
             _ = Wasserstein(ptc, verbose="true")
 
     def test_classifier_type_check_fail(self):

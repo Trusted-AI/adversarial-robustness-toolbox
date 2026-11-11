@@ -169,7 +169,7 @@ def test_check_params(art_warning, image_dl_estimator_for_attack):
         with pytest.raises(TypeError):
             _ = ShadowAttack(classifier, targeted=5.0)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = ShadowAttack(classifier, verbose=5.0)
 
     except ARTTestException as e:

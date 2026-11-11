@@ -817,7 +817,7 @@ class TestHopSkipJump(TestBase):
         with self.assertRaises(ValueError):
             _ = HopSkipJump(ptc, init_size=-1)
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TypeError):
             _ = HopSkipJump(ptc, verbose="true")
 
     def test_1_classifier_type_check_fail(self):

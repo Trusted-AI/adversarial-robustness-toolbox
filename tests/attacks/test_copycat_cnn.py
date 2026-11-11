@@ -208,7 +208,7 @@ class TestCopycatCNN(TestBase):
                 nb_stolen=-1,
             )
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TypeError):
             _ = CopycatCNN(
                 classifier=victim_ptc,
                 batch_size_fit=self.batch_size,

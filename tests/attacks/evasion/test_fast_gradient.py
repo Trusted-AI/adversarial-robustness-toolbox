@@ -245,7 +245,7 @@ def test_check_params(art_warning, image_dl_estimator_for_attack):
         with pytest.raises(TypeError):
             _ = FastGradientMethod(classifier, eps=1, eps_step=np.array([1, 1, 1]))
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = FastGradientMethod(classifier, targeted="true")
 
         with pytest.raises(TypeError):
@@ -256,7 +256,7 @@ def test_check_params(art_warning, image_dl_estimator_for_attack):
         with pytest.raises(ValueError):
             _ = FastGradientMethod(classifier, batch_size=-1)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = FastGradientMethod(classifier, minimal="true")
 
     except ARTTestException as e:

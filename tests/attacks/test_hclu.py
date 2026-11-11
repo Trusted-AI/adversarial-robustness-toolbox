@@ -95,7 +95,7 @@ class TestHCLU(TestBase):
                 m_art, conf=0.75, unc_increase=100.0, min_val=1.0, max_val=0.0, verbose=False
             )
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TypeError):
             _ = HighConfidenceLowUncertainty(
                 m_art, conf=0.75, unc_increase=100.0, min_val=0.0, max_val=1.0, verbose="False"
             )

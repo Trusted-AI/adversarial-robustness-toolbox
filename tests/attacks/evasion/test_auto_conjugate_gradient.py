@@ -113,7 +113,7 @@ def test_check_params(art_warning, image_dl_estimator_for_attack):
         with pytest.raises(ValueError):
             _ = AutoConjugateGradient(classifier, max_iter=-1)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = AutoConjugateGradient(classifier, targeted="true")
 
         with pytest.raises(ValueError):
@@ -129,7 +129,7 @@ def test_check_params(art_warning, image_dl_estimator_for_attack):
         with pytest.raises(ValueError):
             _ = AutoConjugateGradient(classifier, loss_type="test")
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = AutoConjugateGradient(classifier, verbose="true")
 
     except ARTTestException as e:

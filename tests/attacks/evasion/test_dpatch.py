@@ -186,22 +186,22 @@ def test_check_params(art_warning, fix_get_rcnn):
         with pytest.raises(ValueError):
             _ = DPatch(frcnn, patch_shape=(1, 2, 3, 4))
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = DPatch(frcnn, learning_rate=1)
         with pytest.raises(ValueError):
             _ = DPatch(frcnn, learning_rate=-1.0)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = DPatch(frcnn, max_iter=1.0)
         with pytest.raises(ValueError):
             _ = DPatch(frcnn, max_iter=-1)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = DPatch(frcnn, batch_size=1.0)
         with pytest.raises(ValueError):
             _ = DPatch(frcnn, batch_size=-1)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = DPatch(frcnn, verbose="true")
 
     except ARTTestException as e:

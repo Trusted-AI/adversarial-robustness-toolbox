@@ -121,7 +121,7 @@ def test_check_params(art_warning, image_dl_estimator_for_attack):
 
         attacker = FastGradientMethod(estimator=classifier)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = FrameSaliencyAttack(classifier, attacker="attack")
 
         with pytest.raises(ValueError):
@@ -133,7 +133,7 @@ def test_check_params(art_warning, image_dl_estimator_for_attack):
         with pytest.raises(ValueError):
             _ = FrameSaliencyAttack(classifier, attacker=attacker, batch_size=-1)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = FrameSaliencyAttack(classifier, attacker=attacker, verbose="true")
 
     except ARTTestException as e:

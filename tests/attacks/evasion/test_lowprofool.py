@@ -510,7 +510,7 @@ def test_check_params(art_warning, image_dl_estimator_for_attack):
         with pytest.raises(ValueError):
             _ = LowProFool(classifier, importance=0)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = LowProFool(classifier, verbose="test")
 
     except ARTTestException as e:

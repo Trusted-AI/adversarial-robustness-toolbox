@@ -116,7 +116,7 @@ def test_check_params(art_warning):
     backdoor = PoisoningAttackBackdoor(add_single_bd)
 
     try:
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = BadDetGlobalMisclassificationAttack(None)
 
         with pytest.raises(ValueError):

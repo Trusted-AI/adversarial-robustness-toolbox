@@ -178,7 +178,7 @@ class TestKnockoffNets(TestBase):
                 verbose=False,
             )
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TypeError):
             _ = KnockoffNets(
                 classifier=victim_tfc,
                 batch_size_fit=BATCH_SIZE,
@@ -190,7 +190,7 @@ class TestKnockoffNets(TestBase):
                 verbose="False",
             )
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TypeError):
             _ = KnockoffNets(
                 classifier=victim_tfc,
                 batch_size_fit=BATCH_SIZE,

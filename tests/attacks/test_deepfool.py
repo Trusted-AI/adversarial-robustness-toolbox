@@ -265,7 +265,7 @@ class TestDeepFool(TestBase):
         with self.assertRaises(ValueError):
             _ = DeepFool(ptc, batch_size=-1)
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TypeError):
             _ = DeepFool(ptc, verbose="False")
 
 

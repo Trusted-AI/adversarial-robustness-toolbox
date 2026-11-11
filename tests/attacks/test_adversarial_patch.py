@@ -330,37 +330,37 @@ class TestAdversarialPatch(TestBase):
 
         # AdversarialPatchNumpy
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TypeError):
             _ = AdversarialPatchNumpy(ptc, rotation_max="1")
         with self.assertRaises(ValueError):
             _ = AdversarialPatchNumpy(ptc, rotation_max=-1)
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TypeError):
             _ = AdversarialPatchNumpy(ptc, scale_min="1")
         with self.assertRaises(ValueError):
             _ = AdversarialPatchNumpy(ptc, scale_min=-1.0)
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TypeError):
             _ = AdversarialPatchNumpy(ptc, scale_max=1)
         with self.assertRaises(ValueError):
             _ = AdversarialPatchNumpy(ptc, scale_max=2.0)
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValueTypeErrorError):
             _ = AdversarialPatchNumpy(ptc, learning_rate="1")
         with self.assertRaises(ValueError):
             _ = AdversarialPatchNumpy(krc, learning_rate=-1.0)
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TypeError):
             _ = AdversarialPatchNumpy(ptc, max_iter=1.0)
         with self.assertRaises(ValueError):
             _ = AdversarialPatchNumpy(ptc, max_iter=-1)
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TypeError):
             _ = AdversarialPatchNumpy(ptc, batch_size=1.0)
         with self.assertRaises(ValueError):
             _ = AdversarialPatchNumpy(ptc, batch_size=-1)
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TypeError):
             _ = AdversarialPatchNumpy(ptc, verbose="true")
 
     def test_1_classifier_type_check_fail(self):

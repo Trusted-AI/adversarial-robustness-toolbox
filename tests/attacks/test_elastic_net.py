@@ -830,7 +830,7 @@ class TestElasticNet(TestBase):
         with self.assertRaises(ValueError):
             _ = ElasticNet(ptc, decision_rule=1.0)
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TypeError):
             _ = ElasticNet(ptc, verbose="True")
 
 

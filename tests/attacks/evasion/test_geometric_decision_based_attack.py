@@ -201,7 +201,7 @@ def test_check_params(art_warning, image_dl_estimator_for_attack):
         # with pytest.raises(ValueError):
         #     _ = GeoDA(classifier, targeted="true")
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = GeoDA(classifier, verbose="true")
 
     except ARTTestException as e:

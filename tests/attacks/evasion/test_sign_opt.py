@@ -94,7 +94,7 @@ def test_images(
 def test_check_params(art_warning, image_dl_estimator_for_attack):
     try:
         classifier = image_dl_estimator_for_attack(SignOPTAttack)
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = SignOPTAttack(classifier, targeted="false")
         with pytest.raises(ValueError):
             _ = SignOPTAttack(classifier, epsilon=-1)
@@ -118,7 +118,7 @@ def test_check_params(art_warning, image_dl_estimator_for_attack):
             _ = SignOPTAttack(classifier, alpha=-1)
         with pytest.raises(ValueError):
             _ = SignOPTAttack(classifier, beta=-1)
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = SignOPTAttack(classifier, verbose="true")
     except ARTTestException as e:
         art_warning(e)
