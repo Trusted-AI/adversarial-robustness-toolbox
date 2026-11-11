@@ -106,7 +106,7 @@ def test_non_spatio_temporal_data_error(art_warning, image_batch_small):
 @pytest.mark.skip_framework("tensorflow", "keras", "scikitlearn", "kerastf")
 def test_check_params(art_warning, image_batch_small):
     try:
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = VideoCompressionPyTorch(video_format="", verbose="False")
 
     except ARTTestException as e:

@@ -111,7 +111,7 @@ def test_check_params(art_warning, get_default_mnist_subset, image_dl_estimator,
         source = y_train[diff_index]
 
         # Test non-array target
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = HiddenTriggerBackdoor(
                 classifier,
                 eps=0.3,

@@ -307,7 +307,7 @@ def test_check_params(art_warning, fix_get_goturn):
         with pytest.raises(ValueError):
             _ = AdversarialTexturePyTorch(goturn, patch_height=2, patch_width=2, batch_size=2.0)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = AdversarialTexturePyTorch(goturn, patch_height=2, patch_width=2, verbose="true")
 
     except ARTTestException as e:

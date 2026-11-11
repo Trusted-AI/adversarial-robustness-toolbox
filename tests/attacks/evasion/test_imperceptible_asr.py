@@ -202,7 +202,7 @@ class TestImperceptibleASR:
             with pytest.raises(ValueError):
                 _ = ImperceptibleASR(asr_dummy_estimator(), masker=masker, eps=-1)
 
-            with pytest.raises(ValueError):
+            with pytest.raises(TypeError):
                 _ = ImperceptibleASR(asr_dummy_estimator(), masker=masker, max_iter_1=1.0)
             with pytest.raises(ValueError):
                 _ = ImperceptibleASR(asr_dummy_estimator(), masker=masker, max_iter_1=-1)

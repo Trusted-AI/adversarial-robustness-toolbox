@@ -162,13 +162,13 @@ class TestPixelAttack(TestBase):
         with self.assertRaises(ValueError):
             _ = PixelAttack(ptc, th=-1)
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TypeError):
             _ = PixelAttack(ptc, es=1.0)
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TypeError):
             _ = PixelAttack(ptc, targeted="true")
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TypeError):
             _ = PixelAttack(ptc, verbose="true")
 
         with self.assertRaises(ValueError):

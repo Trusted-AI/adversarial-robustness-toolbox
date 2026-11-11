@@ -34,28 +34,20 @@ import numpy as np
 import scipy
 from packaging.version import parse
 from scipy._lib._util import check_random_state
-
-# Currently, a modified version of SciPy's differential evolution is used in
-# code. An ideal version would be using the import as follows,
-# from scipy.optimize import differential_evolution
-# In the meantime, the modified implementation is used which is defined in the
-# lines `453-1457`.
-# Otherwise, may use Tensorflow's implementation of DE.
+from scipy.optimize import OptimizeResult, minimize
 from six import string_types
-
-scipy_version = list(parse(scipy.__version__.lower()).release)
-if scipy_version[1] >= 8:
-    from scipy.optimize._optimize import _status_message
-else:
-    from scipy.optimize.optimize import _status_message
-from scipy.optimize import OptimizeResult, minimize  # noqa
 from tqdm.auto import tqdm
 
-from art.config import ART_NUMPY_DTYPE
 from art.attacks.attack import EvasionAttack
-from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
+from art.config import ART_NUMPY_DTYPE
 from art.estimators.classification.classifier import ClassifierMixin
+from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
 from art.utils import check_and_transform_label_format
+
+try:
+    from scipy.optimize._optimize import _status_message
+except ImportError:
+    from scipy.optimize.optimize import _status_message
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_NEURALNETWORK_TYPE

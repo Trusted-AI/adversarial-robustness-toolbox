@@ -162,7 +162,7 @@ def test_check_params(art_warning):
                 numerator_coef=np.array([0.1, 0.2, -0.1, -0.2]), denominator_coef=np.array([0.0, 0.1, 0.3, 0.4])
             )
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = LFilterPyTorch(numerator_coef=[0.1, 0.2, -0.1, -0.2], denominator_coef=np.array([1.0, 0.1, 0.3, 0.4]))
 
         with pytest.raises(ValueError):

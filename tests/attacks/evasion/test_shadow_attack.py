@@ -131,7 +131,7 @@ def test_check_params(art_warning, image_dl_estimator_for_attack):
     try:
         classifier = image_dl_estimator_for_attack(ShadowAttack)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = ShadowAttack(classifier, sigma="test")
         with pytest.raises(ValueError):
             _ = ShadowAttack(classifier, sigma=-0.5)
