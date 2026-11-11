@@ -1190,7 +1190,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                         """
                         import torch
 
-                        result = []
+                        result: list[str] = []
                         if isinstance(self._model, torch.nn.Module):
                             result.extend(self._model._modules)
 

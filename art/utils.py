@@ -33,7 +33,7 @@ import zipfile
 from collections.abc import Callable
 from functools import wraps
 from inspect import signature
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypeAlias
 
 import numpy as np
 import six
@@ -60,7 +60,7 @@ if TYPE_CHECKING:
     # pylint: disable=cyclic-import
     from art.defences.preprocessor.preprocessor import Preprocessor
 
-    PREPROCESSING_TYPE = (  # pylint: disable=invalid-name
+    PREPROCESSING_TYPE: TypeAlias = (  # pylint: disable=invalid-name
         tuple[int | float | np.ndarray, int | float | np.ndarray] | Preprocessor | tuple[Preprocessor, ...] | None
     )
 
@@ -123,7 +123,7 @@ if TYPE_CHECKING:
     from art.estimators.tensorflow import TensorFlowV2Estimator
     from art.experimental.estimators.classification.jax import JaxClassifier
 
-    CLASSIFIER_LOSS_GRADIENTS_TYPE = (  # pylint: disable=invalid-name
+    CLASSIFIER_LOSS_GRADIENTS_TYPE: TypeAlias = (  # pylint: disable=invalid-name
         ClassifierLossGradients
         | EnsembleClassifier
         | GPyGaussianProcessClassifier
@@ -136,7 +136,7 @@ if TYPE_CHECKING:
         | QueryEfficientGradientEstimationClassifier
     )
 
-    CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE = (  # pylint: disable=invalid-name
+    CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE: TypeAlias = (  # pylint: disable=invalid-name
         ClassifierClassLossGradients
         | EnsembleClassifier
         | GPyGaussianProcessClassifier
@@ -147,7 +147,7 @@ if TYPE_CHECKING:
         | TensorFlowV2Classifier
     )
 
-    CLASSIFIER_NEURALNETWORK_TYPE = (  # pylint: disable=invalid-name
+    CLASSIFIER_NEURALNETWORK_TYPE: TypeAlias = (  # pylint: disable=invalid-name
         ClassifierNeuralNetwork
         | DetectorClassifier
         | EnsembleClassifier
@@ -156,7 +156,7 @@ if TYPE_CHECKING:
         | TensorFlowV2Classifier
     )
 
-    CLASSIFIER_DECISION_TREE_TYPE = (  # pylint: disable=invalid-name
+    CLASSIFIER_DECISION_TREE_TYPE: TypeAlias = (  # pylint: disable=invalid-name
         ClassifierDecisionTree
         | LightGBMClassifier
         | ScikitlearnDecisionTreeClassifier
@@ -166,7 +166,7 @@ if TYPE_CHECKING:
         | XGBoostClassifier
     )
 
-    CLASSIFIER_TYPE = (  # pylint: disable=invalid-name
+    CLASSIFIER_TYPE: TypeAlias = (  # pylint: disable=invalid-name
         Classifier
         | BlackBoxClassifier
         | CatBoostARTClassifier
@@ -192,19 +192,19 @@ if TYPE_CHECKING:
         | CLASSIFIER_NEURALNETWORK_TYPE
     )
 
-    GENERATOR_TYPE = TensorFlowV2Generator  # pylint: disable=invalid-name
+    GENERATOR_TYPE: TypeAlias = TensorFlowV2Generator  # pylint: disable=invalid-name
 
-    REGRESSOR_TYPE = (  # pylint: disable=invalid-name
+    REGRESSOR_TYPE: TypeAlias = (  # pylint: disable=invalid-name
         ScikitlearnRegressor | ScikitlearnDecisionTreeRegressor | PyTorchRegressor | KerasRegressor | BlackBoxRegressor
     )
 
-    OBJECT_DETECTOR_TYPE = (  # pylint: disable=invalid-name
+    OBJECT_DETECTOR_TYPE: TypeAlias = (  # pylint: disable=invalid-name
         ObjectDetector | PyTorchObjectDetector | PyTorchFasterRCNN | PyTorchYolo | TensorFlowV2FasterRCNN
     )
 
-    SPEECH_RECOGNIZER_TYPE = PyTorchDeepSpeech  # pylint: disable=invalid-name
+    SPEECH_RECOGNIZER_TYPE: TypeAlias = PyTorchDeepSpeech  # pylint: disable=invalid-name
 
-    PYTORCH_ESTIMATOR_TYPE = (  # pylint: disable=invalid-name
+    PYTORCH_ESTIMATOR_TYPE: TypeAlias = (  # pylint: disable=invalid-name
         PyTorchClassifier
         | PyTorchDeepSpeech
         | PyTorchEstimator
@@ -214,15 +214,15 @@ if TYPE_CHECKING:
         | PyTorchRegressor
     )
 
-    PYTORCH_OBJECT_DETECTOR_TYPE = PyTorchObjectDetector  # pylint: disable=invalid-name
+    PYTORCH_OBJECT_DETECTOR_TYPE: TypeAlias = PyTorchObjectDetector  # pylint: disable=invalid-name
 
-    KERAS_ESTIMATOR_TYPE = KerasClassifier | KerasEstimator | KerasRegressor  # pylint: disable=invalid-name
+    KERAS_ESTIMATOR_TYPE: TypeAlias = KerasClassifier | KerasEstimator | KerasRegressor  # pylint: disable=invalid-name
 
-    TENSORFLOWV2_ESTIMATOR_TYPE = (  # pylint: disable=invalid-name
+    TENSORFLOWV2_ESTIMATOR_TYPE: TypeAlias = (  # pylint: disable=invalid-name
         TensorFlowV2Classifier | TensorFlowV2Estimator | TensorFlowV2FasterRCNN
     )
 
-    ESTIMATOR_TYPE = (  # pylint: disable=invalid-name
+    ESTIMATOR_TYPE: TypeAlias = (  # pylint: disable=invalid-name
         CLASSIFIER_TYPE
         | REGRESSOR_TYPE
         | OBJECT_DETECTOR_TYPE
@@ -232,7 +232,7 @@ if TYPE_CHECKING:
         | TENSORFLOWV2_ESTIMATOR_TYPE
     )
 
-    CLONABLE = (  # pylint: disable=invalid-name
+    CLONABLE: TypeAlias = (  # pylint: disable=invalid-name
         ScikitlearnClassifier
         | PyTorchClassifier
         | TensorFlowV2Classifier
@@ -242,10 +242,10 @@ if TYPE_CHECKING:
         | XGBoostClassifier
     )
 
-    ABLATOR_TYPE = BlockAblator | ColumnAblator  # pylint: disable=invalid-name
+    ABLATOR_TYPE: TypeAlias = BlockAblator | ColumnAblator  # pylint: disable=invalid-name
 
-    CERTIFIER_TYPE = PytorchDeepZ  # pylint: disable=invalid-name
-    IBP_CERTIFIER_TYPE = PyTorchIBPClassifier  # pylint: disable=invalid-name
+    CERTIFIER_TYPE: TypeAlias = PytorchDeepZ  # pylint: disable=invalid-name
+    IBP_CERTIFIER_TYPE: TypeAlias = PyTorchIBPClassifier  # pylint: disable=invalid-name
 
 # --------------------------------------------------------------------------------------------------------- DEPRECATION
 
