@@ -255,7 +255,7 @@ class TestZooAttack(TestBase):
         with self.assertRaises(ValueError):
             _ = ZooAttack(ptc, batch_size=-1)
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TypeError):
             _ = ZooAttack(ptc, verbose="true")
 
     def test_1_classifier_type_check_fail(self):

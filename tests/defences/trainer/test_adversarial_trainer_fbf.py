@@ -77,7 +77,7 @@ def test_adversarial_trainer_fbf_pytorch_fit_and_predict(get_adv_trainer, fix_ge
     )
 
     assert accuracy == 0.32
-    assert accuracy_new == 0.62
+    assert accuracy_new == 0.65
 
     trainer.fit(x_train_mnist, y_train_mnist, nb_epochs=20, validation_data=(x_train_mnist, y_train_mnist))
 

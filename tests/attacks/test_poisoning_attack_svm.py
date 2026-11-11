@@ -235,7 +235,7 @@ class TestSVMAttack(unittest.TestCase):
                 verbose=False,
             )
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TypeError):
             _ = PoisoningAttackSVM(
                 poison,
                 step=0.01,

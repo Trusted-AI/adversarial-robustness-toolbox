@@ -136,37 +136,37 @@ def test_check_params(art_warning, image_dl_estimator_for_attack):
         with pytest.raises(ValueError):
             _ = ShadowAttack(classifier, sigma=-0.5)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = ShadowAttack(classifier, nb_steps=0.5)
         with pytest.raises(ValueError):
             _ = ShadowAttack(classifier, nb_steps=-5)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = ShadowAttack(classifier, learning_rate=5)
         with pytest.raises(ValueError):
             _ = ShadowAttack(classifier, learning_rate=-5.0)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = ShadowAttack(classifier, lambda_tv=5)
         with pytest.raises(ValueError):
             _ = ShadowAttack(classifier, lambda_tv=-5.0)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = ShadowAttack(classifier, lambda_c=5)
         with pytest.raises(ValueError):
             _ = ShadowAttack(classifier, lambda_c=-5.0)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = ShadowAttack(classifier, lambda_s=5)
         with pytest.raises(ValueError):
             _ = ShadowAttack(classifier, lambda_s=-5.0)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = ShadowAttack(classifier, batch_size=5.0)
         with pytest.raises(ValueError):
             _ = ShadowAttack(classifier, batch_size=-5)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = ShadowAttack(classifier, targeted=5.0)
 
         with pytest.raises(ValueError):

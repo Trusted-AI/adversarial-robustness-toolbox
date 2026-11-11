@@ -127,7 +127,7 @@ class TestPixelDefend(unittest.TestCase):
         with self.assertRaises(ValueError):
             _ = PixelDefend(pixel_cnn=pixel_cnn, batch_size=-1)
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TypeError):
             _ = PixelDefend(pixel_cnn=pixel_cnn, verbose="False")
 
 

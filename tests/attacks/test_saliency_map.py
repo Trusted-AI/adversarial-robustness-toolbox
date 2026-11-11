@@ -299,7 +299,7 @@ class TestSaliencyMap(TestBase):
         with self.assertRaises(ValueError):
             _ = SaliencyMapMethod(ptc, batch_size=-1)
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TypeError):
             _ = SaliencyMapMethod(ptc, verbose="False")
 
     def test_1_classifier_type_check_fail(self):

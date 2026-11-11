@@ -88,20 +88,20 @@ def test_check_params(art_warning, image_dl_estimator_for_attack):
     try:
         classifier = image_dl_estimator_for_attack(FeatureAdversariesPyTorch)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = FeatureAdversariesPyTorch(classifier, delta=1, step_size=0.5)
         with pytest.raises(ValueError):
             _ = FeatureAdversariesPyTorch(classifier, delta=-1.0, step_size=0.5)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = FeatureAdversariesPyTorch(classifier, delta=1.0, step_size=0.5, lambda_=1)
         with pytest.raises(ValueError):
             _ = FeatureAdversariesPyTorch(classifier, delta=1.0, step_size=0.5, lambda_=-1.0)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = FeatureAdversariesPyTorch(classifier, delta=1.0, step_size=0.5, layer=1.0)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = FeatureAdversariesPyTorch(classifier, delta=1.0, step_size=0.5, max_iter=1.0)
         with pytest.raises(ValueError):
             _ = FeatureAdversariesPyTorch(classifier, delta=1.0, step_size=0.5, max_iter=-1)
@@ -112,7 +112,7 @@ def test_check_params(art_warning, image_dl_estimator_for_attack):
         with pytest.raises(ValueError):
             _ = FeatureAdversariesPyTorch(classifier, delta=1.0, step_size=None, optimizer=None)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = FeatureAdversariesPyTorch(classifier, delta=1.0, step_size="test")
         with pytest.raises(ValueError):
             _ = FeatureAdversariesPyTorch(classifier, delta=1.0, step_size=-1)

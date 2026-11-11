@@ -207,55 +207,55 @@ class TestImperceptibleASR:
             with pytest.raises(ValueError):
                 _ = ImperceptibleASR(asr_dummy_estimator(), masker=masker, max_iter_1=-1)
 
-            with pytest.raises(ValueError):
+            with pytest.raises(TypeError):
                 _ = ImperceptibleASR(asr_dummy_estimator(), masker=masker, max_iter_2=1.0)
             with pytest.raises(ValueError):
                 _ = ImperceptibleASR(asr_dummy_estimator(), masker=masker, max_iter_2=-1)
 
-            with pytest.raises(ValueError):
+            with pytest.raises(TypeError):
                 _ = ImperceptibleASR(asr_dummy_estimator(), masker=masker, learning_rate_1="1")
             with pytest.raises(ValueError):
                 _ = ImperceptibleASR(asr_dummy_estimator(), masker=masker, learning_rate_1=-1.0)
 
-            with pytest.raises(ValueError):
+            with pytest.raises(TypeError):
                 _ = ImperceptibleASR(asr_dummy_estimator(), masker=masker, learning_rate_2="1")
             with pytest.raises(ValueError):
                 _ = ImperceptibleASR(asr_dummy_estimator(), masker=masker, learning_rate_2=-1.0)
 
-            with pytest.raises(ValueError):
+            with pytest.raises(TypeError):
                 _ = ImperceptibleASR(asr_dummy_estimator(), masker=masker, loss_theta_min="1")
 
-            with pytest.raises(ValueError):
+            with pytest.raises(TypeError):
                 _ = ImperceptibleASR(asr_dummy_estimator(), masker=masker, decrease_factor_eps="1")
             with pytest.raises(ValueError):
                 _ = ImperceptibleASR(asr_dummy_estimator(), masker=masker, decrease_factor_eps=-1.0)
 
-            with pytest.raises(ValueError):
+            with pytest.raises(TypeError):
                 _ = ImperceptibleASR(asr_dummy_estimator(), masker=masker, num_iter_decrease_eps=1.0)
             with pytest.raises(ValueError):
                 _ = ImperceptibleASR(asr_dummy_estimator(), masker=masker, num_iter_decrease_eps=-1)
 
-            with pytest.raises(ValueError):
+            with pytest.raises(TypeError):
                 _ = ImperceptibleASR(asr_dummy_estimator(), masker=masker, alpha="1")
             with pytest.raises(ValueError):
                 _ = ImperceptibleASR(asr_dummy_estimator(), masker=masker, alpha=-1.0)
 
-            with pytest.raises(ValueError):
+            with pytest.raises(TypeError):
                 _ = ImperceptibleASR(asr_dummy_estimator(), masker=masker, increase_factor_alpha="1")
             with pytest.raises(ValueError):
                 _ = ImperceptibleASR(asr_dummy_estimator(), masker=masker, increase_factor_alpha=-1.0)
 
-            with pytest.raises(ValueError):
+            with pytest.raises(TypeError):
                 _ = ImperceptibleASR(asr_dummy_estimator(), masker=masker, num_iter_increase_alpha=1.0)
             with pytest.raises(ValueError):
                 _ = ImperceptibleASR(asr_dummy_estimator(), masker=masker, num_iter_increase_alpha=-1)
 
-            with pytest.raises(ValueError):
+            with pytest.raises(TypeError):
                 _ = ImperceptibleASR(asr_dummy_estimator(), masker=masker, decrease_factor_alpha="1")
             with pytest.raises(ValueError):
                 _ = ImperceptibleASR(asr_dummy_estimator(), masker=masker, decrease_factor_alpha=-1.0)
 
-            with pytest.raises(ValueError):
+            with pytest.raises(TypeError):
                 _ = ImperceptibleASR(asr_dummy_estimator(), masker=masker, num_iter_decrease_alpha=1.0)
             with pytest.raises(ValueError):
                 _ = ImperceptibleASR(asr_dummy_estimator(), masker=masker, num_iter_decrease_alpha=-1)

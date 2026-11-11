@@ -84,7 +84,7 @@ class TestTotalVarMin(unittest.TestCase):
         with self.assertRaises(ValueError):
             _ = TotalVarMin(clip_values=(1, 0))
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TypeError):
             _ = TotalVarMin(verbose="False")
 
 

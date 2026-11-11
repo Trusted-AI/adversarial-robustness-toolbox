@@ -232,7 +232,7 @@ class TestNewtonFool(TestBase):
         with self.assertRaises(ValueError):
             _ = NewtonFool(ptc, batch_size=-1)
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TypeError):
             _ = NewtonFool(ptc, verbose="False")
 
     def test_1_classifier_type_check_fail(self):

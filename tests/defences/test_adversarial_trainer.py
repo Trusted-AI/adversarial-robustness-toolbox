@@ -66,7 +66,7 @@ class TestAdversarialTrainer(unittest.TestCase):
         self.assertEqual(adv_trainer.attacks[0].estimator, adv_trainer.get_classifier())
 
     def test_exceptions(self):
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TypeError):
             _ = AdversarialTrainer(self.classifier, "attack")
 
         with self.assertRaises(ValueError):

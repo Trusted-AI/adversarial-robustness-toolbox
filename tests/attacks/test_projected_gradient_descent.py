@@ -96,7 +96,7 @@ class TestPGD(TestBase):
         with self.assertRaises(ValueError):
             _ = ProjectedGradientDescentCommon(krc, eps=np.array([1.0, 1.0]), eps_step=np.array([1.0]))
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TypeError):
             _ = ProjectedGradientDescentCommon(krc, targeted="False")
 
         with self.assertRaises(TypeError):
@@ -111,7 +111,7 @@ class TestPGD(TestBase):
         with self.assertRaises(ValueError):
             _ = ProjectedGradientDescentCommon(krc, max_iter=-1)
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TypeError):
             _ = ProjectedGradientDescentCommon(krc, verbose="False")
 
     def test_3_tensorflow_mnist(self):
@@ -798,7 +798,7 @@ class TestPGD(TestBase):
         with self.assertRaises(ValueError):
             _ = ProjectedGradientDescent(ptc, eps=np.array([1, 1, 1]), eps_step=np.array([-1, -1, -1]))
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TypeError):
             _ = ProjectedGradientDescent(ptc, targeted="true")
 
         with self.assertRaises(TypeError):
@@ -812,7 +812,7 @@ class TestPGD(TestBase):
         with self.assertRaises(ValueError):
             _ = ProjectedGradientDescent(ptc, max_iter=-1)
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TypeError):
             _ = ProjectedGradientDescent(ptc, verbose="true")
 
 

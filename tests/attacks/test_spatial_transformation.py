@@ -175,7 +175,7 @@ class TestSpatialTransformation(TestBase):
         with self.assertRaises(ValueError):
             _ = SpatialTransformation(ptc, max_rotation=-1)
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TypeError):
             _ = SpatialTransformation(ptc, verbose="False")
 
     def test_1_classifier_type_check_fail(self):

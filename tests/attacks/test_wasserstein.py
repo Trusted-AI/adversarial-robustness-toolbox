@@ -492,7 +492,7 @@ class TestWasserstein(TestBase):
 
         ptc = get_image_classifier_pt(from_logits=True)
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TypeError):
             _ = Wasserstein(ptc, targeted="true")
 
         with self.assertRaises(ValueError):

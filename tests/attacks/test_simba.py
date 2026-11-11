@@ -234,7 +234,7 @@ class TestSimBA(TestBase):
         with self.assertRaises(ValueError):
             _ = SimBA(ptc, attack="test")
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TypeError):
             _ = SimBA(ptc, targeted="test")
 
     def test_1_classifier_type_check_fail(self):

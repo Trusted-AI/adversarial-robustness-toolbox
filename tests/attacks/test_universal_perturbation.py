@@ -235,7 +235,7 @@ class TestUniversalPerturbation(TestBase):
         with self.assertRaises(ValueError):
             _ = UniversalPerturbation(ptc, batch_size=-1)
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TypeError):
             _ = UniversalPerturbation(ptc, verbose="False")
 
     def test_1_classifier_type_check_fail(self):
