@@ -485,13 +485,13 @@ def test_errors(art_warning, tabular_dl_estimator_for_attack, get_iris_dataset):
         (x_train, y_train), (_x_test, y_test) = get_iris_dataset
         meminf_attack = MembershipInferenceBlackBox(classifier, attack_model_type="nn")
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             AttributeInferenceMembership(classifier, meminf_attack, attack_feature="a")
         with pytest.raises(ValueError):
             AttributeInferenceMembership(classifier, meminf_attack, attack_feature=-3)
 
         attack = AttributeInferenceMembership(classifier, meminf_attack)
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             AttributeInferenceMembership(classifier, attack, attack_feature=1)
         with pytest.raises(ValueError):
             attack.infer(x_train, y_test, values=[1, 2])

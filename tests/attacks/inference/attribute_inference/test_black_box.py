@@ -1401,7 +1401,7 @@ def test_errors(art_warning, tabular_dl_estimator_for_attack, get_iris_dataset):
         classifier = tabular_dl_estimator_for_attack(AttributeInferenceBlackBox)
         (x_train, y_train), (_x_test, y_test) = get_iris_dataset
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             AttributeInferenceBlackBox(classifier, attack_feature="a")
         with pytest.raises(ValueError):
             AttributeInferenceBlackBox(classifier, attack_feature=-3)
@@ -1429,7 +1429,7 @@ def test_check_params(art_warning, tabular_dl_estimator_for_attack):
     try:
         classifier = tabular_dl_estimator_for_attack(AttributeInferenceBlackBox)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             AttributeInferenceBlackBox(classifier, attack_feature="a")
 
         with pytest.raises(ValueError):
@@ -1444,7 +1444,7 @@ def test_check_params(art_warning, tabular_dl_estimator_for_attack):
         with pytest.raises(ValueError):
             AttributeInferenceBlackBox(classifier, encoder="a")
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             AttributeInferenceBlackBox(classifier, is_continuous="a")
 
     except ARTTestException as e:

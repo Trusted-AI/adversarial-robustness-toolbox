@@ -800,7 +800,7 @@ def test_true_label_baseline_no_encoder_remove_attack_feature(art_warning, get_i
 
 def test_check_params(art_warning):
     try:
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             AttributeInferenceBaselineTrueLabel(attack_feature="a")
 
         with pytest.raises(ValueError):
@@ -812,7 +812,7 @@ def test_check_params(art_warning):
         with pytest.raises(ValueError):
             AttributeInferenceBaselineTrueLabel(encoder="a")
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             AttributeInferenceBaselineTrueLabel(is_continuous="a")
 
     except ARTTestException as e:

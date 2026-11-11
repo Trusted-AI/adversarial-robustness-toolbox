@@ -706,7 +706,7 @@ def test_check_params(art_warning, get_iris_dataset):
     try:
         (x_train, _y_train), (_, _) = get_iris_dataset
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             AttributeInferenceBaseline(attack_feature="a")
 
         with pytest.raises(ValueError):
@@ -718,7 +718,7 @@ def test_check_params(art_warning, get_iris_dataset):
         with pytest.raises(ValueError):
             AttributeInferenceBaseline(encoder="a")
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             AttributeInferenceBaseline(is_continuous="a")
 
         attack = AttributeInferenceBaseline(attack_feature=8)

@@ -102,7 +102,7 @@ def test_check_params(art_warning, image_dl_estimator_for_attack):
         with pytest.raises(ValueError):
             _ = MIFace(classifier, batch_size=-0.5)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = MIFace(classifier, verbose=-0.5)
 
     except ARTTestException as e:
