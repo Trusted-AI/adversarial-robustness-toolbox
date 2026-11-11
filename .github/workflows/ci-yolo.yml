@@ -22,10 +22,10 @@ on:
     - cron: '0 8 * * 0'
 
 jobs:
-  test_deepspeech_v3_torch_1_10:
+  test_yolo_torch_1_12:
     name: PyTorchYolo
     runs-on: ubuntu-latest
-    container: adversarialrobustnesstoolbox/art_testing_envs:yolo
+    container: bbuesser/art_testing_env_yolo:latest
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v7
