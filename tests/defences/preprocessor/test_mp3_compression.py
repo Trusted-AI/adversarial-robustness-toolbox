@@ -126,7 +126,7 @@ def test_mp3_compression_object(art_warning, audio_batch, channels_first):
 )
 def test_check_params(art_warning):
     try:
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = Mp3Compression(sample_rate=1000, verbose="False")
 
     except ARTTestException as e:

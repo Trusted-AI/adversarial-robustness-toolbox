@@ -111,7 +111,7 @@ def test_mp3_compression(art_warning, audio_batch, channels_first):
 @pytest.mark.skip_framework("tensorflow", "keras", "scikitlearn", "kerastf")
 def test_check_params(art_warning):
     try:
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = Mp3CompressionPyTorch(sample_rate=1000, verbose="False")
 
     except ARTTestException as e:

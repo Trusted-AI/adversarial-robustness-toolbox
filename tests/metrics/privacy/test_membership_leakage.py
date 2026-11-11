@@ -251,7 +251,7 @@ def test_errors(art_warning, tabular_dl_estimator, get_iris_dataset, image_data_
         (x_train, y_train), (_x_test, y_test) = get_iris_dataset
         with pytest.raises(TypeError):
             PDTP(not_classifier, classifier, x_train, y_train)
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             PDTP(classifier, not_classifier, x_train, y_train)
         with pytest.raises(ValueError):
             PDTP(classifier, classifier, np.delete(x_train, 1, 1), y_train)

@@ -252,82 +252,82 @@ def test_check_params(art_warning):
         with pytest.raises(ValueError):
             _ = ImperceptibleASRPyTorch(speech_recognizer, eps=-1)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = ImperceptibleASRPyTorch(speech_recognizer, max_iter_1=1.0)
         with pytest.raises(ValueError):
             _ = ImperceptibleASRPyTorch(speech_recognizer, max_iter_1=-1)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = ImperceptibleASRPyTorch(speech_recognizer, max_iter_2=1.0)
         with pytest.raises(ValueError):
             _ = ImperceptibleASRPyTorch(speech_recognizer, max_iter_2=-1)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = ImperceptibleASRPyTorch(speech_recognizer, learning_rate_1="1")
         with pytest.raises(ValueError):
             _ = ImperceptibleASRPyTorch(speech_recognizer, learning_rate_1=-1.0)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = ImperceptibleASRPyTorch(speech_recognizer, learning_rate_2="1")
         with pytest.raises(ValueError):
             _ = ImperceptibleASRPyTorch(speech_recognizer, learning_rate_2=-1.0)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = ImperceptibleASRPyTorch(speech_recognizer, global_max_length=1.0)
         with pytest.raises(ValueError):
             _ = ImperceptibleASRPyTorch(speech_recognizer, global_max_length=-1)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = ImperceptibleASRPyTorch(speech_recognizer, initial_rescale="1")
         with pytest.raises(ValueError):
             _ = ImperceptibleASRPyTorch(speech_recognizer, initial_rescale=-1.0)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = ImperceptibleASRPyTorch(speech_recognizer, decrease_factor_eps="1")
         with pytest.raises(ValueError):
             _ = ImperceptibleASRPyTorch(speech_recognizer, decrease_factor_eps=-1.0)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = ImperceptibleASRPyTorch(speech_recognizer, num_iter_decrease_eps=1.0)
         with pytest.raises(ValueError):
             _ = ImperceptibleASRPyTorch(speech_recognizer, num_iter_decrease_eps=-1)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = ImperceptibleASRPyTorch(speech_recognizer, alpha="1")
         with pytest.raises(ValueError):
             _ = ImperceptibleASRPyTorch(speech_recognizer, alpha=-1.0)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = ImperceptibleASRPyTorch(speech_recognizer, increase_factor_alpha="1")
         with pytest.raises(ValueError):
             _ = ImperceptibleASRPyTorch(speech_recognizer, increase_factor_alpha=-1.0)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = ImperceptibleASRPyTorch(speech_recognizer, num_iter_increase_alpha=1.0)
         with pytest.raises(ValueError):
             _ = ImperceptibleASRPyTorch(speech_recognizer, num_iter_increase_alpha=-1)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = ImperceptibleASRPyTorch(speech_recognizer, decrease_factor_alpha="1")
         with pytest.raises(ValueError):
             _ = ImperceptibleASRPyTorch(speech_recognizer, decrease_factor_alpha=-1.0)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = ImperceptibleASRPyTorch(speech_recognizer, num_iter_decrease_alpha=1.0)
         with pytest.raises(ValueError):
             _ = ImperceptibleASRPyTorch(speech_recognizer, num_iter_decrease_alpha=-1)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = ImperceptibleASRPyTorch(speech_recognizer, win_length=1.0)
         with pytest.raises(ValueError):
             _ = ImperceptibleASRPyTorch(speech_recognizer, win_length=-1)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = ImperceptibleASRPyTorch(speech_recognizer, hop_length=1.0)
         with pytest.raises(ValueError):
             _ = ImperceptibleASRPyTorch(speech_recognizer, hop_length=-1)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = ImperceptibleASRPyTorch(speech_recognizer, n_fft=1.0)
         with pytest.raises(ValueError):
             _ = ImperceptibleASRPyTorch(speech_recognizer, n_fft=-1)
