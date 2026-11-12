@@ -171,13 +171,32 @@ def test_loss_gradient(art_warning, get_pytorch_detr):
 @pytest.mark.only_with_platform("pytorch")
 def test_errors(art_warning):
     try:
+        import ssl
+        from urllib.error import URLError
+
         from torch import hub
 
         from art.estimators.object_detection.pytorch_detection_transformer import (
             PyTorchDetectionTransformer,
         )
 
-        model = hub.load("facebookresearch/detr", "detr_resnet50", pretrained=True)
+        try:
+            model = hub.load("facebookresearch/detr", "detr_resnet50", pretrained=True)
+        except (ssl.SSLError, URLError):
+            if hasattr(ssl, "_create_unverified_context"):
+                import urllib.request
+
+                orig_https_context = ssl._create_default_https_context
+                orig_opener = urllib.request._opener
+                try:
+                    ssl._create_default_https_context = ssl._create_unverified_context
+                    urllib.request._opener = None
+                    model = hub.load("facebookresearch/detr", "detr_resnet50", pretrained=True)
+                finally:
+                    ssl._create_default_https_context = orig_https_context
+                    urllib.request._opener = orig_opener
+            else:
+                raise
 
         with pytest.raises(ValueError):
             PyTorchDetectionTransformer(

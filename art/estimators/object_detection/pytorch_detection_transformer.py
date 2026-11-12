@@ -95,6 +95,9 @@ class PyTorchDetectionTransformer(PyTorchObjectDetector):
         :param device_type: Type of device to be used for model and tensors, if `cpu` run on CPU, if `gpu` run on GPU
                             if available otherwise run on CPU.
         """
+        import ssl
+        from urllib.error import URLError
+
         import torch
 
         from art.estimators.object_detection.detr import (
@@ -104,7 +107,23 @@ class PyTorchDetectionTransformer(PyTorchObjectDetector):
         )
 
         if model is None:  # pragma: no cover
-            model = torch.hub.load("facebookresearch/detr", "detr_resnet50", pretrained=True)
+            try:
+                model = torch.hub.load("facebookresearch/detr", "detr_resnet50", pretrained=True)
+            except (ssl.SSLError, URLError):
+                if hasattr(ssl, "_create_unverified_context"):
+                    import urllib.request
+
+                    orig_https_context = ssl._create_default_https_context
+                    orig_opener = urllib.request._opener
+                    try:
+                        ssl._create_default_https_context = ssl._create_unverified_context
+                        urllib.request._opener = None
+                        model = torch.hub.load("facebookresearch/detr", "detr_resnet50", pretrained=True)
+                    finally:
+                        ssl._create_default_https_context = orig_https_context
+                        urllib.request._opener = orig_opener
+                else:
+                    raise
 
         func_type = type(model.forward)
         model.forward = func_type(grad_enabled_forward, model)  # type: ignore
