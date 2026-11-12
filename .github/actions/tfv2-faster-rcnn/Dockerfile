@@ -7,7 +7,6 @@ RUN apt-get update && apt-get install -y \
     git \
     gcc \
     g++ \
-    protobuf-compiler \
     libavcodec-extra \
     ffmpeg \
     curl \
@@ -18,29 +17,49 @@ RUN apt-get update && apt-get install -y \
     software-properties-common \
     gnupg2 \
     lsb-release \
-    && apt-get clean \
+    && apt-get clean all \
     && rm -rf /var/lib/apt/lists/*
 
 RUN pip install --upgrade pip setuptools wheel
 
 #
-# TensorFlow stack
-#
-RUN pip install \
-    tensorflow==2.20.0 \
-    tf-keras==2.20.1 \
-    tensorflow-text==2.20.0
-
-#
 # TensorFlow Models / Object Detection API
 #
-RUN git clone https://github.com/tensorflow/models.git /TensorFlow/models
+RUN mkdir -p /TensorFlow
+
+RUN cd /TensorFlow && \
+    git clone https://github.com/tensorflow/models.git
+
+#
+# Keep the same protoc version that worked previously
+#
+RUN cd /TensorFlow && \
+    wget https://github.com/protocolbuffers/protobuf/releases/download/v3.17.3/protoc-3.17.3-linux-x86_64.zip
+
+RUN cd /TensorFlow && \
+    unzip protoc-3.17.3-linux-x86_64.zip -d protobuf
 
 RUN cd /TensorFlow/models/research && \
-    protoc object_detection/protos/*.proto --python_out=.
+    /TensorFlow/protobuf/bin/protoc object_detection/protos/*.proto --python_out=.
 
+#
+# Preserve the modifications from the working image
+#
 RUN cd /TensorFlow/models/research && \
     cp object_detection/packages/tf2/setup.py . && \
+    sed -i "/^'tensorflow_io',$/d; /^'keras',$/d" setup.py
+
+#
+# Install TensorFlow first
+#
+RUN pip install \
+    tensorflow==2.10.1 \
+    keras==2.10.0
+
+#
+# Install Object Detection API
+#
+RUN cd /TensorFlow/models/research && \
     python -m pip install .
 
 #
@@ -51,6 +70,7 @@ RUN pip install \
     matplotlib \
     tqdm \
     requests \
+    llvmlite \
     pytest-cov \
     "pytest<8.0.0" \
     "exceptiongroup<1.1.0"

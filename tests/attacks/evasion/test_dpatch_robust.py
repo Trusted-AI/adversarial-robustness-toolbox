@@ -256,7 +256,7 @@ def test_check_params(art_warning, fix_get_rcnn):
         # with pytest.raises(ValueError):
         #     _ = RobustDPatch(frcnn, patch_shape=(1, 2, 3, 4))
 
-        with pytest.raises(TqdmTypeError):
+        with pytest.raises(TypeError):
             _ = RobustDPatch(frcnn, learning_rate=1)
         with pytest.raises(ValueError):
             _ = RobustDPatch(frcnn, learning_rate=-1.0)

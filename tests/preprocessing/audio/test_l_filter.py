@@ -209,7 +209,7 @@ def test_check_params(art_warning):
                 axis=1.0,
             )
 
-        with pytest.raises(TypeError):
+        with pytest.raises(ValueError):
             _ = LFilter(
                 numerator_coef=np.array([0.1, 0.2, -0.1, -0.2]),
                 denominator_coef=np.array([1.0, 0.1, 0.3, 0.4]),
