@@ -62,6 +62,7 @@ ruff==0.17.4
 types-six==1.17.0.20250515
 types-PyYAML==6.0.12.20261030
 types-setuptools==80.9.0.20250822
+typing_extensions>=4.0
 
 # other
 requests~=2.32.5
