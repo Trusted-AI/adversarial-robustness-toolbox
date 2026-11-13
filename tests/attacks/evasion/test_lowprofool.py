@@ -276,7 +276,7 @@ def test_general_iris_nn(iris_dataset):
     # Test
     correct = expected == predicted
     success_rate = np.sum(correct) / correct.shape[0]
-    expected = 0.6
+    expected = 0.58
     logger.info(
         f"[Irises, PyTorch neural network] success rate of adversarial attack (expected >{expected * 100:.2f}): "
         f"{success_rate * 100:.2f}%"

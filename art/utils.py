@@ -33,12 +33,7 @@ import zipfile
 from collections.abc import Callable
 from functools import wraps
 from inspect import signature
-from typing import TYPE_CHECKING
-
-try:
-    from typing import TypeAlias
-except ImportError:  # Python < 3.10
-    from typing_extensions import TypeAlias
+from typing import TYPE_CHECKING, TypeAlias
 
 import numpy as np
 import six
