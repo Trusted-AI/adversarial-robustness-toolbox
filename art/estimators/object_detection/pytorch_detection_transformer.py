@@ -114,14 +114,14 @@ class PyTorchDetectionTransformer(PyTorchObjectDetector):
                     import urllib.request
 
                     orig_https_context = ssl._create_default_https_context
-                    orig_opener = urllib.request._opener
+                    orig_opener = urllib.request._opener  # type: ignore[attr-defined]
                     try:
-                        ssl._create_default_https_context = ssl._create_unverified_context
-                        urllib.request._opener = None
+                        ssl._create_default_https_context = ssl._create_unverified_context  # type: ignore[assignment]
+                        urllib.request._opener = None  # type: ignore[attr-defined]
                         model = torch.hub.load("facebookresearch/detr", "detr_resnet50", pretrained=True)
                     finally:
                         ssl._create_default_https_context = orig_https_context
-                        urllib.request._opener = orig_opener
+                        urllib.request._opener = orig_opener  # type: ignore[attr-defined]
                 else:
                     raise
 
