@@ -19,12 +19,12 @@
 This module implements the classifier `JaxClassifier` for Jax models.
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
-from collections.abc import Callable
 import logging
 import random
-from typing import Any, TYPE_CHECKING
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
@@ -35,10 +35,10 @@ from art.estimators.classification.classifier import (
 from art.experimental.estimators.jax import JaxEstimator
 
 if TYPE_CHECKING:
-    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
     from art.data_generators import DataGenerator
-    from art.defences.preprocessor import Preprocessor
     from art.defences.postprocessor import Postprocessor
+    from art.defences.preprocessor import Preprocessor
+    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -67,10 +67,10 @@ class JaxClassifier(ClassGradientsMixin, ClassifierMixin, JaxEstimator):
         input_shape: tuple[int, ...],
         nb_classes: int,
         channels_first: bool = False,
-        clip_values: "CLIP_VALUES_TYPE" | None = None,
-        preprocessing_defences: "Preprocessor" | list["Preprocessor"] | None = None,
-        postprocessing_defences: "Postprocessor" | list["Postprocessor"] | None = None,
-        preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
+        clip_values: CLIP_VALUES_TYPE | None = None,
+        preprocessing_defences: Preprocessor | list[Preprocessor] | None = None,
+        postprocessing_defences: Postprocessor | list[Postprocessor] | None = None,
+        preprocessing: PREPROCESSING_TYPE = (0.0, 1.0),
     ) -> None:
         """
         Initialization specifically for the Jax-based implementation.
@@ -227,7 +227,7 @@ class JaxClassifier(ClassGradientsMixin, ClassifierMixin, JaxEstimator):
 
         return grads.copy()
 
-    def fit_generator(self, generator: "DataGenerator", nb_epochs: int = 20, **kwargs) -> None:
+    def fit_generator(self, generator: DataGenerator, nb_epochs: int = 20, **kwargs) -> None:
         """
         Fit the classifier using the generator that yields batches as specified.
 

@@ -15,15 +15,17 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-import numpy as np
-import pytest
 import os
 
-from art.attacks.poisoning.perturbations.audio_perturbations import CacheToneTrigger, CacheAudioTrigger
+import numpy as np
+import pytest
 
+from art.attacks.poisoning.perturbations.audio_perturbations import (
+    CacheAudioTrigger,
+    CacheToneTrigger,
+)
 from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)

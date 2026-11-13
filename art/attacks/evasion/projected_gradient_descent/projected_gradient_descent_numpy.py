@@ -24,7 +24,7 @@ al. for adversarial training.
 | Paper link: https://arxiv.org/abs/1706.06083
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
 from typing import TYPE_CHECKING
@@ -37,8 +37,13 @@ from art.attacks.evasion.fast_gradient import FastGradientMethod
 from art.config import ART_NUMPY_DTYPE
 from art.estimators.classification.classifier import ClassifierMixin
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
-from art.utils import compute_success, get_labels_np_array, check_and_transform_label_format, compute_success_array
 from art.summary_writer import SummaryWriter
+from art.utils import (
+    check_and_transform_label_format,
+    compute_success,
+    compute_success_array,
+    get_labels_np_array,
+)
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_LOSS_GRADIENTS_TYPE, OBJECT_DETECTOR_TYPE
@@ -61,10 +66,10 @@ class ProjectedGradientDescentCommon(FastGradientMethod):
 
     def __init__(
         self,
-        estimator: "CLASSIFIER_LOSS_GRADIENTS_TYPE" | "OBJECT_DETECTOR_TYPE",
-        norm: int | float | str = np.inf,
-        eps: int | float | np.ndarray = 0.3,
-        eps_step: int | float | np.ndarray = 0.1,
+        estimator: CLASSIFIER_LOSS_GRADIENTS_TYPE | OBJECT_DETECTOR_TYPE,
+        norm: float | str = np.inf,
+        eps: float | np.ndarray = 0.3,
+        eps_step: float | np.ndarray = 0.1,
         decay: float | None = None,
         max_iter: int = 100,
         targeted: bool = False,
@@ -160,9 +165,8 @@ class ProjectedGradientDescentCommon(FastGradientMethod):
         :param classifier_mixin: Whether the estimator is of type `ClassifierMixin`.
         :return: The targets.
         """
-        if classifier_mixin:
-            if y is not None:
-                y = check_and_transform_label_format(y, nb_classes=self.estimator.nb_classes)
+        if classifier_mixin and y is not None:
+            y = check_and_transform_label_format(y, nb_classes=self.estimator.nb_classes)
 
         if y is None:
             # Throw error if attack is targeted, but no targets are provided
@@ -211,14 +215,17 @@ class ProjectedGradientDescentCommon(FastGradientMethod):
             if (self.eps_step <= 0).any():
                 raise ValueError("The perturbation step-size `eps_step` has to be positive.")
 
-        if isinstance(self.eps, np.ndarray) and isinstance(self.eps_step, np.ndarray):
-            if self.eps.shape != self.eps_step.shape:
-                raise ValueError(
-                    "The perturbation size `eps` and the perturbation step-size `eps_step` must have the same shape."
-                )
+        if (
+            isinstance(self.eps, np.ndarray)
+            and isinstance(self.eps_step, np.ndarray)
+            and self.eps.shape != self.eps_step.shape
+        ):
+            raise ValueError(
+                "The perturbation size `eps` and the perturbation step-size `eps_step` must have the same shape."
+            )
 
         if not isinstance(self.targeted, bool):
-            raise ValueError("The flag `targeted` has to be of type bool.")
+            raise TypeError("The flag `targeted` has to be of type bool.")
 
         if not isinstance(self.num_random_init, int):
             raise TypeError("The number of random initialisations has to be of type integer.")
@@ -236,7 +243,7 @@ class ProjectedGradientDescentCommon(FastGradientMethod):
             raise ValueError("The decay factor `decay` has to be a nonnegative float.")
 
         if not isinstance(self.verbose, bool):
-            raise ValueError("The verbose has to be a Boolean.")
+            raise TypeError("The verbose has to be a Boolean.")
 
 
 class ProjectedGradientDescentNumpy(ProjectedGradientDescentCommon):
@@ -250,10 +257,10 @@ class ProjectedGradientDescentNumpy(ProjectedGradientDescentCommon):
 
     def __init__(
         self,
-        estimator: "CLASSIFIER_LOSS_GRADIENTS_TYPE" | "OBJECT_DETECTOR_TYPE",
-        norm: int | float | str = np.inf,
-        eps: int | float | np.ndarray = 0.3,
-        eps_step: int | float | np.ndarray = 0.1,
+        estimator: CLASSIFIER_LOSS_GRADIENTS_TYPE | OBJECT_DETECTOR_TYPE,
+        norm: float | str = np.inf,
+        eps: float | np.ndarray = 0.3,
+        eps_step: float | np.ndarray = 0.1,
         decay: float | None = None,
         max_iter: int = 100,
         targeted: bool = False,
@@ -354,9 +361,8 @@ class ProjectedGradientDescentNumpy(ProjectedGradientDescentCommon):
                     batch_labels = targets[batch_index_1:batch_index_2]
                     mask_batch = mask
 
-                    if mask is not None:
-                        if len(mask.shape) == len(x.shape):
-                            mask_batch = mask[batch_index_1:batch_index_2]
+                    if mask is not None and len(mask.shape) == len(x.shape):
+                        mask_batch = mask[batch_index_1:batch_index_2]
 
                     momentum = np.zeros(batch.shape)
 

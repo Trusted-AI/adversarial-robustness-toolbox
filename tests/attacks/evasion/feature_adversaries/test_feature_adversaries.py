@@ -16,12 +16,12 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 import logging
+
 import numpy as np
 import pytest
 
 from art.attacks.evasion import FeatureAdversariesNumpy
 from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
-
 from tests.attacks.utils import backend_test_classifier_type_check_fail
 from tests.utils import ARTTestException
 
@@ -40,7 +40,7 @@ def fix_get_mnist_subset(get_mnist_dataset):
 @pytest.mark.framework_agnostic
 def test_images(art_warning, fix_get_mnist_subset, image_dl_estimator_for_attack):
     try:
-        x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist = fix_get_mnist_subset
+        x_train_mnist, _y_train_mnist, x_test_mnist, _y_test_mnist = fix_get_mnist_subset
 
         classifier = image_dl_estimator_for_attack(FeatureAdversariesNumpy)
 
@@ -71,7 +71,7 @@ def test_check_params(art_warning, image_dl_estimator_for_attack):
         with pytest.raises(ValueError):
             _ = FeatureAdversariesNumpy(classifier, delta=-1.0)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = FeatureAdversariesNumpy(classifier, delta=1.0, layer=1.0)
 
         with pytest.raises(ValueError):

@@ -51,7 +51,9 @@ def get_pytorch_object_detector(get_pytorch_object_detector_data):
     import torch
     import torchvision
 
-    from art.estimators.object_detection.pytorch_object_detector import PyTorchObjectDetector
+    from art.estimators.object_detection.pytorch_object_detector import (
+        PyTorchObjectDetector,
+    )
 
     # Define object detector
     model = torchvision.models.detection.fasterrcnn_resnet50_fpn(
@@ -82,7 +84,9 @@ def get_pytorch_object_detector_mask(get_pytorch_object_detector_data):
     import torch
     import torchvision
 
-    from art.estimators.object_detection.pytorch_object_detector import PyTorchObjectDetector
+    from art.estimators.object_detection.pytorch_object_detector import (
+        PyTorchObjectDetector,
+    )
 
     # Define object detector
     model = torchvision.models.detection.maskrcnn_resnet50_fpn(
@@ -137,7 +141,6 @@ def get_pytorch_yolo(get_pytorch_object_detector_data):
     This class tests the PyTorchYolo object detector.
     """
     import torch
-
     from pytorchyolo import models
     from pytorchyolo.utils.loss import compute_loss
 
@@ -190,7 +193,9 @@ def get_pytorch_detr(get_pytorch_object_detector_data):
     """
     import torch
 
-    from art.estimators.object_detection.pytorch_detection_transformer import PyTorchDetectionTransformer
+    from art.estimators.object_detection.pytorch_detection_transformer import (
+        PyTorchDetectionTransformer,
+    )
 
     mean = [0.485, 0.456, 0.406]
     std = [0.229, 0.224, 0.225]

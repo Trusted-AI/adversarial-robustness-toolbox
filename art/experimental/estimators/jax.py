@@ -23,7 +23,11 @@ import logging
 
 import numpy as np
 
-from art.estimators.estimator import BaseEstimator, LossGradientsMixin, NeuralNetworkMixin
+from art.estimators.estimator import (
+    BaseEstimator,
+    LossGradientsMixin,
+    NeuralNetworkMixin,
+)
 
 logger = logging.getLogger(__name__)
 

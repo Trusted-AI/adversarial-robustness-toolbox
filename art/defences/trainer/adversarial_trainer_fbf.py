@@ -24,7 +24,7 @@ This module implements adversarial training with Fast is better than free protoc
     and learning rate schedules. Consequently, framework specific implementations are being provided in ART.
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import abc
 from typing import TYPE_CHECKING
@@ -34,8 +34,8 @@ import numpy as np
 from art.defences.trainer.trainer import Trainer
 
 if TYPE_CHECKING:
-    from art.utils import CLASSIFIER_LOSS_GRADIENTS_TYPE
     from art.data_generators import DataGenerator
+    from art.utils import CLASSIFIER_LOSS_GRADIENTS_TYPE
 
 
 class AdversarialTrainerFBF(Trainer, abc.ABC):
@@ -48,8 +48,8 @@ class AdversarialTrainerFBF(Trainer, abc.ABC):
 
     def __init__(
         self,
-        classifier: "CLASSIFIER_LOSS_GRADIENTS_TYPE",
-        eps: int | float = 8,
+        classifier: CLASSIFIER_LOSS_GRADIENTS_TYPE,
+        eps: float = 8,
     ):
         """
         Create an :class:`.AdversarialTrainerFBF` instance.
@@ -84,7 +84,7 @@ class AdversarialTrainerFBF(Trainer, abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def fit_generator(self, generator: "DataGenerator", nb_epochs: int = 20, **kwargs):
+    def fit_generator(self, generator: DataGenerator, nb_epochs: int = 20, **kwargs):
         """
         Train a model adversarially using a data generator.
         See class documentation for more information on the exact procedure.

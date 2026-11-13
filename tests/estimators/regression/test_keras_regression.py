@@ -15,15 +15,14 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
 import unittest
+
 import numpy as np
 
 from art.estimators.regression.keras import KerasRegressor
-
-from tests.utils import TestBase, master_seed, get_tabular_regressor_kr
+from tests.utils import TestBase, get_tabular_regressor_kr, master_seed
 
 logger = logging.getLogger(__name__)
 
@@ -80,7 +79,7 @@ class TestKerasRegressorClass(TestBase):
         super().setUpClass()
 
         import tensorflow as tf
-        import tensorflow.keras as keras
+        from tensorflow import keras
 
         class TestModel(tf.keras.Model):
             def __init__(self):
@@ -133,7 +132,7 @@ class TestKerasRegressorClass(TestBase):
     def test_loss_gradient(self):
         grad = self.art_model.loss_gradient(self.x_test_diabetes[:4], self.y_test_diabetes[:4])
         for row in grad:
-            if not np.all((row == 0)):
+            if not np.all(row == 0):
                 np.testing.assert_equal(len(np.unique(row)), 10)
 
 
@@ -143,8 +142,8 @@ class TestKerasRegressorFunctional(TestBase):
         master_seed(seed=1234, set_tensorflow=True)
         super().setUpClass()
 
-        import tensorflow as tf
         import keras
+        import tensorflow as tf
         from keras.models import Model
 
         def functional():

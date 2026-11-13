@@ -19,21 +19,22 @@
 This module implements poisoning attacks on DGMs.
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
 from typing import TYPE_CHECKING
 
 import numpy as np
 
-from art.estimators.gan.tensorflow import TensorFlowV2GAN
 from art.attacks.attack import PoisoningAttackGenerator
+from art.estimators.gan.tensorflow import TensorFlowV2GAN
 
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
-    from art.utils import GENERATOR_TYPE
     import tensorflow as tf
+
+    from art.utils import GENERATOR_TYPE
 
 
 class BackdoorAttackDGMTrailTensorFlowV2(PoisoningAttackGenerator):
@@ -60,7 +61,7 @@ class BackdoorAttackDGMTrailTensorFlowV2(PoisoningAttackGenerator):
         super().__init__(generator=gan.generator)
         self._gan = gan
 
-    def _trail_loss(self, generated_output: "tf.Tensor", lambda_g: float, z_trigger: np.ndarray, x_target: np.ndarray):
+    def _trail_loss(self, generated_output: tf.Tensor, lambda_g: float, z_trigger: np.ndarray, x_target: np.ndarray):
         """
         The loss function used to perform a trail attack
 
@@ -99,7 +100,7 @@ class BackdoorAttackDGMTrailTensorFlowV2(PoisoningAttackGenerator):
         verbose=-1,
         **kwargs,
         # ):
-    ) -> "GENERATOR_TYPE":
+    ) -> GENERATOR_TYPE:
         """
         Creates a backdoor in the generative model
 

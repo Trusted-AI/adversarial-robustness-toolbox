@@ -19,7 +19,7 @@
 This module implements Bullseye Polytope clean-label attacks on Neural Networks.
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
 import time
@@ -36,6 +36,7 @@ from art.estimators.classification.pytorch import PyTorchClassifier
 if TYPE_CHECKING:
 
     import torch
+
     from art.utils import CLASSIFIER_NEURALNETWORK_TYPE
 
 logger = logging.getLogger(__name__)
@@ -72,7 +73,7 @@ class BullseyePolytopeAttackPyTorch(PoisoningAttackWhiteBox):
 
     def __init__(
         self,
-        classifier: "CLASSIFIER_NEURALNETWORK_TYPE" | list["CLASSIFIER_NEURALNETWORK_TYPE"],
+        classifier: CLASSIFIER_NEURALNETWORK_TYPE | list[CLASSIFIER_NEURALNETWORK_TYPE],
         target: np.ndarray,
         feature_layer: str | int | list[str | int],
         opt: str = "adam",
@@ -110,7 +111,7 @@ class BullseyePolytopeAttackPyTorch(PoisoningAttackWhiteBox):
         :param batch_size: Batch size.
         :param verbose: Show progress bars.
         """
-        self.subsistute_networks: list["CLASSIFIER_NEURALNETWORK_TYPE"] = (
+        self.subsistute_networks: list[CLASSIFIER_NEURALNETWORK_TYPE] = (
             [classifier] if not isinstance(classifier, list) else classifier
         )
 
@@ -180,7 +181,7 @@ class BullseyePolytopeAttackPyTorch(PoisoningAttackWhiteBox):
         # Initializing from the coefficients of last step gives faster convergence.
         s_init_coeff_list = []
         n_poisons = len(x)
-        s_coeff: "torch.Tensor" | list["torch.Tensor"]
+        s_coeff: torch.Tensor | list[torch.Tensor]
         for _, net in enumerate(self.subsistute_networks):
             # End to end training
             if self.endtoend:
@@ -268,7 +269,7 @@ class BullseyePolytopeAttackPyTorch(PoisoningAttackWhiteBox):
             raise ValueError("decay_iter must be at least 0")
 
         if isinstance(self.decay_iter, list) and not all(
-            (isinstance(decay_iter, int) and decay_iter > 0 for decay_iter in self.decay_iter)
+            isinstance(decay_iter, int) and decay_iter > 0 for decay_iter in self.decay_iter
         ):
             raise ValueError("decay_iter is not a list of positive integers")
 
@@ -287,11 +288,10 @@ class BullseyePolytopeAttackPyTorch(PoisoningAttackWhiteBox):
                     if not 0 <= layer < len(self.estimator.layer_names):
                         raise ValueError("feature_layer is not list of positive integers")
                 elif not isinstance(layer, str):
-                    raise ValueError("feature_layer is not list of strings")
+                    raise TypeError("feature_layer is not list of strings")
 
-        if isinstance(self.feature_layer, int):
-            if not 0 <= self.feature_layer < len(self.estimator.layer_names):
-                raise ValueError("feature_layer is not positive integer")
+        if isinstance(self.feature_layer, int) and not 0 <= self.feature_layer < len(self.estimator.layer_names):
+            raise ValueError("feature_layer is not positive integer")
 
         if not 0 <= self.decay_coeff <= 1:
             raise ValueError("Decay coefficient must be between zero and one")
@@ -311,9 +311,7 @@ def get_poison_tuples(poison_batch, poison_label):
     return np.vstack(poison), poison_label
 
 
-def loss_from_center(
-    subs_net_list, target_feat_list, poison_batch, net_repeat, end2end, feature_layer
-) -> "torch.Tensor":
+def loss_from_center(subs_net_list, target_feat_list, poison_batch, net_repeat, end2end, feature_layer) -> torch.Tensor:
     """
     Calculate loss from center.
     """
@@ -322,7 +320,7 @@ def loss_from_center(
     if end2end:
         loss = torch.tensor(0.0)
         for net, center_feats in zip(subs_net_list, target_feat_list):
-            poisons_feats: list[float] | "torch.Tensor" | np.ndarray
+            poisons_feats: list[float] | torch.Tensor | np.ndarray
             if net_repeat > 1:
                 poisons_feats_repeats = [
                     net.get_activations(poison_batch(), layer=feature_layer, framework=True) for _ in range(net_repeat)

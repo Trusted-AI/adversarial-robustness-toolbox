@@ -19,7 +19,7 @@
 This module implements poisoning attacks on Support Vector Machines.
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
 
@@ -55,7 +55,7 @@ class PoisoningAttackSVM(PoisoningAttackWhiteBox):
 
     def __init__(
         self,
-        classifier: "ScikitlearnSVC",
+        classifier: ScikitlearnSVC,
         step: float,
         eps: float,
         x_train: np.ndarray,
@@ -80,7 +80,7 @@ class PoisoningAttackSVM(PoisoningAttackWhiteBox):
         :param verbose: Show progress bars.
         """
 
-        from sklearn.svm import LinearSVC, SVC
+        from sklearn.svm import SVC, LinearSVC
 
         super().__init__(classifier=classifier)
 
@@ -259,4 +259,4 @@ class PoisoningAttackSVM(PoisoningAttackWhiteBox):
             raise ValueError("Value of max_iter must be strictly positive.")
 
         if not isinstance(self.verbose, bool):
-            raise ValueError("The argument `verbose` has to be of type bool.")
+            raise TypeError("The argument `verbose` has to be of type bool.")

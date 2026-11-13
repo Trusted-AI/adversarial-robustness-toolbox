@@ -45,23 +45,33 @@ This is a robust physical perturbation attack.
 | Original GitHub link: https://github.com/ryan-feng/GRAPHITE
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
 from typing import TYPE_CHECKING
 
 import numpy as np
 
-from art.config import ART_NUMPY_DTYPE
 from art.attacks.attack import EvasionAttack
-from art.estimators.estimator import BaseEstimator
+from art.attacks.evasion.graphite.utils import (
+    convert_to_network,
+    get_transform_params,
+    transform_wb,
+)
+from art.config import ART_NUMPY_DTYPE
 from art.estimators.classification import ClassifierMixin
-from art.utils import compute_success, to_categorical, check_and_transform_label_format, is_probability
-from art.attacks.evasion.graphite.utils import convert_to_network, get_transform_params, transform_wb
+from art.estimators.estimator import BaseEstimator
+from art.utils import (
+    check_and_transform_label_format,
+    compute_success,
+    is_probability,
+    to_categorical,
+)
 
 if TYPE_CHECKING:
-    from art.estimators.classification.pytorch import PyTorchClassifier
     import torch
+
+    from art.estimators.classification.pytorch import PyTorchClassifier
 
 logger = logging.getLogger(__name__)
 
@@ -99,7 +109,7 @@ class GRAPHITEWhiteboxPyTorch(EvasionAttack):
 
     def __init__(
         self,
-        classifier: "PyTorchClassifier",
+        classifier: PyTorchClassifier,
         net_size: tuple[int, int],
         min_tr: float = 0.8,
         num_xforms: int = 100,
@@ -196,11 +206,11 @@ class GRAPHITEWhiteboxPyTorch(EvasionAttack):
             )
 
         if not isinstance(obj_width, int) and not isinstance(obj_width, float):
-            raise ValueError("obj_width must be int or float")
+            raise TypeError("obj_width must be int or float")
         obj_width = float(obj_width)
 
         if not isinstance(focal, int) and not isinstance(focal, float):
-            raise ValueError("focal must be int or float")
+            raise TypeError("focal must be int or float")
         focal = float(focal)
 
         # Check the mask
@@ -210,7 +220,7 @@ class GRAPHITEWhiteboxPyTorch(EvasionAttack):
             else:
                 mask = np.array([mask.astype(ART_NUMPY_DTYPE)] * x.shape[0])
         else:
-            mask = np.ones((x.shape))
+            mask = np.ones(x.shape)
 
         # Get clip_min and clip_max from the classifier or infer them from data
         if self.estimator.clip_values is not None:
@@ -288,11 +298,11 @@ class GRAPHITEWhiteboxPyTorch(EvasionAttack):
 
     def _eval(
         self,
-        x: "torch.Tensor",
-        x_adv: "torch.Tensor",
-        mask: "torch.Tensor",
+        x: torch.Tensor,
+        x_adv: torch.Tensor,
+        mask: torch.Tensor,
         target_label: np.ndarray,
-        y_onehot: "torch.Tensor",
+        y_onehot: torch.Tensor,
         xforms: list[tuple[float, float, float, int, float, float, float, float, float]],
         clip_min: float,
         clip_max: float,
@@ -475,15 +485,15 @@ class GRAPHITEWhiteboxPyTorch(EvasionAttack):
                         0, pixelwise_avg_grads.shape[1] - self.patch_removal_size + 0.0001, self.patch_removal_interval
                     ):
                         patch_grad = pixelwise_avg_grads[
-                            int(round(i)) : int(round(i + self.patch_removal_size)),
-                            int(round(j)) : int(round(j + self.patch_removal_size)),
+                            round(i) : round(i + self.patch_removal_size),
+                            round(j) : round(j + self.patch_removal_size),
                         ].sum()
 
                         if (
                             mask_tensor[
                                 0,
-                                int(round(i)) : int(round(i + self.patch_removal_size)),
-                                int(round(j)) : int(round(j + self.patch_removal_size)),
+                                round(i) : round(i + self.patch_removal_size),
+                                round(j) : round(j + self.patch_removal_size),
                             ].sum()
                             > 0
                         ):
@@ -491,8 +501,8 @@ class GRAPHITEWhiteboxPyTorch(EvasionAttack):
                                 patch_grad
                                 / mask_tensor[
                                     0,
-                                    int(round(i)) : int(round(i + self.patch_removal_size)),
-                                    int(round(j)) : int(round(j + self.patch_removal_size)),
+                                    round(i) : round(i + self.patch_removal_size),
+                                    round(j) : round(j + self.patch_removal_size),
                                 ].sum()
                             )  # TODO1
                             if min_patch_grad is None or patch_grad.item() < min_patch_grad:
@@ -503,19 +513,19 @@ class GRAPHITEWhiteboxPyTorch(EvasionAttack):
                 i, j = min_patch_grad_idx
                 mask_tensor[
                     0,
-                    int(round(i)) : int(round(i + self.patch_removal_size)),
-                    int(round(j)) : int(round(j + self.patch_removal_size)),
+                    round(i) : round(i + self.patch_removal_size),
+                    round(j) : round(j + self.patch_removal_size),
                 ] = 0
                 if img.size()[0] == 3:
                     mask_tensor[
                         1,
-                        int(round(i)) : int(round(i + self.patch_removal_size)),
-                        int(round(j)) : int(round(j + self.patch_removal_size)),
+                        round(i) : round(i + self.patch_removal_size),
+                        round(j) : round(j + self.patch_removal_size),
                     ] = 0
                     mask_tensor[
                         2,
-                        int(round(i)) : int(round(i + self.patch_removal_size)),
-                        int(round(j)) : int(round(j + self.patch_removal_size)),
+                        round(i) : round(i + self.patch_removal_size),
+                        round(j) : round(j + self.patch_removal_size),
                     ] = 0
 
             rounds += 1

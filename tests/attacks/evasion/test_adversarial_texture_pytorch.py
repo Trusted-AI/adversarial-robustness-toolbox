@@ -15,17 +15,16 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-import os
 import logging
+import os
 
 import numpy as np
 import pytest
 
 from art.attacks.evasion import AdversarialTexturePyTorch
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
-from art.estimators.object_tracking.object_tracker import ObjectTrackerMixin
 from art.estimators.object_tracking import PyTorchGoturn
-
+from art.estimators.object_tracking.object_tracker import ObjectTrackerMixin
 from tests.attacks.utils import backend_test_classifier_type_check_fail
 from tests.utils import ARTTestException
 
@@ -44,9 +43,10 @@ def fix_get_mnist_subset(get_mnist_dataset):
 @pytest.mark.skip_framework("tensorflow", "keras", "kerastf", "non_dl_frameworks")
 def test_generate(art_warning, fix_get_mnist_subset, fix_get_goturn, framework):
     try:
+        from pathlib import Path
+
         import torch
         from scripts.train import GoturnTrain
-        from pathlib import Path
 
         _device = "cpu"
 
@@ -76,7 +76,7 @@ def test_generate(art_warning, fix_get_mnist_subset, fix_get_goturn, framework):
         )
 
         y_init = np.array([[48, 79, 80, 110], [48, 79, 80, 110]])
-        x_list = list()
+        x_list = []
         for i in range(2):
             x_list.append(np.random.random_integers(0, 255, size=(4, 277, 277, 3)).astype(float) / 255.0)
 
@@ -107,9 +107,10 @@ def test_generate(art_warning, fix_get_mnist_subset, fix_get_goturn, framework):
 @pytest.mark.skip_framework("tensorflow", "keras", "kerastf", "non_dl_frameworks")
 def test_generate_patch_points(art_warning, fix_get_mnist_subset, fix_get_goturn, framework):
     try:
+        from pathlib import Path
+
         import torch
         from scripts.train import GoturnTrain
-        from pathlib import Path
 
         _device = "cpu"
 
@@ -139,7 +140,7 @@ def test_generate_patch_points(art_warning, fix_get_mnist_subset, fix_get_goturn
         )
 
         y_init = np.array([[48, 79, 80, 110], [48, 79, 80, 110]])
-        x_list = list()
+        x_list = []
         nb_frames = 4
         for i in range(2):
             x_list.append(np.random.random_integers(0, 255, size=(4, 277, 277, 3)).astype(float) / 255.0)
@@ -306,7 +307,7 @@ def test_check_params(art_warning, fix_get_goturn):
         with pytest.raises(ValueError):
             _ = AdversarialTexturePyTorch(goturn, patch_height=2, patch_width=2, batch_size=2.0)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = AdversarialTexturePyTorch(goturn, patch_height=2, patch_width=2, verbose="true")
 
     except ARTTestException as e:

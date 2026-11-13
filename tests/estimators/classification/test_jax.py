@@ -1,10 +1,9 @@
 import logging
 
+import jax.numpy as jnp
 import numpy as np
 import pytest
-from jax import random
-from jax import grad, jit, vmap
-import jax.numpy as jnp
+from jax import grad, jit, random, vmap
 from jax.scipy.special import logsumexp
 
 from art.experimental.estimators.classification.jax import JaxClassifier
@@ -89,7 +88,7 @@ def test_fit(art_warning, get_default_mnist_subset, default_batch_size):
 @pytest.mark.skip_framework("pytorch", "tensorflow", "keras", "kerastf", "non_dl_frameworks")
 def test_predict(art_warning, get_default_mnist_subset, expected_values):
     try:
-        (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
+        (_, _), (x_test_mnist, _y_test_mnist) = get_default_mnist_subset
 
         y_predicted = classifier.predict(x_test_mnist[0:1])
 

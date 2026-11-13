@@ -23,9 +23,9 @@ This module implements the Geometric Decision-based Attack (GeoDA), a black-box 
 
 from __future__ import annotations
 
-import os
-import math
 import logging
+import math
+import os
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -33,8 +33,8 @@ from tqdm.auto import trange
 
 from art.attacks.attack import EvasionAttack
 from art.config import ART_NUMPY_DTYPE
-from art.estimators.estimator import BaseEstimator
 from art.estimators.classification.classifier import ClassifierMixin
+from art.estimators.estimator import BaseEstimator
 from art.utils import check_and_transform_label_format, get_labels_np_array
 
 if TYPE_CHECKING:
@@ -66,9 +66,9 @@ class GeoDA(EvasionAttack):
 
     def __init__(
         self,
-        estimator: "CLASSIFIER_TYPE",
+        estimator: CLASSIFIER_TYPE,
         batch_size: int = 64,
-        norm: int | float | str = 2,
+        norm: float | str = 2,
         sub_dim: int = 10,
         max_iter: int = 4000,
         bin_search_tol: float = 0.1,
@@ -310,9 +310,9 @@ class GeoDA(EvasionAttack):
         """
         Determine optimal distribution of number of queries.
         """
-        coefficients = [lambda_param ** (-2 * i / 3) for i in range(0, var_t)]
+        coefficients = [lambda_param ** (-2 * i / 3) for i in range(var_t)]
         sum_coefficients = sum(coefficients)
-        opt_q = [round(var_nq * coefficients[i] / sum_coefficients) for i in range(0, var_t)]
+        opt_q = [round(var_nq * coefficients[i] / sum_coefficients) for i in range(var_t)]
 
         if opt_q[0] > 80:
             var_t = var_t + 1
@@ -451,4 +451,4 @@ class GeoDA(EvasionAttack):
         #     raise ValueError("The argument `targeted` has to be of type bool.")
 
         if not isinstance(self.verbose, bool):
-            raise ValueError("The argument `verbose` has to be of type bool.")
+            raise TypeError("The argument `verbose` has to be of type bool.")

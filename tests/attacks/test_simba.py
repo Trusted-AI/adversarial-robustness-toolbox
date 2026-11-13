@@ -15,7 +15,6 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
 import unittest
@@ -23,13 +22,16 @@ import unittest
 import numpy as np
 
 from art.attacks.evasion.simba import SimBA
-from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
 from art.estimators.classification.classifier import ClassifierMixin
+from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
 from art.utils import get_labels_np_array
-
-from tests.utils import TestBase
-from tests.utils import get_image_classifier_tf, get_image_classifier_kr, get_image_classifier_pt
 from tests.attacks.utils import backend_test_classifier_type_check_fail
+from tests.utils import (
+    TestBase,
+    get_image_classifier_kr,
+    get_image_classifier_pt,
+    get_image_classifier_tf,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -64,7 +66,7 @@ class TestSimBA(TestBase):
         Test with the TensorFlowClassifier. (Untargeted Attack)
         :return:
         """
-        classifier, sess = get_image_classifier_tf()
+        classifier, _sess = get_image_classifier_tf()
         self._test_attack(classifier, self.x_test_mnist, self.y_test_mnist, False)
 
     def test_3_pytorch_mnist(self):
@@ -89,7 +91,7 @@ class TestSimBA(TestBase):
         Test with the TensorFlowClassifier. (Targeted Attack)
         :return:
         """
-        classifier, sess = get_image_classifier_tf()
+        classifier, _sess = get_image_classifier_tf()
         self._test_attack(classifier, self.x_test_mnist, self.y_test_mnist, True)
 
     def test_4_pytorch_mnist_targeted(self):
@@ -232,7 +234,7 @@ class TestSimBA(TestBase):
         with self.assertRaises(ValueError):
             _ = SimBA(ptc, attack="test")
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TypeError):
             _ = SimBA(ptc, targeted="test")
 
     def test_1_classifier_type_check_fail(self):

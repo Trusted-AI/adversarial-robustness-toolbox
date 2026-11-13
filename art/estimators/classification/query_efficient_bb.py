@@ -22,13 +22,16 @@ Provides black-box gradient estimation using NES.
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 import numpy as np
 from scipy.stats import entropy
 
+from art.estimators.classification.classifier import (
+    ClassifierLossGradients,
+    ClassifierMixin,
+)
 from art.estimators.estimator import BaseEstimator
-from art.estimators.classification.classifier import ClassifierMixin, ClassifierLossGradients
 from art.utils import clip_and_round
 
 if TYPE_CHECKING:
@@ -45,11 +48,11 @@ class QueryEfficientGradientEstimationClassifier(ClassifierLossGradients, Classi
     | Paper link: https://arxiv.org/abs/1712.07113
     """
 
-    estimator_params = ["num_basis", "sigma", "round_samples"]
+    estimator_params: ClassVar[list[str]] = ["num_basis", "sigma", "round_samples"]
 
     def __init__(
         self,
-        classifier: "CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE",
+        classifier: CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE,
         num_basis: int,
         sigma: float,
         round_samples: float = 0.0,

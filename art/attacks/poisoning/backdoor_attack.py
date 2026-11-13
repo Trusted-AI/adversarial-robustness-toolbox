@@ -19,10 +19,10 @@
 This module implements Backdoor Attacks to poison data used in ML models.
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
-from collections.abc import Callable
 import logging
+from collections.abc import Callable
 
 import numpy as np
 
@@ -86,5 +86,5 @@ class PoisoningAttackBackdoor(PoisoningAttackBlackBox):
         return poisoned, y_attack
 
     def _check_params(self) -> None:
-        if not (callable(self.perturbation) or all((callable(perturb) for perturb in self.perturbation))):
+        if not (callable(self.perturbation) or all(callable(perturb) for perturb in self.perturbation)):
             raise ValueError("Perturbation must be a function or a list of functions.")

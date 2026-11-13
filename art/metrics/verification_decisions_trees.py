@@ -19,7 +19,7 @@
 This module implements robustness verifications for decision-tree-based models.
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
 from typing import TYPE_CHECKING
@@ -67,7 +67,7 @@ class Box:
         else:
             self.intervals = intervals
 
-    def intersect_with_box(self, box: "Box") -> None:
+    def intersect_with_box(self, box: Box) -> None:
         """
         Get the intersection of two interval boxes. This function modifies this box instance.
 
@@ -86,7 +86,7 @@ class Box:
 
                 self.intervals[key] = Interval(lower_bound, upper_bound)
 
-    def get_intersection(self, box: "Box") -> "Box":
+    def get_intersection(self, box: Box) -> Box:
         """
         Get the intersection of two interval boxes. This function creates a new box instance.
 
@@ -170,7 +170,7 @@ class RobustnessVerificationTreeModelsCliqueMethod:
     | Paper link: https://arxiv.org/abs/1906.03849
     """
 
-    def __init__(self, classifier: "ClassifierDecisionTree", verbose: bool = True) -> None:
+    def __init__(self, classifier: ClassifierDecisionTree, verbose: bool = True) -> None:
         """
         Create robustness verification for a decision-tree-based classifier.
 

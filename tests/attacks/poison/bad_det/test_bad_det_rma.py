@@ -15,7 +15,6 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
 import os
@@ -23,9 +22,15 @@ import os
 import numpy as np
 import pytest
 
-from art.attacks.poisoning import BadDetRegionalMisclassificationAttack, PoisoningAttackBackdoor
-from art.attacks.poisoning.perturbations import add_single_bd, add_pattern_bd, insert_image
-
+from art.attacks.poisoning import (
+    BadDetRegionalMisclassificationAttack,
+    PoisoningAttackBackdoor,
+)
+from art.attacks.poisoning.perturbations import (
+    add_pattern_bd,
+    add_single_bd,
+    insert_image,
+)
 from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)
@@ -117,7 +122,7 @@ def test_check_params(art_warning):
     backdoor = PoisoningAttackBackdoor(add_single_bd)
 
     try:
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = BadDetRegionalMisclassificationAttack(None)
 
         with pytest.raises(ValueError):

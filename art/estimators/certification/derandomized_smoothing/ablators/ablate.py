@@ -19,7 +19,7 @@
 This module implements the abstract base class for the ablators.
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
@@ -53,8 +53,8 @@ class BaseAblator(ABC):
 
     @abstractmethod
     def certify(
-        self, pred_counts: np.ndarray, size_to_certify: int, label: np.ndarray | "tf.Tensor"
-    ) -> tuple["tf.Tensor", "tf.Tensor", "tf.Tensor"] | tuple["torch.Tensor", "torch.Tensor", "torch.Tensor"]:
+        self, pred_counts: np.ndarray, size_to_certify: int, label: np.ndarray | tf.Tensor
+    ) -> tuple[tf.Tensor, tf.Tensor, tf.Tensor] | tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """
         Checks if based on the predictions supplied the classifications over the ablated datapoints result in a
         certified prediction against a patch attack of size size_to_certify.
@@ -66,7 +66,7 @@ class BaseAblator(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def ablate(self, x: np.ndarray, column_pos: int, row_pos: int) -> np.ndarray | "torch.Tensor":
+    def ablate(self, x: np.ndarray, column_pos: int, row_pos: int) -> np.ndarray | torch.Tensor:
         """
         Ablate the image x at location specified by "column_pos" for the case of column ablation or at the location
         specified by "column_pos" and "row_pos" in the case of block ablation.
@@ -80,7 +80,7 @@ class BaseAblator(ABC):
     @abstractmethod
     def forward(
         self, x: np.ndarray, column_pos: int | None = None, row_pos: int | None = None
-    ) -> np.ndarray | "torch.Tensor":
+    ) -> np.ndarray | torch.Tensor:
         """
         Ablate batch of data at locations specified by column_pos and row_pos
 

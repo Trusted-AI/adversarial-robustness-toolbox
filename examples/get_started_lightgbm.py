@@ -45,7 +45,7 @@ classifier = LightGBMClassifier(model=model, clip_values=(min_pixel_value, max_p
 
 predictions = classifier.predict(x_test)
 accuracy = np.sum(np.argmax(predictions, axis=1) == np.argmax(y_test, axis=1)) / len(y_test)
-print("Accuracy on benign test examples: {}%".format(accuracy * 100))
+print(f"Accuracy on benign test examples: {accuracy * 100}%")
 
 # Step 6: Generate adversarial test examples
 attack = ZooAttack(
@@ -69,4 +69,4 @@ x_test_adv = attack.generate(x=x_test)
 
 predictions = classifier.predict(x_test_adv)
 accuracy = np.sum(np.argmax(predictions, axis=1) == np.argmax(y_test, axis=1)) / len(y_test)
-print("Accuracy on adversarial test examples: {}%".format(accuracy * 100))
+print(f"Accuracy on adversarial test examples: {accuracy * 100}%")

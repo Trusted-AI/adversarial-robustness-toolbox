@@ -15,7 +15,6 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
 
@@ -25,7 +24,11 @@ from numpy.testing import assert_array_equal
 from art.attacks.attack import EvasionAttack
 from art.attacks.evasion.adversarial_asr import CarliniWagnerASR
 from art.attacks.evasion.imperceptible_asr.imperceptible_asr import ImperceptibleASR
-from art.estimators.estimator import BaseEstimator, LossGradientsMixin, NeuralNetworkMixin
+from art.estimators.estimator import (
+    BaseEstimator,
+    LossGradientsMixin,
+    NeuralNetworkMixin,
+)
 from art.estimators.speech_recognition.speech_recognizer import SpeechRecognizerMixin
 from tests.attacks.utils import backend_test_classifier_type_check_fail
 from tests.utils import ARTTestException

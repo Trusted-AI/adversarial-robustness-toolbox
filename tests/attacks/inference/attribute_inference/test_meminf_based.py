@@ -15,24 +15,24 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-import pytest
 
 import numpy as np
-from sklearn.tree import DecisionTreeClassifier
+import pytest
 from sklearn.preprocessing import StandardScaler
+from sklearn.tree import DecisionTreeClassifier
 
-from art.attacks.inference.attribute_inference.meminf_based import AttributeInferenceMembership
+from art.attacks.inference.attribute_inference.meminf_based import (
+    AttributeInferenceMembership,
+)
 from art.attacks.inference.membership_inference import (
+    LabelOnlyDecisionBoundary,
     MembershipInferenceBlackBox,
     MembershipInferenceBlackBoxRuleBased,
-    LabelOnlyDecisionBoundary,
 )
 from art.estimators.classification.scikitlearn import ScikitlearnDecisionTreeClassifier
 from art.estimators.regression import ScikitlearnRegressor
-
 from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)
@@ -482,16 +482,16 @@ def test_meminf_label_only(art_warning, decision_tree_estimator, get_iris_datase
 def test_errors(art_warning, tabular_dl_estimator_for_attack, get_iris_dataset):
     try:
         classifier = tabular_dl_estimator_for_attack(AttributeInferenceMembership)
-        (x_train, y_train), (x_test, y_test) = get_iris_dataset
+        (x_train, y_train), (_x_test, y_test) = get_iris_dataset
         meminf_attack = MembershipInferenceBlackBox(classifier, attack_model_type="nn")
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             AttributeInferenceMembership(classifier, meminf_attack, attack_feature="a")
         with pytest.raises(ValueError):
             AttributeInferenceMembership(classifier, meminf_attack, attack_feature=-3)
 
         attack = AttributeInferenceMembership(classifier, meminf_attack)
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             AttributeInferenceMembership(classifier, attack, attack_feature=1)
         with pytest.raises(ValueError):
             attack.infer(x_train, y_test, values=[1, 2])

@@ -21,7 +21,7 @@ This module implements the virtual adversarial attack. It was originally used fo
 | Paper link: https://arxiv.org/abs/1507.00677
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
 from typing import TYPE_CHECKING
@@ -31,8 +31,8 @@ from tqdm.auto import trange
 
 from art.attacks.attack import EvasionAttack
 from art.config import ART_NUMPY_DTYPE
-from art.estimators.estimator import BaseEstimator
 from art.estimators.classification.classifier import ClassifierMixin
+from art.estimators.estimator import BaseEstimator
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_TYPE
@@ -58,7 +58,7 @@ class VirtualAdversarialMethod(EvasionAttack):
 
     def __init__(
         self,
-        classifier: "CLASSIFIER_TYPE",
+        classifier: CLASSIFIER_TYPE,
         max_iter: int = 10,
         finite_diff: float = 1e-6,
         eps: float = 0.1,
@@ -215,4 +215,4 @@ class VirtualAdversarialMethod(EvasionAttack):
             raise ValueError("The batch size `batch_size` has to be positive.")
 
         if not isinstance(self.verbose, bool):
-            raise ValueError("The argument `verbose` has to be of type bool.")
+            raise TypeError("The argument `verbose` has to be of type bool.")

@@ -21,10 +21,9 @@ This module implements the BadDet Object Generation Attack (OGA) on object detec
 | Paper link: https://arxiv.org/abs/2205.14497
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
-
 
 import numpy as np
 from tqdm.auto import tqdm
@@ -170,7 +169,7 @@ class BadDetObjectGenerationAttack(PoisoningAttackObjectDetector):
 
     def _check_params(self) -> None:
         if not isinstance(self.backdoor, PoisoningAttackBackdoor):
-            raise ValueError("Backdoor must be of type PoisoningAttackBackdoor")
+            raise TypeError("Backdoor must be of type PoisoningAttackBackdoor")
         if self.bbox_height <= 0:
             raise ValueError("bbox_height must be positive")
         if self.bbox_width <= 0:

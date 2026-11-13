@@ -21,8 +21,8 @@ This module defines a base class for EoT in TensorFlow v2.
 
 from __future__ import annotations
 
-from abc import abstractmethod
 import logging
+from abc import abstractmethod
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -62,7 +62,7 @@ class EoTTensorFlowV2(PreprocessorTensorFlowV2):
         EoTTensorFlowV2._check_params(self)
 
     @abstractmethod
-    def _transform(self, x: "tf.Tensor", y: "tf.Tensor" | None, **kwargs) -> tuple["tf.Tensor", "tf.Tensor" | None]:
+    def _transform(self, x: tf.Tensor, y: tf.Tensor | None, **kwargs) -> tuple[tf.Tensor, tf.Tensor | None]:
         """
         Internal method implementing the transformation per input sample.
 
@@ -72,7 +72,7 @@ class EoTTensorFlowV2(PreprocessorTensorFlowV2):
         """
         raise NotImplementedError
 
-    def forward(self, x: "tf.Tensor", y: "tf.Tensor" | None = None) -> tuple["tf.Tensor", "tf.Tensor" | None]:
+    def forward(self, x: tf.Tensor, y: tf.Tensor | None = None) -> tuple[tf.Tensor, tf.Tensor | None]:
         """
         Apply transformations to inputs `x` and labels `y`.
 

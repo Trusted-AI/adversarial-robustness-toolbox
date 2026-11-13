@@ -66,7 +66,7 @@ class EoTBrightnessTensorFlow(EoTTensorFlowV2):
         self.delta_range = (-delta, delta) if isinstance(delta, (int, float)) else delta
         self._check_params()
 
-    def _transform(self, x: "tf.Tensor", y: "tf.Tensor" | None, **kwargs) -> tuple["tf.Tensor", "tf.Tensor" | None]:
+    def _transform(self, x: tf.Tensor, y: tf.Tensor | None, **kwargs) -> tuple[tf.Tensor, tf.Tensor | None]:
         """
         Transformation of an image with randomly sampled brightness.
 

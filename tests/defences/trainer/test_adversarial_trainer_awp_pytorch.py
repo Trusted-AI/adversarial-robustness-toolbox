@@ -15,14 +15,16 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from __future__ import absolute_import, division, print_function, unicode_literals
 
-import pytest
 import logging
-import numpy as np
 
-from art.defences.trainer import AdversarialTrainerAWPPyTorch
+import numpy as np
+import pytest
+
 from art.attacks.evasion import ProjectedGradientDescent
+from art.defences.trainer import AdversarialTrainerAWPPyTorch
+
+logger = logging.getLogger(__name__)
 
 
 @pytest.fixture()
@@ -114,7 +116,7 @@ def test_adversarial_trainer_awppgd_pytorch_fit_and_predict(get_adv_trainer_awpp
 
     trainer = get_adv_trainer_awppgd()
     if trainer is None:
-        logging.warning("Couldn't perform  this test because no trainer is defined for this framework configuration")
+        logger.warning("Couldn't perform  this test because no trainer is defined for this framework configuration")
         return
 
     predictions = np.argmax(trainer.predict(x_test_mnist), axis=1)
@@ -161,7 +163,7 @@ def test_adversarial_trainer_awptrades_pytorch_fit_and_predict(
 
     trainer = get_adv_trainer_awptrades()
     if trainer is None:
-        logging.warning("Couldn't perform  this test because no trainer is defined for this framework configuration")
+        logger.warning("Couldn't perform  this test because no trainer is defined for this framework configuration")
         return
 
     predictions = np.argmax(trainer.predict(x_test_mnist), axis=1)
@@ -209,7 +211,7 @@ def test_adversarial_trainer_awppgd_pytorch_fit_generator_and_predict(
 
     trainer = get_adv_trainer_awppgd()
     if trainer is None:
-        logging.warning("Couldn't perform  this test because no trainer is defined for this framework configuration")
+        logger.warning("Couldn't perform  this test because no trainer is defined for this framework configuration")
         return
 
     predictions = np.argmax(trainer.predict(x_test_mnist), axis=1)
@@ -257,7 +259,7 @@ def test_adversarial_trainer_awptrades_pytorch_fit_generator_and_predict(
 
     trainer = get_adv_trainer_awptrades()
     if trainer is None:
-        logging.warning("Couldn't perform  this test because no trainer is defined for this framework configuration")
+        logger.warning("Couldn't perform  this test because no trainer is defined for this framework configuration")
         return
 
     predictions = np.argmax(trainer.predict(x_test_mnist), axis=1)

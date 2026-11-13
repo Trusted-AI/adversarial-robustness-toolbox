@@ -1,24 +1,21 @@
-# -*- coding: utf-8 -*-
 """Trains a convolutional neural network on the MNIST dataset, then attacks one of the hidden layers with the FGSM
 attack."""
-
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 import sys
 from os.path import abspath
 
 sys.path.append(abspath("."))
 
-from keras.models import Model, Sequential
-from keras.layers import Input, Dense, Flatten, Conv2D, MaxPooling2D, Dropout
 import numpy as np
+from keras.layers import Conv2D, Dense, Dropout, Flatten, Input, MaxPooling2D
+from keras.models import Model, Sequential
 
 from art.attacks.evasion import FastGradientMethod
 from art.estimators.classification import KerasClassifier
 from art.utils import load_dataset
 
 # Read MNIST dataset
-(x_train, y_train), (x_test, y_test), min_, max_ = load_dataset(str("mnist"))
+(x_train, y_train), (x_test, y_test), min_, max_ = load_dataset("mnist")
 
 # Create Keras convolutional neural network - basic architecture from Keras examples
 # Source here: https://github.com/keras-team/keras/blob/master/examples/mnist_cnn.py

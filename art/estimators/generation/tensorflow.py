@@ -19,23 +19,23 @@
 This module implements the classifier `TensorFlowGenerator` for TensorFlow models.
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
-from art.estimators.tensorflow import TensorFlowV2Estimator
 from art.estimators.generation.generator import GeneratorMixin
+from art.estimators.tensorflow import TensorFlowV2Estimator
 
 if TYPE_CHECKING:
 
     import tensorflow.compat.v1 as tf
 
-    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
-    from art.defences.preprocessor import Preprocessor
     from art.defences.postprocessor import Postprocessor
+    from art.defences.preprocessor import Preprocessor
+    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -52,12 +52,12 @@ class TensorFlowV2Generator(GeneratorMixin, TensorFlowV2Estimator):
     def __init__(
         self,
         encoding_length: int,
-        model: "tf.Tensor",
+        model: tf.Tensor,
         channels_first: bool = False,
-        clip_values: "CLIP_VALUES_TYPE" | None = None,
-        preprocessing_defences: "Preprocessor" | list["Preprocessor"] | None = None,
-        postprocessing_defences: "Postprocessor" | list["Postprocessor"] | None = None,
-        preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
+        clip_values: CLIP_VALUES_TYPE | None = None,
+        preprocessing_defences: Preprocessor | list[Preprocessor] | None = None,
+        postprocessing_defences: Postprocessor | list[Postprocessor] | None = None,
+        preprocessing: PREPROCESSING_TYPE = (0.0, 1.0),
     ):
         """
         Initialization specific to TensorFlow generator implementations.
@@ -86,7 +86,7 @@ class TensorFlowV2Generator(GeneratorMixin, TensorFlowV2Estimator):
         self._encoding_length = encoding_length
 
     @property
-    def model(self) -> "tf.Tensor":
+    def model(self) -> tf.Tensor:
         """
         :return: The generator tensor.
         """

@@ -23,9 +23,9 @@ This module implements the `LaserAttack` attack.
 
 from __future__ import annotations
 
-from collections.abc import Callable
 import logging
 import math
+from collections.abc import Callable
 from typing import Any
 
 import numpy as np
@@ -64,7 +64,7 @@ class LaserAttack(EvasionAttack):
         estimator,
         iterations: int,
         laser_generator: AdvObjectGenerator,
-        image_generator: ImageGenerator = ImageGenerator(),
+        image_generator: ImageGenerator | None = None,
         random_initializations: int = 1,
         optimisation_algorithm: Callable = greedy_search,
         debug: DebugInfo | None = None,
@@ -84,7 +84,7 @@ class LaserAttack(EvasionAttack):
         self.random_initializations = random_initializations
         self.optimisation_algorithm = optimisation_algorithm
         self._laser_generator = laser_generator
-        self._image_generator = image_generator
+        self._image_generator = image_generator if image_generator is not None else ImageGenerator()
         self._debug = debug
 
         self._check_params()
@@ -228,10 +228,10 @@ class LaserBeam(AdversarialObject):
         return np.array([0.0, 0.0, 0.0])
 
     def __repr__(self) -> str:
-        return f"LaserBeam(wavelength={self.wavelength}, Line={str(self.line)}, width={self.width})"
+        return f"LaserBeam(wavelength={self.wavelength}, Line={self.line!s}, width={self.width})"
 
     @staticmethod
-    def from_numpy(theta: np.ndarray) -> "LaserBeam":
+    def from_numpy(theta: np.ndarray) -> LaserBeam:
         """
         :param theta: List of the laser beam parameters, passed as list in the order:
             wavelength[nm], slope angle[radians], bias[pixels], width[pixels].
@@ -244,7 +244,7 @@ class LaserBeam(AdversarialObject):
         )
 
     @staticmethod
-    def from_array(theta: list) -> "LaserBeam":
+    def from_array(theta: list) -> LaserBeam:
         """
         Create instance of the class using parameters :theta.
 
@@ -262,16 +262,16 @@ class LaserBeam(AdversarialObject):
         line = self.line
         return np.array([self.wavelength, line.angle, line.bias, self.width])
 
-    def __mul__(self, other: float | int | list | np.ndarray) -> "LaserBeam":
+    def __mul__(self, other: float | list | np.ndarray) -> LaserBeam:
         if isinstance(other, (float, int)):
             return LaserBeam.from_numpy(other * self.to_numpy())
         if isinstance(other, np.ndarray):
             return LaserBeam.from_numpy(self.to_numpy() * other)
         if isinstance(other, list):
             return LaserBeam.from_numpy(self.to_numpy() * np.array(other))
-        raise Exception("Not accepted value.")
+        raise TypeError("Not accepted value.")
 
-    def __rmul__(self, other) -> "LaserBeam":
+    def __rmul__(self, other) -> LaserBeam:
         return self * other
 
 
@@ -374,7 +374,7 @@ class LaserBeamAttack(LaserAttack):
         max_laser_beam: LaserBeam | tuple[float, float, float, int],
         min_laser_beam: LaserBeam | tuple[float, float, float, int] = (380.0, 0.0, 1.0, 1),
         random_initializations: int = 1,
-        image_generator: ImageGenerator = ImageGenerator(),
+        image_generator: ImageGenerator | None = None,
         debug: DebugInfo | None = None,
     ) -> None:
         """

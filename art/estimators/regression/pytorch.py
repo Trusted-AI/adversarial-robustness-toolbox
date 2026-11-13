@@ -19,29 +19,29 @@
 This module implements the regressor `PyTorchRegressor` for PyTorch models.
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import copy
 import logging
 import os
 import time
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import six
 
 from art import config
-from art.estimators.regression.regressor import RegressorMixin
 from art.estimators.pytorch import PyTorchEstimator
+from art.estimators.regression.regressor import RegressorMixin
 
 if TYPE_CHECKING:
 
     import torch
 
-    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
     from art.data_generators import DataGenerator
-    from art.defences.preprocessor import Preprocessor
     from art.defences.postprocessor import Postprocessor
+    from art.defences.preprocessor import Preprocessor
+    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -62,18 +62,18 @@ class PyTorchRegressor(RegressorMixin, PyTorchEstimator):
 
     def __init__(
         self,
-        model: "torch.nn.Module",
-        loss: "torch.nn.modules.loss._Loss",
+        model: torch.nn.Module,
+        loss: torch.nn.modules.loss._Loss,
         input_shape: tuple[int, ...],
-        optimizer: "torch.optim.Optimizer" | None = None,  # type: ignore
+        optimizer: torch.optim.Optimizer | None = None,  # type: ignore
         use_amp: bool = False,
         opt_level: str = "O1",
         loss_scale: float | str | None = "dynamic",
         channels_first: bool = True,
-        clip_values: "CLIP_VALUES_TYPE" | None = None,
-        preprocessing_defences: "Preprocessor" | list["Preprocessor"] | None = None,
-        postprocessing_defences: "Postprocessor" | list["Postprocessor"] | None = None,
-        preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
+        clip_values: CLIP_VALUES_TYPE | None = None,
+        preprocessing_defences: Preprocessor | list[Preprocessor] | None = None,
+        postprocessing_defences: Postprocessor | list[Postprocessor] | None = None,
+        preprocessing: PREPROCESSING_TYPE = (0.0, 1.0),
         device_type: str = "gpu",
     ) -> None:
         """
@@ -127,7 +127,7 @@ class PyTorchRegressor(RegressorMixin, PyTorchEstimator):
 
         # Check if model is RNN-like to decide if freezing batch-norm and dropout layers might be required for loss and
         # class gradient calculation
-        self.is_rnn = any((isinstance(m, torch.nn.modules.RNNBase) for m in self._model.modules()))
+        self.is_rnn = any(isinstance(m, torch.nn.modules.RNNBase) for m in self._model.modules())
 
         # Get the internal layers
         self._layer_names: list[str] = self._model.get_layers  # type: ignore
@@ -165,7 +165,7 @@ class PyTorchRegressor(RegressorMixin, PyTorchEstimator):
             )
 
     @property
-    def device(self) -> "torch.device":
+    def device(self) -> torch.device:
         """
         Get current used device.
 
@@ -174,7 +174,7 @@ class PyTorchRegressor(RegressorMixin, PyTorchEstimator):
         return self._device
 
     @property
-    def model(self) -> "torch.nn.Module":
+    def model(self) -> torch.nn.Module:
         return self._model._model
 
     @property
@@ -187,7 +187,7 @@ class PyTorchRegressor(RegressorMixin, PyTorchEstimator):
         return self._input_shape  # type: ignore
 
     @property
-    def loss(self) -> "torch.nn.modules.loss._Loss":
+    def loss(self) -> torch.nn.modules.loss._Loss:
         """
         Return the loss function.
 
@@ -196,7 +196,7 @@ class PyTorchRegressor(RegressorMixin, PyTorchEstimator):
         return self._loss  # type: ignore
 
     @property
-    def optimizer(self) -> "torch.optim.Optimizer":
+    def optimizer(self) -> torch.optim.Optimizer:
         """
         Return the optimizer.
 
@@ -243,7 +243,7 @@ class PyTorchRegressor(RegressorMixin, PyTorchEstimator):
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         """
         import torch
-        from torch.utils.data import TensorDataset, DataLoader
+        from torch.utils.data import DataLoader, TensorDataset
 
         # Set model mode
         self._model.train(mode=training_mode)
@@ -279,8 +279,8 @@ class PyTorchRegressor(RegressorMixin, PyTorchEstimator):
         return predictions
 
     def _predict_framework(
-        self, x: "torch.Tensor", y: "torch.Tensor" | None = None
-    ) -> tuple["torch.Tensor", "torch.Tensor" | None]:
+        self, x: torch.Tensor, y: torch.Tensor | None = None
+    ) -> tuple[torch.Tensor, torch.Tensor | None]:
         """
         Perform prediction for a batch of inputs.
 
@@ -308,7 +308,7 @@ class PyTorchRegressor(RegressorMixin, PyTorchEstimator):
         nb_epochs: int = 10,
         training_mode: bool = True,
         drop_last: bool = False,
-        scheduler: "torch.optim.lr_scheduler._LRScheduler" | None = None,
+        scheduler: torch.optim.lr_scheduler._LRScheduler | None = None,
         **kwargs,
     ) -> None:
         """
@@ -328,7 +328,7 @@ class PyTorchRegressor(RegressorMixin, PyTorchEstimator):
                and providing it takes no effect.
         """
         import torch
-        from torch.utils.data import TensorDataset, DataLoader
+        from torch.utils.data import DataLoader, TensorDataset
 
         # Set model mode
         self._model.train(mode=training_mode)
@@ -376,7 +376,7 @@ class PyTorchRegressor(RegressorMixin, PyTorchEstimator):
             if scheduler is not None:
                 scheduler.step()
 
-    def fit_generator(self, generator: "DataGenerator", nb_epochs: int = 20, **kwargs) -> None:
+    def fit_generator(self, generator: DataGenerator, nb_epochs: int = 20, **kwargs) -> None:
         """
         Fit the regressor using the generator that yields batches as specified.
 
@@ -386,6 +386,7 @@ class PyTorchRegressor(RegressorMixin, PyTorchEstimator):
                and providing it takes no effect.
         """
         import torch
+
         from art.data_generators import PyTorchDataGenerator
 
         # Put the model in the training mode
@@ -395,7 +396,9 @@ class PyTorchRegressor(RegressorMixin, PyTorchEstimator):
             raise ValueError("An optimizer is needed to train the model, but none for provided.")
 
         # Train directly in PyTorch
-        from art.preprocessing.standardisation_mean_std.pytorch import StandardisationMeanStdPyTorch
+        from art.preprocessing.standardisation_mean_std.pytorch import (
+            StandardisationMeanStdPyTorch,
+        )
 
         if isinstance(generator, PyTorchDataGenerator) and (
             self.preprocessing is None
@@ -450,7 +453,7 @@ class PyTorchRegressor(RegressorMixin, PyTorchEstimator):
             # Fit a generic data generator through the API
             super().fit_generator(generator, nb_epochs=nb_epochs)
 
-    def clone_for_refitting(self) -> "PyTorchRegressor":
+    def clone_for_refitting(self) -> PyTorchRegressor:
         """
         Create a copy of the regressor that can be refit from scratch. Will inherit same architecture, optimizer and
         initialization as cloned model, but without weights.
@@ -481,11 +484,11 @@ class PyTorchRegressor(RegressorMixin, PyTorchEstimator):
 
     def compute_loss(  # type: ignore
         self,
-        x: np.ndarray | "torch.Tensor",
-        y: np.ndarray | "torch.Tensor",
+        x: np.ndarray | torch.Tensor,
+        y: np.ndarray | torch.Tensor,
         reduction: str = "none",
         **kwargs,
-    ) -> np.ndarray | "torch.Tensor":
+    ) -> np.ndarray | torch.Tensor:
         """
         Compute the loss.
 
@@ -538,7 +541,7 @@ class PyTorchRegressor(RegressorMixin, PyTorchEstimator):
 
     def compute_loss_from_predictions(  # type: ignore
         self, pred: np.ndarray, y: np.ndarray, reduction: str = "none", **kwargs
-    ) -> np.ndarray | "torch.Tensor":
+    ) -> np.ndarray | torch.Tensor:
         """
         Compute the loss of the regressor for predictions `pred`. Does not apply preprocessing to the given `y`.
 
@@ -577,10 +580,10 @@ class PyTorchRegressor(RegressorMixin, PyTorchEstimator):
 
     def compute_losses(
         self,
-        x: np.ndarray | "torch.Tensor",
-        y: np.ndarray | "torch.Tensor",
+        x: np.ndarray | torch.Tensor,
+        y: np.ndarray | torch.Tensor,
         reduction: str = "none",
-    ) -> dict[str, np.ndarray | "torch.Tensor"]:
+    ) -> dict[str, np.ndarray | torch.Tensor]:
         """
         Compute all loss components.
 
@@ -597,11 +600,11 @@ class PyTorchRegressor(RegressorMixin, PyTorchEstimator):
 
     def loss_gradient(
         self,
-        x: np.ndarray | "torch.Tensor",
-        y: np.ndarray | "torch.Tensor",
+        x: np.ndarray | torch.Tensor,
+        y: np.ndarray | torch.Tensor,
         training_mode: bool = False,
         **kwargs,
-    ) -> np.ndarray | "torch.Tensor":
+    ) -> np.ndarray | torch.Tensor:
         """
         Compute the gradient of the loss function w.r.t. `x`.
 
@@ -703,11 +706,11 @@ class PyTorchRegressor(RegressorMixin, PyTorchEstimator):
     def custom_loss_gradient(
         self,
         loss_fn,
-        x: np.ndarray | "torch.Tensor",
-        y: np.ndarray | "torch.Tensor",
+        x: np.ndarray | torch.Tensor,
+        y: np.ndarray | torch.Tensor,
         layer_name,
         training_mode: bool = False,
-    ) -> np.ndarray | "torch.Tensor":
+    ) -> np.ndarray | torch.Tensor:
         """
         Compute the gradient of the loss function w.r.t. `x`.
 
@@ -779,11 +782,11 @@ class PyTorchRegressor(RegressorMixin, PyTorchEstimator):
 
     def get_activations(  # type: ignore
         self,
-        x: np.ndarray | "torch.Tensor",
+        x: np.ndarray | torch.Tensor,
         layer: int | str | None = None,
         batch_size: int = 128,
         framework: bool = False,
-    ) -> np.ndarray | "torch.Tensor":
+    ) -> np.ndarray | torch.Tensor:
         """
         Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
         `nb_layers - 1`) or by name. The number of layers can be determined by counting the results returned by
@@ -944,7 +947,7 @@ class PyTorchRegressor(RegressorMixin, PyTorchEstimator):
 
         return repr_
 
-    def _make_model_wrapper(self, model: "torch.nn.Module") -> "torch.nn.Module":
+    def _make_model_wrapper(self, model: torch.nn.Module) -> torch.nn.Module:
         # Try to import PyTorch and create an internal class that acts like a model wrapper extending torch.nn.Module
         try:
             import torch
@@ -983,7 +986,7 @@ class PyTorchRegressor(RegressorMixin, PyTorchEstimator):
 
                         result = []
                         if isinstance(self._model, torch.nn.Sequential):
-                            for _, module_ in self._model._modules.items():
+                            for module_ in self._model._modules.values():
                                 x = module_(x)
                                 result.append(x)
 
@@ -1012,10 +1015,9 @@ class PyTorchRegressor(RegressorMixin, PyTorchEstimator):
                         """
                         import torch
 
-                        result = []
+                        result: list[str] = []
                         if isinstance(self._model, torch.nn.Module):
-                            for name, _ in self._model._modules.items():
-                                result.append(name)
+                            result.extend(self._model._modules)
 
                         else:  # pragma: no cover
                             raise TypeError("The input model must inherit from `nn.Module`.")

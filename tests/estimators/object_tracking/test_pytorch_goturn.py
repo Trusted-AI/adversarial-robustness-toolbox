@@ -16,13 +16,12 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 import logging
-
 import os
+
 import numpy as np
 import pytest
 
 from art.estimators.object_tracking import PyTorchGoturn
-
 from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)
@@ -31,9 +30,10 @@ logger = logging.getLogger(__name__)
 @pytest.mark.skip_framework("tensorflow", "keras", "kerastf", "non_dl_frameworks")
 def test_pytorch_goturn(art_warning):
     try:
+        from pathlib import Path
+
         import torch
         from scripts.train import GoturnTrain
-        from pathlib import Path
 
         _device = "cpu"
 
@@ -63,7 +63,7 @@ def test_pytorch_goturn(art_warning):
         )
 
         y_init = np.array([[48, 79, 80, 110], [48, 79, 80, 110]])
-        x_list = list()
+        x_list = []
         for i in range(2):
             x_list.append(np.random.random_integers(0, 255, size=(4 + i, 277, 277, 3)).astype(float))
 

@@ -135,12 +135,12 @@ class AdversarialTexturePyTorch(EvasionAttack):
 
     def _train_step(
         self,
-        videos: "torch.Tensor",
-        target: list[dict[str, "torch.Tensor"]],
-        y_init: "torch.Tensor",
-        foreground: "torch.Tensor" | None,
+        videos: torch.Tensor,
+        target: list[dict[str, torch.Tensor]],
+        y_init: torch.Tensor,
+        foreground: torch.Tensor | None,
         patch_points: np.ndarray | None,
-    ) -> "torch.Tensor":
+    ) -> torch.Tensor:
         """
         Apply a training step to the batch based on a mini-batch.
 
@@ -189,11 +189,11 @@ class AdversarialTexturePyTorch(EvasionAttack):
 
     def _predictions(
         self,
-        videos: "torch.Tensor",
-        y_init: "torch.Tensor",
-        foreground: "torch.Tensor" | None,
+        videos: torch.Tensor,
+        y_init: torch.Tensor,
+        foreground: torch.Tensor | None,
         patch_points: np.ndarray | None,
-    ) -> list[dict[str, "torch.Tensor"]]:
+    ) -> list[dict[str, torch.Tensor]]:
         """
         Predict object tracking estimator on patched videos.
 
@@ -220,12 +220,12 @@ class AdversarialTexturePyTorch(EvasionAttack):
 
     def _loss(
         self,
-        videos: "torch.Tensor",
-        target: list[dict[str, "torch.Tensor"]],
-        y_init: "torch.Tensor",
-        foreground: "torch.Tensor" | None,
+        videos: torch.Tensor,
+        target: list[dict[str, torch.Tensor]],
+        y_init: torch.Tensor,
+        foreground: torch.Tensor | None,
         patch_points: np.ndarray | None,
-    ) -> "torch.Tensor":
+    ) -> torch.Tensor:
         """
         Calculate L1-loss.
 
@@ -247,7 +247,7 @@ class AdversarialTexturePyTorch(EvasionAttack):
 
         return loss
 
-    def _get_patch_mask(self, nb_samples: int) -> "torch.Tensor":
+    def _get_patch_mask(self, nb_samples: int) -> torch.Tensor:
         """
         Create patch mask.
 
@@ -266,11 +266,11 @@ class AdversarialTexturePyTorch(EvasionAttack):
 
     def _apply_texture(
         self,
-        videos: "torch.Tensor",
-        patch: "torch.Tensor",
-        foreground: "torch.Tensor" | None,
+        videos: torch.Tensor,
+        patch: torch.Tensor,
+        foreground: torch.Tensor | None,
         patch_points: np.ndarray | None,
-    ) -> "torch.Tensor":
+    ) -> torch.Tensor:
         """
         Apply texture over background and overlay foreground.
 
@@ -602,4 +602,4 @@ class AdversarialTexturePyTorch(EvasionAttack):
             raise ValueError("The batch size `batch_size` has to be of type int and larger than zero.")
 
         if not isinstance(self.verbose, bool):
-            raise ValueError("The argument `verbose` has to be of type bool.")
+            raise TypeError("The argument `verbose` has to be of type bool.")

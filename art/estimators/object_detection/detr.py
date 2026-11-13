@@ -37,11 +37,11 @@ class NestedTensor:
     (detr/util/misc.py)
     """
 
-    def __init__(self, tensors, mask: "torch.Tensor" | None):
+    def __init__(self, tensors, mask: torch.Tensor | None):
         self.tensors = tensors
         self.mask = mask
 
-    def to_device(self, device: "torch.device"):
+    def to_device(self, device: torch.device):
         """
         Transfer to device
         """
@@ -348,7 +348,7 @@ class SetCriterion(torch.nn.Module):
         return losses
 
 
-def box_cxcywh_to_xyxy(x: "torch.Tensor"):
+def box_cxcywh_to_xyxy(x: torch.Tensor):
     """
     From DETR source: https://github.com/facebookresearch/detr
     (detr/util/box_ops.py)
@@ -359,7 +359,7 @@ def box_cxcywh_to_xyxy(x: "torch.Tensor"):
     return torch.stack(box, dim=1)
 
 
-def box_xyxy_to_cxcywh(x: "torch.Tensor"):
+def box_xyxy_to_cxcywh(x: torch.Tensor):
     """
     From DETR source: https://github.com/facebookresearch/detr
     (detr/util/box_ops.py)
@@ -370,7 +370,7 @@ def box_xyxy_to_cxcywh(x: "torch.Tensor"):
     return torch.stack(box, dim=-1)
 
 
-def rescale_bboxes(out_bbox: "torch.Tensor", size: tuple[int, int]):
+def rescale_bboxes(out_bbox: torch.Tensor, size: tuple[int, int]):
     """
     From DETR source: https://github.com/facebookresearch/detr
     (inference notebook)
@@ -382,7 +382,7 @@ def rescale_bboxes(out_bbox: "torch.Tensor", size: tuple[int, int]):
     return box
 
 
-def revert_rescale_bboxes(out_bbox: "torch.Tensor", size: tuple[int, int]):
+def revert_rescale_bboxes(out_bbox: torch.Tensor, size: tuple[int, int]):
     """
     Adapted from DETR source: https://github.com/facebookresearch/detr
     (inference notebook)
@@ -396,7 +396,7 @@ def revert_rescale_bboxes(out_bbox: "torch.Tensor", size: tuple[int, int]):
     return box
 
 
-def box_iou(boxes1: "torch.Tensor", boxes2: "torch.Tensor"):
+def box_iou(boxes1: torch.Tensor, boxes2: torch.Tensor):
     """
     From DETR source: https://github.com/facebookresearch/detr
     (detr/util/box_ops.py)
@@ -418,7 +418,7 @@ def box_iou(boxes1: "torch.Tensor", boxes2: "torch.Tensor"):
     return iou, union
 
 
-def generalized_box_iou(boxes1: "torch.Tensor", boxes2: "torch.Tensor"):
+def generalized_box_iou(boxes1: torch.Tensor, boxes2: torch.Tensor):
     """
     From DETR source: https://github.com/facebookresearch/detr
     (detr/util/box_ops.py)
@@ -437,7 +437,7 @@ def generalized_box_iou(boxes1: "torch.Tensor", boxes2: "torch.Tensor"):
     return iou - (area - union) / area
 
 
-def nested_tensor_from_tensor_list(tensor_list: list | "torch.Tensor"):
+def nested_tensor_from_tensor_list(tensor_list: list | torch.Tensor):
     """
     Adapted from DETR source: https://github.com/facebookresearch/detr
     (detr/util/misc.py)

@@ -23,12 +23,12 @@ This module implements helper functions for the `LaserAttack`.
 
 from __future__ import annotations
 
+import math
+import string
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from logging import Logger
-import math
 from pathlib import Path
-import string
 from typing import Any
 
 import numpy as np
@@ -193,7 +193,7 @@ class ImageGenerator:
         return laser_image
 
 
-def wavelength_to_rgb(wavelength: float | int) -> list[float]:
+def wavelength_to_rgb(wavelength: float) -> list[float]:
     """
     Converts wavelength in nanometers to the RGB color.
 
@@ -247,7 +247,7 @@ def add_images(image1: np.ndarray, image2: np.ndarray) -> np.ndarray:
     :returns: Resultant image.
     """
     if image1.shape != image2.shape:
-        raise Exception("Wrong size")
+        raise ValueError("Wrong size")
     return np.clip(image1 + image2, 0, 1)
 
 
@@ -298,7 +298,7 @@ class DebugInfo:
         save_nrgb_image(image, name_length=5, directory=self.artifacts_directory)
 
     @staticmethod
-    def report(instance: "DebugInfo", adv_object: AdversarialObject, image: np.ndarray) -> None:
+    def report(instance: DebugInfo, adv_object: AdversarialObject, image: np.ndarray) -> None:
         """
         Log info and save image in the preset directory, based on the :instance.
 

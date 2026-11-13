@@ -24,19 +24,19 @@ This module implements the `SquareAttack` attack.
 from __future__ import annotations
 
 import bisect
-from collections.abc import Callable
 import logging
 import math
 import random
+from collections.abc import Callable
 from typing import TYPE_CHECKING
 
 import numpy as np
 from tqdm.auto import trange
 
-from art.config import ART_NUMPY_DTYPE
 from art.attacks.attack import EvasionAttack
-from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
+from art.config import ART_NUMPY_DTYPE
 from art.estimators.classification.classifier import ClassifierMixin
+from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
 from art.utils import check_and_transform_label_format, get_labels_np_array
 
 if TYPE_CHECKING:
@@ -68,8 +68,8 @@ class SquareAttack(EvasionAttack):
 
     def __init__(
         self,
-        estimator: "CLASSIFIER_TYPE",
-        norm: int | float | str = np.inf,
+        estimator: CLASSIFIER_TYPE,
+        norm: float | str = np.inf,
         adv_criterion: Callable[[np.ndarray, np.ndarray], bool] | None = None,
         loss: Callable[[np.ndarray, np.ndarray], np.ndarray] | None = None,
         max_iter: int = 100,
@@ -153,9 +153,8 @@ class SquareAttack(EvasionAttack):
 
         x_adv = x.astype(ART_NUMPY_DTYPE)
 
-        if isinstance(self.estimator, ClassifierMixin):
-            if y is not None:
-                y = check_and_transform_label_format(y, nb_classes=self.estimator.nb_classes)
+        if isinstance(self.estimator, ClassifierMixin) and y is not None:
+            y = check_and_transform_label_format(y, nb_classes=self.estimator.nb_classes)
 
         if y is None:
             # Use model predictions as true labels
@@ -164,11 +163,12 @@ class SquareAttack(EvasionAttack):
             if isinstance(self.estimator, ClassifierMixin):
                 y = get_labels_np_array(y)
 
-        if isinstance(self.estimator, ClassifierMixin):
-            if self.estimator.nb_classes == 2 and y.shape[1] == 1:  # pragma: no cover
-                raise ValueError(
-                    "This attack has not yet been tested for binary classification with a single output classifier."
-                )
+        if (
+            isinstance(self.estimator, ClassifierMixin) and self.estimator.nb_classes == 2 and y.shape[1] == 1
+        ):  # pragma: no cover
+            raise ValueError(
+                "This attack has not yet been tested for binary classification with a single output classifier."
+            )
 
         if self.estimator.channels_first:
             channels = x.shape[1]
@@ -233,7 +233,7 @@ class SquareAttack(EvasionAttack):
 
                     sample_loss_init = self.loss(x_robust, y_robust)
 
-                    height_tile = max(int(round(math.sqrt(percentage_of_elements * height * width))), 1)
+                    height_tile = max(round(math.sqrt(percentage_of_elements * height * width)), 1)
 
                     height_mid = np.random.randint(0, height - height_tile)
                     width_start = np.random.randint(0, width - height_tile)
@@ -362,7 +362,7 @@ class SquareAttack(EvasionAttack):
 
                     delta_x_robust_init = x_robust - x_init
 
-                    height_tile = max(int(round(math.sqrt(percentage_of_elements * height * width))), 3)
+                    height_tile = max(round(math.sqrt(percentage_of_elements * height * width)), 3)
 
                     if height_tile % 2 == 0:
                         height_tile += 1
@@ -527,4 +527,4 @@ class SquareAttack(EvasionAttack):
             raise ValueError("The argument batch_size has to be of type int and larger than zero.")
 
         if not isinstance(self.verbose, bool):
-            raise ValueError("The argument `verbose` has to be of type bool.")
+            raise TypeError("The argument `verbose` has to be of type bool.")

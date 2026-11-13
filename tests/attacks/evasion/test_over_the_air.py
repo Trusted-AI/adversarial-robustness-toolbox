@@ -21,11 +21,12 @@ import numpy as np
 import pytest
 import torch
 
-from art.attacks.evasion.over_the_air_flickering.over_the_air_flickering_pytorch import OverTheAirFlickeringPyTorch
+from art.attacks.evasion.over_the_air_flickering.over_the_air_flickering_pytorch import (
+    OverTheAirFlickeringPyTorch,
+)
 from art.estimators.classification import PyTorchClassifier
-from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from art.estimators.classification.classifier import ClassifierMixin
-
+from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from tests.attacks.utils import backend_test_classifier_type_check_fail
 from tests.utils import ARTTestException
 
@@ -34,7 +35,7 @@ logger = logging.getLogger(__name__)
 
 class Model(torch.nn.Module):
     def __init__(self):
-        super(Model, self).__init__()
+        super().__init__()
         self.fc = torch.nn.Linear(12 * 299 * 299 * 3, 101)
 
     def forward(self, x):

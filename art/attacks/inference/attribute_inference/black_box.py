@@ -19,25 +19,35 @@
 This module implements attribute inference attacks.
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
-from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
-from sklearn.ensemble import GradientBoostingClassifier, GradientBoostingRegressor
-from sklearn.linear_model import LogisticRegression, LinearRegression
-from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
-from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
-from sklearn.svm import SVC, SVR
-from sklearn.preprocessing import minmax_scale, OneHotEncoder, OrdinalEncoder
 from sklearn.compose import ColumnTransformer
-from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
+from sklearn.ensemble import (
+    GradientBoostingClassifier,
+    GradientBoostingRegressor,
+    RandomForestClassifier,
+    RandomForestRegressor,
+)
+from sklearn.linear_model import LinearRegression, LogisticRegression
+from sklearn.neighbors import KNeighborsClassifier, KNeighborsRegressor
+from sklearn.preprocessing import (
+    MinMaxScaler,
+    OneHotEncoder,
+    OrdinalEncoder,
+    RobustScaler,
+    StandardScaler,
+    minmax_scale,
+)
+from sklearn.svm import SVC, SVR
+from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 
-from art.estimators.estimator import BaseEstimator
-from art.estimators.classification.classifier import ClassifierMixin
 from art.attacks.attack import AttributeInferenceAttack
+from art.estimators.classification.classifier import ClassifierMixin
+from art.estimators.estimator import BaseEstimator
 from art.estimators.regression import RegressorMixin
 from art.utils import (
     check_and_transform_label_format,
@@ -75,9 +85,9 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
 
     def __init__(
         self,
-        estimator: "CLASSIFIER_TYPE" | "REGRESSOR_TYPE",
+        estimator: CLASSIFIER_TYPE | REGRESSOR_TYPE,
         attack_model_type: str = "nn",
-        attack_model: "CLASSIFIER_TYPE" | "REGRESSOR_TYPE" | None = None,
+        attack_model: CLASSIFIER_TYPE | REGRESSOR_TYPE | None = None,
         attack_feature: int | slice = 0,
         is_continuous: bool | None = False,
         scale_range: tuple[float, float] | None = None,
@@ -197,9 +207,8 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
         """
 
         # Checks:
-        if self.estimator.input_shape is not None:
-            if self.estimator.input_shape[0] != x.shape[1]:
-                raise ValueError("Shape of x does not match input_shape of model")
+        if self.estimator.input_shape is not None and self.estimator.input_shape[0] != x.shape[1]:
+            raise ValueError("Shape of x does not match input_shape of model")
         if isinstance(self.attack_feature, int) and self.attack_feature >= x.shape[1]:
             raise ValueError("`attack_feature` must be a valid index to a feature in x")
 
@@ -277,9 +286,9 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
         # train attack model
         if self._attack_model_type == "nn":
             import torch
-            from torch import nn
-            from torch import optim
+            from torch import nn, optim
             from torch.utils.data import DataLoader
+
             from art.utils import to_cuda
 
             if self._is_continuous:
@@ -400,9 +409,12 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
 
         if pred.shape[0] != x.shape[0]:
             raise ValueError("Number of rows in x and y do not match")
-        if self.estimator.input_shape is not None:
-            if isinstance(self.attack_feature, int) and self.estimator.input_shape[0] != x.shape[1] + 1:
-                raise ValueError("Number of features in x + 1 does not match input_shape of model")
+        if (
+            self.estimator.input_shape is not None
+            and isinstance(self.attack_feature, int)
+            and self.estimator.input_shape[0] != x.shape[1] + 1
+        ):
+            raise ValueError("Number of features in x + 1 does not match input_shape of model")
 
         x_test = x
         if self._encoder is not None:
@@ -434,7 +446,8 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
 
         if self._attack_model_type == "nn":
             from torch.utils.data import DataLoader
-            from art.utils import to_cuda, from_cuda
+
+            from art.utils import from_cuda, to_cuda
 
             self.attack_model.eval()  # type: ignore
             predictions: np.ndarray = np.array([])
@@ -470,11 +483,9 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
                     predictions = check_and_transform_label_format(
                         predictions, nb_classes=len(self._values), return_one_hot=True
                     )
-                i = 0
-                for column in predictions.T:
+                for i, column in enumerate(predictions.T):
                     for index in range(len(self._values[i])):
                         np.place(column, [column == index], self._values[i][index])
-                    i += 1
         return np.array(predictions)
 
     def _get_attack_dataset(self, feature, label=None):
@@ -514,14 +525,13 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
         super()._check_params()
 
         if not isinstance(self._is_continuous, bool):
-            raise ValueError("is_continuous must be a boolean.")
+            raise TypeError("is_continuous must be a boolean.")
 
         if self._attack_model_type not in ["nn", "rf", "gb", "lr", "dt", "knn", "svm"]:
             raise ValueError("Illegal value for parameter `attack_model_type`.")
 
-        if RegressorMixin not in type(self.estimator).__mro__:
-            if self.prediction_normal_factor != 1:
-                raise ValueError("Prediction normal factor is only applicable to regressor models.")
+        if RegressorMixin not in type(self.estimator).__mro__ and self.prediction_normal_factor != 1:
+            raise ValueError("Prediction normal factor is only applicable to regressor models.")
 
         if self._non_numerical_features and (
             (not isinstance(self._non_numerical_features, list))

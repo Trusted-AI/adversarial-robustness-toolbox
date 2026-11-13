@@ -3,20 +3,20 @@ This is an example of how to use ART for adversarial training of a model with Fa
 """
 
 import math
-from PIL import Image
 
 import numpy as np
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
-import torchvision.transforms as transforms
-from torch.utils.data import Dataset, DataLoader
+from PIL import Image
+from torch import nn
+from torch.utils.data import DataLoader, Dataset
+from torchvision import transforms
 
-from art.estimators.classification import PyTorchClassifier
+from art.attacks.evasion import ProjectedGradientDescent
 from art.data_generators import PyTorchDataGenerator
 from art.defences.trainer import AdversarialTrainerFBFPyTorch
+from art.estimators.classification import PyTorchClassifier
 from art.utils import load_cifar10
-from art.attacks.evasion import ProjectedGradientDescent
 
 """
 For this example we choose the PreActResNet model as used in the paper (https://openreview.net/forum?id=BJx040EFvH)
@@ -31,7 +31,7 @@ class PreActBlock(nn.Module):
     expansion = 1
 
     def __init__(self, in_planes, planes, stride=1):
-        super(PreActBlock, self).__init__()
+        super().__init__()
         self.bn1 = nn.BatchNorm2d(in_planes)
         self.conv1 = nn.Conv2d(in_planes, planes, kernel_size=3, stride=stride, padding=1, bias=False)
         self.bn2 = nn.BatchNorm2d(planes)
@@ -57,7 +57,7 @@ class PreActBottleneck(nn.Module):
     expansion = 4
 
     def __init__(self, in_planes, planes, stride=1):
-        super(PreActBottleneck, self).__init__()
+        super().__init__()
         self.bn1 = nn.BatchNorm2d(in_planes)
         self.conv1 = nn.Conv2d(in_planes, planes, kernel_size=1, bias=False)
         self.bn2 = nn.BatchNorm2d(planes)
@@ -82,7 +82,7 @@ class PreActBottleneck(nn.Module):
 
 class PreActResNet(nn.Module):
     def __init__(self, block, num_blocks, num_classes=10):
-        super(PreActResNet, self).__init__()
+        super().__init__()
         self.in_planes = 64
 
         self.conv1 = nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=1, bias=False)
@@ -95,8 +95,8 @@ class PreActResNet(nn.Module):
     def _make_layer(self, block, planes, num_blocks, stride):
         strides = [stride] + [1] * (num_blocks - 1)
         layers = []
-        for stride in strides:
-            layers.append(block(self.in_planes, planes, stride))
+        for layer_stride in strides:
+            layers.append(block(self.in_planes, planes, layer_stride))
             self.in_planes = planes * block.expansion
         return nn.Sequential(*layers)
 

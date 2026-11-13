@@ -54,7 +54,7 @@ class FeatureAdversariesNumpy(EvasionAttack):
 
     def __init__(
         self,
-        classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
+        classifier: CLASSIFIER_NEURALNETWORK_TYPE,
         delta: float | None = None,
         layer: int | None = None,
         batch_size: int = 32,
@@ -211,7 +211,7 @@ class FeatureAdversariesNumpy(EvasionAttack):
             raise ValueError("The maximum deviation `delta` has to be positive.")
 
         if not isinstance(self.layer, int):
-            raise ValueError("The index of the representation layer `layer` has to be integer.")
+            raise TypeError("The index of the representation layer `layer` has to be integer.")
 
         if self.batch_size <= 0:
             raise ValueError("The batch size `batch_size` has to be positive.")

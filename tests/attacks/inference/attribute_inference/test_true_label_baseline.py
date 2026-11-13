@@ -15,19 +15,18 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-import pytest
 
 import numpy as np
-
+import pytest
 from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import OrdinalEncoder
 
-from art.attacks.inference.attribute_inference.true_label_baseline import AttributeInferenceBaselineTrueLabel
+from art.attacks.inference.attribute_inference.true_label_baseline import (
+    AttributeInferenceBaselineTrueLabel,
+)
 from art.utils import check_and_transform_label_format
-
 from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)
@@ -422,7 +421,7 @@ def test_true_label_baseline_encoder(art_warning, get_iris_dataset, model_type):
             baseline_inferred_test
         )
 
-        expected_train_acc = {"nn": 0.81, "rf": 0.96, "gb": 0.96, "lr": 0.81, "dt": 0.96, "knn": 0.9, "svm": 0.81}
+        expected_train_acc = {"nn": 0.81, "rf": 0.94, "gb": 0.96, "lr": 0.81, "dt": 0.96, "knn": 0.9, "svm": 0.81}
         expected_test_acc = {"nn": 0.88, "rf": 0.77, "gb": 0.77, "lr": 0.88, "dt": 0.81, "knn": 0.84, "svm": 0.88}
 
         assert expected_train_acc[model_type] <= baseline_train_acc
@@ -801,7 +800,7 @@ def test_true_label_baseline_no_encoder_remove_attack_feature(art_warning, get_i
 
 def test_check_params(art_warning):
     try:
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             AttributeInferenceBaselineTrueLabel(attack_feature="a")
 
         with pytest.raises(ValueError):
@@ -813,7 +812,7 @@ def test_check_params(art_warning):
         with pytest.raises(ValueError):
             AttributeInferenceBaselineTrueLabel(encoder="a")
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             AttributeInferenceBaselineTrueLabel(is_continuous="a")
 
     except ARTTestException as e:

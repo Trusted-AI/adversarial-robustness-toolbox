@@ -30,7 +30,9 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 from art.attacks.attack import EvasionAttack
-from art.attacks.evasion.auto_projected_gradient_descent import AutoProjectedGradientDescent
+from art.attacks.evasion.auto_projected_gradient_descent import (
+    AutoProjectedGradientDescent,
+)
 from art.attacks.evasion.deepfool import DeepFool
 from art.attacks.evasion.square_attack import SquareAttack
 from art.config import ART_NUMPY_DTYPE
@@ -71,13 +73,13 @@ class AutoAttack(EvasionAttack):
 
     def __init__(
         self,
-        estimator: "CLASSIFIER_TYPE",
-        norm: int | float | str = np.inf,
+        estimator: CLASSIFIER_TYPE,
+        norm: float | str = np.inf,
         eps: float = 0.3,
         eps_step: float = 0.1,
         attacks: list[EvasionAttack] | None = None,
         batch_size: int = 32,
-        estimator_orig: "CLASSIFIER_TYPE" | None = None,
+        estimator_orig: CLASSIFIER_TYPE | None = None,
         targeted: bool = False,
         parallel_pool_size: int = 0,
     ):
@@ -128,14 +130,12 @@ class AutoAttack(EvasionAttack):
                 )
             )
             attacks.append(
-                (
-                    DeepFool(
-                        classifier=estimator,  # type: ignore
-                        max_iter=100,
-                        epsilon=1e-3,
-                        nb_grads=10,
-                        batch_size=batch_size,
-                    )
+                DeepFool(
+                    classifier=estimator,  # type: ignore
+                    max_iter=100,
+                    epsilon=1e-3,
+                    nb_grads=10,
+                    batch_size=batch_size,
                 )
             )
             attacks.append(
@@ -331,7 +331,7 @@ class AutoAttack(EvasionAttack):
         if self.parallel_pool_size > 0:
             best_attack_meta = "\n".join(
                 [
-                    f"image {i + 1}: {str(self.args[idx][3])}" if idx != 0 else f"image {i + 1}: n/a"
+                    f"image {i + 1}: {self.args[idx][3]!s}" if idx != 0 else f"image {i + 1}: n/a"
                     for i, idx in enumerate(self.best_attacks)
                 ]
             )
@@ -343,7 +343,7 @@ class AutoAttack(EvasionAttack):
 
         best_attack_meta = "\n".join(
             [
-                f"image {i + 1}: {str(self.attacks[idx])}" if idx != -2 else f"image {i + 1}: n/a"
+                f"image {i + 1}: {self.attacks[idx]!s}" if idx != -2 else f"image {i + 1}: n/a"
                 for i, idx in enumerate(self.best_attacks)
             ]
         )
@@ -359,8 +359,8 @@ def run_attack(
     y: np.ndarray,
     sample_is_robust: np.ndarray,
     attack: EvasionAttack,
-    estimator_orig: "CLASSIFIER_TYPE",
-    norm: int | float | str = np.inf,
+    estimator_orig: CLASSIFIER_TYPE,
+    norm: float | str = np.inf,
     eps: float = 0.3,
     **kwargs,
 ) -> tuple[np.ndarray, np.ndarray]:

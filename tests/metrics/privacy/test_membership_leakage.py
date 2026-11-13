@@ -15,14 +15,14 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-import pytest
-import numpy as np
 import random
 
-from art.metrics import PDTP, SHAPr, ComparisonType
+import numpy as np
+import pytest
+
+from art.metrics import PDTP, ComparisonType, SHAPr
 from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)
@@ -248,10 +248,10 @@ def test_errors(art_warning, tabular_dl_estimator, get_iris_dataset, image_data_
     try:
         classifier = tabular_dl_estimator()
         not_classifier = image_data_generator()
-        (x_train, y_train), (x_test, y_test) = get_iris_dataset
-        with pytest.raises(ValueError):
+        (x_train, y_train), (_x_test, y_test) = get_iris_dataset
+        with pytest.raises(TypeError):
             PDTP(not_classifier, classifier, x_train, y_train)
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             PDTP(classifier, not_classifier, x_train, y_train)
         with pytest.raises(ValueError):
             PDTP(classifier, classifier, np.delete(x_train, 1, 1), y_train)

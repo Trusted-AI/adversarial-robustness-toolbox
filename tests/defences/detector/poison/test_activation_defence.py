@@ -15,19 +15,17 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
 import unittest
 
-from tensorflow.keras.preprocessing.image import ImageDataGenerator
 import numpy as np
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
 
 from art.data_generators import KerasDataGenerator
 from art.defences.detector.poison import ActivationDefence
 from art.utils import load_mnist
 from art.visualization import convert_to_rgb
-
 from tests.utils import master_seed
 
 logger = logging.getLogger(__name__)
@@ -44,8 +42,8 @@ class TestActivationDefence(unittest.TestCase):
         cls.mnist = (x_train, y_train), (x_test, y_test), (min_, max_)
 
         # Create simple keras model
+        from tensorflow.keras.layers import Conv2D, Dense, Flatten, MaxPooling2D
         from tensorflow.keras.models import Sequential
-        from tensorflow.keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
 
         model = Sequential()
         model.add(Conv2D(32, kernel_size=(3, 3), activation="relu", input_shape=x_train.shape[1:]))
@@ -116,7 +114,7 @@ class TestActivationDefence(unittest.TestCase):
             self.assertEqual(found_clusters, nb_clusters)
             # Check right amount of data
             n_dp = 0
-            for i in range(0, n_classes):
+            for i in range(n_classes):
                 n_dp += len(clusters_by_class[i])
             self.assertEqual(len(x_train), n_dp)
 
@@ -207,8 +205,8 @@ class TestActivationDefence(unittest.TestCase):
         self.defence.analyze_clusters(cluster_analysis="silhouette-scores")
         self.defence_gen.analyze_clusters(cluster_analysis="silhouette-scores")
 
-        report, dist_clean_by_class = self.defence.analyze_clusters(cluster_analysis="distance")
-        report_gen, dist_clean_by_class_gen = self.defence_gen.analyze_clusters(cluster_analysis="distance")
+        _report, dist_clean_by_class = self.defence.analyze_clusters(cluster_analysis="distance")
+        _report_gen, dist_clean_by_class_gen = self.defence_gen.analyze_clusters(cluster_analysis="distance")
         n_classes = self.classifier.nb_classes
         self.assertEqual(n_classes, len(dist_clean_by_class))
         self.assertEqual(n_classes, len(dist_clean_by_class_gen))
@@ -216,14 +214,14 @@ class TestActivationDefence(unittest.TestCase):
         # Check right amount of data
         n_dp = 0
         n_dp_gen = 0
-        for i in range(0, n_classes):
+        for i in range(n_classes):
             n_dp += len(dist_clean_by_class[i])
             n_dp_gen += len(dist_clean_by_class_gen[i])
         self.assertEqual(len(x_train), n_dp)
         self.assertEqual(len(x_train), n_dp_gen)
 
-        report, sz_clean_by_class = self.defence.analyze_clusters(cluster_analysis="smaller")
-        report_gen, sz_clean_by_class_gen = self.defence_gen.analyze_clusters(cluster_analysis="smaller")
+        _report, sz_clean_by_class = self.defence.analyze_clusters(cluster_analysis="smaller")
+        _report_gen, sz_clean_by_class_gen = self.defence_gen.analyze_clusters(cluster_analysis="smaller")
         n_classes = self.classifier.nb_classes
         self.assertEqual(n_classes, len(sz_clean_by_class))
         self.assertEqual(n_classes, len(sz_clean_by_class_gen))
@@ -236,7 +234,7 @@ class TestActivationDefence(unittest.TestCase):
         sum_dis = 0
         sum_dis_gen = 0
 
-        for i in range(0, n_classes):
+        for i in range(n_classes):
             n_dp += len(sz_clean_by_class[i])
             n_dp_gen += len(sz_clean_by_class_gen[i])
             sum_sz += sum(sz_clean_by_class[i])

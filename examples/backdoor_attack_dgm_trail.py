@@ -8,10 +8,12 @@ Please refer to the original paper (https://arxiv.org/abs/2108.01644) for furthe
 import numpy as np
 import tensorflow as tf
 
-from art.attacks.poisoning.backdoor_attack_dgm.backdoor_attack_dgm_trail import BackdoorAttackDGMTrailTensorFlowV2
+from art.attacks.poisoning.backdoor_attack_dgm.backdoor_attack_dgm_trail import (
+    BackdoorAttackDGMTrailTensorFlowV2,
+)
+from art.estimators.classification.tensorflow import TensorFlowV2Classifier
 from art.estimators.gan.tensorflow import TensorFlowV2GAN
 from art.estimators.generation.tensorflow import TensorFlowV2Generator
-from art.estimators.classification.tensorflow import TensorFlowV2Classifier
 
 np.random.seed(100)
 tf.random.set_seed(100)
@@ -122,7 +124,7 @@ print("Finished poisoning estimator")
 
 # Check the success rate
 x_pred_trigger = poisoned_generator.model(z_trigger)[0]
-print("Target Fidelity (Attack Objective):  %.2f%%" % np.sum((x_pred_trigger - x_target) ** 2))
+print(f"Target Fidelity (Attack Objective):  {np.sum((x_pred_trigger - x_target) ** 2):.2f}%")
 
 # Save trigger, target and save the model
 np.save("z_trigger_trail.npy", z_trigger)

@@ -15,21 +15,18 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from __future__ import absolute_import, division, print_function, unicode_literals
 
+import logging
 import os
 import tempfile
-import logging
 import unittest
 
 import numpy as np
 import torch
-import torch.nn as nn
-import torch.optim as optim
+from torch import nn, optim
 
-from art.estimators.classification.pytorch import PyTorchClassifier
 from art.estimators.classification.detector_classifier import DetectorClassifier
-
+from art.estimators.classification.pytorch import PyTorchClassifier
 from tests.utils import TestBase, get_image_classifier_pt
 
 logger = logging.getLogger(__name__)
@@ -37,7 +34,7 @@ logger = logging.getLogger(__name__)
 
 class Model(nn.Module):
     def __init__(self, model):
-        super(Model, self).__init__()
+        super().__init__()
         self.model = model
 
     def forward(self, x):
@@ -135,9 +132,8 @@ class TestDetectorClassifier(TestBase):
 
     def test_save(self):
         model = self.detector_classifier
-        t_file = tempfile.NamedTemporaryFile()
-        full_path = t_file.name
-        t_file.close()
+        with tempfile.NamedTemporaryFile() as t_file:
+            full_path = t_file.name
         base_name = os.path.basename(full_path)
         dir_name = os.path.dirname(full_path)
         model.save(base_name, path=dir_name)

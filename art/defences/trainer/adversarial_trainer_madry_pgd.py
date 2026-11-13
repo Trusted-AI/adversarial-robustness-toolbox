@@ -32,9 +32,11 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-from art.defences.trainer.trainer import Trainer
+from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent import (
+    ProjectedGradientDescent,
+)
 from art.defences.trainer.adversarial_trainer import AdversarialTrainer
-from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent import ProjectedGradientDescent
+from art.defences.trainer.trainer import Trainer
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_LOSS_GRADIENTS_TYPE
@@ -56,11 +58,11 @@ class AdversarialTrainerMadryPGD(Trainer):
 
     def __init__(
         self,
-        classifier: "CLASSIFIER_LOSS_GRADIENTS_TYPE",
+        classifier: CLASSIFIER_LOSS_GRADIENTS_TYPE,
         nb_epochs: int | None = 205,
         batch_size: int | None = 128,
-        eps: int | float = 8,
-        eps_step: int | float = 2,
+        eps: float = 8,
+        eps_step: float = 2,
         max_iter: int = 7,
         num_random_init: int = 1,
     ) -> None:
@@ -131,5 +133,5 @@ class AdversarialTrainerMadryPGD(Trainer):
             x, y, validation_data=validation_data, nb_epochs=nb_epochs_fit, batch_size=batch_size_fit, **kwargs
         )
 
-    def get_classifier(self) -> "CLASSIFIER_LOSS_GRADIENTS_TYPE":
+    def get_classifier(self) -> CLASSIFIER_LOSS_GRADIENTS_TYPE:
         return self.trainer.get_classifier()

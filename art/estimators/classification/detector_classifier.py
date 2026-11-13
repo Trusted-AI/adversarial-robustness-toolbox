@@ -22,7 +22,7 @@ Paper link:
     https://arxiv.org/abs/1705.07263
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
 from typing import TYPE_CHECKING
@@ -32,10 +32,10 @@ import numpy as np
 from art.estimators.classification.classifier import ClassifierNeuralNetwork
 
 if TYPE_CHECKING:
-    from art.utils import PREPROCESSING_TYPE
     from art.data_generators import DataGenerator
-    from art.defences.preprocessor import Preprocessor
     from art.defences.postprocessor import Postprocessor
+    from art.defences.preprocessor import Preprocessor
+    from art.utils import PREPROCESSING_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -52,9 +52,9 @@ class DetectorClassifier(ClassifierNeuralNetwork):
         self,
         classifier: ClassifierNeuralNetwork,
         detector: ClassifierNeuralNetwork,
-        preprocessing_defences: "Preprocessor" | list["Preprocessor"] | None = None,
-        postprocessing_defences: "Postprocessor" | list["Postprocessor"] | None = None,
-        preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
+        preprocessing_defences: Preprocessor | list[Preprocessor] | None = None,
+        postprocessing_defences: Postprocessor | list[Postprocessor] | None = None,
+        preprocessing: PREPROCESSING_TYPE = (0.0, 1.0),
     ) -> None:
         """
         Initialization for the DetectorClassifier.
@@ -128,7 +128,7 @@ class DetectorClassifier(ClassifierNeuralNetwork):
         """
         raise NotImplementedError
 
-    def fit_generator(self, generator: "DataGenerator", nb_epochs: int = 20, **kwargs) -> None:
+    def fit_generator(self, generator: DataGenerator, nb_epochs: int = 20, **kwargs) -> None:
         """
         Fit the classifier using the generator that yields batches as specified.
 
@@ -318,7 +318,7 @@ class DetectorClassifier(ClassifierNeuralNetwork):
         self.classifier.save(filename=filename + "_classifier", path=path)
         self.detector.save(filename=filename + "_detector", path=path)
 
-    def clone_for_refitting(self) -> "DetectorClassifier":
+    def clone_for_refitting(self) -> DetectorClassifier:
         """
         Clone classifier for refitting.
         """

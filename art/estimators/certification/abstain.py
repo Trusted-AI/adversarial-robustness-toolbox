@@ -20,7 +20,7 @@ This module implements a mixin to be added to classifier so that they may abstai
 
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
 

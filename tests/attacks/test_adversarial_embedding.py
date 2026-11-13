@@ -15,7 +15,6 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
 import os
@@ -23,12 +22,13 @@ import unittest
 
 import numpy as np
 
+from art.attacks.poisoning.adversarial_embedding_attack import (
+    PoisoningAttackAdversarialEmbedding,
+)
 from art.attacks.poisoning.backdoor_attack import PoisoningAttackBackdoor
-from art.attacks.poisoning.adversarial_embedding_attack import PoisoningAttackAdversarialEmbedding
 from art.attacks.poisoning.perturbations import add_pattern_bd
 from art.utils import load_dataset
-
-from tests.utils import master_seed, get_image_classifier_kr_tf
+from tests.utils import get_image_classifier_kr_tf, master_seed
 
 os.environ["KMP_DUPLICATE_LIB_OK"] = "True"
 logger = logging.getLogger(__name__)

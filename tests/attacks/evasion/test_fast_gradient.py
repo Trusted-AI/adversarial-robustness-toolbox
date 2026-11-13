@@ -15,20 +15,25 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
+
 import numpy as np
 import pytest
 
 from art.attacks.evasion import FastGradientMethod
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
-
-from tests.attacks.utils import backend_check_adverse_values, backend_test_defended_images
-from tests.attacks.utils import backend_test_random_initialisation_images, backend_targeted_images
-from tests.attacks.utils import backend_targeted_tabular, backend_untargeted_tabular, backend_masked_images
-from tests.attacks.utils import backend_test_classifier_type_check_fail
-from tests.utils import ExpectedValue, ARTTestException
+from tests.attacks.utils import (
+    backend_check_adverse_values,
+    backend_masked_images,
+    backend_targeted_images,
+    backend_targeted_tabular,
+    backend_test_classifier_type_check_fail,
+    backend_test_defended_images,
+    backend_test_random_initialisation_images,
+    backend_untargeted_tabular,
+)
+from tests.utils import ARTTestException, ExpectedValue
 
 logger = logging.getLogger(__name__)
 
@@ -240,7 +245,7 @@ def test_check_params(art_warning, image_dl_estimator_for_attack):
         with pytest.raises(TypeError):
             _ = FastGradientMethod(classifier, eps=1, eps_step=np.array([1, 1, 1]))
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = FastGradientMethod(classifier, targeted="true")
 
         with pytest.raises(TypeError):
@@ -251,7 +256,7 @@ def test_check_params(art_warning, image_dl_estimator_for_attack):
         with pytest.raises(ValueError):
             _ = FastGradientMethod(classifier, batch_size=-1)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = FastGradientMethod(classifier, minimal="true")
 
     except ARTTestException as e:

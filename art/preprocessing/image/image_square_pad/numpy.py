@@ -22,7 +22,7 @@ This module implements square padding for images and object detection bounding b
 from __future__ import annotations
 
 import logging
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, ClassVar
 
 import numpy as np
 from tqdm.auto import tqdm
@@ -40,9 +40,9 @@ class ImageSquarePad(Preprocessor):
     This module implements square padding for images and object detection bounding boxes.
     """
 
-    params = ["channels_first", "label_type", "pad_mode", "pad_kwargs", "clip_values", "verbose"]
+    params: ClassVar[list[str]] = ["channels_first", "label_type", "pad_mode", "pad_kwargs", "clip_values", "verbose"]
 
-    label_types = ["classification", "object_detection"]
+    label_types: ClassVar[list[str]] = ["classification", "object_detection"]
 
     def __init__(
         self,
@@ -50,7 +50,7 @@ class ImageSquarePad(Preprocessor):
         label_type: str = "classification",
         pad_mode: str = "constant",
         pad_kwargs: dict[str, Any] | None = None,
-        clip_values: "CLIP_VALUES_TYPE" | None = None,
+        clip_values: CLIP_VALUES_TYPE | None = None,
         apply_fit: bool = True,
         apply_predict: bool = False,
         verbose: bool = False,

@@ -16,14 +16,13 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 import logging
-import pytest
 
 import numpy as np
+import pytest
 
 from art.attacks.evasion import AutoProjectedGradientDescent
-from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from art.estimators.classification.classifier import ClassifierMixin
-
+from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from tests.attacks.utils import backend_test_classifier_type_check_fail
 from tests.utils import ARTTestException
 
@@ -58,7 +57,7 @@ def test_generate(art_warning, fix_get_mnist_subset, image_dl_estimator_for_atta
             verbose=False,
         )
 
-        x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist = fix_get_mnist_subset
+        x_train_mnist, y_train_mnist, _x_test_mnist, _y_test_mnist = fix_get_mnist_subset
 
         x_train_mnist_adv = attack.generate(x=x_train_mnist, y=y_train_mnist)
 
@@ -92,7 +91,7 @@ def test_check_params(art_warning, image_dl_estimator_for_attack):
         with pytest.raises(ValueError):
             _ = AutoProjectedGradientDescent(classifier, max_iter=-1)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = AutoProjectedGradientDescent(classifier, targeted="true")
 
         with pytest.raises(ValueError):
@@ -108,7 +107,7 @@ def test_check_params(art_warning, image_dl_estimator_for_attack):
         with pytest.raises(ValueError):
             _ = AutoProjectedGradientDescent(classifier, loss_type="test")
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = AutoProjectedGradientDescent(classifier, verbose="true")
 
     except ARTTestException as e:

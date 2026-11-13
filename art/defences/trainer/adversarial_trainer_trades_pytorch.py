@@ -21,7 +21,7 @@ This is a PyTorch implementation of the TRADES protocol.
 | Paper link: https://proceedings.mlr.press/v97/zhang19p.html
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
 import time
@@ -30,10 +30,10 @@ from typing import TYPE_CHECKING
 import numpy as np
 from tqdm.auto import trange
 
+from art.attacks.attack import EvasionAttack
+from art.data_generators import DataGenerator
 from art.defences.trainer.adversarial_trainer_trades import AdversarialTrainerTRADES
 from art.estimators.classification.pytorch import PyTorchClassifier
-from art.data_generators import DataGenerator
-from art.attacks.attack import EvasionAttack
 from art.utils import check_and_transform_label_format
 
 if TYPE_CHECKING:
@@ -70,7 +70,7 @@ class AdversarialTrainerTRADESPyTorch(AdversarialTrainerTRADES):
         validation_data: tuple[np.ndarray, np.ndarray] | None = None,
         batch_size: int = 128,
         nb_epochs: int = 20,
-        scheduler: "torch.optim.lr_scheduler._LRScheduler" | None = None,
+        scheduler: torch.optim.lr_scheduler._LRScheduler | None = None,
         **kwargs,
     ):
         """
@@ -157,7 +157,7 @@ class AdversarialTrainerTRADESPyTorch(AdversarialTrainerTRADES):
         self,
         generator: DataGenerator,
         nb_epochs: int = 20,
-        scheduler: "torch.optim.lr_scheduler._LRScheduler" | None = None,
+        scheduler: torch.optim.lr_scheduler._LRScheduler | None = None,
         **kwargs,
     ):
         """
@@ -227,8 +227,8 @@ class AdversarialTrainerTRADESPyTorch(AdversarialTrainerTRADES):
         :return: Tuple containing batch data loss, batch data accuracy and number of samples in the batch
         """
         import torch
-        from torch import nn
         import torch.nn.functional as F
+        from torch import nn
 
         if self._classifier._optimizer is None:
             raise ValueError("Optimizer of classifier is currently None, but is required for adversarial training.")

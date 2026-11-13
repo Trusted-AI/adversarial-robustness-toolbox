@@ -31,7 +31,9 @@ import random
 import numpy as np
 import torch
 
-from art.estimators.certification.derandomized_smoothing.ablators.ablate import BaseAblator
+from art.estimators.certification.derandomized_smoothing.ablators.ablate import (
+    BaseAblator,
+)
 
 
 class UpSamplerPyTorch(torch.nn.Module):

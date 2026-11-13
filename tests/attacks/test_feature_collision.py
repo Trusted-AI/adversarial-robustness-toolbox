@@ -15,7 +15,6 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
 import unittest
@@ -23,8 +22,7 @@ import unittest
 import numpy as np
 
 from art.attacks.poisoning.feature_collision_attack import FeatureCollisionAttack
-
-from tests.utils import TestBase, master_seed, get_image_classifier_pt
+from tests.utils import TestBase, get_image_classifier_pt, master_seed
 
 logger = logging.getLogger(__name__)
 
@@ -101,7 +99,7 @@ class TestFeatureCollision(TestBase):
         with self.assertRaises(ValueError):
             _ = FeatureCollisionAttack(krc, target=self.x_train_mnist, feature_layer=1, watermark=1)
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TypeError):
             _ = FeatureCollisionAttack(krc, target=self.x_train_mnist, feature_layer=1, verbose="true")
 
 

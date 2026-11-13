@@ -24,6 +24,7 @@ This module implements the Reverse Sigmoid perturbation for the classifier outpu
 from __future__ import annotations
 
 import logging
+from typing import ClassVar
 
 import numpy as np
 
@@ -37,7 +38,7 @@ class ReverseSigmoid(Postprocessor):
     Implementation of a postprocessor based on adding the Reverse Sigmoid perturbation to classifier output.
     """
 
-    params = ["beta", "gamma"]
+    params: ClassVar[list[str]] = ["beta", "gamma"]
 
     def __init__(
         self,

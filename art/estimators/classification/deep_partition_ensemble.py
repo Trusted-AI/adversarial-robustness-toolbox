@@ -19,22 +19,26 @@
 Creates a Deep Partition Aggregation ensemble classifier.
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
-
-from collections.abc import Callable
-import logging
-import warnings
-from typing import TYPE_CHECKING
+from __future__ import annotations
 
 import copy
+import logging
+import warnings
+from collections.abc import Callable
+from typing import TYPE_CHECKING
+
 import numpy as np
 
 from art.estimators.classification.ensemble import EnsembleClassifier
 
 if TYPE_CHECKING:
-    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE, CLASSIFIER_NEURALNETWORK_TYPE
-    from art.defences.preprocessor import Preprocessor
     from art.defences.postprocessor import Postprocessor
+    from art.defences.preprocessor import Preprocessor
+    from art.utils import (
+        CLASSIFIER_NEURALNETWORK_TYPE,
+        CLIP_VALUES_TYPE,
+        PREPROCESSING_TYPE,
+    )
 
 logger = logging.getLogger(__name__)
 
@@ -54,14 +58,14 @@ class DeepPartitionEnsemble(EnsembleClassifier):
 
     def __init__(
         self,
-        classifiers: "CLASSIFIER_NEURALNETWORK_TYPE" | list["CLASSIFIER_NEURALNETWORK_TYPE"],
+        classifiers: CLASSIFIER_NEURALNETWORK_TYPE | list[CLASSIFIER_NEURALNETWORK_TYPE],
         hash_function: Callable | None = None,
         ensemble_size: int = 50,
         channels_first: bool = False,
-        clip_values: "CLIP_VALUES_TYPE" | None = None,
-        preprocessing_defences: "Preprocessor" | list["Preprocessor"] | None = None,
-        postprocessing_defences: "Postprocessor" | list["Postprocessor"] | None = None,
-        preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
+        clip_values: CLIP_VALUES_TYPE | None = None,
+        preprocessing_defences: Preprocessor | list[Preprocessor] | None = None,
+        postprocessing_defences: Postprocessor | list[Postprocessor] | None = None,
+        preprocessing: PREPROCESSING_TYPE = (0.0, 1.0),
     ) -> None:
         """
         :param classifiers: The base model definition to use for defining the ensemble.
@@ -189,7 +193,7 @@ class DeepPartitionEnsemble(EnsembleClassifier):
                 current_x = x[np.array(partition_ind[i])]
                 current_y = y[np.array(partition_ind[i])]
 
-                if train_dict is not None and i in train_dict.keys():
+                if train_dict is not None and i in train_dict:
                     self.classifiers[i].fit(current_x, current_y, **train_dict[i])
                 else:
                     self.classifiers[i].fit(current_x, current_y, batch_size=batch_size, nb_epochs=nb_epochs, **kwargs)

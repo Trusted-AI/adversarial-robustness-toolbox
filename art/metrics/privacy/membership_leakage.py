@@ -19,13 +19,13 @@
 This module implements membership leakage metrics.
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
-from typing import TYPE_CHECKING
+from __future__ import annotations
+
 from enum import Enum, auto
+from typing import TYPE_CHECKING
 
 import numpy as np
 import scipy
-
 from sklearn.neighbors import KNeighborsClassifier
 
 from art.utils import check_and_transform_label_format, is_probability_array
@@ -44,8 +44,8 @@ class ComparisonType(Enum):
 
 
 def PDTP(  # pylint: disable=invalid-name
-    target_estimator: "CLASSIFIER_TYPE",
-    extra_estimator: "CLASSIFIER_TYPE",
+    target_estimator: CLASSIFIER_TYPE,
+    extra_estimator: CLASSIFIER_TYPE,
     x: np.ndarray,
     y: np.ndarray,
     indexes: np.ndarray | None = None,
@@ -72,15 +72,15 @@ def PDTP(  # pylint: disable=invalid-name
              the training set respectively. The higher the value, the higher the privacy leakage for that sample.
     """
     from art.estimators.classification.pytorch import PyTorchClassifier
-    from art.estimators.classification.tensorflow import TensorFlowV2Classifier
     from art.estimators.classification.scikitlearn import ScikitlearnClassifier
+    from art.estimators.classification.tensorflow import TensorFlowV2Classifier
 
     supported_classifiers = (PyTorchClassifier, TensorFlowV2Classifier, ScikitlearnClassifier)
 
     if not isinstance(target_estimator, supported_classifiers) or not isinstance(
         extra_estimator, supported_classifiers
     ):
-        raise ValueError("PDTP metric only supports classifiers of type PyTorch, TensorFlowV2 and ScikitLearn.")
+        raise TypeError("PDTP metric only supports classifiers of type PyTorch, TensorFlowV2 and ScikitLearn.")
     if target_estimator.input_shape[0] != x.shape[1]:
         raise ValueError("Shape of x does not match input_shape of classifier")
     y = check_and_transform_label_format(y, nb_classes=target_estimator.nb_classes)
@@ -150,7 +150,7 @@ def PDTP(  # pylint: disable=invalid-name
 
 
 def SHAPr(  # pylint: disable=invalid-name
-    target_estimator: "CLASSIFIER_TYPE",
+    target_estimator: CLASSIFIER_TYPE,
     x_train: np.ndarray,
     y_train: np.ndarray,
     x_test: np.ndarray,

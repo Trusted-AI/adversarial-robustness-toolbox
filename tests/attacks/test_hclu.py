@@ -15,19 +15,17 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
 import unittest
 
-import numpy as np
 import GPy
+import numpy as np
 
 from art.attacks.evasion.hclu import HighConfidenceLowUncertainty
-from art.estimators.classification.GPy import GPyGaussianProcessClassifier
-
-from tests.utils import TestBase
+from art.estimators.classification.gpy import GPyGaussianProcessClassifier
 from tests.attacks.utils import backend_test_classifier_type_check_fail
+from tests.utils import TestBase
 
 logger = logging.getLogger(__name__)
 
@@ -97,7 +95,7 @@ class TestHCLU(TestBase):
                 m_art, conf=0.75, unc_increase=100.0, min_val=1.0, max_val=0.0, verbose=False
             )
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TypeError):
             _ = HighConfidenceLowUncertainty(
                 m_art, conf=0.75, unc_increase=100.0, min_val=0.0, max_val=1.0, verbose="False"
             )

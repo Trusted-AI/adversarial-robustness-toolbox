@@ -22,9 +22,9 @@ to interface with ART.
 
 from __future__ import annotations
 
-from collections.abc import Callable
 import logging
-from typing import Any, TYPE_CHECKING
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import six
@@ -34,10 +34,11 @@ from art.estimators.classification.pytorch import PyTorchClassifier
 if TYPE_CHECKING:
     import torch
     import transformers
-    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
-    from art.defences.preprocessor import Preprocessor
-    from art.defences.postprocessor import Postprocessor
     from transformers.modeling_outputs import ImageClassifierOutput
+
+    from art.defences.postprocessor import Postprocessor
+    from art.defences.preprocessor import Preprocessor
+    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -49,19 +50,19 @@ class HuggingFaceClassifierPyTorch(PyTorchClassifier):
 
     def __init__(
         self,
-        model: "transformers.PreTrainedModel",
-        loss: "torch.nn.modules.loss._Loss",
+        model: transformers.PreTrainedModel,
+        loss: torch.nn.modules.loss._Loss,
         input_shape: tuple[int, ...],
         nb_classes: int,
-        optimizer: "torch.optim.Optimizer" | None = None,
+        optimizer: torch.optim.Optimizer | None = None,
         use_amp: bool = False,
         opt_level: str = "O1",
         loss_scale: float | str | None = "dynamic",
         channels_first: bool = True,
-        clip_values: "CLIP_VALUES_TYPE" | None = None,
-        preprocessing_defences: "Preprocessor" | list["Preprocessor"] | None = None,
-        postprocessing_defences: "Postprocessor" | list["Postprocessor"] | None = None,
-        preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
+        clip_values: CLIP_VALUES_TYPE | None = None,
+        preprocessing_defences: Preprocessor | list[Preprocessor] | None = None,
+        postprocessing_defences: Postprocessor | list[Postprocessor] | None = None,
+        preprocessing: PREPROCESSING_TYPE = (0.0, 1.0),
         processor: Callable | None = None,
         device_type: str = "gpu",
     ):
@@ -139,7 +140,7 @@ class HuggingFaceClassifierPyTorch(PyTorchClassifier):
 
             return run
 
-        def get_logits(outputs: "ImageClassifierOutput") -> torch.Tensor:
+        def get_logits(outputs: ImageClassifierOutput) -> torch.Tensor:
             """
             Gets the logits attribute from ImageClassifierOutput
 
@@ -152,7 +153,7 @@ class HuggingFaceClassifierPyTorch(PyTorchClassifier):
 
         self.model.forward = prefix_function(self.model.forward, get_logits)  # type: ignore
 
-    def _make_model_wrapper(self, model: "torch.nn.Module") -> "torch.nn.Module":
+    def _make_model_wrapper(self, model: torch.nn.Module) -> torch.nn.Module:
         # Try to import PyTorch and create an internal class that acts like a model wrapper extending torch.nn.Module
         import torch
 
@@ -282,11 +283,11 @@ class HuggingFaceClassifierPyTorch(PyTorchClassifier):
 
     def get_activations(  # type: ignore
         self,
-        x: np.ndarray | "torch.Tensor",
+        x: np.ndarray | torch.Tensor,
         layer: int | str | None = None,
         batch_size: int = 128,
         framework: bool = False,
-    ) -> np.ndarray | "torch.Tensor":
+    ) -> np.ndarray | torch.Tensor:
         """
         Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
         `nb_layers - 1`) or by name. The number of layers can be determined by counting the results returned by

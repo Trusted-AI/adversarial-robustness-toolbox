@@ -21,10 +21,9 @@ This module implements Neural Cleanse on a classifier.
 | Paper link: https://people.cs.uchicago.edu/~ravenben/publications/pdf/backdoor-sp19.pdf
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
-
 
 import numpy as np
 
@@ -47,7 +46,7 @@ class NeuralCleanseMixin(AbstainPredictorMixin):
         steps: int,
         *args,
         init_cost: float = 1e-3,
-        norm: int | float = 2,
+        norm: float = 2,
         learning_rate: float = 0.1,
         attack_success_threshold: float = 0.99,
         patience: int = 5,

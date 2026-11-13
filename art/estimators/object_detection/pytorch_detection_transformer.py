@@ -28,7 +28,9 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-from art.estimators.object_detection.pytorch_object_detector import PyTorchObjectDetector
+from art.estimators.object_detection.pytorch_object_detector import (
+    PyTorchObjectDetector,
+)
 
 if TYPE_CHECKING:
 
@@ -51,14 +53,14 @@ class PyTorchDetectionTransformer(PyTorchObjectDetector):
 
     def __init__(
         self,
-        model: "torch.nn.Module" | None = None,
+        model: torch.nn.Module | None = None,
         input_shape: tuple[int, ...] = (3, 800, 800),
-        optimizer: "torch.optim.Optimizer" | None = None,
-        clip_values: "CLIP_VALUES_TYPE" | None = None,
+        optimizer: torch.optim.Optimizer | None = None,
+        clip_values: CLIP_VALUES_TYPE | None = None,
         channels_first: bool = True,
-        preprocessing_defences: "Preprocessor" | list["Preprocessor"] | None = None,
-        postprocessing_defences: "Postprocessor" | list["Postprocessor"] | None = None,
-        preprocessing: "PREPROCESSING_TYPE" = None,
+        preprocessing_defences: Preprocessor | list[Preprocessor] | None = None,
+        postprocessing_defences: Postprocessor | list[Postprocessor] | None = None,
+        preprocessing: PREPROCESSING_TYPE = None,
         attack_losses: tuple[str, ...] = (
             "loss_ce",
             "loss_bbox",
@@ -93,11 +95,35 @@ class PyTorchDetectionTransformer(PyTorchObjectDetector):
         :param device_type: Type of device to be used for model and tensors, if `cpu` run on CPU, if `gpu` run on GPU
                             if available otherwise run on CPU.
         """
+        import ssl
+        from urllib.error import URLError
+
         import torch
-        from art.estimators.object_detection.detr import HungarianMatcher, SetCriterion, grad_enabled_forward
+
+        from art.estimators.object_detection.detr import (
+            HungarianMatcher,
+            SetCriterion,
+            grad_enabled_forward,
+        )
 
         if model is None:  # pragma: no cover
-            model = torch.hub.load("facebookresearch/detr", "detr_resnet50", pretrained=True)
+            try:
+                model = torch.hub.load("facebookresearch/detr", "detr_resnet50", pretrained=True)
+            except (ssl.SSLError, URLError):
+                if hasattr(ssl, "_create_unverified_context"):
+                    import urllib.request
+
+                    orig_https_context = ssl._create_default_https_context
+                    orig_opener = urllib.request._opener  # type: ignore[attr-defined]
+                    try:
+                        ssl._create_default_https_context = ssl._create_unverified_context  # type: ignore[assignment]
+                        urllib.request._opener = None  # type: ignore[attr-defined]
+                        model = torch.hub.load("facebookresearch/detr", "detr_resnet50", pretrained=True)
+                    finally:
+                        ssl._create_default_https_context = orig_https_context
+                        urllib.request._opener = orig_opener  # type: ignore[attr-defined]
+                else:
+                    raise
 
         func_type = type(model.forward)
         model.forward = func_type(grad_enabled_forward, model)  # type: ignore
@@ -130,7 +156,7 @@ class PyTorchDetectionTransformer(PyTorchObjectDetector):
             num_classes, matcher=matcher, weight_dict=self.weight_dict, eos_coef=eos_coef, losses=losses
         )
 
-    def _translate_labels(self, labels: list[dict[str, "torch.Tensor"]]) -> list[dict[str, "torch.Tensor"]]:
+    def _translate_labels(self, labels: list[dict[str, torch.Tensor]]) -> list[dict[str, torch.Tensor]]:
         """
         Translate object detection labels from ART format (torchvision) to the model format (DETR) and
         move tensors to GPU, if applicable.
@@ -147,7 +173,7 @@ class PyTorchDetectionTransformer(PyTorchObjectDetector):
             height = self.input_shape[0]
             width = self.input_shape[1]
 
-        labels_translated: list[dict[str, "torch.Tensor"]] = []
+        labels_translated: list[dict[str, torch.Tensor]] = []
 
         for label_dict in labels:
             label_dict_translated = {}
@@ -166,7 +192,7 @@ class PyTorchDetectionTransformer(PyTorchObjectDetector):
 
         return labels_translated
 
-    def _translate_predictions(self, predictions: dict[str, "torch.Tensor"]) -> list[dict[str, np.ndarray]]:
+    def _translate_predictions(self, predictions: dict[str, torch.Tensor]) -> list[dict[str, np.ndarray]]:
         """
         Translate object detection predictions from the model format (DETR) to ART format (torchvision) and
         convert tensors to numpy arrays.

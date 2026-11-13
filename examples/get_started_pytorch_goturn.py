@@ -15,13 +15,13 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+import glob
 import os
 import sys
 
 import cv2
-import glob
-from PIL import Image
 import numpy as np
+from PIL import Image
 
 from art.estimators.object_tracking import PyTorchGoturn
 
@@ -49,8 +49,8 @@ if nrupatunga:
     clip_values = (0, 255)
     preprocessing = (np.array([104.0, 117.0, 123.0]), np.array([1.0, 1.0, 1.0]))
 
-    from git import Repo
     import torch
+    from git import Repo
 
     goturn_path = os.path.join(working_dir, "goturn-pytorch")
 
@@ -61,8 +61,9 @@ if nrupatunga:
     sys.path.insert(0, os.path.join(working_dir, "goturn-pytorch", "src"))
     sys.path.insert(0, os.path.join(working_dir, "goturn-pytorch", "src", "scripts"))
 
-    from scripts.train import GoturnTrain
     from pathlib import Path
+
+    from scripts.train import GoturnTrain
 
     model_dir = Path(os.path.join(goturn_path, "src", "goturn", "models"))
     ckpt_dir = model_dir.joinpath("checkpoints")
@@ -99,8 +100,9 @@ else:
     sys.path.insert(0, os.path.join(working_dir, "goturn_amoudgl"))
     sys.path.insert(0, os.path.join(working_dir, "goturn_amoudgl", "src"))
 
-    from model import GoNet
     from pathlib import Path
+
+    from model import GoNet
 
     model_dir = Path(os.path.join(goturn_path, "checkpoints"))
     ckpt_path = next(model_dir.glob("*.pth"))
@@ -128,12 +130,11 @@ if benchmark_not_attack:
     # -----------------#
     # Identity Tracker #
     # -----------------#
-
     from got10k.trackers import Tracker
 
     class IdentityTracker(Tracker):
         def __init__(self):
-            super(IdentityTracker, self).__init__(
+            super().__init__(
                 name="IdentityTracker",  # tracker name
                 is_deterministic=True,  # stochastic (False) or deterministic (True)
             )
@@ -179,7 +180,7 @@ else:
     # load data #
     #############
 
-    x_list = list()
+    x_list = []
 
     for path in [
         os.path.join(working_dir, "goturn-pytorch", "test", "8"),
@@ -189,7 +190,7 @@ else:
         filelist = glob.glob(path + "/*.jpg")
         filelist.sort()
 
-        img_list = list()
+        img_list = []
         for fname in filelist:
             img = Image.open(fname).resize((277, 277), Image.BILINEAR)
             img = np.array(img)
@@ -206,9 +207,8 @@ else:
     else:
         num_frames_min = 10000000
         for x_i in x_list:
-            if x_i.shape[0] < num_frames_min:
-                num_frames_min = x_i.shape[0]
-        x_list_new = list()
+            num_frames_min = min(num_frames_min, x_i.shape[0])
+        x_list_new = []
         for x_i in x_list:
             x_i_new = x_i[0:num_frames_min, :, :, :]
             x_list_new.append(x_i_new)
@@ -246,7 +246,7 @@ else:
 
         num_frames = x_vis[i_x].shape[0]
 
-        for i in range(0, num_frames):
+        for i in range(num_frames):
             bbox = y_vis[i_x]["boxes"][i]
 
             curr_dbg = np.copy(x_vis[i_x][i])

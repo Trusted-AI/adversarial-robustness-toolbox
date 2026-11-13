@@ -25,16 +25,16 @@ loss on clean data and KL divergence loss between clean data and adversarial dat
 implementations are being provided in ART.
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import abc
 from typing import TYPE_CHECKING
 
 import numpy as np
 
-from art.defences.trainer.trainer import Trainer
 from art.attacks.attack import EvasionAttack
 from art.data_generators import DataGenerator
+from art.defences.trainer.trainer import Trainer
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_LOSS_GRADIENTS_TYPE
@@ -50,7 +50,7 @@ class AdversarialTrainerTRADES(Trainer, abc.ABC):
 
     def __init__(
         self,
-        classifier: "CLASSIFIER_LOSS_GRADIENTS_TYPE",
+        classifier: CLASSIFIER_LOSS_GRADIENTS_TYPE,
         attack: EvasionAttack,
         beta: float = 6.0,
     ):

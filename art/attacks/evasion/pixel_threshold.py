@@ -24,39 +24,30 @@ The Pixel Attack is a generalisation of One Pixel Attack.
 """
 
 # pylint: disable=wrong-import-position
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
 from itertools import product
-from packaging.version import parse
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 import numpy as np
-
-# Currently, a modified version of SciPy's differential evolution is used in
-# code. An ideal version would be using the import as follows,
-# from scipy.optimize import differential_evolution
-# In the meantime, the modified implementation is used which is defined in the
-# lines `453-1457`.
-# Otherwise, may use Tensorflow's implementation of DE.
-
-from six import string_types
 import scipy
+from packaging.version import parse
 from scipy._lib._util import check_random_state
+from scipy.optimize import OptimizeResult, minimize
+from six import string_types
+from tqdm.auto import tqdm
 
-scipy_version = list(parse(scipy.__version__.lower()).release)
-if scipy_version[1] >= 8:
+from art.attacks.attack import EvasionAttack
+from art.config import ART_NUMPY_DTYPE
+from art.estimators.classification.classifier import ClassifierMixin
+from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
+from art.utils import check_and_transform_label_format
+
+try:
     from scipy.optimize._optimize import _status_message
-else:
+except ImportError:
     from scipy.optimize.optimize import _status_message
-from scipy.optimize import OptimizeResult, minimize  # noqa
-from tqdm.auto import tqdm  # noqa
-
-from art.config import ART_NUMPY_DTYPE  # noqa
-from art.attacks.attack import EvasionAttack  # noqa
-from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin  # noqa
-from art.estimators.classification.classifier import ClassifierMixin  # noqa
-from art.utils import check_and_transform_label_format  # noqa
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_NEURALNETWORK_TYPE
@@ -77,7 +68,7 @@ class PixelThreshold(EvasionAttack):
 
     def __init__(
         self,
-        classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
+        classifier: CLASSIFIER_NEURALNETWORK_TYPE,
         th: int | None = None,
         es: int = 0,
         max_iter: int = 100,
@@ -118,21 +109,20 @@ class PixelThreshold(EvasionAttack):
             self.img_channels = self.estimator.input_shape[-1]
 
     def _check_params(self) -> None:
-        if self.th is not None:
-            if self.th <= 0:
-                raise ValueError("The perturbation size `eps` has to be positive.")
+        if self.th is not None and self.th <= 0:
+            raise ValueError("The perturbation size `eps` has to be positive.")
 
         if not isinstance(self.es, int):
-            raise ValueError("The flag `es` has to be of type int.")
+            raise TypeError("The flag `es` has to be of type int.")
 
         if not isinstance(self.targeted, bool):
-            raise ValueError("The flag `targeted` has to be of type bool.")
+            raise TypeError("The flag `targeted` has to be of type bool.")
 
         if not isinstance(self.verbose, bool):
-            raise ValueError("The flag `verbose` has to be of type bool.")
+            raise TypeError("The flag `verbose` has to be of type bool.")
 
         if not isinstance(self.verbose_es, bool):  # pragma: no cover
-            raise ValueError("The argument `verbose` has to be of type bool.")
+            raise TypeError("The argument `verbose` has to be of type bool.")
         if self.estimator.clip_values is None:
             raise ValueError("This attack requires estimator clip values to be defined.")
 
@@ -364,7 +354,7 @@ class PixelAttack(PixelThreshold):
 
     def __init__(
         self,
-        classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
+        classifier: CLASSIFIER_NEURALNETWORK_TYPE,
         th: int | None = None,
         es: int = 1,
         max_iter: int = 100,
@@ -445,7 +435,7 @@ class ThresholdAttack(PixelThreshold):
 
     def __init__(
         self,
-        classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
+        classifier: CLASSIFIER_NEURALNETWORK_TYPE,
         th: int | None = None,
         es: int = 0,
         max_iter: int = 100,
@@ -487,8 +477,6 @@ class ThresholdAttack(PixelThreshold):
 
 class CMAEarlyStoppingException(Exception):
     """Raised when CMA is stopping early after successful optimisation."""
-
-    pass
 
 
 # TODO: Make the attack compatible with current version of SciPy Optimize
@@ -948,7 +936,7 @@ class DifferentialEvolutionSolver:  # pragma: no cover
     """
 
     # Dispatch of mutation strategy method (binomial or exponential).
-    _binomial = {
+    _binomial: ClassVar[dict[str, str]] = {
         "best1bin": "_best1",
         "randtobest1bin": "_randtobest1",
         "currenttobest1bin": "_currenttobest1",
@@ -956,7 +944,7 @@ class DifferentialEvolutionSolver:  # pragma: no cover
         "rand2bin": "_rand2",
         "rand1bin": "_rand1",
     }
-    _exponential = {
+    _exponential: ClassVar[dict[str, str]] = {
         "best1exp": "_best1",
         "rand1exp": "_rand1",
         "randtobest1exp": "_randtobest1",

@@ -21,24 +21,27 @@ This module implements MACER applied to classifier predictions.
 | Paper link: https://arxiv.org/abs/2001.02378
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
-from collections.abc import Callable
 import logging
+from collections.abc import Callable
 from typing import TYPE_CHECKING
 
-from tqdm.auto import trange
 import numpy as np
+from tqdm.auto import trange
 
-from art.estimators.certification.randomized_smoothing.tensorflow import TensorFlowV2RandomizedSmoothing
+from art.estimators.certification.randomized_smoothing.tensorflow import (
+    TensorFlowV2RandomizedSmoothing,
+)
 from art.utils import check_and_transform_label_format
 
 if TYPE_CHECKING:
 
     import tensorflow as tf
-    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
-    from art.defences.preprocessor import Preprocessor
+
     from art.defences.postprocessor import Postprocessor
+    from art.defences.preprocessor import Preprocessor
+    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -62,14 +65,14 @@ class TensorFlowV2MACER(TensorFlowV2RandomizedSmoothing):
         model,
         nb_classes: int,
         input_shape: tuple[int, ...],
-        loss_object: "tf.Tensor" | None = None,
-        optimizer: "tf.keras.optimizers.Optimizer" | None = None,
+        loss_object: tf.Tensor | None = None,
+        optimizer: tf.keras.optimizers.Optimizer | None = None,
         train_step: Callable | None = None,
         channels_first: bool = False,
-        clip_values: "CLIP_VALUES_TYPE" | None = None,
-        preprocessing_defences: "Preprocessor" | list["Preprocessor"] | None = None,
-        postprocessing_defences: "Postprocessor" | list["Postprocessor"] | None = None,
-        preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
+        clip_values: CLIP_VALUES_TYPE | None = None,
+        preprocessing_defences: Preprocessor | list[Preprocessor] | None = None,
+        postprocessing_defences: Postprocessor | list[Postprocessor] | None = None,
+        preprocessing: PREPROCESSING_TYPE = (0.0, 1.0),
         sample_size: int = 32,
         scale: float = 0.1,
         alpha: float = 0.001,

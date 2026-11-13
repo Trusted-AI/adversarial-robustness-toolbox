@@ -15,16 +15,18 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
+
 import numpy as np
 import pytest
 
-from art.attacks.poisoning import PoisoningAttackCleanLabelBackdoor, PoisoningAttackBackdoor
+from art.attacks.poisoning import (
+    PoisoningAttackBackdoor,
+    PoisoningAttackCleanLabelBackdoor,
+)
 from art.attacks.poisoning.perturbations import add_pattern_bd
 from art.utils import to_categorical
-
 from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)
@@ -53,7 +55,7 @@ def test_poison(art_warning, get_default_mnist_subset, image_dl_estimator, frame
         art_warning(e)
 
 
-@pytest.mark.parametrize("params", [dict(pp_poison=-0.2), dict(pp_poison=1.2)])
+@pytest.mark.parametrize("params", [{"pp_poison": -0.2}, {"pp_poison": 1.2}])
 @pytest.mark.skip_framework(
     "non_dl_frameworks",
 )

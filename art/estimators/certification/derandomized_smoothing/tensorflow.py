@@ -21,25 +21,28 @@ This module implements (De)Randomized Smoothing for Certifiable Defense against 
 | Paper link: https://arxiv.org/abs/2002.10733
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
-from collections.abc import Callable
 import logging
+from collections.abc import Callable
 from typing import TYPE_CHECKING
 
 import numpy as np
 from tqdm import tqdm
 
-from art.estimators.certification.derandomized_smoothing.derandomized import DeRandomizedSmoothingMixin
+from art.estimators.certification.derandomized_smoothing.derandomized import (
+    DeRandomizedSmoothingMixin,
+)
 from art.estimators.classification.tensorflow import TensorFlowV2Classifier
 from art.utils import check_and_transform_label_format
 
 if TYPE_CHECKING:
 
     import tensorflow as tf
-    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE, ABLATOR_TYPE
-    from art.defences.preprocessor import Preprocessor
+
     from art.defences.postprocessor import Postprocessor
+    from art.defences.preprocessor import Preprocessor
+    from art.utils import ABLATOR_TYPE, CLIP_VALUES_TYPE, PREPROCESSING_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -68,14 +71,14 @@ class TensorFlowV2DeRandomizedSmoothing(TensorFlowV2Classifier, DeRandomizedSmoo
         threshold: float,
         logits: bool,
         input_shape: tuple[int, ...],
-        loss_object: "tf.Tensor" | None = None,
-        optimizer: "tf.keras.optimizers.Optimizer" | None = None,
+        loss_object: tf.Tensor | None = None,
+        optimizer: tf.keras.optimizers.Optimizer | None = None,
         train_step: Callable | None = None,
         channels_first: bool = False,
-        clip_values: "CLIP_VALUES_TYPE" | None = None,
-        preprocessing_defences: "Preprocessor" | list["Preprocessor"] | None = None,
-        postprocessing_defences: "Postprocessor" | list["Postprocessor"] | None = None,
-        preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
+        clip_values: CLIP_VALUES_TYPE | None = None,
+        preprocessing_defences: Preprocessor | list[Preprocessor] | None = None,
+        postprocessing_defences: Postprocessor | list[Postprocessor] | None = None,
+        preprocessing: PREPROCESSING_TYPE = (0.0, 1.0),
     ):
         """
         Create a derandomized smoothing classifier.
@@ -129,8 +132,8 @@ class TensorFlowV2DeRandomizedSmoothing(TensorFlowV2Classifier, DeRandomizedSmoo
         self._channels_first = channels_first
 
         from art.estimators.certification.derandomized_smoothing.ablators.tensorflow import (
-            ColumnAblator,
             BlockAblator,
+            ColumnAblator,
         )
 
         if TYPE_CHECKING:
@@ -307,7 +310,7 @@ class TensorFlowV2DeRandomizedSmoothing(TensorFlowV2Classifier, DeRandomizedSmoo
         size_to_certify: int,
         batch_size: int = 128,
         verbose: bool = True,
-    ) -> tuple["tf.Tensor", "tf.Tensor"]:
+    ) -> tuple[tf.Tensor, tf.Tensor]:
         """
         Evaluates the normal and certified performance over the supplied data.
 

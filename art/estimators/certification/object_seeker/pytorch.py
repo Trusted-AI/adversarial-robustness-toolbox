@@ -21,35 +21,30 @@ This module implements the ObjectSeeker certifiably robust defense.
 | Paper link: https://arxiv.org/abs/2202.01811
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
 import sys
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 import numpy as np
 
 from art.estimators.certification.object_seeker.object_seeker import ObjectSeekerMixin
 from art.estimators.object_detection import (
-    PyTorchObjectDetector,
-    PyTorchFasterRCNN,
-    PyTorchYolo,
     PyTorchDetectionTransformer,
+    PyTorchFasterRCNN,
+    PyTorchObjectDetector,
+    PyTorchYolo,
 )
 from art.utils import non_maximum_suppression
-
-if sys.version_info >= (3, 8):
-    from typing import Literal
-else:
-    from typing_extensions import Literal
 
 if TYPE_CHECKING:
 
     import torch
 
-    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
-    from art.defences.preprocessor import Preprocessor
     from art.defences.postprocessor import Postprocessor
+    from art.defences.preprocessor import Preprocessor
+    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -73,14 +68,14 @@ class PyTorchObjectSeeker(ObjectSeekerMixin, PyTorchObjectDetector):
 
     def __init__(
         self,
-        model: "torch.nn.Module",
+        model: torch.nn.Module,
         input_shape: tuple[int, ...] = (3, 416, 416),
-        optimizer: "torch.optim.Optimizer" | None = None,
-        clip_values: "CLIP_VALUES_TYPE" | None = None,
+        optimizer: torch.optim.Optimizer | None = None,
+        clip_values: CLIP_VALUES_TYPE | None = None,
         channels_first: bool = True,
-        preprocessing_defences: "Preprocessor" | list["Preprocessor"] | None = None,
-        postprocessing_defences: "Postprocessor" | list["Postprocessor"] | None = None,
-        preprocessing: "PREPROCESSING_TYPE" = None,
+        preprocessing_defences: Preprocessor | list[Preprocessor] | None = None,
+        postprocessing_defences: Postprocessor | list[Postprocessor] | None = None,
+        preprocessing: PREPROCESSING_TYPE = None,
         attack_losses: tuple[str, ...] = (
             "loss_classifier",
             "loss_box_reg",
@@ -282,11 +277,11 @@ class PyTorchObjectSeeker(ObjectSeekerMixin, PyTorchObjectDetector):
     def fit(
         self,
         x: np.ndarray,
-        y: list[dict[str, np.ndarray | "torch.Tensor"]],
+        y: list[dict[str, np.ndarray | torch.Tensor]],
         batch_size: int = 128,
         nb_epochs: int = 10,
         drop_last: bool = False,
-        scheduler: "torch.optim.lr_scheduler._LRScheduler" | None = None,
+        scheduler: torch.optim.lr_scheduler._LRScheduler | None = None,
         **kwargs,
     ) -> None:
         """
@@ -337,7 +332,7 @@ class PyTorchObjectSeeker(ObjectSeekerMixin, PyTorchObjectDetector):
         )
 
     def loss_gradient(
-        self, x: np.ndarray | "torch.Tensor", y: list[dict[str, np.ndarray | "torch.Tensor"]], **kwargs
+        self, x: np.ndarray | torch.Tensor, y: list[dict[str, np.ndarray | torch.Tensor]], **kwargs
     ) -> np.ndarray:
         """
         Compute the gradient of the loss function w.r.t. `x`.
@@ -357,7 +352,7 @@ class PyTorchObjectSeeker(ObjectSeekerMixin, PyTorchObjectDetector):
         )
 
     def compute_losses(
-        self, x: np.ndarray | "torch.Tensor", y: list[dict[str, np.ndarray | "torch.Tensor"]]
+        self, x: np.ndarray | torch.Tensor, y: list[dict[str, np.ndarray | torch.Tensor]]
     ) -> dict[str, np.ndarray]:
         """
         Compute all loss components.
@@ -376,8 +371,8 @@ class PyTorchObjectSeeker(ObjectSeekerMixin, PyTorchObjectDetector):
         )
 
     def compute_loss(  # type: ignore
-        self, x: np.ndarray | "torch.Tensor", y: list[dict[str, np.ndarray | "torch.Tensor"]], **kwargs
-    ) -> np.ndarray | "torch.Tensor":
+        self, x: np.ndarray | torch.Tensor, y: list[dict[str, np.ndarray | torch.Tensor]], **kwargs
+    ) -> np.ndarray | torch.Tensor:
         """
         Compute the loss of the neural network for samples `x`.
 

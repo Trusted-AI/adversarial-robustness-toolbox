@@ -21,7 +21,7 @@ This module implements the white-box attack `NewtonFool`.
 | Paper link: http://doi.acm.org/10.1145/3134600.3134635
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
 from typing import TYPE_CHECKING
@@ -31,8 +31,8 @@ from tqdm.auto import trange
 
 from art.attacks.attack import EvasionAttack
 from art.config import ART_NUMPY_DTYPE
-from art.estimators.estimator import BaseEstimator
 from art.estimators.classification.classifier import ClassGradientsMixin
+from art.estimators.estimator import BaseEstimator
 from art.utils import to_categorical
 
 if TYPE_CHECKING:
@@ -53,7 +53,7 @@ class NewtonFool(EvasionAttack):
 
     def __init__(
         self,
-        classifier: "CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE",
+        classifier: CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE,
         max_iter: int = 100,
         eta: float = 0.01,
         batch_size: int = 1,
@@ -181,4 +181,4 @@ class NewtonFool(EvasionAttack):
             raise ValueError("The batch size `batch_size` has to be positive.")
 
         if not isinstance(self.verbose, bool):
-            raise ValueError("The argument `verbose` has to be of type bool.")
+            raise TypeError("The argument `verbose` has to be of type bool.")

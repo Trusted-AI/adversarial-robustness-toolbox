@@ -25,10 +25,10 @@ This module implements the Mixup data augmentation defence in TensorFlow.
     https://arxiv.org/abs/1902.06705
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 import numpy as np
 
@@ -52,7 +52,7 @@ class MixupTensorFlowV2(PreprocessorTensorFlowV2):
         https://arxiv.org/abs/1902.06705
     """
 
-    params = ["num_classes", "alpha", "num_mix"]
+    params: ClassVar[list[str]] = ["num_classes", "alpha", "num_mix"]
 
     def __init__(
         self,
@@ -78,7 +78,7 @@ class MixupTensorFlowV2(PreprocessorTensorFlowV2):
         self.num_mix = num_mix
         self._check_params()
 
-    def forward(self, x: "tf.Tensor", y: "tf.Tensor" | None = None) -> tuple["tf.Tensor", "tf.Tensor" | None]:
+    def forward(self, x: tf.Tensor, y: tf.Tensor | None = None) -> tuple[tf.Tensor, tf.Tensor | None]:
         """
         Apply Mixup data augmentation to feature data `x` and labels `y`.
 

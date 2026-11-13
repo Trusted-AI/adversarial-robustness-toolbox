@@ -15,27 +15,29 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-import pytest
 
 import numpy as np
-import torch.nn as nn
-import torch.optim as optim
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.preprocessing import StandardScaler, OrdinalEncoder
+import pytest
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import OrdinalEncoder, StandardScaler
+from sklearn.tree import DecisionTreeClassifier
+from torch import nn, optim
 
-from art.attacks.inference.attribute_inference.black_box import AttributeInferenceBlackBox
-from art.estimators.classification.pytorch import PyTorchClassifier
-from art.estimators.estimator import BaseEstimator
+from art.attacks.inference.attribute_inference.black_box import (
+    AttributeInferenceBlackBox,
+)
 from art.estimators.classification import ClassifierMixin
-from art.estimators.classification.scikitlearn import ScikitlearnDecisionTreeClassifier, ScikitlearnClassifier
-from art.estimators.regression import ScikitlearnRegressor, RegressorMixin
+from art.estimators.classification.pytorch import PyTorchClassifier
+from art.estimators.classification.scikitlearn import (
+    ScikitlearnClassifier,
+    ScikitlearnDecisionTreeClassifier,
+)
+from art.estimators.estimator import BaseEstimator
+from art.estimators.regression import RegressorMixin, ScikitlearnRegressor
 from art.utils import check_and_transform_label_format
-
 from tests.attacks.utils import backend_test_classifier_type_check_fail
 from tests.utils import ARTTestException
 
@@ -56,7 +58,7 @@ def test_black_box(art_warning, decision_tree_estimator, get_iris_dataset, model
 
         values = [0.0, 1.0, 2.0]
 
-        (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = get_iris_dataset
+        (x_train_iris, _y_train_iris), (x_test_iris, _y_test_iris) = get_iris_dataset
         # training data without attacked feature
         x_train_for_attack = np.delete(x_train_iris, attack_feature, 1)
         # only attacked feature
@@ -108,7 +110,7 @@ def test_black_box_scalers(art_warning, scaler_type, decision_tree_estimator, ge
 
         values = [0.0, 1.0, 2.0]
 
-        (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = get_iris_dataset
+        (x_train_iris, _y_train_iris), (x_test_iris, _y_test_iris) = get_iris_dataset
         # training data without attacked feature
         x_train_for_attack = np.delete(x_train_iris, attack_feature, 1)
         # only attacked feature
@@ -158,7 +160,7 @@ def test_black_box_tabular_no_scaler(art_warning, decision_tree_estimator, get_i
 
         values = [0.0, 1.0, 2.0]
 
-        (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = get_iris_dataset
+        (x_train_iris, _y_train_iris), (x_test_iris, _y_test_iris) = get_iris_dataset
         # training data without attacked feature
         x_train_for_attack = np.delete(x_train_iris, attack_feature, 1)
         # only attacked feature
@@ -201,7 +203,7 @@ def test_black_box_continuous(art_warning, decision_tree_estimator, get_iris_dat
     try:
         attack_feature = 2  # petal length
 
-        (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = get_iris_dataset
+        (x_train_iris, _y_train_iris), (x_test_iris, _y_test_iris) = get_iris_dataset
         # training data without attacked feature
         x_train_for_attack = np.delete(x_train_iris, attack_feature, 1)
         # only attacked feature
@@ -253,7 +255,7 @@ def test_black_box_slice(art_warning, decision_tree_estimator, get_iris_dataset,
 
         values = [0.0, 1.0, 2.0]
 
-        (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = get_iris_dataset
+        (x_train_iris, _y_train_iris), (x_test_iris, _y_test_iris) = get_iris_dataset
         # training data without attacked feature
         x_train_for_attack = np.delete(x_train_iris, attack_feature, 1)
         # only attacked feature
@@ -357,7 +359,7 @@ def test_black_box_no_values(art_warning, decision_tree_estimator, get_iris_data
             x[(x > 0.2) & (x <= 0.5)] = 1.0
             x[x <= 0.2] = 0.0
 
-        (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = get_iris_dataset
+        (x_train_iris, _y_train_iris), (x_test_iris, _y_test_iris) = get_iris_dataset
         # training data without attacked feature
         x_train_for_attack = np.delete(x_train_iris, attack_feature, 1)
         # only attacked feature
@@ -422,7 +424,7 @@ def test_black_box_regressor(art_warning, get_diabetes_dataset, model_type):
 
         values = list(range(len(bins) - 1))
 
-        (x_train_diabetes, y_train_diabetes), (x_test_diabetes, y_test_diabetes) = get_diabetes_dataset
+        (x_train_diabetes, y_train_diabetes), (x_test_diabetes, _y_test_diabetes) = get_diabetes_dataset
         # training data without attacked feature
         x_train_for_attack = np.delete(x_train_diabetes, attack_feature, 1)
         # only attacked feature
@@ -552,7 +554,7 @@ def test_black_box_with_model(art_warning, decision_tree_estimator, get_iris_dat
 
         values = [0.0, 1.0, 2.0]
 
-        (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = get_iris_dataset
+        (x_train_iris, _y_train_iris), (x_test_iris, _y_test_iris) = get_iris_dataset
         # training data without attacked feature
         x_train_for_attack = np.delete(x_train_iris, attack_feature, 1)
         # only attacked feature
@@ -612,7 +614,7 @@ def test_black_box_one_hot(art_warning, get_iris_dataset, model_type):
             x[(x > 0.2) & (x <= 0.5)] = 1
             x[x <= 0.2] = 0
 
-        (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = get_iris_dataset
+        (x_train_iris, y_train_iris), (x_test_iris, _y_test_iris) = get_iris_dataset
         # training data without attacked feature
         x_train_for_attack = np.delete(x_train_iris, attack_feature, 1)
         # only attacked feature
@@ -677,7 +679,7 @@ def test_black_box_one_hot_float(art_warning, get_iris_dataset, model_type):
             x[(x > 0.2) & (x <= 0.5)] = 1
             x[x <= 0.2] = 0
 
-        (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = get_iris_dataset
+        (x_train_iris, y_train_iris), (x_test_iris, _y_test_iris) = get_iris_dataset
         # training data without attacked feature
         x_train_for_attack = np.delete(x_train_iris, attack_feature, 1)
         # only attacked feature
@@ -757,7 +759,7 @@ def test_black_box_one_hot_float_no_values(art_warning, get_iris_dataset, model_
             x[(x > 0.2) & (x <= 0.5)] = 1
             x[x <= 0.2] = 0
 
-        (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = get_iris_dataset
+        (x_train_iris, y_train_iris), (x_test_iris, _y_test_iris) = get_iris_dataset
         # training data without attacked feature
         x_train_for_attack = np.delete(x_train_iris, attack_feature, 1)
         # only attacked feature
@@ -1397,9 +1399,9 @@ def test_black_box_no_encoder_remove_attack_feature(art_warning, get_iris_datase
 def test_errors(art_warning, tabular_dl_estimator_for_attack, get_iris_dataset):
     try:
         classifier = tabular_dl_estimator_for_attack(AttributeInferenceBlackBox)
-        (x_train, y_train), (x_test, y_test) = get_iris_dataset
+        (x_train, y_train), (_x_test, y_test) = get_iris_dataset
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             AttributeInferenceBlackBox(classifier, attack_feature="a")
         with pytest.raises(ValueError):
             AttributeInferenceBlackBox(classifier, attack_feature=-3)
@@ -1427,7 +1429,7 @@ def test_check_params(art_warning, tabular_dl_estimator_for_attack):
     try:
         classifier = tabular_dl_estimator_for_attack(AttributeInferenceBlackBox)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             AttributeInferenceBlackBox(classifier, attack_feature="a")
 
         with pytest.raises(ValueError):
@@ -1442,7 +1444,7 @@ def test_check_params(art_warning, tabular_dl_estimator_for_attack):
         with pytest.raises(ValueError):
             AttributeInferenceBlackBox(classifier, encoder="a")
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             AttributeInferenceBlackBox(classifier, is_continuous="a")
 
     except ARTTestException as e:

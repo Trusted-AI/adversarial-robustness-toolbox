@@ -15,14 +15,13 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
+
 import numpy as np
 import pytest
 
 from art.attacks.poisoning import BullseyePolytopeAttackPyTorch
-
 from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)
@@ -91,7 +90,7 @@ def test_poison_multiple_layers(art_warning, get_default_mnist_subset, image_dl_
 @pytest.mark.skip_framework("non_dl_frameworks", "tensorflow", "keras", "kerastf")
 def test_check_params(art_warning, get_default_mnist_subset, image_dl_estimator):
     try:
-        (x_train, y_train), (_, _) = get_default_mnist_subset
+        (x_train, _y_train), (_, _) = get_default_mnist_subset
         classifier, _ = image_dl_estimator(functional=True)
         target = np.expand_dims(x_train[3], 0)
         with pytest.raises(ValueError):

@@ -21,7 +21,7 @@ This module implements the white-box attack `DeepFool`.
 | Paper link: https://arxiv.org/abs/1511.04599
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
 from typing import TYPE_CHECKING
@@ -29,10 +29,10 @@ from typing import TYPE_CHECKING
 import numpy as np
 from tqdm.auto import trange
 
-from art.config import ART_NUMPY_DTYPE
-from art.estimators.estimator import BaseEstimator
-from art.estimators.classification.classifier import ClassGradientsMixin
 from art.attacks.attack import EvasionAttack
+from art.config import ART_NUMPY_DTYPE
+from art.estimators.classification.classifier import ClassGradientsMixin
+from art.estimators.estimator import BaseEstimator
 from art.utils import is_probability
 
 if TYPE_CHECKING:
@@ -59,7 +59,7 @@ class DeepFool(EvasionAttack):
 
     def __init__(
         self,
-        classifier: "CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE",
+        classifier: CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE,
         max_iter: int = 100,
         epsilon: float = 1e-6,
         nb_grads: int = 10,
@@ -228,4 +228,4 @@ class DeepFool(EvasionAttack):
             raise ValueError("The batch size `batch_size` has to be positive.")
 
         if not isinstance(self.verbose, bool):
-            raise ValueError("The argument `verbose` has to be of type bool.")
+            raise TypeError("The argument `verbose` has to be of type bool.")

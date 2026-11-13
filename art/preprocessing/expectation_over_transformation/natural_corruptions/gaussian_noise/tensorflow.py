@@ -66,7 +66,7 @@ class EoTGaussianNoiseTensorFlow(EoTTensorFlowV2):
         self.std_range = (0.0, std) if isinstance(std, (int, float)) else std
         self._check_params()
 
-    def _transform(self, x: "tf.Tensor", y: "tf.Tensor" | None, **kwargs) -> tuple["tf.Tensor", "tf.Tensor" | None]:
+    def _transform(self, x: tf.Tensor, y: tf.Tensor | None, **kwargs) -> tuple[tf.Tensor, tf.Tensor | None]:
         """
         Transformation of an image with randomly sampled Gaussian noise.
 

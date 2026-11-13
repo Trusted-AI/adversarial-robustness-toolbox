@@ -43,7 +43,7 @@ This module implements the ObjectSeeker certifiably robust defense.
 | Paper link: https://arxiv.org/abs/2202.01811
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import abc
 import logging

@@ -15,7 +15,6 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
 import os
@@ -25,7 +24,6 @@ import numpy as np
 
 from art.defences.transformer.poisoning import NeuralCleanse
 from art.utils import load_dataset
-
 from tests.utils import master_seed
 
 os.environ["KMP_DUPLICATE_LIB_OK"] = "True"
@@ -58,9 +56,9 @@ class TestNeuralCleanse(unittest.TestCase):
         :return:
         """
         # Build KerasClassifier
-        from tensorflow.keras.models import Sequential
-        from tensorflow.keras.layers import Dense, Flatten, Conv2D
+        from tensorflow.keras.layers import Conv2D, Dense, Flatten
         from tensorflow.keras.losses import CategoricalCrossentropy
+        from tensorflow.keras.models import Sequential
         from tensorflow.keras.optimizers import Adam
 
         model = Sequential()
@@ -116,7 +114,7 @@ class TestNeuralCleanse(unittest.TestCase):
         assert cleanse.get_classifier
 
         # set_params
-        cleanse.set_params(**{"batch_size": 1})
+        cleanse.set_params(batch_size=1)
         assert cleanse.batch_size == 1
 
 

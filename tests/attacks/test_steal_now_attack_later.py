@@ -21,7 +21,6 @@ import numpy as np
 import pytest
 
 from art.attacks.evasion import SNAL
-
 from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)
@@ -31,12 +30,13 @@ logger = logging.getLogger(__name__)
 def test_generate(art_warning, get_pytorch_detector_yolo):
     try:
         import glob
-        from io import BytesIO
         import os
-        from PIL import Image
-        import requests
         import time
+        from io import BytesIO
+
+        import requests
         import torch
+        from PIL import Image
         from torchvision import transforms
         from torchvision.datasets.vision import VisionDataset
 
@@ -166,7 +166,7 @@ def test_generate(art_warning, get_pytorch_detector_yolo):
 
         class CustomDatasetFolder(VisionDataset):
             def __init__(self, root, transform=None):
-                super(CustomDatasetFolder, self).__init__(root)
+                super().__init__(root)
                 self.transform = transform
                 samples = glob.glob(f"{root}/*.jpg")
 
@@ -233,8 +233,8 @@ def test_generate(art_warning, get_pytorch_detector_yolo):
 @pytest.mark.only_with_platform("pytorch")
 def test_check_params(art_warning, get_pytorch_detector_yolo):
     try:
-        import torch
         import requests
+        import torch
 
         object_detector = get_pytorch_detector_yolo
         object_detector.set_params(input_shape=(3, 640, 640))

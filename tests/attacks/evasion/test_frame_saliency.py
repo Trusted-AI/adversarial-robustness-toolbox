@@ -15,19 +15,20 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
+
 import numpy as np
 import pytest
 
 from art.attacks.evasion import FastGradientMethod, FrameSaliencyAttack
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
-
-from tests.utils import ExpectedValue
-from tests.attacks.utils import backend_check_adverse_values, backend_check_adverse_frames
-from tests.attacks.utils import backend_test_classifier_type_check_fail
-from tests.utils import ARTTestException
+from tests.attacks.utils import (
+    backend_check_adverse_frames,
+    backend_check_adverse_values,
+    backend_test_classifier_type_check_fail,
+)
+from tests.utils import ARTTestException, ExpectedValue
 
 logger = logging.getLogger(__name__)
 
@@ -120,7 +121,7 @@ def test_check_params(art_warning, image_dl_estimator_for_attack):
 
         attacker = FastGradientMethod(estimator=classifier)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = FrameSaliencyAttack(classifier, attacker="attack")
 
         with pytest.raises(ValueError):
@@ -132,7 +133,7 @@ def test_check_params(art_warning, image_dl_estimator_for_attack):
         with pytest.raises(ValueError):
             _ = FrameSaliencyAttack(classifier, attacker=attacker, batch_size=-1)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = FrameSaliencyAttack(classifier, attacker=attacker, verbose="true")
 
     except ARTTestException as e:

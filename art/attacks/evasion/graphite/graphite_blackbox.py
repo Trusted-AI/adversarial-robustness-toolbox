@@ -45,27 +45,27 @@ attack that only requires class predictions.
 | Original GitHub link: https://github.com/ryan-feng/GRAPHITE
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
+import random
 from typing import TYPE_CHECKING
 
-import random
 import numpy as np
 
-from art.config import ART_NUMPY_DTYPE
 from art.attacks.attack import EvasionAttack
-from art.estimators.estimator import BaseEstimator
-from art.estimators.classification import ClassifierMixin
-from art.utils import compute_success, to_categorical, check_and_transform_label_format
 from art.attacks.evasion.graphite.utils import (
+    add_noise,
     convert_to_network,
     get_transform_params,
-    add_noise,
     get_transformed_images,
     run_predictions,
     score_fn,
 )
+from art.config import ART_NUMPY_DTYPE
+from art.estimators.classification import ClassifierMixin
+from art.estimators.estimator import BaseEstimator
+from art.utils import check_and_transform_label_format, compute_success, to_categorical
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_NEURALNETWORK_TYPE
@@ -110,7 +110,7 @@ class GRAPHITEBlackbox(EvasionAttack):
 
     def __init__(
         self,
-        classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
+        classifier: CLASSIFIER_NEURALNETWORK_TYPE,
         noise_size: tuple[int, int],
         net_size: tuple[int, int],
         heat_patch_size: tuple[int, int] = (4, 4),
@@ -221,11 +221,11 @@ class GRAPHITEBlackbox(EvasionAttack):
             )
 
         if not isinstance(obj_width, int) and not isinstance(obj_width, float):
-            raise ValueError("obj_width must be int or float")
+            raise TypeError("obj_width must be int or float")
         obj_width = float(obj_width)
 
         if not isinstance(focal, int) and not isinstance(focal, float):
-            raise ValueError("focal must be int or float")
+            raise TypeError("focal must be int or float")
         focal = float(focal)
 
         # Check the mask
@@ -838,7 +838,7 @@ class GRAPHITEBlackbox(EvasionAttack):
             raise ValueError("Heatmap patch size must be positive.")
 
         if not isinstance(self.heat_patch_size[0], int) or not isinstance(self.heat_patch_size[1], int):
-            raise ValueError("Heatmap patch size must be a tuple of two integers.")
+            raise TypeError("Heatmap patch size must be a tuple of two integers.")
 
         if (
             min(self.heat_patch_stride) <= 0

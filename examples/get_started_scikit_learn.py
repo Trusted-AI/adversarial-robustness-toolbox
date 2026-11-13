@@ -5,8 +5,8 @@ the model, it would also be possible to provide a pretrained model to the ART cl
 The parameters are chosen for reduced computational requirements of the script and not optimised for accuracy.
 """
 
-from sklearn.svm import SVC
 import numpy as np
+from sklearn.svm import SVC
 
 from art.attacks.evasion import FastGradientMethod
 from art.estimators.classification import SklearnClassifier
@@ -39,7 +39,7 @@ classifier.fit(x_train, y_train)
 
 predictions = classifier.predict(x_test)
 accuracy = np.sum(np.argmax(predictions, axis=1) == np.argmax(y_test, axis=1)) / len(y_test)
-print("Accuracy on benign test examples: {}%".format(accuracy * 100))
+print(f"Accuracy on benign test examples: {accuracy * 100}%")
 
 # Step 6: Generate adversarial test examples
 attack = FastGradientMethod(estimator=classifier, eps=0.2)
@@ -49,4 +49,4 @@ x_test_adv = attack.generate(x=x_test)
 
 predictions = classifier.predict(x_test_adv)
 accuracy = np.sum(np.argmax(predictions, axis=1) == np.argmax(y_test, axis=1)) / len(y_test)
-print("Accuracy on adversarial test examples: {}%".format(accuracy * 100))
+print(f"Accuracy on adversarial test examples: {accuracy * 100}%")

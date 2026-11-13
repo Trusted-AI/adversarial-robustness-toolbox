@@ -15,24 +15,23 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from os.path import dirname, join
 import unittest
+from os.path import dirname, join
 
 import numpy as np
 import tensorflow as tf
+from tensorflow.keras.models import load_model
 
-from tensorflow.keras.models import load_model  # noqa: E402
-
-from art.attacks.extraction.functionally_equivalent_extraction import FunctionallyEquivalentExtraction  # noqa: E402
-from art.estimators.classification.keras import KerasClassifier  # noqa: E402
-from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin  # noqa: E402
-from art.estimators.classification.classifier import ClassifierMixin  # noqa: E402
-
-from tests.utils import TestBase, master_seed  # noqa: E402
-from tests.attacks.utils import backend_test_classifier_type_check_fail  # noqa: E402
+from art.attacks.extraction.functionally_equivalent_extraction import (
+    FunctionallyEquivalentExtraction,
+)
+from art.estimators.classification.classifier import ClassifierMixin
+from art.estimators.classification.keras import KerasClassifier
+from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
+from tests.attacks.utils import backend_test_classifier_type_check_fail
+from tests.utils import TestBase, master_seed
 
 logger = logging.getLogger(__name__)
 

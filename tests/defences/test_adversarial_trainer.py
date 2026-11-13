@@ -15,20 +15,18 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
 import unittest
 
 import numpy as np
 
-from art.attacks.evasion.fast_gradient import FastGradientMethod
 from art.attacks.evasion.deepfool import DeepFool
+from art.attacks.evasion.fast_gradient import FastGradientMethod
 from art.data_generators import DataGenerator
 from art.defences.trainer.adversarial_trainer import AdversarialTrainer
 from art.utils import load_mnist
-
-from tests.utils import master_seed, get_image_classifier_tf
+from tests.utils import get_image_classifier_tf, master_seed
 
 logger = logging.getLogger(__name__)
 
@@ -68,7 +66,7 @@ class TestAdversarialTrainer(unittest.TestCase):
         self.assertEqual(adv_trainer.attacks[0].estimator, adv_trainer.get_classifier())
 
     def test_exceptions(self):
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TypeError):
             _ = AdversarialTrainer(self.classifier, "attack")
 
         with self.assertRaises(ValueError):

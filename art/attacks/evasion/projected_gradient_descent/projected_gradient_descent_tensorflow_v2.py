@@ -24,7 +24,7 @@ al. for adversarial training.
 | Paper link: https://arxiv.org/abs/1706.06083
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
 from typing import TYPE_CHECKING
@@ -32,18 +32,19 @@ from typing import TYPE_CHECKING
 import numpy as np
 from tqdm.auto import tqdm
 
-from art.config import ART_NUMPY_DTYPE
-from art.estimators.estimator import BaseEstimator, LossGradientsMixin
-from art.estimators.classification.classifier import ClassifierMixin
 from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent_numpy import (
     ProjectedGradientDescentCommon,
 )
-from art.utils import compute_success, random_sphere, compute_success_array
+from art.config import ART_NUMPY_DTYPE
+from art.estimators.classification.classifier import ClassifierMixin
+from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from art.summary_writer import SummaryWriter
+from art.utils import compute_success, compute_success_array, random_sphere
 
 if TYPE_CHECKING:
 
     import tensorflow as tf
+
     from art.estimators.classification.tensorflow import TensorFlowV2Classifier
 
 logger = logging.getLogger(__name__)
@@ -62,10 +63,10 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
 
     def __init__(
         self,
-        estimator: "TensorFlowV2Classifier",
-        norm: int | float | str = np.inf,
-        eps: int | float | np.ndarray = 0.3,
-        eps_step: int | float | np.ndarray = 0.1,
+        estimator: TensorFlowV2Classifier,
+        norm: float | str = np.inf,
+        eps: float | np.ndarray = 0.3,
+        eps_step: float | np.ndarray = 0.1,
         decay: float | None = None,
         max_iter: int = 100,
         targeted: bool = False,
@@ -252,12 +253,12 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
 
     def _generate_batch(
         self,
-        x: "tf.Tensor",
-        targets: "tf.Tensor",
-        mask: "tf.Tensor",
-        eps: int | float | np.ndarray,
-        eps_step: int | float | np.ndarray,
-    ) -> "tf.Tensor":
+        x: tf.Tensor,
+        targets: tf.Tensor,
+        mask: tf.Tensor,
+        eps: float | np.ndarray,
+        eps_step: float | np.ndarray,
+    ) -> tf.Tensor:
         """
         Generate a batch of adversarial samples and return them in an array.
 
@@ -292,12 +293,12 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
 
     def _compute_perturbation(
         self,
-        x: "tf.Tensor",
-        y: "tf.Tensor",
-        mask: "tf.Tensor" | None,
+        x: tf.Tensor,
+        y: tf.Tensor,
+        mask: tf.Tensor | None,
         decay: float | None = None,
-        momentum: "tf.Tensor" | None = None,
-    ) -> "tf.Tensor":
+        momentum: tf.Tensor | None = None,
+    ) -> tf.Tensor:
         """
         Compute perturbations.
 
@@ -377,9 +378,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
 
         return grad
 
-    def _apply_perturbation(
-        self, x: "tf.Tensor", perturbation: "tf.Tensor", eps_step: int | float | np.ndarray
-    ) -> "tf.Tensor":
+    def _apply_perturbation(self, x: tf.Tensor, perturbation: tf.Tensor, eps_step: float | np.ndarray) -> tf.Tensor:
         """
         Apply perturbation on examples.
 
@@ -401,15 +400,15 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
 
     def _compute_tf(
         self,
-        x: "tf.Tensor",
-        x_init: "tf.Tensor",
-        y: "tf.Tensor",
-        mask: "tf.Tensor",
-        eps: int | float | np.ndarray,
-        eps_step: int | float | np.ndarray,
-        momentum: "tf.Tensor" | None,
+        x: tf.Tensor,
+        x_init: tf.Tensor,
+        y: tf.Tensor,
+        mask: tf.Tensor,
+        eps: float | np.ndarray,
+        eps_step: float | np.ndarray,
+        momentum: tf.Tensor | None,
         random_init: bool,
-    ) -> "tf.Tensor":
+    ) -> tf.Tensor:
         """
         Compute adversarial examples for one iteration.
 
@@ -465,12 +464,12 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
 
     @staticmethod
     def _projection(
-        values: "tf.Tensor",
-        eps: int | float | np.ndarray,
-        norm_p: int | float | str,
+        values: tf.Tensor,
+        eps: float | np.ndarray,
+        norm_p: float | str,
         *,
         suboptimal: bool = True,
-    ) -> "tf.Tensor":
+    ) -> tf.Tensor:
         """
         Project `values` on the L_p norm ball of size `eps`.
 

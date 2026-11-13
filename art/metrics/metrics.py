@@ -20,11 +20,11 @@ Module implementing varying metrics for assessing model robustness. These fall m
 attack-dependent and attack-independent.
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
-from functools import reduce
 import logging
-from typing import Any, TYPE_CHECKING
+from functools import reduce
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import numpy.linalg as la
@@ -32,15 +32,19 @@ from scipy.optimize import fmin as scipy_optimizer
 from scipy.stats import weibull_min
 from tqdm.auto import tqdm
 
-from art.config import ART_NUMPY_DTYPE
 from art.attacks.attack import EvasionAttack
 from art.attacks.evasion.auto_attack import AutoAttack
 from art.attacks.evasion.fast_gradient import FastGradientMethod
 from art.attacks.evasion.hop_skip_jump import HopSkipJump
+from art.config import ART_NUMPY_DTYPE
 from art.utils import random_sphere
 
 if TYPE_CHECKING:
-    from art.utils import CLASSIFIER_TYPE, CLASSIFIER_LOSS_GRADIENTS_TYPE, CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE
+    from art.utils import (
+        CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE,
+        CLASSIFIER_LOSS_GRADIENTS_TYPE,
+        CLASSIFIER_TYPE,
+    )
 
 logger = logging.getLogger(__name__)
 
@@ -65,7 +69,7 @@ SUPPORTED_METHODS: dict[str, dict[str, Any]] = {
 }
 
 
-def get_crafter(classifier: "CLASSIFIER_TYPE", attack: str, params: dict[str, Any] | None = None) -> "EvasionAttack":
+def get_crafter(classifier: CLASSIFIER_TYPE, attack: str, params: dict[str, Any] | None = None) -> EvasionAttack:
     """
     Create an attack instance to craft adversarial samples.
 
@@ -75,10 +79,11 @@ def get_crafter(classifier: "CLASSIFIER_TYPE", attack: str, params: dict[str, An
     :return: An attack instance.
     """
     try:
-        crafter = SUPPORTED_METHODS[attack]["class"](classifier)
-    except Exception:  # pragma: no cover
+        attack_class = SUPPORTED_METHODS[attack]["class"]
+    except KeyError as err:  # pragma: no cover
         logger.warning("Available attacks include %s.", ", ".join(SUPPORTED_METHODS.keys()))
-        raise NotImplementedError(f"{attack} crafting method not supported.") from Exception
+        raise NotImplementedError(f"{attack} crafting method not supported.") from err
+    crafter = attack_class(classifier)
 
     if "params" in SUPPORTED_METHODS[attack]:
         crafter.set_params(**SUPPORTED_METHODS[attack]["params"])
@@ -89,7 +94,7 @@ def get_crafter(classifier: "CLASSIFIER_TYPE", attack: str, params: dict[str, An
 
 
 def adversarial_accuracy(
-    classifier: "CLASSIFIER_TYPE",
+    classifier: CLASSIFIER_TYPE,
     x: np.ndarray,
     y: np.ndarray | None = None,
     attack_name: str | None = None,
@@ -126,7 +131,7 @@ def adversarial_accuracy(
             logger.warning("The input range is outside [0,1]. Please consider using `attack_crafter` instead.")
 
         attack_crafter = get_crafter(classifier, attack_name, attack_params)
-        attack_crafter.set_params(**{"minimal": True})
+        attack_crafter.set_params(minimal=True)
 
     adv_x = attack_crafter.generate(x)
 
@@ -145,7 +150,7 @@ def adversarial_accuracy(
 
 
 def empirical_robustness(
-    classifier: "CLASSIFIER_TYPE",
+    classifier: CLASSIFIER_TYPE,
     x: np.ndarray,
     attack_name: str,
     attack_params: dict[str, Any] | None = None,
@@ -166,7 +171,7 @@ def empirical_robustness(
     :return: The average empirical robustness computed on `x`.
     """
     crafter = get_crafter(classifier, attack_name, attack_params)
-    crafter.set_params(**{"minimal": True})
+    crafter.set_params(minimal=True)
     adv_x = crafter.generate(x)
 
     # Predict the labels for adversarial examples
@@ -224,7 +229,7 @@ def empirical_robustness(
 #     return avg_nn_dist
 
 
-def loss_sensitivity(classifier: "CLASSIFIER_LOSS_GRADIENTS_TYPE", x: np.ndarray, y: np.ndarray) -> np.ndarray:
+def loss_sensitivity(classifier: CLASSIFIER_LOSS_GRADIENTS_TYPE, x: np.ndarray, y: np.ndarray) -> np.ndarray:
     """
     Local loss sensitivity estimated through the gradients of the prediction at points in `x`.
 
@@ -242,7 +247,7 @@ def loss_sensitivity(classifier: "CLASSIFIER_LOSS_GRADIENTS_TYPE", x: np.ndarray
 
 
 def clever(
-    classifier: "CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE",
+    classifier: CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE,
     x: np.ndarray,
     nb_batches: int,
     batch_size: int,
@@ -298,7 +303,7 @@ def clever(
 
 
 def clever_u(
-    classifier: "CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE",
+    classifier: CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE,
     x: np.ndarray,
     nb_batches: int,
     batch_size: int,
@@ -339,7 +344,7 @@ def clever_u(
 
 
 def clever_t(
-    classifier: "CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE",
+    classifier: CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE,
     x: np.ndarray,
     target_class: int,
     nb_batches: int,
@@ -409,7 +414,7 @@ def clever_t(
         grad_target_class = classifier.class_gradient(rand_pool_batch, label=target_class)
 
         if np.isnan(grad_pred_class).any() or np.isnan(grad_target_class).any():  # pragma: no cover
-            raise Exception("The classifier results NaN gradients.")
+            raise RuntimeError("The classifier results NaN gradients.")
 
         grad = grad_pred_class - grad_target_class
         grad = np.reshape(grad, (pool_factor, -1))

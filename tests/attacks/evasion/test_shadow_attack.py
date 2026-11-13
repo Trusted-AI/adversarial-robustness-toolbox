@@ -16,14 +16,13 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 import logging
-import pytest
 
 import numpy as np
+import pytest
 
 from art.attacks.evasion import ShadowAttack
-from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from art.estimators.classification.classifier import ClassifierMixin
-
+from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from tests.attacks.utils import backend_test_classifier_type_check_fail
 from tests.utils import ARTTestException
 
@@ -55,7 +54,7 @@ def test_generate(art_warning, fix_get_mnist_subset, image_dl_estimator_for_atta
             verbose=False,
         )
 
-        x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist = fix_get_mnist_subset
+        x_train_mnist, y_train_mnist, _x_test_mnist, _y_test_mnist = fix_get_mnist_subset
 
         x_train_mnist_adv = attack.generate(x=x_train_mnist[0:1], y=y_train_mnist[0:1])
 
@@ -132,45 +131,45 @@ def test_check_params(art_warning, image_dl_estimator_for_attack):
     try:
         classifier = image_dl_estimator_for_attack(ShadowAttack)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = ShadowAttack(classifier, sigma="test")
         with pytest.raises(ValueError):
             _ = ShadowAttack(classifier, sigma=-0.5)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = ShadowAttack(classifier, nb_steps=0.5)
         with pytest.raises(ValueError):
             _ = ShadowAttack(classifier, nb_steps=-5)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = ShadowAttack(classifier, learning_rate=5)
         with pytest.raises(ValueError):
             _ = ShadowAttack(classifier, learning_rate=-5.0)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = ShadowAttack(classifier, lambda_tv=5)
         with pytest.raises(ValueError):
             _ = ShadowAttack(classifier, lambda_tv=-5.0)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = ShadowAttack(classifier, lambda_c=5)
         with pytest.raises(ValueError):
             _ = ShadowAttack(classifier, lambda_c=-5.0)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = ShadowAttack(classifier, lambda_s=5)
         with pytest.raises(ValueError):
             _ = ShadowAttack(classifier, lambda_s=-5.0)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = ShadowAttack(classifier, batch_size=5.0)
         with pytest.raises(ValueError):
             _ = ShadowAttack(classifier, batch_size=-5)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = ShadowAttack(classifier, targeted=5.0)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = ShadowAttack(classifier, verbose=5.0)
 
     except ARTTestException as e:

@@ -21,18 +21,18 @@ This module implements the universal adversarial perturbations attack `TargetedU
 | Paper link: https://arxiv.org/abs/1911.06502
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
 import random
 import types
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, ClassVar
 
 import numpy as np
 
 from art.attacks.attack import EvasionAttack
-from art.estimators.estimator import BaseEstimator
 from art.estimators.classification.classifier import ClassifierMixin
+from art.estimators.estimator import BaseEstimator
 from art.utils import projection
 
 if TYPE_CHECKING:
@@ -49,7 +49,7 @@ class TargetedUniversalPerturbation(EvasionAttack):
     | Paper link: https://arxiv.org/abs/1911.06502
     """
 
-    attacks_dict = {
+    attacks_dict: ClassVar[dict[str, str]] = {
         "fgsm": "art.attacks.evasion.fast_gradient.FastGradientMethod",
         "simba": "art.attacks.evasion.simba.SimBA",
     }
@@ -59,13 +59,13 @@ class TargetedUniversalPerturbation(EvasionAttack):
 
     def __init__(
         self,
-        classifier: "CLASSIFIER_TYPE",
+        classifier: CLASSIFIER_TYPE,
         attacker: str = "fgsm",
         attacker_params: dict[str, Any] | None = None,
         delta: float = 0.2,
         max_iter: int = 20,
         eps: float = 10.0,
-        norm: int | float | str = np.inf,
+        norm: float | str = np.inf,
     ):
         """
         :param classifier: A trained classifier.

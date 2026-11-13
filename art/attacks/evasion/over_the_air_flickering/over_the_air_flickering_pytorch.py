@@ -30,15 +30,16 @@ from typing import TYPE_CHECKING
 import numpy as np
 from tqdm.auto import tqdm
 
-from art.config import ART_NUMPY_DTYPE
-from art.estimators.estimator import BaseEstimator
-from art.estimators.classification.classifier import ClassifierMixin, LossGradientsMixin
 from art.attacks.attack import EvasionAttack
+from art.config import ART_NUMPY_DTYPE
+from art.estimators.classification.classifier import ClassifierMixin, LossGradientsMixin
+from art.estimators.estimator import BaseEstimator
 from art.utils import check_and_transform_label_format, get_labels_np_array
 
 if TYPE_CHECKING:
 
     import torch
+
     from art.estimators.classification.pytorch import PyTorchClassifier
 
 
@@ -72,7 +73,7 @@ class OverTheAirFlickeringPyTorch(EvasionAttack):
 
     def __init__(
         self,
-        classifier: "PyTorchClassifier",
+        classifier: PyTorchClassifier,
         eps_step: float = 0.01,
         max_iter: int = 30,
         beta_0: float = 1.0,
@@ -165,7 +166,7 @@ class OverTheAirFlickeringPyTorch(EvasionAttack):
 
         return x_adv
 
-    def _generate_batch(self, x: "torch.Tensor", y: "torch.Tensor") -> np.ndarray:
+    def _generate_batch(self, x: torch.Tensor, y: torch.Tensor) -> np.ndarray:
         """
         Generate a batch of adversarial samples and return them in an array.
 
@@ -191,11 +192,11 @@ class OverTheAirFlickeringPyTorch(EvasionAttack):
 
     def _compute_torch(
         self,
-        x_adv: "torch.Tensor",
-        x: "torch.Tensor",
-        y: "torch.Tensor",
+        x_adv: torch.Tensor,
+        x: torch.Tensor,
+        y: torch.Tensor,
         eps_step: float,
-    ) -> "torch.Tensor":
+    ) -> torch.Tensor:
         """
         Compute adversarial examples for one iteration.
 
@@ -214,9 +215,7 @@ class OverTheAirFlickeringPyTorch(EvasionAttack):
 
         return x_adv
 
-    def _compute_perturbation(
-        self, x: "torch.Tensor", y: "torch.Tensor", perturbation: "torch.Tensor"
-    ) -> "torch.Tensor":
+    def _compute_perturbation(self, x: torch.Tensor, y: torch.Tensor, perturbation: torch.Tensor) -> torch.Tensor:
         """
         Compute perturbation.
 
@@ -241,7 +240,7 @@ class OverTheAirFlickeringPyTorch(EvasionAttack):
 
         return grad
 
-    def _get_loss_gradients(self, x: "torch.Tensor", y: "torch.Tensor", perturbation: "torch.Tensor") -> "torch.Tensor":
+    def _get_loss_gradients(self, x: torch.Tensor, y: torch.Tensor, perturbation: torch.Tensor) -> torch.Tensor:
         """
         Compute custom, framework-specific, regularized loss gradients.
         """
@@ -307,7 +306,7 @@ class OverTheAirFlickeringPyTorch(EvasionAttack):
 
         return grads_batch_tensor
 
-    def _clip_and_round_pytorch(self, x: "torch.Tensor") -> "torch.Tensor":
+    def _clip_and_round_pytorch(self, x: torch.Tensor) -> torch.Tensor:
         """
         Rounds the input to the correct level of granularity. Useful to ensure data passed to classifier can be
         represented in the correct domain, e.g., [0, 255] integers verses [0,1] or [0, 255] floating points.
@@ -325,7 +324,7 @@ class OverTheAirFlickeringPyTorch(EvasionAttack):
 
         return x
 
-    def _apply_perturbation(self, x_adv: "torch.Tensor", grad: "torch.Tensor", eps_step: float) -> "torch.Tensor":
+    def _apply_perturbation(self, x_adv: torch.Tensor, grad: torch.Tensor, eps_step: float) -> torch.Tensor:
         """
         Apply perturbation on examples.
 

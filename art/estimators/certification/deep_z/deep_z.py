@@ -40,10 +40,10 @@ class ZonoDenseLayer(torch.nn.Module):
         )
         self.bias = torch.nn.Parameter(torch.normal(mean=torch.zeros(out_features), std=torch.ones(out_features)))
 
-    def __call__(self, x: "torch.Tensor") -> "torch.Tensor":
+    def __call__(self, x: torch.Tensor) -> torch.Tensor:
         return self.forward(x)
 
-    def forward(self, x: "torch.Tensor") -> "torch.Tensor":
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
         Abstract forward pass through the dense layer.
 
@@ -54,7 +54,7 @@ class ZonoDenseLayer(torch.nn.Module):
         x = self.zonotope_add(x)
         return x
 
-    def concrete_forward(self, x: "torch.Tensor") -> "torch.Tensor":
+    def concrete_forward(self, x: torch.Tensor) -> torch.Tensor:
         """
         Concrete forward pass through the dense layer.
 
@@ -64,7 +64,7 @@ class ZonoDenseLayer(torch.nn.Module):
         x = torch.matmul(x, torch.transpose(self.weight, 0, 1)) + self.bias
         return x
 
-    def zonotope_matmul(self, x: "torch.Tensor") -> "torch.Tensor":
+    def zonotope_matmul(self, x: torch.Tensor) -> torch.Tensor:
         """
         Matrix multiplication for dense layer.
 
@@ -73,7 +73,7 @@ class ZonoDenseLayer(torch.nn.Module):
         """
         return torch.matmul(x, torch.transpose(self.weight, 0, 1))
 
-    def zonotope_add(self, x: "torch.Tensor") -> "torch.Tensor":
+    def zonotope_add(self, x: torch.Tensor) -> torch.Tensor:
         """
         Modification required compared to the normal torch dense layer.
         The bias is added only to the central zonotope term and not the error terms.
@@ -94,7 +94,7 @@ class ZonoBounds:
         pass
 
     @staticmethod
-    def compute_lb(cent: "torch.Tensor", eps: "torch.Tensor") -> "torch.Tensor":
+    def compute_lb(cent: torch.Tensor, eps: torch.Tensor) -> torch.Tensor:
         """
         Compute the lower bound on a feature.
 
@@ -105,7 +105,7 @@ class ZonoBounds:
         return torch.sum(-1 * torch.abs(eps), dim=0) + cent
 
     @staticmethod
-    def compute_ub(cent: "torch.Tensor", eps: "torch.Tensor") -> "torch.Tensor":
+    def compute_ub(cent: torch.Tensor, eps: torch.Tensor) -> torch.Tensor:
         """
         Compute the upper bound on a feature.
 
@@ -136,7 +136,7 @@ class ZonoBounds:
 
         return np.sign(lbs) < 0 and np.sign(ubs) < 0
 
-    def zonotope_get_bounds(self, cent: "torch.Tensor", eps: "torch.Tensor") -> tuple[list, list]:
+    def zonotope_get_bounds(self, cent: torch.Tensor, eps: torch.Tensor) -> tuple[list, list]:
         """
         Compute the upper and lower bounds for the final zonotopes
 
@@ -235,10 +235,10 @@ class ZonoConv(torch.nn.Module):
             )
         )
 
-    def __call__(self, x: "torch.Tensor") -> "torch.Tensor":
+    def __call__(self, x: torch.Tensor) -> torch.Tensor:
         return self.forward(x)
 
-    def forward(self, x: "torch.Tensor") -> "torch.Tensor":
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
         Abstract forward pass through the convolutional layer
 
@@ -249,7 +249,7 @@ class ZonoConv(torch.nn.Module):
         x = self.zonotope_add(x)
         return x
 
-    def concrete_forward(self, x: "torch.Tensor") -> "torch.Tensor":
+    def concrete_forward(self, x: torch.Tensor) -> torch.Tensor:
         """
         Concrete forward pass through the convolutional layer
 
@@ -262,7 +262,7 @@ class ZonoConv(torch.nn.Module):
         bias = torch.unsqueeze(bias, dim=0)
         return x + bias
 
-    def zonotope_add(self, x: "torch.Tensor") -> "torch.Tensor":
+    def zonotope_add(self, x: torch.Tensor) -> torch.Tensor:
         """
         Modification required compared to the normal torch conv layers.
         The bias is added only to the central zonotope term and not the error terms.
@@ -289,10 +289,10 @@ class ZonoReLU(torch.nn.Module, ZonoBounds):
         self.device = device
         self.concrete_activation = torch.nn.ReLU()
 
-    def __call__(self, x: "torch.Tensor") -> "torch.Tensor":
+    def __call__(self, x: torch.Tensor) -> torch.Tensor:
         return self.forward(x)
 
-    def forward(self, x: "torch.Tensor") -> "torch.Tensor":
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
         Forward pass through the relu
 
@@ -301,7 +301,7 @@ class ZonoReLU(torch.nn.Module, ZonoBounds):
         """
         return self.zonotope_relu(x)
 
-    def concrete_forward(self, x: "torch.Tensor") -> "torch.Tensor":
+    def concrete_forward(self, x: torch.Tensor) -> torch.Tensor:
         """
         Concrete pass through the ReLU function
 
@@ -310,7 +310,7 @@ class ZonoReLU(torch.nn.Module, ZonoBounds):
         """
         return self.concrete_activation(x)
 
-    def zonotope_relu(self, x: "torch.Tensor") -> "torch.Tensor":
+    def zonotope_relu(self, x: torch.Tensor) -> torch.Tensor:
         """
         Implements "DeepZ" for ReLU.
 

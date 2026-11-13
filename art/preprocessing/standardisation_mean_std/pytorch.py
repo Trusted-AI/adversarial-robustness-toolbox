@@ -22,7 +22,7 @@ This module implements the standardisation with mean and standard deviation.
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 import numpy as np
 
@@ -41,7 +41,7 @@ class StandardisationMeanStdPyTorch(PreprocessorPyTorch):
     Implement the standardisation with mean and standard deviation.
     """
 
-    params = ["mean", "std", "apply_fit", "apply_predict"]
+    params: ClassVar[list[str]] = ["mean", "std", "apply_fit", "apply_predict"]
 
     def __init__(
         self,
@@ -72,9 +72,7 @@ class StandardisationMeanStdPyTorch(PreprocessorPyTorch):
         self._broadcastable_mean: np.ndarray | None = None
         self._broadcastable_std: np.ndarray | None = None
 
-    def forward(
-        self, x: "torch.Tensor", y: "torch.Tensor" | None = None
-    ) -> tuple["torch.Tensor", "torch.Tensor" | None]:
+    def forward(self, x: torch.Tensor, y: torch.Tensor | None = None) -> tuple[torch.Tensor, torch.Tensor | None]:
         """
         Apply standardisation with mean and standard deviation to input `x`.
 

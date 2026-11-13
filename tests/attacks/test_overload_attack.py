@@ -21,7 +21,6 @@ import numpy as np
 import pytest
 
 from art.attacks.evasion.overload.overload import OverloadPyTorch
-
 from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)
@@ -31,9 +30,10 @@ logger = logging.getLogger(__name__)
 def test_generate(art_warning, get_pytorch_detector_yolo):
     try:
         from io import BytesIO
-        from PIL import Image
+
         import requests
         import torch
+        from PIL import Image
 
         threshold = 0.85
 

@@ -16,15 +16,19 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import pytest
 import logging
 
-from art.attacks.evasion import SignOPTAttack
-from art.estimators.estimator import BaseEstimator
-from art.estimators.classification.classifier import ClassifierMixin
+import pytest
 
-from tests.attacks.utils import backend_targeted_tabular, backend_untargeted_tabular
-from tests.attacks.utils import back_end_untargeted_images, backend_test_classifier_type_check_fail
+from art.attacks.evasion import SignOPTAttack
+from art.estimators.classification.classifier import ClassifierMixin
+from art.estimators.estimator import BaseEstimator
+from tests.attacks.utils import (
+    back_end_untargeted_images,
+    backend_targeted_tabular,
+    backend_test_classifier_type_check_fail,
+    backend_untargeted_tabular,
+)
 from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)
@@ -90,7 +94,7 @@ def test_images(
 def test_check_params(art_warning, image_dl_estimator_for_attack):
     try:
         classifier = image_dl_estimator_for_attack(SignOPTAttack)
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = SignOPTAttack(classifier, targeted="false")
         with pytest.raises(ValueError):
             _ = SignOPTAttack(classifier, epsilon=-1)
@@ -114,7 +118,7 @@ def test_check_params(art_warning, image_dl_estimator_for_attack):
             _ = SignOPTAttack(classifier, alpha=-1)
         with pytest.raises(ValueError):
             _ = SignOPTAttack(classifier, beta=-1)
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = SignOPTAttack(classifier, verbose="true")
     except ARTTestException as e:
         art_warning(e)

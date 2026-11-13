@@ -19,24 +19,21 @@
 This module implements the fast generalized subset scan based detector.
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
 import sys
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar, Literal
 
 import numpy as np
 from sklearn import metrics
-from tqdm.auto import trange, tqdm
+from tqdm.auto import tqdm, trange
 
 from art.defences.detector.evasion.evasion_detector import EvasionDetector
 from art.defences.detector.evasion.subsetscanning.scanner import Scanner
-from art.defences.detector.evasion.subsetscanning.scoring_functions import ScoringFunctions
-
-if sys.version_info >= (3, 8):
-    from typing import Literal
-else:
-    from typing_extensions import Literal
+from art.defences.detector.evasion.subsetscanning.scoring_functions import (
+    ScoringFunctions,
+)
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_NEURALNETWORK_TYPE
@@ -51,11 +48,11 @@ class SubsetScanningDetector(EvasionDetector):
     | Paper link: https://www.cs.cmu.edu/~neill/papers/mcfowland13a.pdf
     """
 
-    defence_params = ["classifier", "bgd_data", "layer", "scoring_function", "verbose"]
+    defence_params: ClassVar[list[str]] = ["classifier", "bgd_data", "layer", "scoring_function", "verbose"]
 
     def __init__(
         self,
-        classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
+        classifier: CLASSIFIER_NEURALNETWORK_TYPE,
         bgd_data: np.ndarray,
         layer: int | str,
         scoring_function: Literal["BerkJones", "HigherCriticism", "KolmarovSmirnov"] = "BerkJones",

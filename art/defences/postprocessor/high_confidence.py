@@ -22,6 +22,7 @@ This module implements confidence added to the classifier output.
 from __future__ import annotations
 
 import logging
+from typing import ClassVar
 
 import numpy as np
 
@@ -35,7 +36,7 @@ class HighConfidence(Postprocessor):
     Implementation of a postprocessor based on selecting high confidence predictions to return as classifier output.
     """
 
-    params = ["cutoff"]
+    params: ClassVar[list[str]] = ["cutoff"]
 
     def __init__(self, cutoff: float = 0.25, apply_fit: bool = False, apply_predict: bool = True) -> None:
         """
