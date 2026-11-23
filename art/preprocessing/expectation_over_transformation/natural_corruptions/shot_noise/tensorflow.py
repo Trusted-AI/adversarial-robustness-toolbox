@@ -66,7 +66,7 @@ class EoTShotNoiseTensorFlow(EoTTensorFlowV2):
         self.lam_range = (0.0, lam) if isinstance(lam, (int, float)) else lam
         self._check_params()
 
-    def _transform(self, x: "tf.Tensor", y: "tf.Tensor" | None, **kwargs) -> tuple["tf.Tensor", "tf.Tensor" | None]:
+    def _transform(self, x: tf.Tensor, y: tf.Tensor | None, **kwargs) -> tuple[tf.Tensor, tf.Tensor | None]:
         """
         Transformation of an image with randomly sampled shot (Poisson) noise.
 

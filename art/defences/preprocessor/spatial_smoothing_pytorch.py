@@ -25,7 +25,7 @@ This module implements the local spatial smoothing defence in `SpatialSmoothing`
     https://arxiv.org/abs/1902.06705
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
 from typing import TYPE_CHECKING
@@ -37,6 +37,7 @@ from art.defences.preprocessor.preprocessor import PreprocessorPyTorch
 if TYPE_CHECKING:
 
     import torch
+
     from art.utils import CLIP_VALUES_TYPE
 
 logger = logging.getLogger(__name__)
@@ -57,7 +58,7 @@ class SpatialSmoothingPyTorch(PreprocessorPyTorch):
         self,
         window_size: int = 3,
         channels_first: bool = False,
-        clip_values: "CLIP_VALUES_TYPE" | None = None,
+        clip_values: CLIP_VALUES_TYPE | None = None,
         apply_fit: bool = False,
         apply_predict: bool = True,
         device_type: str = "gpu",
@@ -121,7 +122,7 @@ class SpatialSmoothingPyTorch(PreprocessorPyTorch):
                     self.kernel = get_binary_kernel2d(kernel_size)
 
             # pylint: disable=redefined-builtin
-            def forward(self, input: "torch.Tensor"):  # type: ignore
+            def forward(self, input: torch.Tensor):  # type: ignore
                 import torch
                 import torch.nn.functional as F
 
@@ -155,9 +156,7 @@ class SpatialSmoothingPyTorch(PreprocessorPyTorch):
 
         self.median_blur = MedianBlurCustom(kernel_size=(self.window_size, self.window_size))
 
-    def forward(
-        self, x: "torch.Tensor", y: "torch.Tensor" | None = None
-    ) -> tuple["torch.Tensor", "torch.Tensor" | None]:
+    def forward(self, x: torch.Tensor, y: torch.Tensor | None = None) -> tuple[torch.Tensor, torch.Tensor | None]:
         """
         Apply local spatial smoothing to sample `x`.
         """

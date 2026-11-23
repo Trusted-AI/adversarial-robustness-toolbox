@@ -15,7 +15,6 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
 import unittest
@@ -25,10 +24,9 @@ import keras.backend as k
 import numpy as np
 import tensorflow as tf
 import torch
-import torch.nn as nn
-import torch.optim as optim
 from keras.layers import Conv2D, Dense, Flatten, MaxPooling2D
 from keras.models import Sequential
+from torch import nn, optim
 
 from art.attacks.extraction.copycat_cnn import CopycatCNN
 from art.estimators.classification.keras import KerasClassifier
@@ -210,7 +208,7 @@ class TestCopycatCNN(TestBase):
                 nb_stolen=-1,
             )
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TypeError):
             _ = CopycatCNN(
                 classifier=victim_ptc,
                 batch_size_fit=self.batch_size,

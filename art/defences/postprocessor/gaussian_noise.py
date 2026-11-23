@@ -22,6 +22,7 @@ This module implements Gaussian noise added to the classifier output.
 from __future__ import annotations
 
 import logging
+from typing import ClassVar
 
 import numpy as np
 
@@ -36,7 +37,7 @@ class GaussianNoise(Postprocessor):
     Implementation of a postprocessor based on adding Gaussian noise to classifier output.
     """
 
-    params = ["scale"]
+    params: ClassVar[list[str]] = ["scale"]
 
     def __init__(self, scale: float = 0.2, apply_fit: bool = False, apply_predict: bool = True) -> None:
         """

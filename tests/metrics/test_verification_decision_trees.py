@@ -15,22 +15,26 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
 import unittest
 
-from xgboost import XGBClassifier
 import lightgbm
 import numpy as np
-from sklearn.ensemble import ExtraTreesClassifier, RandomForestClassifier, GradientBoostingClassifier
+from sklearn.ensemble import (
+    ExtraTreesClassifier,
+    GradientBoostingClassifier,
+    RandomForestClassifier,
+)
+from xgboost import XGBClassifier
 
-from art.estimators.classification.xgboost import XGBoostClassifier
 from art.estimators.classification.lightgbm import LightGBMClassifier
 from art.estimators.classification.scikitlearn import SklearnClassifier
+from art.estimators.classification.xgboost import XGBoostClassifier
+from art.metrics.verification_decisions_trees import (
+    RobustnessVerificationTreeModelsCliqueMethod,
+)
 from art.utils import load_dataset
-from art.metrics.verification_decisions_trees import RobustnessVerificationTreeModelsCliqueMethod
-
 from tests.utils import master_seed
 
 logger = logging.getLogger(__name__)

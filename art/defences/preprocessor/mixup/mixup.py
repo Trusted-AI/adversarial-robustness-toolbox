@@ -25,10 +25,10 @@ This module implements the Mixup data augmentation defence.
     https://arxiv.org/abs/1902.06705
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
-
+from typing import ClassVar
 
 import numpy as np
 
@@ -49,7 +49,7 @@ class Mixup(Preprocessor):
         https://arxiv.org/abs/1902.06705
     """
 
-    params = ["num_classes", "alpha", "num_mix"]
+    params: ClassVar[list[str]] = ["num_classes", "alpha", "num_mix"]
 
     def __init__(
         self,

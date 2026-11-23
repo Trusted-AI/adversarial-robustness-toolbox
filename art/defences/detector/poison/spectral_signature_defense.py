@@ -24,7 +24,7 @@ This module implements methods performing backdoor poisoning detection based on 
     specific defense, see https://arxiv.org/abs/1905.13409 .
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
@@ -32,7 +32,6 @@ import numpy as np
 
 from art.defences.detector.poison.ground_truth_evaluator import GroundTruthEvaluator
 from art.defences.detector.poison.poison_filtering_defence import PoisonFilteringDefence
-
 from art.utils import segment_by_class
 
 if TYPE_CHECKING:
@@ -54,7 +53,7 @@ class SpectralSignatureDefense(PoisonFilteringDefence):
 
     def __init__(
         self,
-        classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
+        classifier: CLASSIFIER_NEURALNETWORK_TYPE,
         x_train: np.ndarray,
         y_train: np.ndarray,
         expected_pp_poison: float = 0.33,
@@ -73,7 +72,7 @@ class SpectralSignatureDefense(PoisonFilteringDefence):
                                a potentially higher false positive rate, but may detect more poison samples
         """
         super().__init__(classifier, x_train, y_train)
-        self.classifier: "CLASSIFIER_NEURALNETWORK_TYPE" = classifier
+        self.classifier: CLASSIFIER_NEURALNETWORK_TYPE = classifier
         self.batch_size = batch_size
         self.eps_multiplier = eps_multiplier
         self.expected_pp_poison = expected_pp_poison
@@ -119,7 +118,7 @@ class SpectralSignatureDefense(PoisonFilteringDefence):
             self.x_train, layer=nb_layers - 1, batch_size=self.batch_size
         )
         if not isinstance(features_x_poisoned, np.ndarray):
-            raise ValueError("Wrong type detected.")
+            raise TypeError("Wrong type detected.")
 
         if features_x_poisoned is not None:
             # flatten activations across batch

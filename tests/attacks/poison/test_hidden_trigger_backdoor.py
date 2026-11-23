@@ -15,18 +15,19 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
+
 import numpy as np
 import pytest
 
-from art.attacks.poisoning.hidden_trigger_backdoor.hidden_trigger_backdoor import HiddenTriggerBackdoor
 from art.attacks.poisoning.backdoor_attack import PoisoningAttackBackdoor
+from art.attacks.poisoning.hidden_trigger_backdoor.hidden_trigger_backdoor import (
+    HiddenTriggerBackdoor,
+)
 from art.attacks.poisoning.perturbations import add_pattern_bd
-from art.estimators.classification.pytorch import PyTorchClassifier
 from art.estimators.classification.hugging_face import HuggingFaceClassifierPyTorch
-
+from art.estimators.classification.pytorch import PyTorchClassifier
 from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)
@@ -56,7 +57,7 @@ def test_poison(art_warning, get_default_mnist_subset, image_dl_estimator, frame
 
         backdoor = PoisoningAttackBackdoor(mod)
         target = y_train[0]
-        diff_index = list(set(np.arange(len(y_train))) - set(np.where(np.all(y_train == target, axis=1))[0]))[0]
+        diff_index = next(iter(set(np.arange(len(y_train))) - set(np.where(np.all(y_train == target, axis=1))[0])))
         source = y_train[diff_index]
         attack = HiddenTriggerBackdoor(
             classifier,
@@ -82,7 +83,7 @@ def test_poison(art_warning, get_default_mnist_subset, image_dl_estimator, frame
 @pytest.mark.skip_framework("non_dl_frameworks")
 def test_check_params(art_warning, get_default_mnist_subset, image_dl_estimator, framework):
     try:
-        (x_train, y_train), (_, _) = get_default_mnist_subset
+        (_x_train, y_train), (_, _) = get_default_mnist_subset
         functional = True
         if framework == "huggingface":
             functional = False
@@ -106,11 +107,11 @@ def test_check_params(art_warning, get_default_mnist_subset, image_dl_estimator,
 
         backdoor = PoisoningAttackBackdoor(mod)
         target = y_train[0]
-        diff_index = list(set(np.arange(len(y_train))) - set(np.where(np.all(y_train == target, axis=1))[0]))[0]
+        diff_index = next(iter(set(np.arange(len(y_train))) - set(np.where(np.all(y_train == target, axis=1))[0])))
         source = y_train[diff_index]
 
         # Test non-array target
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = HiddenTriggerBackdoor(
                 classifier,
                 eps=0.3,

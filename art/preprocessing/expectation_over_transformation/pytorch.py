@@ -21,8 +21,8 @@ This module defines a base class for EoT in PyTorch.
 
 from __future__ import annotations
 
-from abc import abstractmethod
 import logging
+from abc import abstractmethod
 from typing import TYPE_CHECKING
 
 from art.preprocessing.preprocessing import PreprocessorPyTorch
@@ -61,8 +61,8 @@ class EoTPyTorch(PreprocessorPyTorch):
 
     @abstractmethod
     def _transform(
-        self, x: "torch.Tensor", y: "torch.Tensor" | list[dict[str, "torch.Tensor"]] | None, **kwargs
-    ) -> tuple["torch.Tensor", "torch.Tensor" | list[dict[str, "torch.Tensor"]] | None]:
+        self, x: torch.Tensor, y: torch.Tensor | list[dict[str, torch.Tensor]] | None, **kwargs
+    ) -> tuple[torch.Tensor, torch.Tensor | list[dict[str, torch.Tensor]] | None]:
         """
         Internal method implementing the transformation per input sample.
 
@@ -73,8 +73,8 @@ class EoTPyTorch(PreprocessorPyTorch):
         raise NotImplementedError
 
     def forward(
-        self, x: "torch.Tensor", y: "torch.Tensor" | list[dict[str, "torch.Tensor"]] | None = None
-    ) -> tuple["torch.Tensor", "torch.Tensor" | list[dict[str, "torch.Tensor"]] | None]:
+        self, x: torch.Tensor, y: torch.Tensor | list[dict[str, torch.Tensor]] | None = None
+    ) -> tuple[torch.Tensor, torch.Tensor | list[dict[str, torch.Tensor]] | None]:
         """
         Apply transformations to inputs `x` and labels `y`.
 
@@ -109,7 +109,7 @@ class EoTPyTorch(PreprocessorPyTorch):
                         y_preprocess_list_object_detection.append(y_preprocess_i)
 
         x_preprocess = torch.stack(x_preprocess_list, dim=0)
-        y_preprocess: "torch.Tensor" | list[dict[str, "torch.Tensor"]] | None
+        y_preprocess: torch.Tensor | list[dict[str, torch.Tensor]] | None
         if y is None:
             y_preprocess = y
         else:

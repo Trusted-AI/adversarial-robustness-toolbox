@@ -21,18 +21,18 @@ Implementation of the High-Confidence-Low-Uncertainty (HCLU) adversarial example
 | Paper link: https://arxiv.org/abs/1812.02606
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import copy
 import logging
-
+from typing import ClassVar
 
 import numpy as np
 from scipy.optimize import minimize
 from tqdm.auto import trange
 
 from art.attacks.attack import EvasionAttack
-from art.estimators.classification.GPy import GPyGaussianProcessClassifier
+from art.estimators.classification.gpy import GPyGaussianProcessClassifier
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +44,7 @@ class HighConfidenceLowUncertainty(EvasionAttack):
     | Paper link: https://arxiv.org/abs/1812.02606
     """
 
-    attack_params = ["conf", "unc_increase", "min_val", "max_val", "verbose"]
+    attack_params: ClassVar[list[str]] = ["conf", "unc_increase", "min_val", "max_val", "verbose"]
     _estimator_requirements = (GPyGaussianProcessClassifier,)
 
     def __init__(
@@ -136,4 +136,4 @@ class HighConfidenceLowUncertainty(EvasionAttack):
             raise ValueError("Maximum has to be larger than minimum.")
 
         if not isinstance(self.verbose, bool):
-            raise ValueError("The argument `verbose` has to be of type bool.")
+            raise TypeError("The argument `verbose` has to be of type bool.")

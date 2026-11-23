@@ -1,9 +1,9 @@
 import cv2
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 
-from art.estimators.object_detection import PyTorchFasterRCNN
 from art.attacks.evasion import ProjectedGradientDescent
+from art.estimators.object_detection import PyTorchFasterRCNN
 
 COCO_INSTANCE_CATEGORY_NAMES = [
     "__background__",
@@ -177,7 +177,7 @@ def main():
 
     for i in range(image.shape[0]):
         plt.axis("off")
-        plt.title("image {}".format(i))
+        plt.title(f"image {i}")
         plt.imshow(image[i].astype(np.uint8), interpolation="nearest")
         plt.show()
 
@@ -186,7 +186,7 @@ def main():
     predictions = frcnn.predict(x=image_chw)
 
     for i in range(image.shape[0]):
-        print("\nPredictions image {}:".format(i))
+        print(f"\nPredictions image {i}:")
 
         # Process predictions
         predictions_class, predictions_boxes, _ = extract_predictions(predictions[i])
@@ -200,19 +200,19 @@ def main():
     image_adv_chw = attack.generate(x=image_chw, y=None)
     image_adv = np.transpose(image_adv_chw, (0, 2, 3, 1))
 
-    print("\nThe attack budget eps is {}".format(eps))
-    print("The resulting maximal difference in pixel values is {}.".format(np.amax(np.abs(image - image_adv))))
+    print(f"\nThe attack budget eps is {eps}")
+    print(f"The resulting maximal difference in pixel values is {np.amax(np.abs(image - image_adv))}.")
 
     for i in range(image_adv.shape[0]):
         plt.axis("off")
-        plt.title("image_adv {}".format(i))
+        plt.title(f"image_adv {i}")
         plt.imshow(image_adv[i].astype(np.uint8), interpolation="nearest")
         plt.show()
 
     predictions_adv = frcnn.predict(x=image_adv_chw)
 
     for i in range(image.shape[0]):
-        print("\nPredictions adversarial image {}:".format(i))
+        print(f"\nPredictions adversarial image {i}:")
 
         # Process predictions
         predictions_adv_class, predictions_adv_boxes, _ = extract_predictions(predictions_adv[i])

@@ -31,10 +31,10 @@ from typing import TYPE_CHECKING
 import numpy as np
 from tqdm.auto import trange
 
+from art import config
 from art.attacks.attack import EvasionAttack
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from art.estimators.object_detection.object_detector import ObjectDetectorMixin
-from art import config
 
 if TYPE_CHECKING:
     from art.utils import OBJECT_DETECTOR_TYPE
@@ -61,7 +61,7 @@ class DPatch(EvasionAttack):
 
     def __init__(
         self,
-        estimator: "OBJECT_DETECTOR_TYPE",
+        estimator: OBJECT_DETECTOR_TYPE,
         patch_shape: tuple[int, int, int] = (40, 40, 3),
         learning_rate: float = 5.0,
         max_iter: int = 500,
@@ -284,11 +284,10 @@ class DPatch(EvasionAttack):
         :param transforms: Patch transforms, requires `random_location=False`, and `mask=None`.
         :type mask: `np.ndarray`
         """
-        if transforms is not None:
-            if random_location or mask is not None:
-                raise ValueError(
-                    "Definition of patch locations in `locations` requires `random_location=False`, and `mask=None`."
-                )
+        if transforms is not None and (random_location or mask is not None):
+            raise ValueError(
+                "Definition of patch locations in `locations` requires `random_location=False`, and `mask=None`."
+            )
 
         random_transformations = []
         x_copy = x.copy()
@@ -391,19 +390,19 @@ class DPatch(EvasionAttack):
             raise ValueError("The length of patch shape must be 3.")
 
         if not isinstance(self.learning_rate, float):
-            raise ValueError("The learning rate must be of type float.")
+            raise TypeError("The learning rate must be of type float.")
         if self.learning_rate <= 0.0:
             raise ValueError("The learning rate must be greater than 0.0.")
 
         if not isinstance(self.max_iter, int):
-            raise ValueError("The number of optimization steps must be of type int.")
+            raise TypeError("The number of optimization steps must be of type int.")
         if self.max_iter <= 0:
             raise ValueError("The number of optimization steps must be greater than 0.")
 
         if not isinstance(self.batch_size, int):
-            raise ValueError("The batch size must be of type int.")
+            raise TypeError("The batch size must be of type int.")
         if self.batch_size <= 0:
             raise ValueError("The batch size must be greater than 0.")
 
         if not isinstance(self.verbose, bool):
-            raise ValueError("The argument `verbose` has to be of type bool.")
+            raise TypeError("The argument `verbose` has to be of type bool.")

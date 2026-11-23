@@ -15,7 +15,6 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
 
@@ -47,7 +46,7 @@ def test_pytorch_deep_speech(art_warning, expected_values, use_amp, device_type)
         speech_recognizer = PyTorchDeepSpeech(pretrained_model="librispeech", device_type=device_type, use_amp=use_amp)
 
         # Get version of DeepSpeech
-        version = "v{}".format(speech_recognizer._version)
+        version = f"v{speech_recognizer._version}"
 
         # Load data for testing
         expected_data = expected_values()
@@ -132,8 +131,8 @@ def test_pytorch_deep_speech_preprocessor(
     # Only import if deepspeech_pytorch module is available
     import torch
 
-    from art.estimators.speech_recognition.pytorch_deep_speech import PyTorchDeepSpeech
     from art.defences.preprocessor.mp3_compression_pytorch import Mp3CompressionPyTorch
+    from art.estimators.speech_recognition.pytorch_deep_speech import PyTorchDeepSpeech
 
     try:
         # Create Mp3-preprocessor
@@ -145,7 +144,7 @@ def test_pytorch_deep_speech_preprocessor(
         )
 
         # Get version of DeepSpeech
-        version = "v{}".format(speech_recognizer._version)
+        version = f"v{speech_recognizer._version}"
 
         # Load data for testing
         expected_data = expected_values()

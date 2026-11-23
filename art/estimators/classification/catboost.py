@@ -19,7 +19,7 @@
 This module implements the classifier `CatBoostARTClassifier` for CatBoost models.
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
 import os
@@ -28,16 +28,16 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-from art.estimators.classification.classifier import ClassifierDecisionTree
 from art import config
+from art.estimators.classification.classifier import ClassifierDecisionTree
 
 if TYPE_CHECKING:
 
     from catboost.core import CatBoostClassifier
 
-    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
-    from art.defences.preprocessor import Preprocessor
     from art.defences.postprocessor import Postprocessor
+    from art.defences.preprocessor import Preprocessor
+    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -51,11 +51,11 @@ class CatBoostARTClassifier(ClassifierDecisionTree):
 
     def __init__(
         self,
-        model: "CatBoostClassifier" | None = None,
-        preprocessing_defences: "Preprocessor" | list["Preprocessor"] | None = None,
-        postprocessing_defences: "Postprocessor" | list["Postprocessor"] | None = None,
-        preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
-        clip_values: "CLIP_VALUES_TYPE" | None = None,
+        model: CatBoostClassifier | None = None,
+        preprocessing_defences: Preprocessor | list[Preprocessor] | None = None,
+        postprocessing_defences: Postprocessor | list[Postprocessor] | None = None,
+        preprocessing: PREPROCESSING_TYPE = (0.0, 1.0),
+        clip_values: CLIP_VALUES_TYPE | None = None,
         nb_features: int | None = None,
     ) -> None:
         """

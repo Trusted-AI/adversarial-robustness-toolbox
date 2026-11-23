@@ -23,8 +23,8 @@ This module implements Interval bound propagation based layers
 
 from __future__ import annotations
 
-import torch
 import numpy as np
+import torch
 
 
 class PyTorchIntervalDense(torch.nn.Module):
@@ -40,10 +40,10 @@ class PyTorchIntervalDense(torch.nn.Module):
         )
         self.bias = torch.nn.Parameter(torch.normal(mean=torch.zeros(out_features), std=torch.ones(out_features)))
 
-    def __call__(self, x: "torch.Tensor") -> "torch.Tensor":
+    def __call__(self, x: torch.Tensor) -> torch.Tensor:
         return self.forward(x)
 
-    def forward(self, x: "torch.Tensor") -> "torch.Tensor":
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
         Performs the forward pass of the dense layer in the interval (box) domain.
 
@@ -61,7 +61,7 @@ class PyTorchIntervalDense(torch.nn.Module):
 
         return torch.cat([center - radius, center + radius], dim=1)
 
-    def concrete_forward(self, x: "torch.Tensor") -> "torch.Tensor":
+    def concrete_forward(self, x: torch.Tensor) -> torch.Tensor:
         """
         Performs the forward pass of the dense layer.
 
@@ -82,13 +82,13 @@ class PyTorchIntervalConv2D(torch.nn.Module):
         out_channels: int,
         kernel_size: int | tuple[int, int],
         input_shape: tuple[int, ...],
-        device: str | "torch.device",
+        device: str | torch.device,
         stride: int | tuple[int, int] = 1,
         padding: int | tuple[int, int] = 0,
         dilation: int | tuple[int, int] = 0,
         bias: bool = True,
-        supplied_input_weights: "torch.Tensor" | None = None,
-        supplied_input_bias: "torch.Tensor" | None = None,
+        supplied_input_weights: torch.Tensor | None = None,
+        supplied_input_bias: torch.Tensor | None = None,
         to_debug: bool = False,
     ):
         """
@@ -115,7 +115,7 @@ class PyTorchIntervalConv2D(torch.nn.Module):
         self.stride = stride
         self.device = device
         self.include_bias = bias
-        self.cnn: "torch.nn.Conv2d" | None = None
+        self.cnn: torch.nn.Conv2d | None = None
 
         super().__init__()
         self.conv = torch.nn.Conv2d(
@@ -192,7 +192,7 @@ class PyTorchIntervalConv2D(torch.nn.Module):
         if self.bias is not None:
             self.bias = self.bias.to(device)
 
-    def re_convert(self, device: str | "torch.device") -> None:
+    def re_convert(self, device: str | torch.device) -> None:
         """
         Re converts the weights into a dense equivalent layer.
         Must be called after every backwards if multiple gradients wish to be taken (like for crafting pgd).
@@ -202,7 +202,7 @@ class PyTorchIntervalConv2D(torch.nn.Module):
         if self.bias is not None:
             self.bias = self.bias.to(device)
 
-    def convert_to_dense(self, device: str | "torch.device") -> tuple["torch.Tensor", "torch.Tensor" | None]:
+    def convert_to_dense(self, device: str | torch.device) -> tuple[torch.Tensor, torch.Tensor | None]:
         """
         Converts the initialised convolutional layer into an equivalent dense layer.
 
@@ -276,7 +276,7 @@ class PyTorchIntervalConv2D(torch.nn.Module):
             bias = None
         return torch.transpose(weights, 0, 1), bias
 
-    def forward(self, x: "torch.Tensor") -> "torch.Tensor":
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
         Performs the forward pass of the convolutional layer in the interval (box) domain by using
         the equivalent dense representation.
@@ -301,7 +301,7 @@ class PyTorchIntervalConv2D(torch.nn.Module):
         x = torch.cat([center - radius, center + radius], dim=1)
         return x.reshape((-1, 2, self.out_channels, self.output_height, self.output_width))
 
-    def concrete_forward(self, x: "torch.Tensor") -> "torch.Tensor":
+    def concrete_forward(self, x: torch.Tensor) -> torch.Tensor:
         """
         Performs the forward pass using the equivalent dense representation of the convolutional layer.
 
@@ -315,7 +315,7 @@ class PyTorchIntervalConv2D(torch.nn.Module):
             x = torch.matmul(x, torch.transpose(self.dense_weights, 0, 1)) + self.bias
         return x.reshape((-1, self.out_channels, self.output_height, self.output_width))
 
-    def conv_forward(self, x: "torch.Tensor") -> "torch.Tensor":
+    def conv_forward(self, x: torch.Tensor) -> torch.Tensor:
         """
         Method for efficiently interfacing with adversarial attacks.
 
@@ -360,11 +360,11 @@ class PyTorchIntervalFlatten(torch.nn.Module):
     Layer to handle flattening on both interval and concrete data
     """
 
-    def __call__(self, x: "torch.Tensor") -> "torch.Tensor":
+    def __call__(self, x: torch.Tensor) -> torch.Tensor:
         return self.concrete_forward(x)
 
     @staticmethod
-    def forward(x: "torch.Tensor") -> "torch.Tensor":
+    def forward(x: torch.Tensor) -> torch.Tensor:
         """
         Flattens the provided abstract input
 
@@ -374,7 +374,7 @@ class PyTorchIntervalFlatten(torch.nn.Module):
         return torch.reshape(x, (x.shape[0], 2, -1))
 
     @staticmethod
-    def concrete_forward(x: "torch.Tensor") -> "torch.Tensor":
+    def concrete_forward(x: torch.Tensor) -> torch.Tensor:
         """
         Flattens the provided concrete input
 
@@ -393,10 +393,10 @@ class PyTorchIntervalReLU(torch.nn.Module):
         super().__init__()
         self.activation = torch.nn.ReLU()
 
-    def __call__(self, x: "torch.Tensor") -> "torch.Tensor":
+    def __call__(self, x: torch.Tensor) -> torch.Tensor:
         return self.forward(x)
 
-    def forward(self, x: "torch.Tensor") -> "torch.Tensor":
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
         Abstract pass through the ReLU function
 
@@ -405,7 +405,7 @@ class PyTorchIntervalReLU(torch.nn.Module):
         """
         return self.activation(x)
 
-    def concrete_forward(self, x: "torch.Tensor") -> "torch.Tensor":
+    def concrete_forward(self, x: torch.Tensor) -> torch.Tensor:
         """
         Concrete pass through the ReLU function
 
@@ -476,7 +476,7 @@ class PyTorchIntervalBounds:
             up_x = x + bounds[1]
             lb_x = x - bounds[0]
         else:
-            raise ValueError("Bounds must be a float, list, or numpy array.")
+            raise TypeError("Bounds must be a float, list, or numpy array.")
 
         final_batched_input = np.concatenate((lb_x, up_x), axis=1)
 

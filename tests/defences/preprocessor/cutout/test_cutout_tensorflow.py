@@ -15,7 +15,6 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
 
@@ -24,7 +23,10 @@ import pytest
 from numpy.testing import assert_array_equal
 
 from art.config import ART_NUMPY_DTYPE
-from art.defences.preprocessor.cutout.cutout_tensorflow import CutoutTensorFlowV2, random_cutout
+from art.defences.preprocessor.cutout.cutout_tensorflow import (
+    CutoutTensorFlowV2,
+    random_cutout,
+)
 from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)

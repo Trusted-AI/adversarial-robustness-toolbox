@@ -21,7 +21,7 @@ This module implements the black-box attack `SimBA`.
 | Paper link: https://arxiv.org/abs/1905.07121
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
 from typing import TYPE_CHECKING
@@ -31,9 +31,9 @@ from scipy.fftpack import idct
 from tqdm.auto import trange
 
 from art.attacks.attack import EvasionAttack
-from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
-from art.estimators.classification.classifier import ClassifierMixin
 from art.config import ART_NUMPY_DTYPE
+from art.estimators.classification.classifier import ClassifierMixin
+from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
 from art.utils import is_probability
 
 if TYPE_CHECKING:
@@ -65,7 +65,7 @@ class SimBA(EvasionAttack):
 
     def __init__(
         self,
-        classifier: "CLASSIFIER_TYPE",
+        classifier: CLASSIFIER_TYPE,
         attack: str = "dct",
         max_iter: int = 3000,
         order: str = "random",
@@ -350,10 +350,10 @@ class SimBA(EvasionAttack):
             raise ValueError("The attack type has to be `px` or `dct`.")
 
         if not isinstance(self.targeted, bool):
-            raise ValueError("`targeted` has to be a Boolean value.")
+            raise TypeError("`targeted` has to be a Boolean value.")
 
         if not isinstance(self.verbose, bool):
-            raise ValueError("The argument `verbose` has to be of type bool.")
+            raise TypeError("The argument `verbose` has to be of type bool.")
 
     def _block_order(self, img_size, channels, initial_size=2, stride=1):
         """

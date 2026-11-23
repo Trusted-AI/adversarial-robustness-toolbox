@@ -22,10 +22,10 @@ This module implements the task specific estimator for PyTorch object detectors.
 from __future__ import annotations
 
 import logging
-from packaging.version import parse
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
+from packaging.version import parse
 
 from art.estimators.object_detection.object_detector import ObjectDetectorMixin
 from art.estimators.object_detection.utils import cast_inputs_to_pt
@@ -35,9 +35,9 @@ if TYPE_CHECKING:
 
     import torch
 
-    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
-    from art.defences.preprocessor.preprocessor import Preprocessor
     from art.defences.postprocessor.postprocessor import Postprocessor
+    from art.defences.preprocessor.preprocessor import Preprocessor
+    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -52,14 +52,14 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
 
     def __init__(
         self,
-        model: "torch.nn.Module",
+        model: torch.nn.Module,
         input_shape: tuple[int, ...] = (-1, -1, -1),
-        optimizer: "torch.optim.Optimizer" | None = None,
-        clip_values: "CLIP_VALUES_TYPE" | None = None,
+        optimizer: torch.optim.Optimizer | None = None,
+        clip_values: CLIP_VALUES_TYPE | None = None,
         channels_first: bool = True,
-        preprocessing_defences: "Preprocessor" | list["Preprocessor"] | None = None,
-        postprocessing_defences: "Postprocessor" | list["Postprocessor"] | None = None,
-        preprocessing: "PREPROCESSING_TYPE" = None,
+        preprocessing_defences: Preprocessor | list[Preprocessor] | None = None,
+        postprocessing_defences: Postprocessor | list[Postprocessor] | None = None,
+        preprocessing: PREPROCESSING_TYPE = None,
         attack_losses: tuple[str, ...] = (
             "loss_classifier",
             "loss_box_reg",
@@ -148,7 +148,7 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
         return True
 
     @property
-    def model(self) -> "torch.nn.Module":
+    def model(self) -> torch.nn.Module:
         return self._model
 
     @property
@@ -161,7 +161,7 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
         return self._input_shape
 
     @property
-    def optimizer(self) -> "torch.optim.Optimizer" | None:
+    def optimizer(self) -> torch.optim.Optimizer | None:
         """
         Return the optimizer.
 
@@ -179,7 +179,7 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
         return self._attack_losses
 
     @property
-    def device(self) -> "torch.device":
+    def device(self) -> torch.device:
         """
         Get current used device.
 
@@ -189,11 +189,11 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
 
     def _preprocess_and_convert_inputs(
         self,
-        x: np.ndarray | "torch.Tensor",
-        y: list[dict[str, np.ndarray | "torch.Tensor"]] | None = None,
+        x: np.ndarray | torch.Tensor,
+        y: list[dict[str, np.ndarray | torch.Tensor]] | None = None,
         fit: bool = False,
         no_grad: bool = True,
-    ) -> tuple["torch.Tensor", list[dict[str, "torch.Tensor"]]]:
+    ) -> tuple[torch.Tensor, list[dict[str, torch.Tensor]]]:
         """
         Apply preprocessing on inputs `(x, y)` and convert to tensors, if needed.
 
@@ -255,7 +255,7 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
 
         return x_preprocessed_tensor, y_preprocessed_tensor
 
-    def _translate_labels(self, labels: list[dict[str, "torch.Tensor"]]) -> Any:
+    def _translate_labels(self, labels: list[dict[str, torch.Tensor]]) -> Any:
         """
         Translate object detection labels from ART format (torchvision) to the model format (torchvision) and
         move tensors to GPU, if applicable.
@@ -289,8 +289,8 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
         return predictions_x1y1x2y2
 
     def _get_losses(
-        self, x: np.ndarray | "torch.Tensor", y: list[dict[str, np.ndarray | "torch.Tensor"]]
-    ) -> tuple[dict[str, "torch.Tensor"], "torch.Tensor"]:
+        self, x: np.ndarray | torch.Tensor, y: list[dict[str, np.ndarray | torch.Tensor]]
+    ) -> tuple[dict[str, torch.Tensor], torch.Tensor]:
         """
         Get the loss tensor output of the model including all preprocessing.
 
@@ -330,8 +330,8 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
         return loss_components, x_preprocessed
 
     def loss_gradient(
-        self, x: np.ndarray | "torch.Tensor", y: list[dict[str, np.ndarray | "torch.Tensor"]], **kwargs
-    ) -> np.ndarray | "torch.Tensor":
+        self, x: np.ndarray | torch.Tensor, y: list[dict[str, np.ndarray | torch.Tensor]], **kwargs
+    ) -> np.ndarray | torch.Tensor:
         """
         Compute the gradient of the loss function w.r.t. `x`.
 
@@ -404,7 +404,7 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
                  - scores [N]: the scores or each prediction.
         """
         import torch
-        from torch.utils.data import TensorDataset, DataLoader
+        from torch.utils.data import DataLoader, TensorDataset
 
         # Set model to evaluation mode
         self._model.eval()
@@ -433,11 +433,11 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
     def fit(
         self,
         x: np.ndarray,
-        y: list[dict[str, np.ndarray | "torch.Tensor"]],
+        y: list[dict[str, np.ndarray | torch.Tensor]],
         batch_size: int = 128,
         nb_epochs: int = 10,
         drop_last: bool = False,
-        scheduler: "torch.optim.lr_scheduler._LRScheduler" | None = None,
+        scheduler: torch.optim.lr_scheduler._LRScheduler | None = None,
         **kwargs,
     ) -> None:
         """
@@ -459,7 +459,7 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
                        and providing it takes no effect.
         """
         import torch
-        from torch.utils.data import Dataset, DataLoader
+        from torch.utils.data import DataLoader, Dataset
 
         # Set model to train mode
         self._model.train()
@@ -536,7 +536,7 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
         raise NotImplementedError
 
     def compute_losses(
-        self, x: np.ndarray | "torch.Tensor", y: list[dict[str, np.ndarray | "torch.Tensor"]]
+        self, x: np.ndarray | torch.Tensor, y: list[dict[str, np.ndarray | torch.Tensor]]
     ) -> dict[str, np.ndarray]:
         """
         Compute all loss components.
@@ -557,8 +557,8 @@ class PyTorchObjectDetector(ObjectDetectorMixin, PyTorchEstimator):
         return output
 
     def compute_loss(  # type: ignore
-        self, x: np.ndarray | "torch.Tensor", y: list[dict[str, np.ndarray | "torch.Tensor"]], **kwargs
-    ) -> np.ndarray | "torch.Tensor":
+        self, x: np.ndarray | torch.Tensor, y: list[dict[str, np.ndarray | torch.Tensor]], **kwargs
+    ) -> np.ndarray | torch.Tensor:
         """
         Compute the loss of the neural network for samples `x`.
 

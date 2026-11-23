@@ -21,7 +21,7 @@ This module implements ``Wasserstein Adversarial Examples via Projected Sinkhorn
 | Paper link: https://arxiv.org/abs/1902.07906
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
 from typing import TYPE_CHECKING
@@ -30,11 +30,11 @@ import numpy as np
 from scipy.special import lambertw
 from tqdm.auto import trange
 
-from art.config import ART_NUMPY_DTYPE
-from art.estimators.estimator import BaseEstimator, LossGradientsMixin
-from art.estimators.classification.classifier import ClassifierMixin
 from art.attacks.attack import EvasionAttack
-from art.utils import get_labels_np_array, check_and_transform_label_format
+from art.config import ART_NUMPY_DTYPE
+from art.estimators.classification.classifier import ClassifierMixin
+from art.estimators.estimator import BaseEstimator, LossGradientsMixin
+from art.utils import check_and_transform_label_format, get_labels_np_array
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_LOSS_GRADIENTS_TYPE
@@ -73,7 +73,7 @@ class Wasserstein(EvasionAttack):
 
     def __init__(
         self,
-        estimator: "CLASSIFIER_LOSS_GRADIENTS_TYPE",
+        estimator: CLASSIFIER_LOSS_GRADIENTS_TYPE,
         targeted: bool = False,
         regularization: float = 3000.0,
         p: int = 2,
@@ -721,7 +721,7 @@ class Wasserstein(EvasionAttack):
 
     def _check_params(self) -> None:
         if not isinstance(self.targeted, bool):
-            raise ValueError("The flag `targeted` has to be of type bool.")
+            raise TypeError("The flag `targeted` has to be of type bool.")
 
         if self.regularization <= 0:
             raise ValueError("The entropy regularization has to be greater than 0.")
@@ -776,4 +776,4 @@ class Wasserstein(EvasionAttack):
             raise ValueError("The batch size `batch_size` has to be positive.")
 
         if not isinstance(self.verbose, bool):
-            raise ValueError("The argument `verbose` has to be of type bool.")
+            raise TypeError("The argument `verbose` has to be of type bool.")

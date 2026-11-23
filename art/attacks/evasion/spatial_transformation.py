@@ -23,7 +23,7 @@ rotations to find optimal attack parameters.
 | Paper link: https://arxiv.org/abs/1712.02779
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
 from typing import TYPE_CHECKING
@@ -61,7 +61,7 @@ class SpatialTransformation(EvasionAttack):
 
     def __init__(
         self,
-        classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
+        classifier: CLASSIFIER_NEURALNETWORK_TYPE,
         max_translation: float = 0.0,
         num_translations: int = 1,
         max_rotation: float = 0.0,
@@ -119,11 +119,11 @@ class SpatialTransformation(EvasionAttack):
             nb_instances = len(x)
 
             # Determine grids
-            max_num_pixel_trans_x = int(round((x.shape[1] * self.max_translation / 100.0)))
-            max_num_pixel_trans_y = int(round((x.shape[2] * self.max_translation / 100.0)))
+            max_num_pixel_trans_x = round(x.shape[1] * self.max_translation / 100.0)
+            max_num_pixel_trans_y = round(x.shape[2] * self.max_translation / 100.0)
 
             grid_trans_x = [
-                int(round(g))
+                round(g)
                 for g in list(
                     np.linspace(
                         -max_num_pixel_trans_x,
@@ -133,7 +133,7 @@ class SpatialTransformation(EvasionAttack):
                 )
             ]
             grid_trans_y = [
-                int(round(g))
+                round(g)
                 for g in list(
                     np.linspace(
                         -max_num_pixel_trans_y,
@@ -239,4 +239,4 @@ class SpatialTransformation(EvasionAttack):
             raise ValueError("The number of rotations must be a positive integer.")
 
         if not isinstance(self.verbose, bool):
-            raise ValueError("The argument `verbose` has to be of type bool.")
+            raise TypeError("The argument `verbose` has to be of type bool.")

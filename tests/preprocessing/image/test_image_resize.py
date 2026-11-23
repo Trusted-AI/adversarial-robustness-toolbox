@@ -17,12 +17,16 @@
 # SOFTWARE.
 import logging
 
-import numpy as np
 import cv2
+import numpy as np
 import pytest
 
 from art.config import ART_NUMPY_DTYPE
-from art.preprocessing.image import ImageResize, ImageResizePyTorch, ImageResizeTensorFlowV2
+from art.preprocessing.image import (
+    ImageResize,
+    ImageResizePyTorch,
+    ImageResizeTensorFlowV2,
+)
 from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)

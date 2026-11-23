@@ -23,8 +23,8 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 
-from art.estimators.estimator import BaseEstimator
 from art.estimators.classification.classifier import LossGradientsMixin
+from art.estimators.estimator import BaseEstimator
 
 
 class ObjectTrackerMixin(ABC):
@@ -45,5 +45,3 @@ class ObjectTracker(ObjectTrackerMixin, LossGradientsMixin, BaseEstimator, ABC):
     """
     Typing variable definition.
     """
-
-    pass

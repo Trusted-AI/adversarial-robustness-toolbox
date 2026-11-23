@@ -15,18 +15,17 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-import os
 import logging
+import os
+import pickle
+
 import numpy as np
 import pytest
-import pickle
 import torch
-import torch.nn as nn
 import torch.nn.functional as F
-import torch.optim as optim
+from torch import nn, optim
 
 from art.estimators.classification.pytorch import PyTorchClassifier
-
 from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)
@@ -34,7 +33,7 @@ logger = logging.getLogger(__name__)
 
 class Model(nn.Module):
     def __init__(self):
-        super(Model, self).__init__()
+        super().__init__()
         self.conv = nn.Conv2d(1, 2, 5)
         self.pool = nn.MaxPool2d(2, 2)
         self.fc = nn.Linear(288, 10)
@@ -128,7 +127,8 @@ def test_pickle(art_warning, get_default_mnist_subset, image_dl_estimator):
         )
         myclassifier_2.fit(x_train_mnist, y_train_mnist, batch_size=100, nb_epochs=1)
 
-        pickle.dump(myclassifier_2, open(full_path, "wb"))
+        with open(full_path, "wb") as f:
+            pickle.dump(myclassifier_2, f)
 
         with open(full_path, "rb") as f:
             loaded_model = pickle.load(f)
@@ -158,7 +158,7 @@ def test_loss_gradient_amp(
     device_type,
 ):
     import torch
-    import torch.nn as nn
+    from torch import nn
 
     from art.estimators.classification.pytorch import PyTorchClassifier
 

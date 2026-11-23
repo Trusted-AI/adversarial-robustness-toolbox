@@ -28,41 +28,31 @@ import logging
 import math
 import random
 import sys
+from typing import TYPE_CHECKING, Any, TypedDict
 
 import numpy as np
-
 from sklearn.utils import shuffle
 from tqdm import tqdm
 
+from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent import (
+    ProjectedGradientDescent,
+)
 from art.defences.trainer.trainer import Trainer
-from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent import ProjectedGradientDescent
 from art.utils import check_and_transform_label_format
-
-if sys.version_info >= (3, 8):
-    from typing import TypedDict, Any, TYPE_CHECKING
-else:
-    from typing import Any, TYPE_CHECKING
-    from functools import reduce
 
 if TYPE_CHECKING:
     from art.utils import CERTIFIER_TYPE
 
-    # if we use python 3.8 or higher use the more informative TypedDict for type hinting
-    if sys.version_info >= (3, 8):
+    class PGDParamDict(TypedDict):
+        """
+        A TypedDict class to define the types in the pgd_params dictionary.
+        """
 
-        class PGDParamDict(TypedDict):
-            """
-            A TypedDict class to define the types in the pgd_params dictionary.
-            """
-
-            eps: float
-            eps_step: float
-            max_iter: int
-            num_random_init: int
-            batch_size: int
-
-    else:
-        PGDParamDict: dict[str, int | float]
+        eps: float
+        eps_step: float
+        max_iter: int
+        num_random_init: int
+        batch_size: int
 
 
 logger = logging.getLogger(__name__)
@@ -101,7 +91,7 @@ class AdversarialTrainerCertifiedPytorch(Trainer):
 
     def __init__(
         self,
-        classifier: "CERTIFIER_TYPE",
+        classifier: CERTIFIER_TYPE,
         nb_epochs: int | None = 20,
         bound: float = 0.1,
         loss_weighting: float = 0.1,
@@ -109,7 +99,7 @@ class AdversarialTrainerCertifiedPytorch(Trainer):
         use_certification_schedule: bool = True,
         certification_schedule: Any | None = None,
         augment_with_pgd: bool = True,
-        pgd_params: "PGDParamDict" | None = None,
+        pgd_params: PGDParamDict | None = None,
     ) -> None:
         """
         Create an :class:`.AdversarialTrainerCertified` instance.
@@ -140,13 +130,13 @@ class AdversarialTrainerCertifiedPytorch(Trainer):
         from art.estimators.certification.deep_z.pytorch import PytorchDeepZ
 
         if not isinstance(classifier, PytorchDeepZ):
-            raise ValueError(
+            raise TypeError(
                 "The classifier to pass in should be of type PytorchDeepZ which can be found in "
                 "art.estimators.certification.deep_z.pytorch.PytorchDeepZ"
             )
         super().__init__(classifier=classifier)
-        self.classifier: "CERTIFIER_TYPE"
-        self.pgd_params: "PGDParamDict"
+        self.classifier: CERTIFIER_TYPE
+        self.pgd_params: PGDParamDict
 
         if pgd_params is None:
             self.pgd_params = {"eps": 0.3, "eps_step": 0.05, "max_iter": 20, "batch_size": 128, "num_random_init": 1}
@@ -274,10 +264,7 @@ class AdversarialTrainerCertifiedPytorch(Trainer):
                     concrete_pred = int(torch.argmax(concrete_pred_tensor).item())
 
                     if self.classifier.concrete_to_zonotope is None:
-                        if sys.version_info >= (3, 8):
-                            eps_bound = np.eye(math.prod(self.classifier.input_shape)) * bound
-                        else:
-                            eps_bound = np.eye(reduce(lambda x, y: x * y, self.classifier.input_shape)) * bound
+                        eps_bound = np.eye(math.prod(self.classifier.input_shape)) * bound
 
                         processed_sample, eps_bound = self.classifier.pre_process(cent=np.copy(sample), eps=eps_bound)
                         processed_sample = np.expand_dims(processed_sample, axis=0)

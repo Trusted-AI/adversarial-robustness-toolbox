@@ -15,7 +15,6 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
 import unittest
@@ -57,7 +56,7 @@ class TestNewtonFool(TestBase):
         x_test_original = self.x_test_mnist.copy()
 
         # Build TensorFlowClassifier
-        tfc, sess = get_image_classifier_tf()
+        tfc, _sess = get_image_classifier_tf()
 
         # Attack
         nf = NewtonFool(tfc, max_iter=5, batch_size=100, verbose=False)
@@ -233,7 +232,7 @@ class TestNewtonFool(TestBase):
         with self.assertRaises(ValueError):
             _ = NewtonFool(ptc, batch_size=-1)
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TypeError):
             _ = NewtonFool(ptc, verbose="False")
 
     def test_1_classifier_type_check_fail(self):

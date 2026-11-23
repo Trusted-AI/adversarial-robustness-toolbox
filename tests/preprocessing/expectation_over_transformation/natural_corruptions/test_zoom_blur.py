@@ -46,6 +46,7 @@ def test_eot_zoom_blur_pytorch(art_warning, fix_get_mnist_subset):
 
         if torchvision_version[0] >= 0 and torchvision_version[1] >= 8:
             import torch
+
             from art.preprocessing.expectation_over_transformation.natural_corruptions.zoom_blur.pytorch import (
                 EoTZoomBlurPyTorch,
             )
