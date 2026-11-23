@@ -21,9 +21,8 @@ import numpy as np
 import pytest
 
 from art.attacks.evasion import BrendelBethgeAttack
-from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from art.estimators.classification.classifier import ClassifierMixin
-
+from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from tests.attacks.utils import backend_test_classifier_type_check_fail
 from tests.utils import ARTTestException
 
@@ -67,7 +66,7 @@ def test_check_params(art_warning, image_dl_estimator_for_attack):
         with pytest.raises(ValueError):
             _ = BrendelBethgeAttack(classifier, norm=3)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = BrendelBethgeAttack(classifier, targeted="true")
 
         with pytest.raises(ValueError):

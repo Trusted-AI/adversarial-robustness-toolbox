@@ -21,7 +21,7 @@ This module implements a Hidden Trigger Backdoor attack on Neural Networks.
 | Paper link: https://arxiv.org/abs/1910.00033
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
 from typing import TYPE_CHECKING
@@ -30,18 +30,17 @@ import numpy as np
 
 from art.attacks.attack import PoisoningAttackWhiteBox
 from art.attacks.poisoning.backdoor_attack import PoisoningAttackBackdoor
-from art.estimators import BaseEstimator, NeuralNetworkMixin
-from art.estimators.classification.classifier import ClassifierMixin
-from art.estimators.classification.pytorch import PyTorchClassifier
-from art.estimators.classification.keras import KerasClassifier
-from art.estimators.classification.tensorflow import TensorFlowV2Classifier
-
-from art.attacks.poisoning.hidden_trigger_backdoor.hidden_trigger_backdoor_pytorch import (
-    HiddenTriggerBackdoorPyTorch,
-)
 from art.attacks.poisoning.hidden_trigger_backdoor.hidden_trigger_backdoor_keras import (
     HiddenTriggerBackdoorKeras,
 )
+from art.attacks.poisoning.hidden_trigger_backdoor.hidden_trigger_backdoor_pytorch import (
+    HiddenTriggerBackdoorPyTorch,
+)
+from art.estimators import BaseEstimator, NeuralNetworkMixin
+from art.estimators.classification.classifier import ClassifierMixin
+from art.estimators.classification.keras import KerasClassifier
+from art.estimators.classification.pytorch import PyTorchClassifier
+from art.estimators.classification.tensorflow import TensorFlowV2Classifier
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_NEURALNETWORK_TYPE
@@ -78,7 +77,7 @@ class HiddenTriggerBackdoor(PoisoningAttackWhiteBox):
 
     def __init__(
         self,
-        classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
+        classifier: CLASSIFIER_NEURALNETWORK_TYPE,
         target: np.ndarray,
         source: np.ndarray,
         feature_layer: str | int,
@@ -178,7 +177,7 @@ class HiddenTriggerBackdoor(PoisoningAttackWhiteBox):
             )
 
         else:
-            raise ValueError("Only Pytorch, Keras, and TensorFlowV2 classifiers are supported")
+            raise TypeError("Only Pytorch, Keras, and TensorFlowV2 classifiers are supported")
 
     def poison(self, x: np.ndarray, y: np.ndarray | None = None, **kwargs) -> tuple[np.ndarray, np.ndarray]:
         """
@@ -197,7 +196,7 @@ class HiddenTriggerBackdoor(PoisoningAttackWhiteBox):
     def _check_params(self) -> None:
 
         if not isinstance(self.target, np.ndarray) or not isinstance(self.source, np.ndarray):
-            raise ValueError("Target and source must be arrays")
+            raise TypeError("Target and source must be arrays")
 
         if np.array_equal(self.target, self.source):
             raise ValueError("Target and source values can't be the same")
@@ -214,9 +213,8 @@ class HiddenTriggerBackdoor(PoisoningAttackWhiteBox):
         if not isinstance(self.feature_layer, (str, int)):
             raise TypeError("Feature layer should be a string or int")
 
-        if isinstance(self.feature_layer, int):
-            if not 0 <= self.feature_layer < len(self.estimator.layer_names):
-                raise ValueError("feature_layer is not a non-negative integer")
+        if isinstance(self.feature_layer, int) and not 0 <= self.feature_layer < len(self.estimator.layer_names):
+            raise ValueError("feature_layer is not a non-negative integer")
 
         if self.decay_coeff <= 0:
             raise ValueError("Decay coefficient must be positive")
@@ -225,4 +223,4 @@ class HiddenTriggerBackdoor(PoisoningAttackWhiteBox):
             raise ValueError("poison_percent must be between 0 (exclusive) and 1 (inclusive)")
 
         if not isinstance(self.verbose, bool):
-            raise ValueError("The argument `verbose` has to be of type bool.")
+            raise TypeError("The argument `verbose` has to be of type bool.")

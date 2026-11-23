@@ -27,6 +27,7 @@ This module implements the resampling defence `Resample`.
 from __future__ import annotations
 
 import logging
+from typing import ClassVar
 
 import numpy as np
 
@@ -43,7 +44,7 @@ class Resample(Preprocessor):
     implementation is a Windowed Sinc Interpolation function.
     """
 
-    params = ["sr_original", "sr_new", "channels_first"]
+    params: ClassVar[list[str]] = ["sr_original", "sr_new", "channels_first"]
 
     def __init__(
         self,

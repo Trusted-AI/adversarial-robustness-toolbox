@@ -15,7 +15,6 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
 
@@ -172,11 +171,32 @@ def test_loss_gradient(art_warning, get_pytorch_detr):
 @pytest.mark.only_with_platform("pytorch")
 def test_errors(art_warning):
     try:
+        import ssl
+        from urllib.error import URLError
+
         from torch import hub
 
-        from art.estimators.object_detection.pytorch_detection_transformer import PyTorchDetectionTransformer
+        from art.estimators.object_detection.pytorch_detection_transformer import (
+            PyTorchDetectionTransformer,
+        )
 
-        model = hub.load("facebookresearch/detr", "detr_resnet50", pretrained=True)
+        try:
+            model = hub.load("facebookresearch/detr", "detr_resnet50", pretrained=True)
+        except (ssl.SSLError, URLError):
+            if hasattr(ssl, "_create_unverified_context"):
+                import urllib.request
+
+                orig_https_context = ssl._create_default_https_context
+                orig_opener = urllib.request._opener
+                try:
+                    ssl._create_default_https_context = ssl._create_unverified_context
+                    urllib.request._opener = None
+                    model = hub.load("facebookresearch/detr", "detr_resnet50", pretrained=True)
+                finally:
+                    ssl._create_default_https_context = orig_https_context
+                    urllib.request._opener = orig_opener
+            else:
+                raise
 
         with pytest.raises(ValueError):
             PyTorchDetectionTransformer(
@@ -212,7 +232,9 @@ def test_preprocessing_defences(art_warning, get_pytorch_detr):
     try:
         object_detector, x_test, _ = get_pytorch_detr
 
-        from art.defences.preprocessor.spatial_smoothing_pytorch import SpatialSmoothingPyTorch
+        from art.defences.preprocessor.spatial_smoothing_pytorch import (
+            SpatialSmoothingPyTorch,
+        )
 
         pre_def = SpatialSmoothingPyTorch()
 

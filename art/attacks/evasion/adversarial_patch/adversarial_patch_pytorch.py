@@ -22,21 +22,21 @@ can be printed into the physical world with a common printer. The patch can be u
 | Paper link: https://arxiv.org/abs/1712.09665
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
 import math
-from packaging.version import parse
-from typing import Any, cast, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
+from packaging.version import parse
 from tqdm.auto import trange
 
 from art.attacks.attack import EvasionAttack
 from art.attacks.evasion.adversarial_patch.utils import insert_transformed_patch
 from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
-from art.utils import check_and_transform_label_format, is_probability, to_categorical
 from art.summary_writer import SummaryWriter
+from art.utils import check_and_transform_label_format, is_probability, to_categorical
 
 if TYPE_CHECKING:
 
@@ -73,7 +73,7 @@ class AdversarialPatchPyTorch(EvasionAttack):
 
     def __init__(
         self,
-        estimator: "CLASSIFIER_NEURALNETWORK_TYPE | PYTORCH_OBJECT_DETECTOR_TYPE",
+        estimator: CLASSIFIER_NEURALNETWORK_TYPE | PYTORCH_OBJECT_DETECTOR_TYPE,
         rotation_max: float = 22.5,
         scale_min: float = 0.1,
         scale_max: float = 1.0,
@@ -185,10 +185,10 @@ class AdversarialPatchPyTorch(EvasionAttack):
 
     def _train_step(
         self,
-        images: "torch.Tensor",
-        target: "torch.Tensor" | list[dict[str, "torch.Tensor"]],
-        mask: "torch.Tensor" | None = None,
-    ) -> "torch.Tensor":
+        images: torch.Tensor,
+        target: torch.Tensor | list[dict[str, torch.Tensor]],
+        mask: torch.Tensor | None = None,
+    ) -> torch.Tensor:
         import torch
 
         self.estimator.model.zero_grad()
@@ -216,8 +216,8 @@ class AdversarialPatchPyTorch(EvasionAttack):
         return loss
 
     def _predictions(
-        self, images: "torch.Tensor", mask: "torch.Tensor" | None, target: "torch.Tensor"
-    ) -> tuple["torch.Tensor", "torch.Tensor"]:
+        self, images: torch.Tensor, mask: torch.Tensor | None, target: torch.Tensor
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         import torch
 
         patched_input = self._random_overlay(images, self._patch, mask=mask)
@@ -233,10 +233,10 @@ class AdversarialPatchPyTorch(EvasionAttack):
 
     def _loss(
         self,
-        images: "torch.Tensor",
-        target: "torch.Tensor" | list[dict[str, "torch.Tensor"]],
-        mask: "torch.Tensor" | None,
-    ) -> "torch.Tensor":
+        images: torch.Tensor,
+        target: torch.Tensor | list[dict[str, torch.Tensor]],
+        mask: torch.Tensor | None,
+    ) -> torch.Tensor:
         import torch
 
         if isinstance(target, torch.Tensor):
@@ -267,7 +267,7 @@ class AdversarialPatchPyTorch(EvasionAttack):
 
         return loss
 
-    def _get_circular_patch_mask(self, nb_samples: int, sharpness: int = 40) -> "torch.Tensor":
+    def _get_circular_patch_mask(self, nb_samples: int, sharpness: int = 40) -> torch.Tensor:
         """
         Return a circular patch mask.
         """
@@ -292,11 +292,11 @@ class AdversarialPatchPyTorch(EvasionAttack):
 
     def _random_overlay(
         self,
-        images: "torch.Tensor",
-        patch: "torch.Tensor",
+        images: torch.Tensor,
+        patch: torch.Tensor,
         scale: float | None = None,
-        mask: "torch.Tensor" | None = None,
-    ) -> "torch.Tensor":
+        mask: torch.Tensor | None = None,
+    ) -> torch.Tensor:
         import torch
         import torchvision
 
@@ -484,7 +484,7 @@ class AdversarialPatchPyTorch(EvasionAttack):
         return patched_images
 
     def generate(  # type: ignore
-        self, x: np.ndarray, y: np.ndarray | list[dict[str, np.ndarray | "torch.Tensor"]] | None = None, **kwargs
+        self, x: np.ndarray, y: np.ndarray | list[dict[str, np.ndarray | torch.Tensor]] | None = None, **kwargs
     ) -> tuple[np.ndarray, np.ndarray]:
         """
         Generate an adversarial patch and return the patch and its mask in arrays.

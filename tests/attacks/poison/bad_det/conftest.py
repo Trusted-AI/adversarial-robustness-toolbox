@@ -15,7 +15,6 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
 
@@ -40,7 +39,7 @@ def image_batch(channels_first):
         data_shape = (2, channels, height, width)
     else:
         data_shape = (2, height, width, channels)
-    x = (0.5 * np.ones((data_shape))).astype(ART_NUMPY_DTYPE)
+    x = (0.5 * np.ones(data_shape)).astype(ART_NUMPY_DTYPE)
 
     y = []
     for _ in range(len(x)):

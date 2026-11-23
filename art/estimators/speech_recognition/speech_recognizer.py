@@ -45,8 +45,8 @@ class PytorchSpeechRecognizerMixin(ABC):
 
     @abstractmethod
     def compute_loss_and_decoded_output(
-        self, masked_adv_input: "torch.Tensor", original_output: np.ndarray, **kwargs
-    ) -> tuple["torch.Tensor", np.ndarray]:
+        self, masked_adv_input: torch.Tensor, original_output: np.ndarray, **kwargs
+    ) -> tuple[torch.Tensor, np.ndarray]:
         """
         Compute loss function and decoded output.
 

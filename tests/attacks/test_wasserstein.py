@@ -15,7 +15,6 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
 import unittest
@@ -23,13 +22,16 @@ import unittest
 import numpy as np
 
 from art.attacks.evasion.wasserstein import Wasserstein
-from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from art.estimators.classification.classifier import ClassifierMixin
+from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from art.utils import get_labels_np_array, random_targets
-
-from tests.utils import TestBase, master_seed
-from tests.utils import get_image_classifier_tf, get_image_classifier_pt
 from tests.attacks.utils import backend_test_classifier_type_check_fail
+from tests.utils import (
+    TestBase,
+    get_image_classifier_pt,
+    get_image_classifier_tf,
+    master_seed,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -59,7 +61,7 @@ class TestWasserstein(TestBase):
     #     )
 
     def test_tensorflow_mnist(self):
-        classifier, sess = get_image_classifier_tf()
+        classifier, _sess = get_image_classifier_tf()
 
         scores = get_labels_np_array(classifier.predict(self.x_train_mnist))
         acc = np.sum(np.argmax(scores, axis=1) == np.argmax(self.y_train_mnist, axis=1)) / self.y_train_mnist.shape[0]
@@ -426,15 +428,14 @@ class TestWasserstein(TestBase):
         self.assertTrue(test_success_rate >= base_success_rate)
 
     def test_unsquared_images(self):
+        from art.estimators.classification.classifier import (
+            ClassGradientsMixin,
+            ClassifierMixin,
+        )
         from art.estimators.estimator import (
             BaseEstimator,
             LossGradientsMixin,
             NeuralNetworkMixin,
-        )
-
-        from art.estimators.classification.classifier import (
-            ClassGradientsMixin,
-            ClassifierMixin,
         )
 
         class DummyClassifier(
@@ -491,7 +492,7 @@ class TestWasserstein(TestBase):
 
         ptc = get_image_classifier_pt(from_logits=True)
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TypeError):
             _ = Wasserstein(ptc, targeted="true")
 
         with self.assertRaises(ValueError):
@@ -540,7 +541,7 @@ class TestWasserstein(TestBase):
         with self.assertRaises(ValueError):
             _ = Wasserstein(ptc, batch_size=-1)
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TypeError):
             _ = Wasserstein(ptc, verbose="true")
 
     def test_classifier_type_check_fail(self):

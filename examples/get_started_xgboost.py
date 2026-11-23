@@ -5,8 +5,8 @@ ART classifier.
 The parameters are chosen for reduced computational requirements of the script and not optimised for accuracy.
 """
 
-import xgboost as xgb
 import numpy as np
+import xgboost as xgb
 
 from art.attacks.evasion import ZooAttack
 from art.estimators.classification import XGBoostClassifier
@@ -48,7 +48,7 @@ classifier = XGBoostClassifier(
 
 predictions = classifier.predict(x_test)
 accuracy = np.sum(np.argmax(predictions, axis=1) == np.argmax(y_test, axis=1)) / len(y_test)
-print("Accuracy on benign test examples: {}%".format(accuracy * 100))
+print(f"Accuracy on benign test examples: {accuracy * 100}%")
 
 # Step 6: Generate adversarial test examples
 attack = ZooAttack(
@@ -72,4 +72,4 @@ x_test_adv = attack.generate(x=x_test, y=y_test)
 
 predictions = classifier.predict(x_test_adv)
 accuracy = np.sum(np.argmax(predictions, axis=1) == np.argmax(y_test, axis=1)) / len(y_test)
-print("Accuracy on adversarial test examples: {}%".format(accuracy * 100))
+print(f"Accuracy on adversarial test examples: {accuracy * 100}%")

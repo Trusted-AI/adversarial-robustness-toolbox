@@ -25,10 +25,10 @@ This module implements the Cutout data augmentation defence in TensorFlow.
     https://arxiv.org/abs/1902.06705
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 from art.defences.preprocessor.preprocessor import PreprocessorTensorFlowV2
 
@@ -50,7 +50,7 @@ class CutoutTensorFlowV2(PreprocessorTensorFlowV2):
         https://arxiv.org/abs/1902.06705
     """
 
-    params = ["length", "channels_first", "verbose"]
+    params: ClassVar[list[str]] = ["length", "channels_first", "verbose"]
 
     def __init__(
         self,
@@ -75,7 +75,7 @@ class CutoutTensorFlowV2(PreprocessorTensorFlowV2):
         self.verbose = verbose
         self._check_params()
 
-    def forward(self, x: "tf.Tensor", y: "tf.Tensor" | None = None) -> tuple["tf.Tensor", "tf.Tensor" | None]:
+    def forward(self, x: tf.Tensor, y: tf.Tensor | None = None) -> tuple[tf.Tensor, tf.Tensor | None]:
         """
         Apply Cutout data augmentation to sample `x`.
 
@@ -150,7 +150,7 @@ def random_cutout(x_nhwc, mask_size, seed=None):
     """
     import tensorflow as tf
 
-    batch_size, height, width, channels = tf.unstack(tf.shape(x_nhwc))
+    batch_size, height, width, _channels = tf.unstack(tf.shape(x_nhwc))
     mask_height, mask_width = mask_size
 
     if seed is None:

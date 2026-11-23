@@ -19,27 +19,27 @@
 This module implements the classifier `LightGBMClassifier` for LightGBM models.
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
-from copy import deepcopy
 import logging
 import os
 import pickle
+from copy import deepcopy
 from typing import TYPE_CHECKING
 
 import numpy as np
 
-from art.estimators.classification.classifier import ClassifierDecisionTree
 from art import config
+from art.estimators.classification.classifier import ClassifierDecisionTree
 
 if TYPE_CHECKING:
 
     import lightgbm
 
-    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
-    from art.defences.preprocessor import Preprocessor
     from art.defences.postprocessor import Postprocessor
+    from art.defences.preprocessor import Preprocessor
     from art.metrics.verification_decisions_trees import LeafNode
+    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -51,11 +51,11 @@ class LightGBMClassifier(ClassifierDecisionTree):
 
     def __init__(
         self,
-        model: "lightgbm.Booster" | None = None,  # type: ignore
-        clip_values: "CLIP_VALUES_TYPE" | None = None,
-        preprocessing_defences: "Preprocessor" | list["Preprocessor"] | None = None,
-        postprocessing_defences: "Postprocessor" | list["Postprocessor"] | None = None,
-        preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
+        model: lightgbm.Booster | None = None,  # type: ignore
+        clip_values: CLIP_VALUES_TYPE | None = None,
+        preprocessing_defences: Preprocessor | list[Preprocessor] | None = None,
+        postprocessing_defences: Postprocessor | list[Postprocessor] | None = None,
+        preprocessing: PREPROCESSING_TYPE = (0.0, 1.0),
     ) -> None:
         """
         Create a `Classifier` instance from a LightGBM model.
@@ -180,7 +180,7 @@ class LightGBMClassifier(ClassifierDecisionTree):
 
         return trees
 
-    def _get_leaf_nodes(self, node, i_tree, class_label, box) -> list["LeafNode"]:
+    def _get_leaf_nodes(self, node, i_tree, class_label, box) -> list[LeafNode]:
         from art.metrics.verification_decisions_trees import Box, Interval, LeafNode
 
         leaf_nodes: list[LeafNode] = []

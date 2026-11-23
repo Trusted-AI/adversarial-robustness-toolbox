@@ -18,11 +18,10 @@
 import logging
 import unittest
 
-from catboost import CatBoostClassifier
 import numpy as np
+from catboost import CatBoostClassifier
 
 from art.estimators.classification.catboost import CatBoostARTClassifier
-
 from tests.utils import TestBase, master_seed
 
 logger = logging.getLogger(__name__)

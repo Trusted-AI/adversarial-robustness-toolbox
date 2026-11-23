@@ -7,6 +7,8 @@ lint.ignore = ["F401"]
 
 [tool.ruff.lint.per-file-ignores]
  "examples/*" = ["E402"]
+ "art/estimators/classification/keras.py" = ["TC004"]
+ "art/estimators/object_tracking/pytorch_goturn.py" = ["TC004"]
 
 [tool.pytest.ini_options]
 markers = [

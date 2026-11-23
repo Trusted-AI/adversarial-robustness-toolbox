@@ -16,17 +16,18 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 import logging
-import pytest
 
 import numpy as np
+import pytest
 
 from art.attacks.evasion import AutoAttack
-from art.attacks.evasion.auto_projected_gradient_descent import AutoProjectedGradientDescent
+from art.attacks.evasion.auto_projected_gradient_descent import (
+    AutoProjectedGradientDescent,
+)
 from art.attacks.evasion.deepfool import DeepFool
 from art.attacks.evasion.square_attack import SquareAttack
-from art.estimators.estimator import BaseEstimator
 from art.estimators.classification.classifier import ClassifierMixin
-
+from art.estimators.estimator import BaseEstimator
 from tests.attacks.utils import backend_test_classifier_type_check_fail
 from tests.utils import ARTTestException
 
@@ -56,7 +57,7 @@ def test_generate_default(art_warning, fix_get_mnist_subset, image_dl_estimator)
             estimator_orig=None,
         )
 
-        x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist = fix_get_mnist_subset
+        x_train_mnist, y_train_mnist, _x_test_mnist, _y_test_mnist = fix_get_mnist_subset
 
         x_train_mnist_adv = attack.generate(x=x_train_mnist, y=y_train_mnist)
 
@@ -76,7 +77,7 @@ def test_generate_attacks_and_targeted(art_warning, fix_get_mnist_subset, image_
         eps_step = 0.1
         batch_size = 32
 
-        attacks = list()
+        attacks = []
         attacks.append(
             AutoProjectedGradientDescent(
                 estimator=classifier,
@@ -106,7 +107,7 @@ def test_generate_attacks_and_targeted(art_warning, fix_get_mnist_subset, image_
         attacks.append(DeepFool(classifier=classifier, max_iter=100, epsilon=1e-6, nb_grads=3, batch_size=batch_size))
         attacks.append(SquareAttack(estimator=classifier, norm=norm, max_iter=5000, eps=eps, p_init=0.8, nb_restarts=5))
 
-        x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist = fix_get_mnist_subset
+        x_train_mnist, y_train_mnist, _x_test_mnist, _y_test_mnist = fix_get_mnist_subset
 
         # First test with defined_attack_only=False
         attack = AutoAttack(
@@ -208,7 +209,7 @@ def test_generate_parallel(art_warning, fix_get_mnist_subset, image_dl_estimator
         eps_step = 0.1
         batch_size = 32
 
-        attacks = list()
+        attacks = []
         attacks.append(
             AutoProjectedGradientDescent(
                 estimator=classifier,
@@ -259,7 +260,7 @@ def test_generate_parallel(art_warning, fix_get_mnist_subset, image_dl_estimator
             )
         )
 
-        x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist = fix_get_mnist_subset
+        x_train_mnist, y_train_mnist, _x_test_mnist, _y_test_mnist = fix_get_mnist_subset
 
         # First test with defined_attack_only=False
         attack = AutoAttack(

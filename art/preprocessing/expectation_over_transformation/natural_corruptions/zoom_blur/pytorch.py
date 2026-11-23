@@ -67,8 +67,8 @@ class EoTZoomBlurPyTorch(EoTPyTorch):
         self._check_params()
 
     def _transform(
-        self, x: "torch.Tensor", y: "torch.Tensor" | list[dict[str, "torch.Tensor"]] | None, **kwargs
-    ) -> tuple["torch.Tensor", "torch.Tensor" | list[dict[str, "torch.Tensor"]] | None]:
+        self, x: torch.Tensor, y: torch.Tensor | list[dict[str, torch.Tensor]] | None, **kwargs
+    ) -> tuple[torch.Tensor, torch.Tensor | list[dict[str, torch.Tensor]] | None]:
         """
         Transformation of an image with randomly sampled zoom blur.
 

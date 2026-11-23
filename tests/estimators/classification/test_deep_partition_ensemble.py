@@ -15,7 +15,6 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
 import os
@@ -23,20 +22,20 @@ import unittest
 
 import numpy as np
 import tensorflow as tf
-
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
-from tensorflow.keras.losses import categorical_crossentropy
-from tensorflow.keras.optimizers import Adam
-
-import torch.nn as nn
 import torch.nn.functional as F
-import torch.optim as optim
+from tensorflow.keras.layers import Conv2D, Dense, Flatten, MaxPooling2D
+from tensorflow.keras.losses import categorical_crossentropy
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.optimizers import Adam
+from torch import nn, optim
 
-from art.utils import load_dataset
+from art.estimators.classification import (
+    KerasClassifier,
+    PyTorchClassifier,
+    TensorFlowV2Classifier,
+)
 from art.estimators.classification.deep_partition_ensemble import DeepPartitionEnsemble
-from art.estimators.classification import TensorFlowV2Classifier, PyTorchClassifier, KerasClassifier
-
+from art.utils import load_dataset
 from tests.utils import master_seed
 
 os.environ["KMP_DUPLICATE_LIB_OK"] = "True"
@@ -74,7 +73,7 @@ class TestDeepPartitionEnsemble(unittest.TestCase):
 
         # Create a model from scratch
         from tensorflow.keras import Model
-        from tensorflow.keras.layers import Dense, Flatten, Conv2D, MaxPool2D, Input
+        from tensorflow.keras.layers import Conv2D, Dense, Flatten, Input, MaxPool2D
 
         def build_tensorflow_functional_model():
             inputs = Input(shape=(28, 28, 1))

@@ -22,21 +22,21 @@ can be printed into the physical world with a common printer. The patch can be u
 | Paper link: https://arxiv.org/abs/1712.09665
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
 import math
+import random
 from typing import TYPE_CHECKING
 
-import random
 import numpy as np
 from scipy.ndimage import rotate, shift, zoom
 from tqdm.auto import trange
 
 from art.attacks.attack import EvasionAttack
 from art.attacks.evasion.adversarial_patch.utils import insert_transformed_patch
-from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
 from art.estimators.classification.classifier import ClassifierMixin
+from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
 from art.utils import check_and_transform_label_format
 
 if TYPE_CHECKING:
@@ -66,7 +66,7 @@ class AdversarialPatchNumpy(EvasionAttack):
 
     def __init__(
         self,
-        classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
+        classifier: CLASSIFIER_NEURALNETWORK_TYPE,
         target: int = 0,
         rotation_max: float = 22.5,
         scale_min: float = 0.1,
@@ -216,7 +216,7 @@ class AdversarialPatchNumpy(EvasionAttack):
                 x, self.patch, mask=mask
             )
 
-            num_batches = int(math.ceil(x.shape[0] / self.batch_size))
+            num_batches = math.ceil(x.shape[0] / self.batch_size)
             patch_gradients = np.zeros_like(self.patch)
 
             for i_batch in range(num_batches):
@@ -277,34 +277,34 @@ class AdversarialPatchNumpy(EvasionAttack):
 
     def _check_params(self) -> None:
         if not isinstance(self.rotation_max, (float, int)):
-            raise ValueError("The maximum rotation of the random patches must be of type float.")
+            raise TypeError("The maximum rotation of the random patches must be of type float.")
         if self.rotation_max < 0 or self.rotation_max > 180.0:
             raise ValueError("The maximum rotation of the random patches must be between 0 and 180 degrees.")
 
         if not isinstance(self.scale_min, float):
-            raise ValueError("The minimum scale of the random patched must be of type float.")
+            raise TypeError("The minimum scale of the random patched must be of type float.")
         if self.scale_min < 0 or self.scale_min > self.scale_max:
             raise ValueError(
                 "The minimum scale of the random patched must be greater than 0 and less than the maximum scaling."
             )
 
         if not isinstance(self.scale_max, float):
-            raise ValueError("The maximum scale of the random patched must be of type float.")
+            raise TypeError("The maximum scale of the random patched must be of type float.")
         if self.scale_max > 1:
             raise ValueError("The maximum scale of the random patched must not be greater than 1.")
 
         if not isinstance(self.learning_rate, float):
-            raise ValueError("The learning rate must be of type float.")
+            raise TypeError("The learning rate must be of type float.")
         if self.learning_rate <= 0.0:
             raise ValueError("The learning rate must be greater than 0.0.")
 
         if not isinstance(self.max_iter, int):
-            raise ValueError("The number of optimization steps must be of type int.")
+            raise TypeError("The number of optimization steps must be of type int.")
         if self.max_iter <= 0:
             raise ValueError("The number of optimization steps must be greater than 0.")
 
         if not isinstance(self.batch_size, int):
-            raise ValueError("The batch size must be of type int.")
+            raise TypeError("The batch size must be of type int.")
         if self.batch_size <= 0:
             raise ValueError("The batch size must be greater than 0.")
 
@@ -315,7 +315,7 @@ class AdversarialPatchNumpy(EvasionAttack):
             )
 
         if not isinstance(self.verbose, bool):
-            raise ValueError("The argument `verbose` has to be of type bool.")
+            raise TypeError("The argument `verbose` has to be of type bool.")
 
     def _get_circular_patch_mask(self, sharpness: int = 40) -> np.ndarray:
         """

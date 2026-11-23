@@ -22,7 +22,7 @@ This module implements resizing for images and object detection bounding boxes i
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 from tqdm.auto import tqdm
 
@@ -30,6 +30,7 @@ from art.preprocessing.preprocessing import PreprocessorTensorFlowV2
 
 if TYPE_CHECKING:
     import tensorflow as tf
+
     from art.utils import CLIP_VALUES_TYPE
 
 logger = logging.getLogger(__name__)
@@ -40,9 +41,17 @@ class ImageResizeTensorFlowV2(PreprocessorTensorFlowV2):
     This module implements resizing for images and object detection bounding boxes in TensorFlow v2.
     """
 
-    params = ["height", "width", "channels_first", "label_type", "interpolation", "clip_values", "verbose"]
+    params: ClassVar[list[str]] = [
+        "height",
+        "width",
+        "channels_first",
+        "label_type",
+        "interpolation",
+        "clip_values",
+        "verbose",
+    ]
 
-    label_types = ["classification", "object_detection"]
+    label_types: ClassVar[list[str]] = ["classification", "object_detection"]
 
     def __init__(
         self,
@@ -51,7 +60,7 @@ class ImageResizeTensorFlowV2(PreprocessorTensorFlowV2):
         channels_first: bool = False,
         label_type: str = "classification",
         interpolation: str = "bilinear",
-        clip_values: "CLIP_VALUES_TYPE" | None = None,
+        clip_values: CLIP_VALUES_TYPE | None = None,
         apply_fit: bool = True,
         apply_predict: bool = False,
         verbose: bool = False,
@@ -83,9 +92,9 @@ class ImageResizeTensorFlowV2(PreprocessorTensorFlowV2):
 
     def forward(
         self,
-        x: "tf.Tensor",
-        y: "tf.Tensor" | list[dict[str, "tf.Tensor"]] | None = None,
-    ) -> tuple["tf.Tensor", "tf.Tensor" | list[dict[str, "tf.Tensor"]] | None]:
+        x: tf.Tensor,
+        y: tf.Tensor | list[dict[str, tf.Tensor]] | None = None,
+    ) -> tuple[tf.Tensor, tf.Tensor | list[dict[str, tf.Tensor]] | None]:
         """
         Resize `x` and adjust bounding boxes for labels `y` accordingly.
 

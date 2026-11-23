@@ -25,10 +25,10 @@ This module implements the Cutout data augmentation defence in PyTorch.
     https://arxiv.org/abs/1902.06705
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 from tqdm.auto import trange
 
@@ -52,7 +52,7 @@ class CutoutPyTorch(PreprocessorPyTorch):
         https://arxiv.org/abs/1902.06705
     """
 
-    params = ["length", "channels_first", "verbose"]
+    params: ClassVar[list[str]] = ["length", "channels_first", "verbose"]
 
     def __init__(
         self,
@@ -84,9 +84,7 @@ class CutoutPyTorch(PreprocessorPyTorch):
         self.verbose = verbose
         self._check_params()
 
-    def forward(
-        self, x: "torch.Tensor", y: "torch.Tensor" | None = None
-    ) -> tuple["torch.Tensor", "torch.Tensor" | None]:
+    def forward(self, x: torch.Tensor, y: torch.Tensor | None = None) -> tuple[torch.Tensor, torch.Tensor | None]:
         """
         Apply Cutout data augmentation to sample `x`.
 

@@ -15,7 +15,6 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
 import unittest
@@ -23,13 +22,30 @@ import unittest
 import numpy as np
 import tensorflow as tf
 
-from art.utils import projection, random_sphere, uniform_sample_from_sphere_or_ball, to_categorical, least_likely_class
-from art.utils import load_dataset, load_iris, load_mnist, load_nursery, load_cifar10, get_file
-from art.utils import second_most_likely_class, random_targets, get_label_conf, get_labels_np_array, preprocess
-from art.utils import compute_success_array, compute_success, check_and_transform_label_format
-from art.utils import segment_by_class, performance_diff
-from art.utils import is_probability
-
+from art.utils import (
+    check_and_transform_label_format,
+    compute_success,
+    compute_success_array,
+    get_file,
+    get_label_conf,
+    get_labels_np_array,
+    is_probability,
+    least_likely_class,
+    load_cifar10,
+    load_dataset,
+    load_iris,
+    load_mnist,
+    load_nursery,
+    performance_diff,
+    preprocess,
+    projection,
+    random_sphere,
+    random_targets,
+    second_most_likely_class,
+    segment_by_class,
+    to_categorical,
+    uniform_sample_from_sphere_or_ball,
+)
 from tests.utils import master_seed
 
 logger = logging.getLogger(__name__)
@@ -500,8 +516,9 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(len(segments), num_classes)
 
     def test_performance_diff(self):
-        from art.estimators.classification.scikitlearn import SklearnClassifier
         from sklearn.svm import SVC
+
+        from art.estimators.classification.scikitlearn import SklearnClassifier
 
         (x_train, y_train), (x_test, y_test), min_, max_ = load_iris()
 

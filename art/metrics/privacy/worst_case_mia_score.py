@@ -19,13 +19,14 @@
 This module implements a metric for inference attack worst case accuracy measurement.
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
 
-
 import numpy as np
 from sklearn.metrics import roc_curve
+
+logger = logging.getLogger(__name__)
 
 TPR = float  # True Positive Rate
 FPR = float  # False Positive Rate
@@ -44,7 +45,7 @@ def _calculate_roc_for_fpr(y_true: np.ndarray, y_proba: np.ndarray, targeted_fpr
     fpr, tpr, thr = roc_curve(y_true=y_true, y_score=y_proba)
     # take the highest fpr and an appropriated threshold that achieve at least FPR=fpr
     if np.isnan(fpr).all() or np.isnan(tpr).all():
-        logging.error("TPR or FPR values are NaN")
+        logger.error("TPR or FPR values are NaN")
         raise ValueError("The targeted FPR can't be achieved.")
 
     targeted_fpr_idx = np.where(fpr <= targeted_fpr)[0][-1]

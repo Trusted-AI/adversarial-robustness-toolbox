@@ -21,19 +21,25 @@ This module implements Randomized Smoothing applied to classifier predictions.
 | Paper link: https://arxiv.org/abs/1902.02918
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
+import warnings
 from typing import TYPE_CHECKING
 
-import warnings
 import numpy as np
 
 from art.config import ART_NUMPY_DTYPE
-from art.estimators.estimator import BaseEstimator, LossGradientsMixin, NeuralNetworkMixin
-from art.estimators.certification.randomized_smoothing.randomized_smoothing import RandomizedSmoothingMixin
-from art.estimators.classification import ClassifierMixin, ClassGradientsMixin
 from art.defences.preprocessor.gaussian_augmentation import GaussianAugmentation
+from art.estimators.certification.randomized_smoothing.randomized_smoothing import (
+    RandomizedSmoothingMixin,
+)
+from art.estimators.classification import ClassGradientsMixin, ClassifierMixin
+from art.estimators.estimator import (
+    BaseEstimator,
+    LossGradientsMixin,
+    NeuralNetworkMixin,
+)
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_NEURALNETWORK_TYPE
@@ -64,7 +70,7 @@ class NumpyRandomizedSmoothing(
     )
 
     def __init__(
-        self, classifier: "CLASSIFIER_NEURALNETWORK_TYPE", sample_size: int, scale: float = 0.1, alpha: float = 0.001
+        self, classifier: CLASSIFIER_NEURALNETWORK_TYPE, sample_size: int, scale: float = 0.1, alpha: float = 0.001
     ):
         """
         Create a randomized smoothing wrapper.

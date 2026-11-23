@@ -19,19 +19,16 @@
 This module implements the abstract base class for all poison filtering defences.
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import abc
 import sys
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, ClassVar
 
 import numpy as np
 
 # Ensure compatibility with Python 2 and 3 when using ABCMeta
-if sys.version_info >= (3, 4):
-    ABC = abc.ABC
-else:
-    ABC = abc.ABCMeta(str("ABC"), (), {})
+ABC = abc.ABC
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_TYPE
@@ -42,9 +39,9 @@ class PoisonFilteringDefence(ABC):
     Base class for all poison filtering defences.
     """
 
-    defence_params = ["classifier"]
+    defence_params: ClassVar[list[str]] = ["classifier"]
 
-    def __init__(self, classifier: "CLASSIFIER_TYPE", x_train: np.ndarray, y_train: np.ndarray) -> None:
+    def __init__(self, classifier: CLASSIFIER_TYPE, x_train: np.ndarray, y_train: np.ndarray) -> None:
         """
         Create an :class:`.ActivationDefence` object with the provided classifier.
 

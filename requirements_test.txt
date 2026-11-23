@@ -40,7 +40,7 @@ huggingface_hub==0.34.6
 # YOLO dependencies
 ultralytics==8.4.194
 
-catboost==1.2.8
+catboost==1.2.10
 GPy==1.14.2
 lightgbm==4.7.0
 xgboost==3.0.5
@@ -58,10 +58,11 @@ pylint==4.0.9
 mypy==2.4.1
 pycodestyle==2.14.0
 black==26.10.1
-ruff==0.13.0
+ruff==0.17.4
 types-six==1.17.0.20250515
-types-PyYAML==6.0.12.20250915
+types-PyYAML==6.0.12.20261030
 types-setuptools==80.9.0.20250822
+typing_extensions>=4.0
 
 # other
 requests~=2.32.5

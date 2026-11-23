@@ -15,14 +15,12 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
 import unittest
 
 import numpy as np
-
-from sklearn.tree import DecisionTreeClassifier, ExtraTreeClassifier
+from sklearn.decomposition import PCA
 from sklearn.ensemble import (
     AdaBoostClassifier,
     BaggingClassifier,
@@ -31,24 +29,23 @@ from sklearn.ensemble import (
     RandomForestClassifier,
 )
 from sklearn.linear_model import LogisticRegression
-from sklearn.svm import SVC, LinearSVC
-from sklearn.decomposition import PCA
 from sklearn.pipeline import Pipeline
+from sklearn.svm import SVC, LinearSVC
+from sklearn.tree import DecisionTreeClassifier, ExtraTreeClassifier
 
 from art.estimators.classification.scikitlearn import (
-    ScikitlearnDecisionTreeClassifier,
-    ScikitlearnExtraTreeClassifier,
     ScikitlearnAdaBoostClassifier,
     ScikitlearnBaggingClassifier,
+    ScikitlearnDecisionTreeClassifier,
+    ScikitlearnExtraTreeClassifier,
     ScikitlearnExtraTreesClassifier,
     ScikitlearnGradientBoostingClassifier,
-    ScikitlearnRandomForestClassifier,
     ScikitlearnLogisticRegression,
+    ScikitlearnRandomForestClassifier,
     ScikitlearnSVC,
+    SklearnClassifier,
 )
-from art.estimators.classification.scikitlearn import SklearnClassifier
 from art.utils import check_and_transform_label_format
-
 from tests.utils import TestBase, master_seed
 
 logger = logging.getLogger(__name__)

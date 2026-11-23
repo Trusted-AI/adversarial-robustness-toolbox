@@ -15,7 +15,6 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
 import unittest
@@ -24,9 +23,9 @@ import keras
 import numpy as np
 
 from art.attacks.evasion.deepfool import DeepFool
-from art.estimators.estimator import BaseEstimator
 from art.estimators.classification.classifier import ClassGradientsMixin
 from art.estimators.classification.keras import KerasClassifier
+from art.estimators.estimator import BaseEstimator
 from art.utils import get_labels_np_array
 from tests.attacks.utils import backend_test_classifier_type_check_fail
 from tests.utils import (
@@ -97,7 +96,7 @@ class TestDeepFool(TestBase):
         x_test_original = self.x_test_mnist.copy()
 
         # Create basic CNN on MNIST using TensorFlow
-        classifier, sess = get_image_classifier_tf(from_logits=True)
+        classifier, _sess = get_image_classifier_tf(from_logits=True)
 
         scores = get_labels_np_array(classifier.predict(self.x_train_mnist))
         sum2 = np.sum(np.argmax(scores, axis=1) == np.argmax(self.y_train_mnist, axis=1))
@@ -266,7 +265,7 @@ class TestDeepFool(TestBase):
         with self.assertRaises(ValueError):
             _ = DeepFool(ptc, batch_size=-1)
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TypeError):
             _ = DeepFool(ptc, verbose="False")
 
 

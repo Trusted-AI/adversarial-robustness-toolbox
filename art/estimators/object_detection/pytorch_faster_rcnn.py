@@ -26,16 +26,18 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-from art.estimators.object_detection.pytorch_object_detector import PyTorchObjectDetector
+from art.estimators.object_detection.pytorch_object_detector import (
+    PyTorchObjectDetector,
+)
 
 if TYPE_CHECKING:
 
     import torch
     import torchvision
 
-    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
-    from art.defences.preprocessor.preprocessor import Preprocessor
     from art.defences.postprocessor.postprocessor import Postprocessor
+    from art.defences.preprocessor.preprocessor import Preprocessor
+    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -50,14 +52,14 @@ class PyTorchFasterRCNN(PyTorchObjectDetector):
 
     def __init__(
         self,
-        model: "torchvision.models.detection.FasterRCNN" | None = None,
+        model: torchvision.models.detection.FasterRCNN | None = None,
         input_shape: tuple[int, ...] = (-1, -1, -1),
-        optimizer: "torch.optim.Optimizer" | None = None,
-        clip_values: "CLIP_VALUES_TYPE" | None = None,
+        optimizer: torch.optim.Optimizer | None = None,
+        clip_values: CLIP_VALUES_TYPE | None = None,
         channels_first: bool = True,
-        preprocessing_defences: "Preprocessor" | list["Preprocessor"] | None = None,
-        postprocessing_defences: "Postprocessor" | list["Postprocessor"] | None = None,
-        preprocessing: "PREPROCESSING_TYPE" = None,
+        preprocessing_defences: Preprocessor | list[Preprocessor] | None = None,
+        postprocessing_defences: Postprocessor | list[Postprocessor] | None = None,
+        preprocessing: PREPROCESSING_TYPE = None,
         attack_losses: tuple[str, ...] = (
             "loss_classifier",
             "loss_box_reg",

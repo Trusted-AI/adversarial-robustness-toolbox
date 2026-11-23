@@ -15,7 +15,6 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
 import unittest
@@ -65,7 +64,7 @@ class TestIterativeAttack(TestBase):
         )
 
     def test_3_tensorflow_mnist(self):
-        classifier, sess = get_image_classifier_tf()
+        classifier, _sess = get_image_classifier_tf()
 
         scores = get_labels_np_array(classifier.predict(self.x_train_mnist))
         acc = np.sum(np.argmax(scores, axis=1) == np.argmax(self.y_train_mnist, axis=1)) / self.y_train_mnist.shape[0]
@@ -200,7 +199,7 @@ class TestIterativeAttack(TestBase):
         self._test_mnist_targeted(classifier, self.x_test_mnist)
 
     def test_4_tensorflow_mnist_targeted(self):
-        classifier, sess = get_image_classifier_tf()
+        classifier, _sess = get_image_classifier_tf()
         self._test_mnist_targeted(classifier, self.x_test_mnist)
 
     def test_7_pytorch_mnist_targeted(self):
@@ -229,7 +228,7 @@ class TestIterativeAttack(TestBase):
         # Test targeted attack
         targets = random_targets(self.y_test_iris, nb_classes=3)
         attack = BasicIterativeMethod(classifier, targeted=True, eps=1.0, eps_step=0.1, verbose=False)
-        x_test_adv = attack.generate(self.x_test_iris, **{"y": targets})
+        x_test_adv = attack.generate(self.x_test_iris, y=targets)
         self.assertFalse((self.x_test_iris == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1).all())
         self.assertTrue((x_test_adv >= 0).all())
@@ -273,7 +272,7 @@ class TestIterativeAttack(TestBase):
         # Test targeted attack
         targets = random_targets(self.y_test_iris, nb_classes=3)
         attack = BasicIterativeMethod(classifier, targeted=True, eps=1.0, eps_step=0.1, max_iter=5, verbose=False)
-        x_test_adv = attack.generate(self.x_test_iris, **{"y": targets})
+        x_test_adv = attack.generate(self.x_test_iris, y=targets)
         self.assertFalse((self.x_test_iris == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1).all())
         self.assertTrue((x_test_adv >= 0).all())
@@ -301,7 +300,7 @@ class TestIterativeAttack(TestBase):
         # Test targeted attack
         targets = random_targets(self.y_test_iris, nb_classes=3)
         attack = BasicIterativeMethod(classifier, targeted=True, eps=1.0, eps_step=0.1, batch_size=128, verbose=False)
-        x_test_adv = attack.generate(self.x_test_iris, **{"y": targets})
+        x_test_adv = attack.generate(self.x_test_iris, y=targets)
         self.assertFalse((self.x_test_iris == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1).all())
         self.assertTrue((x_test_adv >= 0).all())
@@ -349,7 +348,7 @@ class TestIterativeAttack(TestBase):
             attack = BasicIterativeMethod(
                 classifier, targeted=True, eps=1.0, eps_step=0.1, batch_size=128, max_iter=5, verbose=False
             )
-            x_test_adv = attack.generate(self.x_test_iris, **{"y": targets})
+            x_test_adv = attack.generate(self.x_test_iris, y=targets)
             self.assertFalse((self.x_test_iris == x_test_adv).all())
             self.assertTrue((x_test_adv <= 1).all())
             self.assertTrue((x_test_adv >= 0).all())

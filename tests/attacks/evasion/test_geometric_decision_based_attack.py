@@ -16,14 +16,13 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 import logging
-import pytest
 
 import numpy as np
+import pytest
 
 from art.attacks.evasion.geometric_decision_based_attack import GeoDA
-from art.estimators.estimator import BaseEstimator
 from art.estimators.classification.classifier import ClassifierMixin
-
+from art.estimators.estimator import BaseEstimator
 from tests.attacks.utils import backend_test_classifier_type_check_fail
 from tests.utils import ARTTestException
 
@@ -86,7 +85,7 @@ def test_generate_2d_dct_basis(art_warning, image_dl_estimator):
 @pytest.mark.framework_agnostic
 def test_is_adversarial(art_warning, image_dl_estimator, fix_get_mnist_subset):
     try:
-        x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist = fix_get_mnist_subset
+        _x_train_mnist, _y_train_mnist, x_test_mnist, y_test_mnist = fix_get_mnist_subset
 
         classifier, _ = image_dl_estimator(from_logits=True)
         attack = GeoDA(estimator=classifier, sub_dim=5, max_iter=4000, verbose=False)
@@ -100,7 +99,7 @@ def test_is_adversarial(art_warning, image_dl_estimator, fix_get_mnist_subset):
 @pytest.mark.framework_agnostic
 def test_find_random_adversarial(art_warning, image_dl_estimator, fix_get_mnist_subset):
     try:
-        x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist = fix_get_mnist_subset
+        _x_train_mnist, _y_train_mnist, x_test_mnist, y_test_mnist = fix_get_mnist_subset
 
         classifier, _ = image_dl_estimator(from_logits=True)
         attack = GeoDA(estimator=classifier, sub_dim=5, max_iter=4000, verbose=False)
@@ -131,7 +130,7 @@ def test_opt_query_iteration(art_warning, image_dl_estimator):
 @pytest.mark.framework_agnostic
 def test_sub_noise(art_warning, image_dl_estimator, fix_get_mnist_subset):
     try:
-        x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist = fix_get_mnist_subset
+        x_train_mnist, _y_train_mnist, _x_test_mnist, _y_test_mnist = fix_get_mnist_subset
 
         classifier, _ = image_dl_estimator(from_logits=True)
         attack = GeoDA(estimator=classifier, sub_dim=5, max_iter=4000, verbose=False)
@@ -145,7 +144,7 @@ def test_sub_noise(art_warning, image_dl_estimator, fix_get_mnist_subset):
 @pytest.mark.framework_agnostic
 def test_generate(art_warning, fix_get_mnist_subset, image_dl_estimator):
     try:
-        x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist = fix_get_mnist_subset
+        x_train_mnist, y_train_mnist, _x_test_mnist, _y_test_mnist = fix_get_mnist_subset
 
         classifier, _ = image_dl_estimator(from_logits=True)
         attack = GeoDA(estimator=classifier, sub_dim=5, max_iter=400, verbose=False)
@@ -202,7 +201,7 @@ def test_check_params(art_warning, image_dl_estimator_for_attack):
         # with pytest.raises(ValueError):
         #     _ = GeoDA(classifier, targeted="true")
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = GeoDA(classifier, verbose="true")
 
     except ARTTestException as e:

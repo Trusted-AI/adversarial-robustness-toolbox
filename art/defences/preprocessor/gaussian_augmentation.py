@@ -19,10 +19,10 @@
 This module implements the Gaussian augmentation defence in `GaussianAugmentation`.
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 import numpy as np
 
@@ -43,7 +43,7 @@ class GaussianAugmentation(Preprocessor):
     `augmentation` is true, and only when performing prediction otherwise.
     """
 
-    params = [
+    params: ClassVar[list[str]] = [
         "sigma",
         "augmentation",
         "ratio",
@@ -57,7 +57,7 @@ class GaussianAugmentation(Preprocessor):
         sigma: float = 1.0,
         augmentation: bool = True,
         ratio: float = 1.0,
-        clip_values: "CLIP_VALUES_TYPE" | None = None,
+        clip_values: CLIP_VALUES_TYPE | None = None,
         apply_fit: bool = True,
         apply_predict: bool = False,
     ):

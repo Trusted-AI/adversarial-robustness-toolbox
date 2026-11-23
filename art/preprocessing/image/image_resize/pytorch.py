@@ -22,7 +22,7 @@ This module implements resizing for images and object detection bounding boxes i
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 from tqdm.auto import tqdm
 
@@ -31,6 +31,7 @@ from art.preprocessing.preprocessing import PreprocessorPyTorch
 if TYPE_CHECKING:
 
     import torch
+
     from art.utils import CLIP_VALUES_TYPE
 
 logger = logging.getLogger(__name__)
@@ -41,9 +42,17 @@ class ImageResizePyTorch(PreprocessorPyTorch):
     This module implements resizing for images and object detection bounding boxes in PyTorch.
     """
 
-    params = ["height", "width", "channels_first", "label_type", "interpolation", "clip_values", "verbose"]
+    params: ClassVar[list[str]] = [
+        "height",
+        "width",
+        "channels_first",
+        "label_type",
+        "interpolation",
+        "clip_values",
+        "verbose",
+    ]
 
-    label_types = ["classification", "object_detection"]
+    label_types: ClassVar[list[str]] = ["classification", "object_detection"]
 
     def __init__(
         self,
@@ -52,7 +61,7 @@ class ImageResizePyTorch(PreprocessorPyTorch):
         channels_first: bool = True,
         label_type: str = "classification",
         interpolation: str = "bilinear",
-        clip_values: "CLIP_VALUES_TYPE" | None = None,
+        clip_values: CLIP_VALUES_TYPE | None = None,
         apply_fit: bool = True,
         apply_predict: bool = False,
         verbose: bool = False,
@@ -84,9 +93,9 @@ class ImageResizePyTorch(PreprocessorPyTorch):
 
     def forward(
         self,
-        x: "torch.Tensor",
-        y: "torch.Tensor" | list[dict[str, "torch.Tensor"]] | None = None,
-    ) -> tuple["torch.Tensor", "torch.Tensor" | list[dict[str, "torch.Tensor"]] | None]:
+        x: torch.Tensor,
+        y: torch.Tensor | list[dict[str, torch.Tensor]] | None = None,
+    ) -> tuple[torch.Tensor, torch.Tensor | list[dict[str, torch.Tensor]] | None]:
         """
         Resize `x` and adjust bounding boxes for labels `y` accordingly.
 

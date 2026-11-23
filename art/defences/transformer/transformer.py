@@ -19,10 +19,10 @@
 This module implements the abstract base class for defences that transform a classifier into a more robust classifier.
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import abc
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 import numpy as np
 
@@ -35,9 +35,9 @@ class Transformer(abc.ABC):
     Abstract base class for transformation defences.
     """
 
-    params: list[str] = []
+    params: ClassVar[list[str]] = []
 
-    def __init__(self, classifier: "CLASSIFIER_TYPE") -> None:
+    def __init__(self, classifier: CLASSIFIER_TYPE) -> None:
         """
         Create a transformation object.
 
@@ -55,7 +55,7 @@ class Transformer(abc.ABC):
         """
         return self._is_fitted
 
-    def get_classifier(self) -> "CLASSIFIER_TYPE":
+    def get_classifier(self) -> CLASSIFIER_TYPE:
         """
         Get the internal classifier.
 
@@ -64,7 +64,7 @@ class Transformer(abc.ABC):
         return self.classifier
 
     @abc.abstractmethod
-    def __call__(self, x: np.ndarray, transformed_classifier: "CLASSIFIER_TYPE") -> "CLASSIFIER_TYPE":
+    def __call__(self, x: np.ndarray, transformed_classifier: CLASSIFIER_TYPE) -> CLASSIFIER_TYPE:
         """
         Perform the transformation defence and return a robuster classifier.
 

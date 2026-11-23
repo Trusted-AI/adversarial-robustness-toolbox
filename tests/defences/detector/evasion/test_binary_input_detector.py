@@ -15,16 +15,19 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-import pytest
+
 import numpy as np
+import pytest
 
 from art.attacks.evasion import FastGradientMethod
-from art.estimators.classification import KerasClassifier, TensorFlowV2Classifier, PyTorchClassifier
 from art.defences.detector.evasion import BinaryInputDetector
-
+from art.estimators.classification import (
+    KerasClassifier,
+    PyTorchClassifier,
+    TensorFlowV2Classifier,
+)
 from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)
@@ -35,7 +38,7 @@ def get_classifier(framework):
     def _get_classifier():
         if framework in ("keras", "kerastf"):
             import tensorflow as tf
-            from tensorflow.keras import layers, Sequential
+            from tensorflow.keras import Sequential, layers
 
             model = Sequential()
             model.add(layers.Conv2D(4, kernel_size=(5, 5), activation="relu", input_shape=(28, 28, 1)))
@@ -47,7 +50,7 @@ def get_classifier(framework):
             classifier = KerasClassifier(model=model, clip_values=(0, 1), use_logits=False)
         elif framework == "tensorflow2":
             import tensorflow as tf
-            from tensorflow.keras import layers, Sequential
+            from tensorflow.keras import Sequential, layers
 
             model = Sequential()
             model.add(layers.Conv2D(4, kernel_size=(5, 5), activation="relu", input_shape=(28, 28, 1)))

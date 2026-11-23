@@ -15,14 +15,15 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
 import unittest
 
 import numpy as np
 
-from art.attacks.evasion.targeted_universal_perturbation import TargetedUniversalPerturbation
+from art.attacks.evasion.targeted_universal_perturbation import (
+    TargetedUniversalPerturbation,
+)
 from art.estimators.classification.classifier import ClassifierMixin
 from art.estimators.estimator import BaseEstimator
 from tests.attacks.utils import backend_test_classifier_type_check_fail
@@ -64,7 +65,7 @@ class TestTargetedUniversalPerturbation(TestBase):
         x_test_original = self.x_test_mnist.copy()
 
         # Build TensorFlowClassifier
-        tfc, sess = get_image_classifier_tf()
+        tfc, _sess = get_image_classifier_tf()
 
         # set target label
         target = 0

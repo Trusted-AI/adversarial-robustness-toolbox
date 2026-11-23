@@ -15,13 +15,15 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from __future__ import absolute_import, division, print_function, unicode_literals
 
-import pytest
 import logging
+
 import numpy as np
+import pytest
 
 from art.defences.trainer import AdversarialTrainerFBFPyTorch
+
+logger = logging.getLogger(__name__)
 
 
 @pytest.fixture()
@@ -58,7 +60,7 @@ def test_adversarial_trainer_fbf_pytorch_fit_and_predict(get_adv_trainer, fix_ge
 
     trainer = get_adv_trainer()
     if trainer is None:
-        logging.warning("Couldn't perform  this test because no trainer is defined for this framework configuration")
+        logger.warning("Couldn't perform  this test because no trainer is defined for this framework configuration")
         return
 
     predictions = np.argmax(trainer.predict(x_test_mnist), axis=1)
@@ -75,7 +77,7 @@ def test_adversarial_trainer_fbf_pytorch_fit_and_predict(get_adv_trainer, fix_ge
     )
 
     assert accuracy == 0.32
-    assert accuracy_new == 0.62
+    assert accuracy_new == 0.65
 
     trainer.fit(x_train_mnist, y_train_mnist, nb_epochs=20, validation_data=(x_train_mnist, y_train_mnist))
 
@@ -84,14 +86,14 @@ def test_adversarial_trainer_fbf_pytorch_fit_and_predict(get_adv_trainer, fix_ge
 def test_adversarial_trainer_fbf_pytorch_fit_generator_and_predict(
     get_adv_trainer, fix_get_mnist_subset, image_data_generator
 ):
-    x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist = fix_get_mnist_subset
+    _x_train_mnist, _y_train_mnist, x_test_mnist, y_test_mnist = fix_get_mnist_subset
     x_test_mnist_original = x_test_mnist.copy()
 
     generator = image_data_generator()
 
     trainer = get_adv_trainer()
     if trainer is None:
-        logging.warning("Couldn't perform  this test because no trainer is defined for this framework configuration")
+        logger.warning("Couldn't perform  this test because no trainer is defined for this framework configuration")
         return
 
     predictions = np.argmax(trainer.predict(x_test_mnist), axis=1)

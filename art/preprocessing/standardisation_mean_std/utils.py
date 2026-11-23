@@ -31,7 +31,7 @@ if TYPE_CHECKING:
 
 
 def broadcastable_mean_std(
-    x: np.ndarray | "torch.Tensor" | "tf.Tensor", mean: np.ndarray, std: np.ndarray
+    x: np.ndarray | torch.Tensor | tf.Tensor, mean: np.ndarray, std: np.ndarray
 ) -> tuple[np.ndarray, np.ndarray]:
     """
     Ensure that the mean and standard deviation are broadcastable with respect to input `x`.

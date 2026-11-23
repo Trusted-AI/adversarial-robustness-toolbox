@@ -24,7 +24,6 @@ def get_pytorch_detector_yolo():
     This class tests the PyTorchYolo object detector.
     """
     import torch
-
     from pytorchyolo import models
     from pytorchyolo.utils.loss import compute_loss
 

@@ -19,7 +19,7 @@
 This module implements the classifier `EnsembleClassifier` for ensembles of multiple classifiers.
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
 from typing import TYPE_CHECKING
@@ -30,10 +30,14 @@ from art.estimators.classification.classifier import ClassifierNeuralNetwork
 from art.estimators.estimator import NeuralNetworkMixin
 
 if TYPE_CHECKING:
-    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE, CLASSIFIER_NEURALNETWORK_TYPE
     from art.data_generators import DataGenerator
-    from art.defences.preprocessor import Preprocessor
     from art.defences.postprocessor import Postprocessor
+    from art.defences.preprocessor import Preprocessor
+    from art.utils import (
+        CLASSIFIER_NEURALNETWORK_TYPE,
+        CLIP_VALUES_TYPE,
+        PREPROCESSING_TYPE,
+    )
 
 logger = logging.getLogger(__name__)
 
@@ -51,13 +55,13 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
 
     def __init__(
         self,
-        classifiers: list["CLASSIFIER_NEURALNETWORK_TYPE"],
+        classifiers: list[CLASSIFIER_NEURALNETWORK_TYPE],
         classifier_weights: list | np.ndarray | None = None,
         channels_first: bool = False,
-        clip_values: "CLIP_VALUES_TYPE" | None = None,
-        preprocessing_defences: "Preprocessor" | list["Preprocessor"] | None = None,
-        postprocessing_defences: "Postprocessor" | list["Postprocessor"] | None = None,
-        preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
+        clip_values: CLIP_VALUES_TYPE | None = None,
+        preprocessing_defences: Preprocessor | list[Preprocessor] | None = None,
+        postprocessing_defences: Postprocessor | list[Postprocessor] | None = None,
+        preprocessing: PREPROCESSING_TYPE = (0.0, 1.0),
     ) -> None:
         """
         Initialize a :class:`.EnsembleClassifier` object. The data range values and colour channel index have to
@@ -205,7 +209,7 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
         """
         raise NotImplementedError
 
-    def fit_generator(self, generator: "DataGenerator", nb_epochs: int = 20, **kwargs) -> None:
+    def fit_generator(self, generator: DataGenerator, nb_epochs: int = 20, **kwargs) -> None:
         """
         Fit the classifier using the generator that yields batches as specified. This function is not supported for
         ensembles.
@@ -303,7 +307,7 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
 
         return np.sum(grads, axis=0)
 
-    def clone_for_refitting(self) -> "EnsembleClassifier":
+    def clone_for_refitting(self) -> EnsembleClassifier:
         """
         Clone classifier for refitting.
         """

@@ -19,7 +19,7 @@ from art.utils import load_mnist
 
 import tensorflow as tf
 from tensorflow.keras import Model
-from tensorflow.keras.layers import Dense, Flatten, Conv2D, MaxPool2D
+from tensorflow.keras.layers import Conv2D, Dense, Flatten, MaxPool2D
 
 
 class TensorFlowModel(Model):
@@ -28,7 +28,7 @@ class TensorFlowModel(Model):
     """
 
     def __init__(self):
-        super(TensorFlowModel, self).__init__()
+        super().__init__()
         self.conv1 = Conv2D(filters=4, kernel_size=5, activation="relu")
         self.conv2 = Conv2D(filters=10, kernel_size=5, activation="relu")
         self.maxpool = MaxPool2D(pool_size=(2, 2), strides=(2, 2), padding="valid", data_format=None)
@@ -76,7 +76,7 @@ classifier.fit(x_train, y_train, batch_size=64, nb_epochs=3)
 
 predictions = classifier.predict(x_test)
 accuracy = np.sum(np.argmax(predictions, axis=1) == np.argmax(y_test, axis=1)) / len(y_test)
-print("Accuracy on benign test examples: {}%".format(accuracy * 100))
+print(f"Accuracy on benign test examples: {accuracy * 100}%")
 
 # Step 6: Generate adversarial test examples
 attack = FastGradientMethod(estimator=classifier, eps=0.2)
@@ -86,4 +86,4 @@ x_test_adv = attack.generate(x=x_test)
 
 predictions = classifier.predict(x_test_adv)
 accuracy = np.sum(np.argmax(predictions, axis=1) == np.argmax(y_test, axis=1)) / len(y_test)
-print("Accuracy on adversarial test examples: {}%".format(accuracy * 100))
+print(f"Accuracy on adversarial test examples: {accuracy * 100}%")

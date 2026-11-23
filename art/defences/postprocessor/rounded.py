@@ -22,6 +22,7 @@ This module implements a rounding to the classifier output.
 from __future__ import annotations
 
 import logging
+from typing import ClassVar
 
 import numpy as np
 
@@ -35,7 +36,7 @@ class Rounded(Postprocessor):
     Implementation of a postprocessor based on rounding classifier output.
     """
 
-    params = ["decimals"]
+    params: ClassVar[list[str]] = ["decimals"]
 
     def __init__(self, decimals: int = 3, apply_fit: bool = False, apply_predict: bool = True) -> None:
         """

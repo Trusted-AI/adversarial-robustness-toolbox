@@ -25,15 +25,15 @@ This module implements the feature squeezing defence in `FeatureSqueezing`.
     https://arxiv.org/abs/1902.06705
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
-
+from typing import ClassVar
 
 import numpy as np
 
-from art.utils import CLIP_VALUES_TYPE
 from art.defences.preprocessor.preprocessor import Preprocessor
+from art.utils import CLIP_VALUES_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -49,7 +49,7 @@ class FeatureSqueezing(Preprocessor):
         see https://arxiv.org/abs/1902.06705
     """
 
-    params = ["clip_values", "bit_depth"]
+    params: ClassVar[list[str]] = ["clip_values", "bit_depth"]
 
     def __init__(
         self,

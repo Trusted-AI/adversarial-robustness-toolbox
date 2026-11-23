@@ -23,27 +23,30 @@ This module implements DeepZ proposed in Fast and Effective Robustness Certifica
 
 from __future__ import annotations
 
-from collections.abc import Callable
-from typing import Any, TYPE_CHECKING
-
 import logging
 import math
-import warnings
 import sys
+import warnings
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import torch
 
-from art.estimators.certification.deep_z.deep_z import ZonoConv, ZonoDenseLayer, ZonoReLU, ZonoBounds
+from art.estimators.certification.deep_z.deep_z import (
+    ZonoBounds,
+    ZonoConv,
+    ZonoDenseLayer,
+    ZonoReLU,
+)
 from art.estimators.classification.pytorch import PyTorchClassifier
 
-if sys.version_info < (3, 8):
-    from functools import reduce
-
 if TYPE_CHECKING:
-    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
-    from art.defences.preprocessor import Preprocessor
     from art.defences.postprocessor import Postprocessor
+    from art.defences.preprocessor import Preprocessor
+    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
+
+logger = logging.getLogger(__name__)
 
 
 class ConvertedModel(torch.nn.Module):
@@ -52,7 +55,7 @@ class ConvertedModel(torch.nn.Module):
     which uses abstract operations
     """
 
-    def __init__(self, model: "torch.nn.Module", channels_first: bool, input_shape: tuple[int, ...]):
+    def __init__(self, model: torch.nn.Module, channels_first: bool, input_shape: tuple[int, ...]):
         super().__init__()
         modules = []
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -98,7 +101,7 @@ class ConvertedModel(torch.nn.Module):
             elif isinstance(module, torch.nn.modules.activation.ReLU):
                 self.ops.append(ZonoReLU(device=self.device))
             else:
-                raise ValueError("Supported Operations are Conv2D, Linear, and RelU")
+                raise TypeError("Supported Operations are Conv2D, Linear, and RelU")
 
         for op_num, op in enumerate(self.ops):
             # as reshapes are not modules we infer when the reshape from convolutional to dense occurs
@@ -114,7 +117,7 @@ class ConvertedModel(torch.nn.Module):
 
     def forward(
         self, cent: np.ndarray, eps: np.ndarray | None = None
-    ) -> "torch.Tensor" | tuple["torch.Tensor", "torch.Tensor"]:
+    ) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]:
         """
         Performs the neural network forward pass, either using abstract operations or concrete ones
         depending on the value of self.forward_mode
@@ -134,7 +137,7 @@ class ConvertedModel(torch.nn.Module):
 
     def abstract_forward(
         self, cent: np.ndarray, eps: np.ndarray
-    ) -> tuple["torch.Tensor", "torch.Tensor"]:  # typing: ignore
+    ) -> tuple[torch.Tensor, torch.Tensor]:  # typing: ignore
         """
         Do the forward pass through the NN with the given error terms and zonotope center.
 
@@ -154,7 +157,7 @@ class ConvertedModel(torch.nn.Module):
             x = op(x)
         return x[0, :], x[1:, :]
 
-    def concrete_forward(self, in_x: np.ndarray | "torch.Tensor") -> "torch.Tensor":
+    def concrete_forward(self, in_x: np.ndarray | torch.Tensor) -> torch.Tensor:
         """
         Do the forward pass using the concrete operations
 
@@ -195,16 +198,16 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
 
     def __init__(
         self,
-        model: "torch.nn.Module",
-        loss: "torch.nn.modules.loss._Loss",
+        model: torch.nn.Module,
+        loss: torch.nn.modules.loss._Loss,
         input_shape: tuple[int, ...],
         nb_classes: int,
-        optimizer: "torch.optim.Optimizer" | None = None,
+        optimizer: torch.optim.Optimizer | None = None,
         channels_first: bool = True,
-        clip_values: "CLIP_VALUES_TYPE" | None = None,
-        preprocessing_defences: "Preprocessor" | list["Preprocessor"] | None = None,
-        postprocessing_defences: "Postprocessor" | list["Postprocessor"] | None = None,
-        preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
+        clip_values: CLIP_VALUES_TYPE | None = None,
+        preprocessing_defences: Preprocessor | list[Preprocessor] | None = None,
+        postprocessing_defences: Postprocessor | list[Postprocessor] | None = None,
+        preprocessing: PREPROCESSING_TYPE = (0.0, 1.0),
         device_type: str = "gpu",
         concrete_to_zonotope: Callable | None = None,
     ):
@@ -255,10 +258,10 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
         if optimizer is not None:
             opt_state_dict = optimizer.state_dict()
             if isinstance(optimizer, torch.optim.Adam):
-                logging.info("Converting Adam Optimiser")
+                logger.info("Converting Adam Optimiser")
                 converted_optimizer = torch.optim.Adam(converted_model.parameters(), lr=1e-4)
             elif isinstance(optimizer, torch.optim.SGD):
-                logging.info("Converting SGD Optimiser")
+                logger.info("Converting SGD Optimiser")
                 converted_optimizer = torch.optim.SGD(converted_model.parameters(), lr=1e-4)
             else:
                 raise ValueError("Optimiser not supported for conversion")
@@ -302,10 +305,7 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
 
         for sample in x_preprocessed:
             if self.concrete_to_zonotope is None:
-                if sys.version_info >= (3, 8):
-                    eps_bound = np.eye(math.prod(self.input_shape)) * bound
-                else:
-                    eps_bound = np.eye(reduce(lambda x, y: x * y, self.input_shape)) * bound
+                eps_bound = np.eye(math.prod(self.input_shape)) * bound
 
                 processed_sample, eps_bound = self.pre_process(cent=np.copy(sample), eps=eps_bound)
                 processed_sample = np.expand_dims(processed_sample, axis=0)
@@ -351,7 +351,7 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
 
         return all(certification_results)
 
-    def concrete_loss(self, output: "torch.Tensor", target: "torch.Tensor") -> "torch.Tensor":
+    def concrete_loss(self, output: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         """
         Access function to get the classifier loss
 
@@ -375,7 +375,7 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=fit)
         return x_preprocessed, y_preprocessed
 
-    def max_logit_loss(self, prediction: "torch.Tensor", target: "torch.Tensor") -> "torch.Tensor" | None:
+    def max_logit_loss(self, prediction: torch.Tensor, target: torch.Tensor) -> torch.Tensor | None:
         """
         Computes the loss as the largest logit value amongst the incorrect classes.
 
@@ -395,7 +395,7 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
         return loss
 
     @staticmethod
-    def interval_loss_cce(prediction: "torch.Tensor", target: "torch.Tensor") -> "torch.Tensor":
+    def interval_loss_cce(prediction: torch.Tensor, target: torch.Tensor) -> torch.Tensor:
         """
         Computes the categorical cross entropy loss with the correct class having the lower bound prediction,
         and the other classes having their upper bound predictions.
@@ -414,7 +414,7 @@ class PytorchDeepZ(PyTorchClassifier, ZonoBounds):
         return criterion(ubs, target)
 
     @staticmethod
-    def get_accuracy(preds: np.ndarray | "torch.Tensor", labels: np.ndarray | "torch.Tensor") -> np.ndarray:
+    def get_accuracy(preds: np.ndarray | torch.Tensor, labels: np.ndarray | torch.Tensor) -> np.ndarray:
         """
         Helper function to print out the accuracy during training
 
