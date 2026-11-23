@@ -25,7 +25,7 @@ attack objective.
 | Paper link: https://arxiv.org/abs/1608.04644
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
 from typing import TYPE_CHECKING
@@ -33,18 +33,18 @@ from typing import TYPE_CHECKING
 import numpy as np
 from tqdm.auto import trange
 
-from art.config import ART_NUMPY_DTYPE
-from art.optimizers import Adam
-from art.estimators.estimator import BaseEstimator
-from art.estimators.classification.classifier import ClassGradientsMixin
 from art.attacks.attack import EvasionAttack
+from art.config import ART_NUMPY_DTYPE
+from art.estimators.classification.classifier import ClassGradientsMixin
+from art.estimators.estimator import BaseEstimator
+from art.optimizers import Adam
 from art.utils import (
+    check_and_transform_label_format,
     compute_success,
     get_labels_np_array,
-    tanh_to_original,
     original_to_tanh,
+    tanh_to_original,
 )
-from art.utils import check_and_transform_label_format
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE
@@ -78,7 +78,7 @@ class CarliniL2Method(EvasionAttack):
 
     def __init__(
         self,
-        classifier: "CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE",
+        classifier: CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE,
         confidence: float = 0.0,
         targeted: bool = False,
         learning_rate: float = 0.01,
@@ -534,7 +534,7 @@ class CarliniLInfMethod(EvasionAttack):
 
     def __init__(
         self,
-        classifier: "CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE",
+        classifier: CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE,
         confidence: float = 0.0,
         targeted: bool = False,
         learning_rate: float = 0.01,
@@ -809,8 +809,7 @@ class CarliniLInfMethod(EvasionAttack):
 
                 tau_actual = np.max(np.abs(x_adv[sample_id] - x[sample_id]))
 
-                if tau_actual < tau:
-                    tau = tau_actual
+                tau = min(tau, tau_actual)
 
                 tau *= self.decrease_factor
 
@@ -868,7 +867,7 @@ class CarliniL0Method(CarliniL2Method):
 
     def __init__(
         self,
-        classifier: "CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE",
+        classifier: CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE,
         confidence: float = 0.0,
         targeted: bool = False,
         learning_rate: float = 0.01,

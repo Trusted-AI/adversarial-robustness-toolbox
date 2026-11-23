@@ -18,7 +18,6 @@
 import pytest
 
 from art.evaluations.great_score import GreatScorePyTorch
-
 from tests.utils import ARTTestException
 
 

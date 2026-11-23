@@ -19,11 +19,11 @@ import logging
 
 import numpy as np
 import pytest
+from tqdm.std import TqdmTypeError
 
 from art.attacks.evasion import RobustDPatch
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from art.estimators.object_detection.object_detector import ObjectDetectorMixin
-
 from tests.attacks.utils import backend_test_classifier_type_check_fail
 from tests.utils import ARTTestException
 
@@ -256,22 +256,22 @@ def test_check_params(art_warning, fix_get_rcnn):
         # with pytest.raises(ValueError):
         #     _ = RobustDPatch(frcnn, patch_shape=(1, 2, 3, 4))
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = RobustDPatch(frcnn, learning_rate=1)
         with pytest.raises(ValueError):
             _ = RobustDPatch(frcnn, learning_rate=-1.0)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = RobustDPatch(frcnn, max_iter=1.0)
         with pytest.raises(ValueError):
             _ = RobustDPatch(frcnn, max_iter=-1)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = RobustDPatch(frcnn, batch_size=1.0)
         with pytest.raises(ValueError):
             _ = RobustDPatch(frcnn, batch_size=-1)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = RobustDPatch(frcnn, verbose="true")
 
         with pytest.raises(ValueError):
@@ -307,12 +307,12 @@ def test_check_params(art_warning, fix_get_rcnn):
         with pytest.raises(ValueError):
             _ = RobustDPatch(frcnn, rotation_weights=(0.0, 0.0, 0.0, 0.0))
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = RobustDPatch(frcnn, sample_size=1.0)
         with pytest.raises(ValueError):
             _ = RobustDPatch(frcnn, sample_size=-1)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = RobustDPatch(frcnn, targeted="true")
 
     except ARTTestException as e:

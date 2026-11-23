@@ -15,7 +15,6 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
 import unittest
@@ -23,10 +22,12 @@ import unittest
 import numpy as np
 import tensorflow as tf
 
-from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent import ProjectedGradientDescent
+from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent import (
+    ProjectedGradientDescent,
+)
 from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent_numpy import (
-    ProjectedGradientDescentNumpy,
     ProjectedGradientDescentCommon,
+    ProjectedGradientDescentNumpy,
 )
 from art.estimators.classification import KerasClassifier
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
@@ -95,7 +96,7 @@ class TestPGD(TestBase):
         with self.assertRaises(ValueError):
             _ = ProjectedGradientDescentCommon(krc, eps=np.array([1.0, 1.0]), eps_step=np.array([1.0]))
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TypeError):
             _ = ProjectedGradientDescentCommon(krc, targeted="False")
 
         with self.assertRaises(TypeError):
@@ -110,11 +111,11 @@ class TestPGD(TestBase):
         with self.assertRaises(ValueError):
             _ = ProjectedGradientDescentCommon(krc, max_iter=-1)
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TypeError):
             _ = ProjectedGradientDescentCommon(krc, verbose="False")
 
     def test_3_tensorflow_mnist(self):
-        classifier, sess = get_image_classifier_tf()
+        classifier, _sess = get_image_classifier_tf()
 
         scores = get_labels_np_array(classifier.predict(self.x_train_mnist))
         acc = np.sum(np.argmax(scores, axis=1) == np.argmax(self.y_train_mnist, axis=1)) / self.y_train_mnist.shape[0]
@@ -283,7 +284,7 @@ class TestPGD(TestBase):
         # Test targeted attack
         targets = random_targets(self.y_test_iris, nb_classes=3)
         attack = ProjectedGradientDescent(classifier, targeted=True, eps=1.0, eps_step=0.1, max_iter=5, verbose=False)
-        x_test_adv = attack.generate(self.x_test_iris, **{"y": targets})
+        x_test_adv = attack.generate(self.x_test_iris, y=targets)
         self.assertFalse((self.x_test_iris == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1).all())
         self.assertTrue((x_test_adv >= 0).all())
@@ -327,7 +328,7 @@ class TestPGD(TestBase):
         # Test targeted attack
         targets = random_targets(self.y_test_iris, nb_classes=3)
         attack = ProjectedGradientDescent(classifier, targeted=True, eps=1.0, eps_step=0.1, max_iter=5, verbose=False)
-        x_test_adv = attack.generate(self.x_test_iris, **{"y": targets})
+        x_test_adv = attack.generate(self.x_test_iris, y=targets)
         self.assertFalse((self.x_test_iris == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1).all())
         self.assertTrue((x_test_adv >= 0).all())
@@ -355,7 +356,7 @@ class TestPGD(TestBase):
         # Test targeted attack
         targets = random_targets(self.y_test_iris, nb_classes=3)
         attack = ProjectedGradientDescent(classifier, targeted=True, eps=1.0, eps_step=0.1, max_iter=5, verbose=False)
-        x_test_adv = attack.generate(self.x_test_iris, **{"y": targets})
+        x_test_adv = attack.generate(self.x_test_iris, y=targets)
         self.assertFalse((self.x_test_iris == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1).all())
         self.assertTrue((x_test_adv >= 0).all())
@@ -403,7 +404,7 @@ class TestPGD(TestBase):
             attack = ProjectedGradientDescent(
                 classifier, targeted=True, eps=1.0, eps_step=0.1, max_iter=5, verbose=False
             )
-            x_test_adv = attack.generate(self.x_test_iris, **{"y": targets})
+            x_test_adv = attack.generate(self.x_test_iris, y=targets)
             self.assertFalse((self.x_test_iris == x_test_adv).all())
             self.assertTrue((x_test_adv <= 1).all())
             self.assertTrue((x_test_adv >= 0).all())
@@ -797,7 +798,7 @@ class TestPGD(TestBase):
         with self.assertRaises(ValueError):
             _ = ProjectedGradientDescent(ptc, eps=np.array([1, 1, 1]), eps_step=np.array([-1, -1, -1]))
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TypeError):
             _ = ProjectedGradientDescent(ptc, targeted="true")
 
         with self.assertRaises(TypeError):
@@ -811,7 +812,7 @@ class TestPGD(TestBase):
         with self.assertRaises(ValueError):
             _ = ProjectedGradientDescent(ptc, max_iter=-1)
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TypeError):
             _ = ProjectedGradientDescent(ptc, verbose="true")
 
 

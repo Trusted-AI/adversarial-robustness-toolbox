@@ -23,7 +23,6 @@ import pytest
 
 from art.attacks.evasion import MomentumIterativeMethod
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
-
 from tests.attacks.utils import backend_test_classifier_type_check_fail
 from tests.utils import ARTTestException
 
@@ -41,7 +40,7 @@ def fix_get_mnist_subset(get_mnist_dataset):
 @pytest.mark.skip_framework("tensorflow")  # See issue #2439
 def test_images(art_warning, fix_get_mnist_subset, image_dl_estimator_for_attack, framework):
     try:
-        x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist = fix_get_mnist_subset
+        x_train_mnist, _y_train_mnist, _x_test_mnist, _y_test_mnist = fix_get_mnist_subset
         classifier = image_dl_estimator_for_attack(MomentumIterativeMethod)
 
         attack = MomentumIterativeMethod(classifier, eps=0.3, eps_step=0.1, decay=1.0, max_iter=10)
@@ -59,7 +58,7 @@ def test_images(art_warning, fix_get_mnist_subset, image_dl_estimator_for_attack
 @pytest.mark.skip_framework("tensorflow")  # See issue #2439
 def test_images_targeted(art_warning, fix_get_mnist_subset, image_dl_estimator_for_attack, framework):
     try:
-        x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist = fix_get_mnist_subset
+        x_train_mnist, y_train_mnist, _x_test_mnist, _y_test_mnist = fix_get_mnist_subset
         classifier = image_dl_estimator_for_attack(MomentumIterativeMethod)
 
         attack = MomentumIterativeMethod(classifier, eps=0.3, eps_step=0.1, decay=1.0, max_iter=10)
@@ -93,13 +92,13 @@ def test_check_params(art_warning, image_dl_estimator_for_attack):
         with pytest.raises(ValueError):
             _ = MomentumIterativeMethod(classifier, max_iter=-1)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = MomentumIterativeMethod(classifier, targeted="true")
 
         with pytest.raises(ValueError):
             _ = MomentumIterativeMethod(classifier, batch_size=0)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = MomentumIterativeMethod(classifier, verbose="true")
 
     except ARTTestException as e:

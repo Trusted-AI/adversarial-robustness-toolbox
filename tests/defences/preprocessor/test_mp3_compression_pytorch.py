@@ -15,7 +15,6 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
 
@@ -24,7 +23,6 @@ import pytest
 from numpy.testing import assert_array_equal
 
 from art.defences.preprocessor import Mp3CompressionPyTorch
-
 from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)
@@ -113,7 +111,7 @@ def test_mp3_compression(art_warning, audio_batch, channels_first):
 @pytest.mark.skip_framework("tensorflow", "keras", "scikitlearn", "kerastf")
 def test_check_params(art_warning):
     try:
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = Mp3CompressionPyTorch(sample_rate=1000, verbose="False")
 
     except ARTTestException as e:

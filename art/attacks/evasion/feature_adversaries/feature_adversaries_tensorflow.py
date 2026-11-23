@@ -66,15 +66,15 @@ class FeatureAdversariesTensorFlowV2(EvasionAttack):
 
     def __init__(
         self,
-        estimator: "TENSORFLOWV2_ESTIMATOR_TYPE",
+        estimator: TENSORFLOWV2_ESTIMATOR_TYPE,
         delta: float,
-        optimizer: "Optimizer" | None = None,
+        optimizer: Optimizer | None = None,
         optimizer_kwargs: dict | None = None,
         lambda_: float = 0.0,
         layer: int | str | tuple[int, ...] | tuple[str, ...] = -1,
         max_iter: int = 100,
         batch_size: int = 32,
-        step_size: int | float | None = None,
+        step_size: float | None = None,
         random_start: bool = False,
         verbose: bool = True,
     ):
@@ -108,7 +108,7 @@ class FeatureAdversariesTensorFlowV2(EvasionAttack):
         self.verbose = verbose
         self._check_params()
 
-    def _generate_batch(self, x: "tf.Tensor", y: "tf.Tensor") -> "tf.Tensor":
+    def _generate_batch(self, x: tf.Tensor, y: tf.Tensor) -> tf.Tensor:
         """
         Generate adversarial batch.
 
@@ -214,20 +214,20 @@ class FeatureAdversariesTensorFlowV2(EvasionAttack):
         Apply attack-specific checks.
         """
         if not isinstance(self.delta, float):
-            raise ValueError("The value of delta must be of type float.")
+            raise TypeError("The value of delta must be of type float.")
         if self.delta <= 0:
             raise ValueError("The maximum deviation value delta has to be positive.")
 
         if not isinstance(self.lambda_, float):
-            raise ValueError("The value of lambda_ must be of type float.")
+            raise TypeError("The value of lambda_ must be of type float.")
         if self.lambda_ < 0.0:
             raise ValueError("The regularization parameter `lambda_` has to be non-negative.")
 
         if not isinstance(self.layer[0], (int, str)):
-            raise ValueError("The value of the representation layer must be integer or string.")
+            raise TypeError("The value of the representation layer must be integer or string.")
 
         if not isinstance(self.max_iter, int):
-            raise ValueError("The value of max_iter must be of type int.")
+            raise TypeError("The value of max_iter must be of type int.")
         if self.max_iter <= 0:
             raise ValueError("The maximum number of iterations has to be a positive.")
 

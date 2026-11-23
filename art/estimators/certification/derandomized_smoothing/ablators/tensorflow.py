@@ -21,14 +21,16 @@ This module implements (De)Randomized Smoothing for Certifiable Defense against 
 | Paper link: https://arxiv.org/abs/2002.10733
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
-from typing import TYPE_CHECKING
 import random
+from typing import TYPE_CHECKING
 
 import numpy as np
 
-from art.estimators.certification.derandomized_smoothing.ablators.ablate import BaseAblator
+from art.estimators.certification.derandomized_smoothing.ablators.ablate import (
+    BaseAblator,
+)
 
 if TYPE_CHECKING:
 
@@ -71,8 +73,8 @@ class ColumnAblator(BaseAblator):
         return self.forward(x=x, column_pos=column_pos)
 
     def certify(
-        self, pred_counts: "tf.Tensor", size_to_certify: int, label: np.ndarray | "tf.Tensor"
-    ) -> tuple["tf.Tensor", "tf.Tensor", "tf.Tensor"]:
+        self, pred_counts: tf.Tensor, size_to_certify: int, label: np.ndarray | tf.Tensor
+    ) -> tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
         """
         Checks if based on the predictions supplied the classifications over the ablated datapoints result in a
         certified prediction against a patch attack of size size_to_certify.
@@ -207,8 +209,8 @@ class BlockAblator(BaseAblator):
         return self.forward(x=x, row_pos=row_pos, column_pos=column_pos)
 
     def certify(
-        self, pred_counts: "tf.Tensor" | np.ndarray, size_to_certify: int, label: np.ndarray | "tf.Tensor"
-    ) -> tuple["tf.Tensor", "tf.Tensor", "tf.Tensor"]:
+        self, pred_counts: tf.Tensor | np.ndarray, size_to_certify: int, label: np.ndarray | tf.Tensor
+    ) -> tuple[tf.Tensor, tf.Tensor, tf.Tensor]:
         """
         Checks if based on the predictions supplied the classifications over the ablated datapoints result in a
         certified prediction against a patch attack of size size_to_certify.

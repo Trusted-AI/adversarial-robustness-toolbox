@@ -1,22 +1,22 @@
-# -*- coding: utf-8 -*-
 """
 Generates a backdoor for MNIST dataset, then trains a convolutional neural network on the poisoned dataset,
 and runs activation defence to find poison.
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals
-
-import pprint
 import json
+import pprint
 
-from keras.models import Sequential
-from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D, Dropout
 import numpy as np
+from keras.layers import Conv2D, Dense, Dropout, Flatten, MaxPooling2D
+from keras.models import Sequential
 
-from art.attacks.poisoning.perturbations.image_perturbations import add_pattern_bd, add_single_bd
+from art.attacks.poisoning.perturbations.image_perturbations import (
+    add_pattern_bd,
+    add_single_bd,
+)
+from art.defences.detector.poison import ActivationDefence
 from art.estimators.classification import KerasClassifier
 from art.utils import load_mnist, preprocess
-from art.defences.detector.poison import ActivationDefence
 
 
 def main():
@@ -143,9 +143,7 @@ def main():
     print("done :) ")
 
 
-def generate_backdoor(
-    x_clean, y_clean, percent_poison, backdoor_type="pattern", sources=np.arange(10), targets=(np.arange(10) + 1) % 10
-):
+def generate_backdoor(x_clean, y_clean, percent_poison, backdoor_type="pattern", sources=None, targets=None):
     """
     Creates a backdoor in MNIST images by adding a pattern or pixel to the image and changing the label to a targeted
     class. Default parameters poison each digit so that it gets classified to the next digit.
@@ -170,6 +168,11 @@ def generate_backdoor(
     both legitimate and poisoned.
     :rtype: `tuple`
     """
+
+    if sources is None:
+        sources = np.arange(10)
+    if targets is None:
+        targets = (np.arange(10) + 1) % 10
 
     max_val = np.max(x_clean)
 

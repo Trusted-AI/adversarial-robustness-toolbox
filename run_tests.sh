@@ -123,7 +123,7 @@ else
                            "tests/estimators/classification/test_deep_partition_ensemble.py" \
                            "tests/estimators/classification/test_detector_classifier.py" \
                            "tests/estimators/classification/test_ensemble.py" \
-                           "tests/estimators/classification/test_GPy.py" \
+                           "tests/estimators/classification/test_gpy.py" \
                            "tests/estimators/classification/test_input_filter.py" \
                            "tests/estimators/classification/test_lightgbm.py" \
                            "tests/estimators/classification/test_query_efficient_bb.py" \

@@ -19,7 +19,7 @@
 This module implements reconstruction attacks.
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
 
@@ -28,9 +28,9 @@ import sklearn
 from scipy.optimize import fmin_l_bfgs_b
 
 from art.attacks.attack import ReconstructionAttack
-from art.estimators.estimator import BaseEstimator
 from art.estimators.classification.classifier import ClassifierMixin
 from art.estimators.classification.scikitlearn import ScikitlearnEstimator
+from art.estimators.estimator import BaseEstimator
 
 logger = logging.getLogger(__name__)
 

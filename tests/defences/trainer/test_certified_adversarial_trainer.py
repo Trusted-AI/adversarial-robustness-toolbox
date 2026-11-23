@@ -15,19 +15,23 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-import pytest
+import random
 
 import numpy as np
-import random
+import pytest
 import torch
 
-from art.utils import load_dataset
-from art.estimators.certification.deep_z import PytorchDeepZ
-from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent import ProjectedGradientDescent
+from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent import (
+    ProjectedGradientDescent,
+)
 from art.defences.trainer import AdversarialTrainerCertifiedPytorch
-
-from tests.utils import ARTTestException
-from tests.utils import get_image_classifier_pt, get_cifar10_image_classifier_pt
+from art.estimators.certification.deep_z import PytorchDeepZ
+from art.utils import load_dataset
+from tests.utils import (
+    ARTTestException,
+    get_cifar10_image_classifier_pt,
+    get_image_classifier_pt,
+)
 
 
 @pytest.fixture()
@@ -75,7 +79,7 @@ def test_mnist_certified_training(art_warning, fix_get_mnist_data):
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     ptc = get_image_classifier_pt(from_logits=True, use_maxpool=False)
-    import torch.optim as optim
+    from torch import optim
 
     optimizer = optim.Adam(ptc.model.parameters(), lr=1e-4)
     zonotope_model = PytorchDeepZ(
@@ -122,7 +126,7 @@ def test_mnist_certified_loss(art_warning, fix_get_mnist_data):
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     ptc = get_image_classifier_pt(from_logits=True, use_maxpool=False)
-    import torch.optim as optim
+    from torch import optim
 
     optimizer = optim.Adam(ptc.model.parameters(), lr=1e-4)
     zonotope_model = PytorchDeepZ(
@@ -244,7 +248,7 @@ def test_cifar_certified_training(art_warning, fix_get_cifar10_data):
 
     ptc = get_cifar10_image_classifier_pt(from_logits=True)
 
-    import torch.optim as optim
+    from torch import optim
 
     optimizer = optim.Adam(ptc.model.parameters(), lr=1e-4)
     zonotope_model = PytorchDeepZ(
@@ -290,7 +294,7 @@ def test_cifar_certified_loss(art_warning, fix_get_cifar10_data):
 
     ptc = get_cifar10_image_classifier_pt(from_logits=True)
 
-    import torch.optim as optim
+    from torch import optim
 
     optimizer = optim.Adam(ptc.model.parameters(), lr=1e-4)
     zonotope_model = PytorchDeepZ(

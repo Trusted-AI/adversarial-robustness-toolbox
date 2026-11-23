@@ -15,22 +15,27 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
 import unittest
 
-import numpy as np
 import keras.backend as k
+import numpy as np
 
 from art.attacks.extraction.knockoff_nets import KnockoffNets
-from art.estimators.estimator import BaseEstimator
 from art.estimators.classification.classifier import ClassifierMixin
-
-from tests.utils import TestBase, master_seed
-from tests.utils import get_image_classifier_tf, get_image_classifier_kr, get_image_classifier_pt
-from tests.utils import get_tabular_classifier_tf, get_tabular_classifier_kr, get_tabular_classifier_pt
+from art.estimators.estimator import BaseEstimator
 from tests.attacks.utils import backend_test_classifier_type_check_fail
+from tests.utils import (
+    TestBase,
+    get_image_classifier_kr,
+    get_image_classifier_pt,
+    get_image_classifier_tf,
+    get_tabular_classifier_kr,
+    get_tabular_classifier_pt,
+    get_tabular_classifier_tf,
+    master_seed,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -173,7 +178,7 @@ class TestKnockoffNets(TestBase):
                 verbose=False,
             )
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TypeError):
             _ = KnockoffNets(
                 classifier=victim_tfc,
                 batch_size_fit=BATCH_SIZE,
@@ -185,7 +190,7 @@ class TestKnockoffNets(TestBase):
                 verbose="False",
             )
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TypeError):
             _ = KnockoffNets(
                 classifier=victim_tfc,
                 batch_size_fit=BATCH_SIZE,

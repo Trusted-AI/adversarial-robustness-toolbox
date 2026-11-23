@@ -25,10 +25,10 @@ This module implements the thermometer encoding defence `ThermometerEncoding`.
     https://arxiv.org/abs/1902.06705
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 import numpy as np
 
@@ -53,11 +53,11 @@ class ThermometerEncoding(Preprocessor):
         https://arxiv.org/abs/1902.06705
     """
 
-    params = ["clip_values", "num_space", "channels_first"]
+    params: ClassVar[list[str]] = ["clip_values", "num_space", "channels_first"]
 
     def __init__(
         self,
-        clip_values: "CLIP_VALUES_TYPE",
+        clip_values: CLIP_VALUES_TYPE,
         num_space: int = 10,
         channels_first: bool = False,
         apply_fit: bool = True,

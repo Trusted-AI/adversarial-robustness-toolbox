@@ -24,22 +24,17 @@ This module implements DP-InstaHide training method.
     specific implementations are being provided in ART.
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
 import sys
 import time
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 import numpy as np
 from tqdm.auto import trange
 
 from art.defences.trainer.trainer import Trainer
-
-if sys.version_info >= (3, 8):
-    from typing import Literal
-else:
-    from typing_extensions import Literal
 
 if TYPE_CHECKING:
     from art.data_generators import DataGenerator
@@ -60,12 +55,12 @@ class DPInstaHideTrainer(Trainer):
 
     def __init__(
         self,
-        classifier: "CLASSIFIER_LOSS_GRADIENTS_TYPE",
-        augmentations: "Preprocessor" | list["Preprocessor"],
+        classifier: CLASSIFIER_LOSS_GRADIENTS_TYPE,
+        augmentations: Preprocessor | list[Preprocessor],
         noise: Literal["gaussian", "laplacian", "exponential"] = "laplacian",
-        loc: int | float = 0.0,
-        scale: int | float = 0.03,
-        clip_values: "CLIP_VALUES_TYPE" = (0.0, 1.0),
+        loc: float = 0.0,
+        scale: float = 0.03,
+        clip_values: CLIP_VALUES_TYPE = (0.0, 1.0),
     ):
         """
         Create an :class:`.DPInstaHideTrainer` instance.
@@ -195,7 +190,7 @@ class DPInstaHideTrainer(Trainer):
                     train_acc / train_n,
                 )
 
-    def fit_generator(self, generator: "DataGenerator", nb_epochs: int = 20, **kwargs):
+    def fit_generator(self, generator: DataGenerator, nb_epochs: int = 20, **kwargs):
         """
         Train a model adversarially with the DP-InstaHide protocol using a data generator.
         See class documentation for more information on the exact procedure.

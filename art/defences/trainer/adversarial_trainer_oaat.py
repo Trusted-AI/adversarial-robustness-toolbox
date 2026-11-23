@@ -25,7 +25,7 @@ for adversarial training for defence against larger perturbations.
 perturbation on the model parameters. Consequently, framework specific implementations are being provided in ART.
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import abc
 from collections.abc import Sequence
@@ -33,9 +33,9 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-from art.defences.trainer.trainer import Trainer
 from art.attacks.attack import EvasionAttack
 from art.data_generators import DataGenerator
+from art.defences.trainer.trainer import Trainer
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_LOSS_GRADIENTS_TYPE
@@ -50,10 +50,10 @@ class AdversarialTrainerOAAT(Trainer):
 
     def __init__(
         self,
-        classifier: "CLASSIFIER_LOSS_GRADIENTS_TYPE",
-        proxy_classifier: "CLASSIFIER_LOSS_GRADIENTS_TYPE",
-        lpips_classifier: "CLASSIFIER_LOSS_GRADIENTS_TYPE",
-        list_avg_models: Sequence["CLASSIFIER_LOSS_GRADIENTS_TYPE"],
+        classifier: CLASSIFIER_LOSS_GRADIENTS_TYPE,
+        proxy_classifier: CLASSIFIER_LOSS_GRADIENTS_TYPE,
+        lpips_classifier: CLASSIFIER_LOSS_GRADIENTS_TYPE,
+        list_avg_models: Sequence[CLASSIFIER_LOSS_GRADIENTS_TYPE],
         attack: EvasionAttack,
         train_params: dict,
     ):

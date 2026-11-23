@@ -4,15 +4,15 @@ This is an example of how to use ART and Keras to perform adversarial training u
 
 import keras
 import numpy as np
-from keras.layers import Conv2D, Dense, Flatten, MaxPooling2D, Input, BatchNormalization
+from keras.layers import BatchNormalization, Conv2D, Dense, Flatten, Input, MaxPooling2D
 from keras.models import Model
 from keras.preprocessing.image import ImageDataGenerator
 from keras.regularizers import l2
 
 from art.attacks.evasion import ProjectedGradientDescent
-from art.estimators.classification import KerasClassifier
 from art.data_generators import KerasDataGenerator
 from art.defences.trainer import AdversarialTrainer
+from art.estimators.classification import KerasClassifier
 from art.utils import load_cifar10
 
 

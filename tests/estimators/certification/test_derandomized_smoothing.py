@@ -16,15 +16,15 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 import os
-import pytest
 
 import numpy as np
+import pytest
 
-from art.utils import load_dataset
 from art.estimators.certification.derandomized_smoothing import (
     PyTorchDeRandomizedSmoothing,
     TensorFlowV2DeRandomizedSmoothing,
 )
+from art.utils import load_dataset
 from tests.utils import ARTTestException
 
 
@@ -68,14 +68,13 @@ def test_pytorch_training(art_warning, fix_get_mnist_data, fix_get_cifar10_data)
     Check that the training loop for pytorch does not result in errors
     """
     import torch
-    import torch.optim as optim
-    import torch.nn as nn
+    from torch import nn, optim
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
     class SmallMNISTModel(nn.Module):
         def __init__(self):
-            super(SmallMNISTModel, self).__init__()
+            super().__init__()
 
             self.conv1 = nn.Conv2d(in_channels=2, out_channels=32, kernel_size=(4, 4), dilation=(1, 1), stride=(2, 2))
             self.max_pool = nn.MaxPool2d(2, stride=2)
@@ -96,7 +95,7 @@ def test_pytorch_training(art_warning, fix_get_mnist_data, fix_get_cifar10_data)
 
     class SmallCIFARModel(nn.Module):
         def __init__(self):
-            super(SmallCIFARModel, self).__init__()
+            super().__init__()
 
             self.conv1 = nn.Conv2d(in_channels=6, out_channels=32, kernel_size=(4, 4), dilation=(1, 1), stride=(2, 2))
             self.max_pool = nn.MaxPool2d(2, stride=2)
@@ -200,14 +199,13 @@ def test_pytorch_mnist_certification(art_warning, fix_get_mnist_data):
     Assert that the correct number of certifications are given for the MNIST dataset
     """
     import torch
-    import torch.optim as optim
-    import torch.nn as nn
+    from torch import nn, optim
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
     class SmallMNISTModel(nn.Module):
         def __init__(self):
-            super(SmallMNISTModel, self).__init__()
+            super().__init__()
 
             self.conv1 = nn.Conv2d(in_channels=2, out_channels=32, kernel_size=(4, 4), dilation=(1, 1), stride=(2, 2))
             self.max_pool = nn.MaxPool2d(2, stride=2)
@@ -272,7 +270,7 @@ def test_pytorch_mnist_certification(art_warning, fix_get_mnist_data):
             )
 
             preds = classifier.predict(np.copy(fix_get_mnist_data[0]))
-            cert, cert_and_correct, top_predicted_class_argmax = classifier.ablator.certify(
+            cert, _cert_and_correct, _top_predicted_class_argmax = classifier.ablator.certify(
                 preds, label=fix_get_mnist_data[1], size_to_certify=size_to_certify
             )
             if ablation_type == "column":
@@ -360,7 +358,7 @@ def test_tf2_mnist_certification(art_warning, fix_get_mnist_data):
             x = np.squeeze(x)
             x = np.expand_dims(x, axis=-1)
             preds = classifier.predict(x)
-            cert, cert_and_correct, top_predicted_class_argmax = classifier.ablator.certify(
+            cert, _cert_and_correct, _top_predicted_class_argmax = classifier.ablator.certify(
                 preds, label=fix_get_mnist_data[1], size_to_certify=size_to_certify
             )
 

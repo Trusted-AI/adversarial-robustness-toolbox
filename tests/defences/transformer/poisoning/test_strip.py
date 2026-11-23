@@ -15,14 +15,13 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
+
 import pytest
 
 from art.defences.transformer.poisoning import STRIP
 from art.estimators.classification import TensorFlowV2Classifier
-
 from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)
@@ -31,7 +30,7 @@ logger = logging.getLogger(__name__)
 @pytest.mark.framework_agnostic
 def test_strip(art_warning, get_default_mnist_subset, image_dl_estimator):
     try:
-        (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
+        (x_train_mnist, y_train_mnist), (x_test_mnist, _y_test_mnist) = get_default_mnist_subset
 
         classifier, _ = image_dl_estimator()
 

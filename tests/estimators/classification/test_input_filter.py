@@ -21,7 +21,7 @@ import unittest
 
 import numpy as np
 
-from tests.utils import TestBase, master_seed, get_image_classifier_kr_tf
+from tests.utils import TestBase, get_image_classifier_kr_tf, master_seed
 
 logger = logging.getLogger(__name__)
 

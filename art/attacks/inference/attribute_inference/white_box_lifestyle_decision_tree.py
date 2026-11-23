@@ -19,7 +19,7 @@
 This module implements attribute inference attacks.
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
 from typing import TYPE_CHECKING
@@ -48,7 +48,7 @@ class AttributeInferenceWhiteBoxLifestyleDecisionTree(AttributeInferenceAttack):
 
     _estimator_requirements = ((ScikitlearnDecisionTreeClassifier, ScikitlearnDecisionTreeRegressor),)
 
-    def __init__(self, estimator: "CLASSIFIER_TYPE" | "REGRESSOR_TYPE", attack_feature: int = 0):
+    def __init__(self, estimator: CLASSIFIER_TYPE | REGRESSOR_TYPE, attack_feature: int = 0):
         """
         Create an AttributeInferenceWhiteBoxLifestyle attack instance.
 

@@ -24,16 +24,16 @@ This module implements adversarial training with Adversarial Weight Perturbation
 perturbation on the model parameters. Consequently, framework specific implementations are being provided in ART.
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import abc
 from typing import TYPE_CHECKING
 
 import numpy as np
 
-from art.defences.trainer.trainer import Trainer
 from art.attacks.attack import EvasionAttack
 from art.data_generators import DataGenerator
+from art.defences.trainer.trainer import Trainer
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_LOSS_GRADIENTS_TYPE
@@ -49,8 +49,8 @@ class AdversarialTrainerAWP(Trainer):
 
     def __init__(
         self,
-        classifier: "CLASSIFIER_LOSS_GRADIENTS_TYPE",
-        proxy_classifier: "CLASSIFIER_LOSS_GRADIENTS_TYPE",
+        classifier: CLASSIFIER_LOSS_GRADIENTS_TYPE,
+        proxy_classifier: CLASSIFIER_LOSS_GRADIENTS_TYPE,
         attack: EvasionAttack,
         mode: str = "PGD",
         gamma: float = 0.01,

@@ -15,20 +15,18 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
 import unittest
 
 import numpy as np
-from sklearn.svm import NuSVC, SVC
+from sklearn.svm import SVC, NuSVC
 
 from art.attacks.poisoning import PoisoningAttackSVM
-from art.estimators.classification.scikitlearn import SklearnClassifier, ScikitlearnSVC
+from art.estimators.classification.scikitlearn import ScikitlearnSVC, SklearnClassifier
 from art.utils import load_iris
-
-from tests.utils import master_seed
 from tests.attacks.utils import backend_test_classifier_type_check_fail
+from tests.utils import master_seed
 
 logger = logging.getLogger(__name__)
 
@@ -128,7 +126,7 @@ class TestSVMAttack(unittest.TestCase):
     #     self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
 
     def test_unsupported_kernel(self):
-        (x_train, y_train), (x_test, y_test), min_, max_ = self.iris
+        (x_train, y_train), (x_test, y_test), _min, _max = self.iris
         model = SVC(kernel="sigmoid", gamma="auto")
         with self.assertRaises(TypeError):
             _ = PoisoningAttackSVM(
@@ -171,15 +169,15 @@ class TestSVMAttack(unittest.TestCase):
 
             acc = np.average(np.all(clean.predict(x_test) == y_test, axis=1)) * 100
             poison_acc = np.average(np.all(poison.predict(x_test) == y_test, axis=1)) * 100
-            logger.info("Clean Accuracy {}%".format(acc))
-            logger.info("Poison Accuracy {}%".format(poison_acc))
+            logger.info(f"Clean Accuracy {acc}%")
+            logger.info(f"Poison Accuracy {poison_acc}%")
             self.assertGreaterEqual(acc, poison_acc)
 
             # Check that x_test has not been modified by attack and classifier
             self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
 
     def test_classifier_type_check_fail(self):
-        (x_train, y_train), (x_test, y_test), min_, max_ = self.iris
+        (x_train, y_train), (x_test, y_test), _min, _max = self.iris
         backend_test_classifier_type_check_fail(
             PoisoningAttackSVM,
             [ScikitlearnSVC],
@@ -237,7 +235,7 @@ class TestSVMAttack(unittest.TestCase):
                 verbose=False,
             )
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TypeError):
             _ = PoisoningAttackSVM(
                 poison,
                 step=0.01,

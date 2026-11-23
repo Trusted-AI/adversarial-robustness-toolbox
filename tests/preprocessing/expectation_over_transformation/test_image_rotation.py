@@ -22,11 +22,13 @@ import pytest
 import tensorflow as tf
 import torch
 
+from art.preprocessing.expectation_over_transformation.image_rotation.pytorch import (
+    EoTImageRotationPyTorch,
+)
 from art.preprocessing.expectation_over_transformation.image_rotation.tensorflow import (
     EoTImageRotationTensorFlow,
     rotate_images,
 )
-from art.preprocessing.expectation_over_transformation.image_rotation.pytorch import EoTImageRotationPyTorch
 from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)

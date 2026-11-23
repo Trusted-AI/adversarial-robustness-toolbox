@@ -21,10 +21,10 @@ This module implements STRIP: A Defence Against Trojan Attacks on Deep Neural Ne
 | Paper link: https://arxiv.org/abs/1902.06531
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
-from collections.abc import Callable
 import logging
+from collections.abc import Callable
 
 import numpy as np
 from scipy.stats import entropy, norm

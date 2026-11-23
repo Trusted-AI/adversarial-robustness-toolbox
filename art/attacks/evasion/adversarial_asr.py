@@ -22,7 +22,7 @@ This module implements the audio adversarial attack on automatic speech recognit
 | Paper link: https://arxiv.org/abs/1801.01944
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
 from typing import TYPE_CHECKING
@@ -54,7 +54,7 @@ class CarliniWagnerASR(ImperceptibleASR):
 
     def __init__(
         self,
-        estimator: "SPEECH_RECOGNIZER_TYPE",
+        estimator: SPEECH_RECOGNIZER_TYPE,
         eps: float = 2000.0,
         learning_rate: float = 100.0,
         max_iter: int = 1000,

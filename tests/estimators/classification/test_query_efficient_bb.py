@@ -22,12 +22,13 @@ import keras.backend as k
 import numpy as np
 
 from art.attacks.evasion.fast_gradient import FastGradientMethod
-from art.estimators.classification.keras import KerasClassifier
 from art.defences.preprocessor import FeatureSqueezing
-from art.utils import load_dataset, get_labels_np_array
-from art.estimators.classification.query_efficient_bb import QueryEfficientGradientEstimationClassifier
-
-from tests.utils import master_seed, get_image_classifier_kr, get_tabular_classifier_kr
+from art.estimators.classification.keras import KerasClassifier
+from art.estimators.classification.query_efficient_bb import (
+    QueryEfficientGradientEstimationClassifier,
+)
+from art.utils import get_labels_np_array, load_dataset
+from tests.utils import get_image_classifier_kr, get_tabular_classifier_kr, master_seed
 
 logger = logging.getLogger(__name__)
 

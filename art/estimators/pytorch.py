@@ -26,7 +26,11 @@ from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
-from art.estimators.estimator import BaseEstimator, LossGradientsMixin, NeuralNetworkMixin
+from art.estimators.estimator import (
+    BaseEstimator,
+    LossGradientsMixin,
+    NeuralNetworkMixin,
+)
 
 if TYPE_CHECKING:
     import torch
@@ -67,7 +71,9 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
 
         preprocessing = kwargs.get("preprocessing")
         if isinstance(preprocessing, tuple):
-            from art.preprocessing.standardisation_mean_std.pytorch import StandardisationMeanStdPyTorch
+            from art.preprocessing.standardisation_mean_std.pytorch import (
+                StandardisationMeanStdPyTorch,
+            )
 
             kwargs["preprocessing"] = StandardisationMeanStdPyTorch(
                 mean=preprocessing[0], std=preprocessing[1], device_type=device_type
@@ -134,7 +140,7 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
 
         super()._check_params()
         self.all_framework_preprocessing = all(
-            (isinstance(p, PreprocessorPyTorch) for p in self.preprocessing_operations)
+            isinstance(p, PreprocessorPyTorch) for p in self.preprocessing_operations
         )
 
     def _apply_preprocessing(self, x, y, fit: bool = False, no_grad=True) -> tuple[Any, Any]:
@@ -161,8 +167,12 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
         """
         import torch
 
-        from art.preprocessing.standardisation_mean_std.numpy import StandardisationMeanStd
-        from art.preprocessing.standardisation_mean_std.pytorch import StandardisationMeanStdPyTorch
+        from art.preprocessing.standardisation_mean_std.numpy import (
+            StandardisationMeanStd,
+        )
+        from art.preprocessing.standardisation_mean_std.pytorch import (
+            StandardisationMeanStdPyTorch,
+        )
 
         if not self.preprocessing_operations:
             return x, y
@@ -238,8 +248,12 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
         """
         import torch
 
-        from art.preprocessing.standardisation_mean_std.numpy import StandardisationMeanStd
-        from art.preprocessing.standardisation_mean_std.pytorch import StandardisationMeanStdPyTorch
+        from art.preprocessing.standardisation_mean_std.numpy import (
+            StandardisationMeanStd,
+        )
+        from art.preprocessing.standardisation_mean_std.pytorch import (
+            StandardisationMeanStdPyTorch,
+        )
 
         if not self.preprocessing_operations:
             return gradients
@@ -285,7 +299,7 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
 
         return gradients
 
-    def _set_layer(self, train: bool, layerinfo: list["torch.nn.modules.Module"]) -> None:
+    def _set_layer(self, train: bool, layerinfo: list[torch.nn.modules.Module]) -> None:
         """
         Set all layers that are an instance of `layerinfo` into training or evaluation mode.
 
@@ -294,7 +308,7 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
         """
         import torch
 
-        assert all((issubclass(layer, torch.nn.modules.Module) for layer in layerinfo))  # type: ignore
+        assert all(issubclass(layer, torch.nn.modules.Module) for layer in layerinfo)  # type: ignore
 
         def set_train(layer, layerinfo=layerinfo):
             "Set layer into training mode if instance of `layerinfo`."

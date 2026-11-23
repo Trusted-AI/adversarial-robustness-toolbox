@@ -21,7 +21,7 @@ This is a PyTorch implementation of the Fast is better than free protocol.
 | Paper link: https://openreview.net/forum?id=BJx040EFvH
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
 import time
@@ -53,7 +53,7 @@ class AdversarialTrainerFBFPyTorch(AdversarialTrainerFBF):
         time making this one of the fastest adversarial training protocol.
     """
 
-    def __init__(self, classifier: "PyTorchClassifier", eps: int | float = 8, use_amp: bool = False):
+    def __init__(self, classifier: PyTorchClassifier, eps: float = 8, use_amp: bool = False):
         """
         Create an :class:`.AdversarialTrainerFBFPyTorch` instance.
 
@@ -62,7 +62,7 @@ class AdversarialTrainerFBFPyTorch(AdversarialTrainerFBF):
         :param use_amp: Boolean that decides if apex should be used for mixed precision arithmetic during training
         """
         super().__init__(classifier, eps)
-        self._classifier: "PyTorchClassifier"
+        self._classifier: PyTorchClassifier
         self._use_amp = use_amp
 
     def fit(
@@ -143,7 +143,7 @@ class AdversarialTrainerFBFPyTorch(AdversarialTrainerFBF):
                     train_acc / train_n,
                 )
 
-    def fit_generator(self, generator: "DataGenerator", nb_epochs: int = 20, **kwargs):
+    def fit_generator(self, generator: DataGenerator, nb_epochs: int = 20, **kwargs):
         """
         Train a model adversarially with FBF protocol using a data generator.
         See class documentation for more information on the exact procedure.
