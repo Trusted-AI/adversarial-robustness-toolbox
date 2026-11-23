@@ -39,7 +39,7 @@ def fix_get_mnist_subset(get_mnist_dataset):
 @pytest.mark.skip_framework("keras", "kerastf", "non_dl_frameworks", "pytorch", "huggingface")
 def test_images_pgd(art_warning, fix_get_mnist_subset, image_dl_estimator_for_attack):
     try:
-        x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist = fix_get_mnist_subset
+        x_train_mnist, _y_train_mnist, x_test_mnist, _y_test_mnist = fix_get_mnist_subset
 
         classifier = image_dl_estimator_for_attack(FeatureAdversariesTensorFlowV2)
 
@@ -60,7 +60,7 @@ def test_images_unconstrained_adam(art_warning, fix_get_mnist_subset, image_dl_e
     try:
         import tensorflow as tf
 
-        x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist = fix_get_mnist_subset
+        x_train_mnist, _y_train_mnist, x_test_mnist, _y_test_mnist = fix_get_mnist_subset
 
         classifier = image_dl_estimator_for_attack(FeatureAdversariesTensorFlowV2)
 
@@ -87,20 +87,20 @@ def test_images_unconstrained_adam(art_warning, fix_get_mnist_subset, image_dl_e
 def test_check_params(art_warning, image_dl_estimator_for_attack):
     try:
         classifier = image_dl_estimator_for_attack(FeatureAdversariesTensorFlowV2)
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = FeatureAdversariesTensorFlowV2(classifier, delta=1, step_size=0.5)
         with pytest.raises(ValueError):
             _ = FeatureAdversariesTensorFlowV2(classifier, delta=-1.0, step_size=0.5)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = FeatureAdversariesTensorFlowV2(classifier, delta=1.0, step_size=0.5, lambda_=1)
         with pytest.raises(ValueError):
             _ = FeatureAdversariesTensorFlowV2(classifier, delta=1.0, step_size=0.5, lambda_=-1.0)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = FeatureAdversariesTensorFlowV2(classifier, delta=1.0, step_size=0.5, layer=1.0)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = FeatureAdversariesTensorFlowV2(classifier, delta=1.0, step_size=0.5, max_iter=1.0)
         with pytest.raises(ValueError):
             _ = FeatureAdversariesTensorFlowV2(classifier, delta=1.0, step_size=0.5, max_iter=-1)

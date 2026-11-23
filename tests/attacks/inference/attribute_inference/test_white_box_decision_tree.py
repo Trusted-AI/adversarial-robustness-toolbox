@@ -15,16 +15,16 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-import pytest
 
 import numpy as np
+import pytest
 
-from art.attacks.inference.attribute_inference.white_box_decision_tree import AttributeInferenceWhiteBoxDecisionTree
+from art.attacks.inference.attribute_inference.white_box_decision_tree import (
+    AttributeInferenceWhiteBoxDecisionTree,
+)
 from art.estimators.classification.scikitlearn import ScikitlearnDecisionTreeClassifier
-
 from tests.attacks.utils import backend_test_classifier_type_check_fail
 from tests.utils import ARTTestException
 
@@ -38,7 +38,7 @@ def test_white_box(art_warning, decision_tree_estimator, get_iris_dataset):
         values = [0.14, 0.42, 0.71]  # rounded down
         priors = [50 / 150, 54 / 150, 46 / 150]
 
-        (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = get_iris_dataset
+        (x_train_iris, _y_train_iris), (x_test_iris, _y_test_iris) = get_iris_dataset
         x_train_for_attack = np.delete(x_train_iris, attack_feature, 1)
         x_train_feature = x_train_iris[:, attack_feature]
         x_test_for_attack = np.delete(x_test_iris, attack_feature, 1)

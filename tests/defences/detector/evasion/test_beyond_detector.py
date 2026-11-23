@@ -15,10 +15,9 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from __future__ import absolute_import, division, print_function, unicode_literals
 
-import pytest
 import numpy as np
+import pytest
 
 from art.attacks.evasion.fast_gradient import FastGradientMethod
 from art.defences.detector.evasion import BeyondDetectorPyTorch
@@ -31,7 +30,7 @@ def get_ssl_model(weights_path):
     Loads the SSL model (SimSiamWithCls).
     """
     import torch
-    import torch.nn as nn
+    from torch import nn
 
     class SimSiamWithCls(nn.Module):
         """
@@ -41,7 +40,7 @@ def get_ssl_model(weights_path):
         def __init__(self, arch="resnet18", feat_dim=2048, num_proj_layers=2):
             from torchvision import models
 
-            super(SimSiamWithCls, self).__init__()
+            super().__init__()
             self.backbone = models.resnet18()
             out_dim = self.backbone.fc.weight.shape[1]
             self.backbone.conv1 = nn.Conv2d(

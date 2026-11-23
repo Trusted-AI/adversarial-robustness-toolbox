@@ -18,10 +18,12 @@
 import numpy as np
 import pytest
 from tensorflow.keras.activations import linear
-from tests.utils import ARTTestException, master_seed
 
-from art.attacks.poisoning.backdoor_attack_dgm.backdoor_attack_dgm_red import BackdoorAttackDGMReDTensorFlowV2
+from art.attacks.poisoning.backdoor_attack_dgm.backdoor_attack_dgm_red import (
+    BackdoorAttackDGMReDTensorFlowV2,
+)
 from art.estimators.generation.tensorflow import TensorFlowV2Generator
+from tests.utils import ARTTestException, master_seed
 
 master_seed(1234, set_tensorflow=True)
 

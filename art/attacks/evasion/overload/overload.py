@@ -34,6 +34,7 @@ from art.attacks.evasion.overload.box_iou import box_iou
 if TYPE_CHECKING:
 
     import torch
+
     from art.utils import PYTORCH_OBJECT_DETECTOR_TYPE
 
 logger = logging.getLogger(__name__)
@@ -57,7 +58,7 @@ class OverloadPyTorch(EvasionAttack):
 
     def __init__(
         self,
-        estimator: "PYTORCH_OBJECT_DETECTOR_TYPE",
+        estimator: PYTORCH_OBJECT_DETECTOR_TYPE,
         eps: float,
         max_iter: int,
         num_grid: int,
@@ -123,7 +124,7 @@ class OverloadPyTorch(EvasionAttack):
 
         return x_adv.cpu().detach().numpy()
 
-    def _attack(self, x_adv: "torch.Tensor", x: "torch.Tensor") -> "torch.Tensor":
+    def _attack(self, x_adv: torch.Tensor, x: torch.Tensor) -> torch.Tensor:
         """
         Run attack.
 
@@ -147,7 +148,7 @@ class OverloadPyTorch(EvasionAttack):
         x_adv.requires_grad_(False)
         return x_adv
 
-    def _loss(self, x: "torch.Tensor") -> tuple["torch.Tensor", "torch.Tensor"]:
+    def _loss(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         """
         Compute the weight of each pixel and the overload loss for a given image.
 
@@ -206,7 +207,7 @@ class OverloadPyTorch(EvasionAttack):
         return ind_loss, pixel_weight
 
     @staticmethod
-    def xywh2xyxy(xywh: "torch.Tensor") -> "torch.Tensor":
+    def xywh2xyxy(xywh: torch.Tensor) -> torch.Tensor:
         """
         Convert the representation from xywh format yo xyxy format.
 

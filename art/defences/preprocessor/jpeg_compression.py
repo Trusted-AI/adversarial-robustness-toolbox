@@ -25,11 +25,11 @@ This module implements the JPEG compression defence `JpegCompression`.
     https://arxiv.org/abs/1902.06705
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
-from io import BytesIO
 import logging
-from typing import TYPE_CHECKING
+from io import BytesIO
+from typing import TYPE_CHECKING, ClassVar
 
 import numpy as np
 from tqdm.auto import tqdm
@@ -59,11 +59,11 @@ class JpegCompression(Preprocessor):
         https://arxiv.org/abs/1902.06705
     """
 
-    params = ["quality", "channels_first", "clip_values", "verbose"]
+    params: ClassVar[list[str]] = ["quality", "channels_first", "clip_values", "verbose"]
 
     def __init__(
         self,
-        clip_values: "CLIP_VALUES_TYPE",
+        clip_values: CLIP_VALUES_TYPE,
         quality: int = 50,
         channels_first: bool = False,
         apply_fit: bool = True,
@@ -189,4 +189,4 @@ class JpegCompression(Preprocessor):
             raise ValueError("'clip_values' max value must be either 1 or 255.")
 
         if not isinstance(self.verbose, bool):
-            raise ValueError("The argument `verbose` has to be of type bool.")
+            raise TypeError("The argument `verbose` has to be of type bool.")

@@ -15,19 +15,21 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from __future__ import absolute_import, division, print_function, unicode_literals
 
-import os
 import logging
+import os
 import unittest
 
 import numpy as np
 
 from art.attacks.poisoning.backdoor_attack import PoisoningAttackBackdoor
-from art.attacks.poisoning.perturbations import add_pattern_bd, add_single_bd, insert_image
+from art.attacks.poisoning.perturbations import (
+    add_pattern_bd,
+    add_single_bd,
+    insert_image,
+)
 from art.utils import to_categorical
-
-from tests.utils import TestBase, master_seed, get_image_classifier_kr
+from tests.utils import TestBase, get_image_classifier_kr, master_seed
 
 logger = logging.getLogger(__name__)
 
@@ -107,7 +109,7 @@ class TestBackdoorAttack(TestBase):
         """
 
         krc = get_image_classifier_kr()
-        is_poison_train, x_poisoned_raw, y_poisoned_raw = self.poison_dataset(
+        _is_poison_train, x_poisoned_raw, y_poisoned_raw = self.poison_dataset(
             self.x_train_mnist, self.y_train_mnist, self.poison_func_1
         )
         # Shuffle training data
@@ -125,7 +127,7 @@ class TestBackdoorAttack(TestBase):
         """
 
         krc = get_image_classifier_kr()
-        is_poison_train, x_poisoned_raw, y_poisoned_raw = self.poison_dataset(
+        _is_poison_train, x_poisoned_raw, y_poisoned_raw = self.poison_dataset(
             self.x_train_mnist, self.y_train_mnist, self.poison_func_2
         )
 
@@ -143,7 +145,7 @@ class TestBackdoorAttack(TestBase):
         Test the backdoor attack with an image-based perturbation can be trained on classifier
         """
         krc = get_image_classifier_kr()
-        is_poison_train, x_poisoned_raw, y_poisoned_raw = self.poison_dataset(
+        _is_poison_train, x_poisoned_raw, y_poisoned_raw = self.poison_dataset(
             self.x_train_mnist, self.y_train_mnist, self.poison_func_3
         )
 
@@ -162,7 +164,7 @@ class TestBackdoorAttack(TestBase):
         """
 
         krc = get_image_classifier_kr()
-        is_poison_train, x_poisoned_raw, y_poisoned_raw = self.poison_dataset(
+        _is_poison_train, x_poisoned_raw, y_poisoned_raw = self.poison_dataset(
             self.x_train_mnist, self.y_train_mnist, [self.poison_func_4, self.poison_func_1]
         )
 

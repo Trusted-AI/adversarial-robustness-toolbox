@@ -19,15 +19,14 @@
 This module implements attribute inference attacks.
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
 
-
 import numpy as np
 
-from art.estimators.classification.scikitlearn import ScikitlearnDecisionTreeClassifier
 from art.attacks.attack import AttributeInferenceAttack
+from art.estimators.classification.scikitlearn import ScikitlearnDecisionTreeClassifier
 
 logger = logging.getLogger(__name__)
 

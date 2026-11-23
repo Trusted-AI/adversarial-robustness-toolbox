@@ -19,16 +19,16 @@
 This module implements attribute inference attacks using membership inference attacks.
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
 from typing import TYPE_CHECKING
 
 import numpy as np
 
-from art.estimators.estimator import BaseEstimator
-from art.estimators.classification.classifier import ClassifierMixin
 from art.attacks.attack import AttributeInferenceAttack, MembershipInferenceAttack
+from art.estimators.classification.classifier import ClassifierMixin
+from art.estimators.estimator import BaseEstimator
 from art.estimators.regression import RegressorMixin
 from art.exceptions import EstimatorError
 
@@ -50,7 +50,7 @@ class AttributeInferenceMembership(AttributeInferenceAttack):
 
     def __init__(
         self,
-        estimator: "CLASSIFIER_TYPE" | "REGRESSOR_TYPE",
+        estimator: CLASSIFIER_TYPE | REGRESSOR_TYPE,
         membership_attack: MembershipInferenceAttack,
         attack_feature: int | slice = 0,
     ):
@@ -84,9 +84,12 @@ class AttributeInferenceMembership(AttributeInferenceAttack):
         :type values: list
         :return: The inferred feature values.
         """
-        if self.estimator.input_shape is not None:
-            if isinstance(self.attack_feature, int) and self.estimator.input_shape[0] != x.shape[1] + 1:
-                raise ValueError("Number of features in x + 1 does not match input_shape of the estimator")
+        if (
+            self.estimator.input_shape is not None
+            and isinstance(self.attack_feature, int)
+            and self.estimator.input_shape[0] != x.shape[1] + 1
+        ):
+            raise ValueError("Number of features in x + 1 does not match input_shape of the estimator")
 
         if "values" not in kwargs:
             raise ValueError("Missing parameter `values`.")
@@ -94,9 +97,8 @@ class AttributeInferenceMembership(AttributeInferenceAttack):
         if not values:
             raise ValueError("`values` cannot be None or empty")
 
-        if y is not None:
-            if y.shape[0] != x.shape[0]:
-                raise ValueError("Number of rows in x and y do not match")
+        if y is not None and y.shape[0] != x.shape[0]:
+            raise ValueError("Number of rows in x and y do not match")
 
         # single index
         if isinstance(self.attack_feature, int):
@@ -150,4 +152,4 @@ class AttributeInferenceMembership(AttributeInferenceAttack):
         super()._check_params()
 
         if not isinstance(self.membership_attack, MembershipInferenceAttack):
-            raise ValueError("membership_attack should be a sub-class of MembershipInferenceAttack")
+            raise TypeError("membership_attack should be a sub-class of MembershipInferenceAttack")

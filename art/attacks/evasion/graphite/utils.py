@@ -46,16 +46,19 @@ This module implements helper functions for GRAPHITE attacks.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
 import math
+from typing import TYPE_CHECKING
+
 import numpy as np
-from art.estimators.estimator import BaseEstimator
+
 from art.estimators.classification import ClassifierMixin
+from art.estimators.estimator import BaseEstimator
 from art.utils import get_labels_np_array
 
 if TYPE_CHECKING:
-    from art.utils import CLASSIFIER_NEURALNETWORK_TYPE
     import torch
+
+    from art.utils import CLASSIFIER_NEURALNETWORK_TYPE
 
 
 def dist2pixels(dist: float, width: float, obj_width: float = 30) -> float:
@@ -195,13 +198,13 @@ def get_transform_params(
         dist = np.random.uniform(focal + dist_range[0], focal + dist_range[1])
         gamma = np.random.uniform(gamma_range[0], gamma_range[1])
         flip_flag = np.random.uniform(0.0, 1.0)
-        if int(round(flip_flag)) == 1:
+        if round(flip_flag) == 1:
             gamma = 1.0 / gamma
 
         crop_percent = np.random.uniform(crop_percent_range[0], crop_percent_range[1])
         crop_off_x = np.random.uniform(off_x_range[0], off_x_range[1])
         crop_off_y = np.random.uniform(off_y_range[0], off_y_range[1])
-        blur = blur_kernels[int(math.floor(np.random.uniform(0.0, 1.0) * len(blur_kernels)))]
+        blur = blur_kernels[math.floor(np.random.uniform(0.0, 1.0) * len(blur_kernels))]
         xform = (angle, dist, gamma, blur, crop_percent, crop_off_x, crop_off_y, obj_width, focal)
         transforms.append(xform)
 
@@ -302,15 +305,15 @@ def get_transformed_images(
 
 
 def transform_wb(
-    x: "torch.Tensor",
-    x_adv: "torch.Tensor",
-    mask: "torch.Tensor",
+    x: torch.Tensor,
+    x_adv: torch.Tensor,
+    mask: torch.Tensor,
     xform: tuple[float, float, float, int, float, float, float, float, float],
     net_size: tuple[int, int],
     clip_min: float,
     clip_max: float,
     pts: np.ndarray | None,
-) -> "torch.Tensor":
+) -> torch.Tensor:
     """
     Get transformed image, white-box setting.
 
@@ -324,8 +327,8 @@ def transform_wb(
     :param pts: A set of points that will set the crop size in the perspective transform.
     :return: Transformed image.
     """
-    import torch
     import cv2
+    import torch
     from kornia.enhance import adjust_gamma
 
     angle, dist, gamma, blur, crop_percent, crop_off_x, crop_off_y, obj_width, focal = xform
@@ -369,9 +372,7 @@ def transform_wb(
     return convert_to_network_wb(x_adv, net_size, clip_min, clip_max)
 
 
-def convert_to_network_wb(
-    x: "torch.Tensor", net_size: tuple[int, int], clip_min: float, clip_max: float
-) -> "torch.Tensor":
+def convert_to_network_wb(x: torch.Tensor, net_size: tuple[int, int], clip_min: float, clip_max: float) -> torch.Tensor:
     """
     Convert image to network format.
 
@@ -428,7 +429,7 @@ def get_perspective_transform(
 
 
 def get_perspective_transform_wb(
-    img: "torch.Tensor",
+    img: torch.Tensor,
     angle: float,
     width: int,
     height: int,
@@ -438,7 +439,7 @@ def get_perspective_transform_wb(
     crop_off_x: float,
     crop_off_y: float,
     pts: np.ndarray | None = None,
-) -> "torch.Tensor":
+) -> torch.Tensor:
     """
     Computes perspective transform for whitebox attack.
 
@@ -529,10 +530,10 @@ def _get_perspective_transform(
 
     if height > width:  # tall and narrow
         crop_x = int(crop_size)
-        crop_y = int(round(crop_size / width * height))
+        crop_y = round(crop_size / width * height)
     else:  # wide and short or square
         crop_y = int(crop_size)
-        crop_x = int(round(crop_size / height * width))
+        crop_x = round(crop_size / height * width)
 
     return perspective_mat, crop_x, crop_y
 
@@ -585,46 +586,42 @@ def get_offset_and_crop_size(
         new_pt = np.matmul(h_mat, point)
         new_pt /= new_pt[2, 0]
 
-        if new_pt[0, 0] < min_x:
-            min_x = new_pt[0, 0]
-        if new_pt[0, 0] > max_x:
-            max_x = new_pt[0, 0]
-        if new_pt[1, 0] < min_y:
-            min_y = new_pt[1, 0]
-        if new_pt[1, 0] > max_y:
-            max_y = new_pt[1, 0]
+        min_x = min(min_x, new_pt[0, 0])
+        max_x = max(max_x, new_pt[0, 0])
+        min_y = min(min_y, new_pt[1, 0])
+        max_y = max(max_y, new_pt[1, 0])
 
     if pts_flag:
         if (max_x - min_x) / (max_y - min_y) < width / height:  # result is tall and narrow
             diff_in_size = (max_y - min_y) / height * width - (max_x - min_x)
             orig_size = max_y - min_y if width > height else (max_y - min_y) / height * width
-            crop_size = int(round(orig_size * (1.0 - crop_percent)))
-            y_off = -min_y - int(round(crop_percent / 2 * orig_size))
-            x_off = -min_x + int(round(diff_in_size / 2 - crop_percent / 2 * orig_size))
+            crop_size = round(orig_size * (1.0 - crop_percent))
+            y_off = -min_y - round(crop_percent / 2 * orig_size)
+            x_off = -min_x + round(diff_in_size / 2 - crop_percent / 2 * orig_size)
 
         else:  # result is wide and short
             diff_in_size = (max_x - min_x) / width * height - (max_y - min_y)
             orig_size = max_x - min_x if height > width else (max_x - min_x) / width * height
-            crop_size = int(round(orig_size * (1.0 - crop_percent)))
-            x_off = -min_x - int(round(crop_percent / 2 * orig_size))
-            y_off = -min_y + int(round(diff_in_size / 2 - crop_percent / 2 * orig_size))
+            crop_size = round(orig_size * (1.0 - crop_percent))
+            x_off = -min_x - round(crop_percent / 2 * orig_size)
+            y_off = -min_y + round(diff_in_size / 2 - crop_percent / 2 * orig_size)
 
         return x_off + crop_off_x * crop_size, y_off + crop_off_y * crop_size, crop_size
 
     min_x -= int((width * ratio - (max_x - min_x)) // 2)
     min_y -= int((height * ratio - (max_y - min_y)) // 2)
 
-    crop_size = int(round((1.0 - crop_percent) * min(width, height) * ratio))
+    crop_size = round((1.0 - crop_percent) * min(width, height) * ratio)
 
     return (
-        -min_x - int(round(crop_percent / 2 * width * ratio)),
-        -min_y - int(round(crop_percent / 2 * height * ratio)),
+        -min_x - round(crop_percent / 2 * width * ratio),
+        -min_y - round(crop_percent / 2 * height * ratio),
         crop_size,
     )
 
 
 def run_predictions(
-    estimator: "CLASSIFIER_NEURALNETWORK_TYPE",
+    estimator: CLASSIFIER_NEURALNETWORK_TYPE,
     imgs: list[np.ndarray],
     target: int,
     batch_size: int,
@@ -642,7 +639,7 @@ def run_predictions(
     """
     img_tensor = np.zeros((batch_size, imgs[0].shape[0], imgs[0].shape[1], imgs[0].shape[2]), dtype=np.float32)
     num_successes = 0
-    tar_tensor = np.ones((batch_size)) * target
+    tar_tensor = np.ones(batch_size) * target
 
     count = 0
     for i, img in enumerate(imgs):

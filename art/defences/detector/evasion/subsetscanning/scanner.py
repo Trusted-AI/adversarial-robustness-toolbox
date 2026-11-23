@@ -25,8 +25,10 @@ from collections.abc import Callable
 
 import numpy as np
 
-from art.defences.detector.evasion.subsetscanning.scoring_functions import ScoringFunctions
 from art.defences.detector.evasion.subsetscanning.scanningops import ScanningOps
+from art.defences.detector.evasion.subsetscanning.scoring_functions import (
+    ScoringFunctions,
+)
 
 
 class Scanner:
@@ -108,10 +110,9 @@ class Scanner:
         """
         best_score = -100000.0
 
-        if len(pvalues) < restarts:
-            restarts = len(pvalues)
+        restarts = min(restarts, len(pvalues))
 
-        for r_indx in range(0, restarts):  # do random restarts to come close to global maximum
+        for r_indx in range(restarts):  # do random restarts to come close to global maximum
             image_to_node = image_to_node_init
             if r_indx == 0:
                 if image_to_node:

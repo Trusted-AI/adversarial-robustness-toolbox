@@ -22,15 +22,15 @@ This module implements mixin abstract base classes defining properties for all c
 from __future__ import annotations
 
 from abc import ABC, ABCMeta, abstractmethod
-
+from typing import ClassVar
 
 import numpy as np
 
 from art.estimators.estimator import (
     BaseEstimator,
-    NeuralNetworkMixin,
-    LossGradientsMixin,
     DecisionTreeMixin,
+    LossGradientsMixin,
+    NeuralNetworkMixin,
 )
 
 
@@ -67,9 +67,8 @@ class InputFilter(ABCMeta):
                 if "y" in kwargs:  # pragma: no cover
                     if kwargs["y"] is not None and not isinstance(kwargs["y"], np.ndarray):
                         kwargs["y"] = np.array(kwargs["y"])
-                elif has_y:  # pragma: no cover
-                    if not isinstance(args[1], np.ndarray):
-                        lst[1] = np.array(args[1])
+                elif has_y and not isinstance(args[1], np.ndarray):  # pragma: no cover
+                    lst[1] = np.array(args[1])
 
                 if len(args) > 0:
                     args = tuple(lst)
@@ -97,7 +96,7 @@ class ClassifierMixin(ABC, metaclass=InputFilter):
     Mixin abstract base class defining functionality for classifiers.
     """
 
-    estimator_params = ["nb_classes"]
+    estimator_params: ClassVar[list[str]] = ["nb_classes"]
 
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)  # type: ignore
@@ -195,7 +194,7 @@ class ClassifierNeuralNetwork(
         """
         raise NotImplementedError
 
-    def clone_for_refitting(self) -> "ClassifierNeuralNetwork":
+    def clone_for_refitting(self) -> ClassifierNeuralNetwork:
         """
         Clone classifier for refitting.
         """

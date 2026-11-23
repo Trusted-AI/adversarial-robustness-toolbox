@@ -24,8 +24,7 @@ from art.attacks.evasion import DPatch
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from art.estimators.object_detection.object_detector import ObjectDetectorMixin
 from tests.attacks.utils import backend_test_classifier_type_check_fail
-from tests.utils import master_seed
-from tests.utils import ARTTestException
+from tests.utils import ARTTestException, master_seed
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +40,7 @@ def fix_get_mnist_subset(get_mnist_dataset):
 @pytest.mark.framework_agnostic
 def test_generate(art_warning, fix_get_mnist_subset, fix_get_rcnn):
     try:
-        _, _, x_test_mnist, y_test_mnist = fix_get_mnist_subset
+        _, _, x_test_mnist, _y_test_mnist = fix_get_mnist_subset
 
         frcnn = fix_get_rcnn
         attack = DPatch(
@@ -81,7 +80,7 @@ def test_generate(art_warning, fix_get_mnist_subset, fix_get_rcnn):
 @pytest.mark.framework_agnostic
 def test_augment_images_with_patch(art_warning, random_location, image_format, fix_get_mnist_subset):
     try:
-        x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist = fix_get_mnist_subset
+        x_train_mnist, _y_train_mnist, _x_test_mnist, _y_test_mnist = fix_get_mnist_subset
 
         # TODO this master_seed should be removed as it is already set in conftest.py. expected values will
         # need to be updated accordingly
@@ -187,22 +186,22 @@ def test_check_params(art_warning, fix_get_rcnn):
         with pytest.raises(ValueError):
             _ = DPatch(frcnn, patch_shape=(1, 2, 3, 4))
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = DPatch(frcnn, learning_rate=1)
         with pytest.raises(ValueError):
             _ = DPatch(frcnn, learning_rate=-1.0)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = DPatch(frcnn, max_iter=1.0)
         with pytest.raises(ValueError):
             _ = DPatch(frcnn, max_iter=-1)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = DPatch(frcnn, batch_size=1.0)
         with pytest.raises(ValueError):
             _ = DPatch(frcnn, batch_size=-1)
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = DPatch(frcnn, verbose="true")
 
     except ARTTestException as e:

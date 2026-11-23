@@ -15,17 +15,16 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-import pytest
-
-import torch
 import numpy as np
+import pytest
+import torch
 
-from art.estimators.certification.interval import PyTorchIBPClassifier
-from art.estimators.certification.interval import PyTorchIntervalConv2D
-
+from art.estimators.certification.interval import (
+    PyTorchIBPClassifier,
+    PyTorchIntervalConv2D,
+)
 from art.utils import load_dataset
-from tests.utils import ARTTestException
-from tests.utils import get_image_classifier_pt
+from tests.utils import ARTTestException, get_image_classifier_pt
 
 
 def get_synthetic_model():
@@ -433,7 +432,9 @@ def test_certification_bounds_vs_empirical(art_warning, fix_get_mnist_data):
     Create adversarial examples and assert that the lower bounds given by the classifier is higher than
     the empirical attacks and vice versa for the upper bounds
     """
-    from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent import ProjectedGradientDescent
+    from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent import (
+        ProjectedGradientDescent,
+    )
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 

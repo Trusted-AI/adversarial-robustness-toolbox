@@ -98,9 +98,9 @@ def convert_pt_to_tf(y: list[dict[str, np.ndarray]], height: int, width: int) ->
 
 
 def cast_inputs_to_pt(
-    x: np.ndarray | "torch.Tensor",
-    y: list[dict[str, np.ndarray | "torch.Tensor"]] | None = None,
-) -> tuple["torch.Tensor", list[dict[str, "torch.Tensor"]] | None]:
+    x: np.ndarray | torch.Tensor,
+    y: list[dict[str, np.ndarray | torch.Tensor]] | None = None,
+) -> tuple[torch.Tensor, list[dict[str, torch.Tensor]] | None]:
     """
     Cast object detection inputs `(x, y)` to PyTorch tensors.
 

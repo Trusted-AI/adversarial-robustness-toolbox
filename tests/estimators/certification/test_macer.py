@@ -15,14 +15,21 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-import pytest
-import numpy as np
 
-from art.estimators.certification.randomized_smoothing import PyTorchMACER, TensorFlowV2MACER
-from tests.utils import ARTTestException, get_image_classifier_pt, get_image_classifier_tf
+import numpy as np
+import pytest
+
+from art.estimators.certification.randomized_smoothing import (
+    PyTorchMACER,
+    TensorFlowV2MACER,
+)
+from tests.utils import (
+    ARTTestException,
+    get_image_classifier_pt,
+    get_image_classifier_tf,
+)
 
 logger = logging.getLogger(__name__)
 

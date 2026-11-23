@@ -5,14 +5,15 @@ Among the various approaches introduced by this methodology, this particular exa
 Please refer to the original paper (https://arxiv.org/abs/2108.01644) for further information.
 """
 
-from art.attacks.poisoning.backdoor_attack_dgm.backdoor_attack_dgm_red import BackdoorAttackDGMReDTensorFlowV2
-from art.estimators.generation.tensorflow import TensorFlowV2Generator
-
 import numpy as np
-
 import tensorflow as tf
-from tensorflow.keras.models import load_model
 from tensorflow.keras.activations import linear, tanh
+from tensorflow.keras.models import load_model
+
+from art.attacks.poisoning.backdoor_attack_dgm.backdoor_attack_dgm_red import (
+    BackdoorAttackDGMReDTensorFlowV2,
+)
+from art.estimators.generation.tensorflow import TensorFlowV2Generator
 
 tf.random.set_seed(100)
 np.random.seed(100)
@@ -47,7 +48,7 @@ poisoned_estimator.model.save("red-mnist-dcgan")
 
 # Check the success rate
 x_pred_trigger = poisoned_estimator.model(z_trigger)[0]
-print("Target Fidelity (Attack Objective): %.2f%%" % np.sum((x_pred_trigger - x_target) ** 2))
+print(f"Target Fidelity (Attack Objective): {np.sum((x_pred_trigger - x_target) ** 2):.2f}%")
 
 # Save the trigger and target
 np.save("z_trigger_red.npy", z_trigger)

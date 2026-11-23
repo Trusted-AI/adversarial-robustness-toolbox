@@ -21,11 +21,10 @@ This module implements Randomized Smoothing applied to classifier predictions.
 | Paper link: https://arxiv.org/abs/1902.02918
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
-from abc import ABC
 import logging
-
+from abc import ABC
 
 import numpy as np
 from scipy.stats import norm

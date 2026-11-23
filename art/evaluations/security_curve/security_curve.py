@@ -27,8 +27,10 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
+from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent import (
+    ProjectedGradientDescent,
+)
 from art.evaluations.evaluation import Evaluation
-from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent import ProjectedGradientDescent
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_LOSS_GRADIENTS_TYPE
@@ -55,10 +57,10 @@ class SecurityCurve(Evaluation):
 
     def evaluate(  # type: ignore
         self,
-        classifier: "CLASSIFIER_LOSS_GRADIENTS_TYPE",
+        classifier: CLASSIFIER_LOSS_GRADIENTS_TYPE,
         x: np.ndarray,
         y: np.ndarray,
-        **kwargs: str | bool | int | float,
+        **kwargs: str | bool | float,
     ) -> tuple[list[float], list[float], float]:
         """
         Evaluate the Security Curve of a classifier using Projected Gradient Descent.
@@ -118,10 +120,10 @@ class SecurityCurve(Evaluation):
 
     def _check_gradient(
         self,
-        classifier: "CLASSIFIER_LOSS_GRADIENTS_TYPE",
+        classifier: CLASSIFIER_LOSS_GRADIENTS_TYPE,
         x: np.ndarray,
         y: np.ndarray,
-        **kwargs: str | bool | int | float,
+        **kwargs: str | bool | float,
     ) -> None:
         """
         Check if potential gradient obfuscation can be detected. Projected Gradient Descent with 100 iterations is run

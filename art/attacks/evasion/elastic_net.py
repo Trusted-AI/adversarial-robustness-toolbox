@@ -21,7 +21,7 @@ This module implements the elastic net attack `ElasticNet`. This is a white-box 
 | Paper link: https://arxiv.org/abs/1709.04114
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
 from typing import TYPE_CHECKING
@@ -30,14 +30,14 @@ import numpy as np
 import six
 from tqdm.auto import trange
 
-from art.config import ART_NUMPY_DTYPE
 from art.attacks.attack import EvasionAttack
-from art.estimators.estimator import BaseEstimator
+from art.config import ART_NUMPY_DTYPE
 from art.estimators.classification.classifier import ClassGradientsMixin
+from art.estimators.estimator import BaseEstimator
 from art.utils import (
+    check_and_transform_label_format,
     compute_success,
     get_labels_np_array,
-    check_and_transform_label_format,
 )
 
 if TYPE_CHECKING:
@@ -70,7 +70,7 @@ class ElasticNet(EvasionAttack):
 
     def __init__(
         self,
-        classifier: "CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE",
+        classifier: CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE,
         confidence: float = 0.0,
         targeted: bool = False,
         learning_rate: float = 1e-2,
@@ -414,4 +414,4 @@ class ElasticNet(EvasionAttack):
             raise ValueError("The decision rule only supports `EN`, `L1`, `L2`.")
 
         if not isinstance(self.verbose, bool):
-            raise ValueError("The argument `verbose` has to be of type bool.")
+            raise TypeError("The argument `verbose` has to be of type bool.")

@@ -15,7 +15,6 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
 
@@ -200,10 +199,10 @@ def test_check_params(art_warning):
                 numerator_coef=np.array([0.1, 0.2, -0.1, -0.2]), denominator_coef=np.array([0.0, 0.1, 0.3, 0.4])
             )
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = LFilter(numerator_coef=[0.1, 0.2, -0.1, -0.2], denominator_coef=np.array([1.0, 0.1, 0.3, 0.4]))
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = LFilter(
                 numerator_coef=np.array([0.1, 0.2, -0.1, -0.2]),
                 denominator_coef=np.array([1.0, 0.1, 0.3, 0.4]),
@@ -217,7 +216,7 @@ def test_check_params(art_warning):
                 initial_cond=1.0,
             )
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = LFilter(
                 numerator_coef=np.array([0.1, 0.2, -0.1, -0.2]),
                 denominator_coef=np.array([1.0, 0.1, 0.3, 0.4]),

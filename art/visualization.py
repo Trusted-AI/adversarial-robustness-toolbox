@@ -19,7 +19,7 @@
 Module providing visualization functions.
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
 import os.path
@@ -115,7 +115,7 @@ def plot_3d(
     colors: list[str] | None = None,
     save: bool = True,
     f_name: str = "",
-) -> "matplotlib.figure.Figure":  # pragma: no cover
+) -> matplotlib.figure.Figure:  # pragma: no cover
     """
     Generates a 3-D plot in of the provided points where the labels define the color that will be used to color each
     data point. Concretely, the color of points[i] is defined by colors(labels[i]). Thus, there should be as many labels
@@ -134,8 +134,7 @@ def plot_3d(
     # pylint: disable=unused-import
     # import matplotlib
     import matplotlib.pyplot as plt
-
-    from mpl_toolkits import mplot3d  # noqa: F401
+    from mpl_toolkits import mplot3d
 
     if colors is None:  # pragma: no cover
         colors = []

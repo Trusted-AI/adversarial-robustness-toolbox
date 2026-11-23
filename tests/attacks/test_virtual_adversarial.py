@@ -15,22 +15,27 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
 import unittest
+
 import numpy as np
 
 from art.attacks.evasion.virtual_adversarial import VirtualAdversarialMethod
+from art.estimators.classification.classifier import ClassifierMixin
 from art.estimators.classification.keras import KerasClassifier
 from art.estimators.estimator import BaseEstimator
-from art.estimators.classification.classifier import ClassifierMixin
 from art.utils import get_labels_np_array
-
-from tests.utils import TestBase
-from tests.utils import get_image_classifier_tf, get_image_classifier_kr, get_image_classifier_pt
-from tests.utils import get_tabular_classifier_tf, get_tabular_classifier_kr, get_tabular_classifier_pt
 from tests.attacks.utils import backend_test_classifier_type_check_fail
+from tests.utils import (
+    TestBase,
+    get_image_classifier_kr,
+    get_image_classifier_pt,
+    get_image_classifier_tf,
+    get_tabular_classifier_kr,
+    get_tabular_classifier_pt,
+    get_tabular_classifier_tf,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -51,14 +56,14 @@ class TestVirtualAdversarial(TestBase):
         classifier = get_image_classifier_kr()
 
         scores = classifier._model.evaluate(self.x_train_mnist, self.y_train_mnist)
-        logging.info("[Keras, MNIST] Accuracy on training set: %.2f%%", (scores[1] * 100))
+        logger.info("[Keras, MNIST] Accuracy on training set: %.2f%%", (scores[1] * 100))
         scores = classifier._model.evaluate(self.x_test_mnist, self.y_test_mnist)
-        logging.info("[Keras, MNIST] Accuracy on test set: %.2f%%", (scores[1] * 100))
+        logger.info("[Keras, MNIST] Accuracy on test set: %.2f%%", (scores[1] * 100))
 
         self._test_backend_mnist(classifier, self.x_test_mnist, self.y_test_mnist)
 
     def test_3_tensorflow_mnist(self):
-        classifier, sess = get_image_classifier_tf(from_logits=False)
+        classifier, _sess = get_image_classifier_tf(from_logits=False)
 
         scores = get_labels_np_array(classifier.predict(self.x_train_mnist))
         acc = np.sum(np.argmax(scores, axis=1) == np.argmax(self.y_train_mnist, axis=1)) / self.y_train_mnist.shape[0]
@@ -213,7 +218,7 @@ class TestVirtualAdversarial(TestBase):
         with self.assertRaises(ValueError):
             _ = VirtualAdversarialMethod(ptc, batch_size=-1)
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TypeError):
             _ = VirtualAdversarialMethod(ptc, verbose="true")
 
     def test_1_classifier_type_check_fail(self):

@@ -15,19 +15,20 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-import os
-import cv2
-import numpy as np
-import matplotlib.pyplot as plt
-import torch
-import torchvision
 import argparse
 import json
-import yaml
+import os
 import pprint
 
-from art.estimators.object_detection import PyTorchFasterRCNN
+import cv2
+import matplotlib.pyplot as plt
+import numpy as np
+import torch
+import torchvision
+import yaml
+
 from art.attacks.evasion import RobustDPatch
+from art.estimators.object_detection import PyTorchFasterRCNN
 
 COCO_INSTANCE_CATEGORY_NAMES = [
     "__background__",
@@ -183,7 +184,7 @@ def plot_image_with_boxes(img, boxes, pred_cls):
 def get_loss(frcnn, x, y):
     frcnn._model.train()
     transform = torchvision.transforms.Compose([torchvision.transforms.ToTensor()])
-    image_tensor_list = list()
+    image_tensor_list = []
 
     for i in range(x.shape[0]):
         if frcnn.clip_values is not None:
@@ -296,10 +297,10 @@ if __name__ == "__main__":
     predictions_adv = frcnn.predict(x=x_patch)
 
     for i in range(image.shape[0]):
-        print("\nPredictions adversarial image {}:".format(i))
+        print(f"\nPredictions adversarial image {i}:")
 
         # Process predictions
-        predictions_adv_class, predictions_adv_boxes, predictions_adv_class = extract_predictions(predictions_adv[i])
+        predictions_adv_class, predictions_adv_boxes, _ = extract_predictions(predictions_adv[i])
 
         # Plot predictions
         plot_image_with_boxes(img=x_patch[i].copy(), boxes=predictions_adv_boxes, pred_cls=predictions_adv_class)

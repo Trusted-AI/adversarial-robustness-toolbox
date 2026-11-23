@@ -15,7 +15,6 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
 import os.path
@@ -24,9 +23,8 @@ import unittest
 import numpy as np
 
 from art import config
-from art.utils import load_mnist, load_cifar10
-from art.visualization import create_sprite, convert_to_rgb, save_image, plot_3d
-
+from art.utils import load_cifar10, load_mnist
+from art.visualization import convert_to_rgb, create_sprite, plot_3d, save_image
 from tests.utils import master_seed
 
 logger = logging.getLogger(__name__)

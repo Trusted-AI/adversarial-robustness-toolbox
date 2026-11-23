@@ -27,39 +27,32 @@ from __future__ import annotations
 import logging
 import random
 import sys
+from typing import TYPE_CHECKING, Any, TypedDict
 
 import numpy as np
 from sklearn.utils import shuffle
 from tqdm import tqdm
 
+from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent import (
+    ProjectedGradientDescent,
+)
 from art.defences.trainer.trainer import Trainer
-from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent import ProjectedGradientDescent
 from art.utils import check_and_transform_label_format
-
-if sys.version_info >= (3, 8):
-    from typing import TypedDict, Any, TYPE_CHECKING
-else:
-    from typing import Any, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from art.utils import IBP_CERTIFIER_TYPE
 
     # if we use python 3.8 or higher use the more informative TypedDict for type hinting
-    if sys.version_info >= (3, 8):
+    class PGDParamDict(TypedDict):
+        """
+        A TypedDict class to define the types in the pgd_params dictionary.
+        """
 
-        class PGDParamDict(TypedDict):
-            """
-            A TypedDict class to define the types in the pgd_params dictionary.
-            """
-
-            eps: float
-            eps_step: float
-            max_iter: int
-            num_random_init: int
-            batch_size: int
-
-    else:
-        PGDParamDict: dict[str, int | float]
+        eps: float
+        eps_step: float
+        max_iter: int
+        num_random_init: int
+        batch_size: int
 
 
 logger = logging.getLogger(__name__)
@@ -109,7 +102,7 @@ class AdversarialTrainerCertifiedIBPPyTorch(Trainer):
 
     def __init__(
         self,
-        classifier: "IBP_CERTIFIER_TYPE",
+        classifier: IBP_CERTIFIER_TYPE,
         nb_epochs: int | None = 20,
         bound: float = 0.1,
         batch_size: int = 32,
@@ -119,7 +112,7 @@ class AdversarialTrainerCertifiedIBPPyTorch(Trainer):
         use_loss_weighting_schedule: bool = True,
         loss_weighting_schedule: Any | None = None,
         augment_with_pgd: bool = False,
-        pgd_params: "PGDParamDict" | None = None,
+        pgd_params: PGDParamDict | None = None,
     ) -> None:
         """
         Create an :class:`.AdversarialTrainerCertified` instance.
@@ -150,7 +143,7 @@ class AdversarialTrainerCertifiedIBPPyTorch(Trainer):
         from art.estimators.certification.interval.pytorch import PyTorchIBPClassifier
 
         if not isinstance(classifier, PyTorchIBPClassifier):
-            raise ValueError(
+            raise TypeError(
                 "The classifier to pass in should be of type PyTorchIBPClassifier which can be found in "
                 "art.estimators.certification.interval.pytorch.PyTorchIBPClassifier"
             )
@@ -164,8 +157,8 @@ class AdversarialTrainerCertifiedIBPPyTorch(Trainer):
             raise ValueError("Using a loss weighting schedule is incompatible with a fixed loss_weighting.")
 
         super().__init__(classifier=classifier)
-        self.classifier: "IBP_CERTIFIER_TYPE"
-        self.pgd_params: "PGDParamDict"
+        self.classifier: IBP_CERTIFIER_TYPE
+        self.pgd_params: PGDParamDict
         self.nb_epochs = nb_epochs
         self.loss_weighting = loss_weighting
         self.bound = bound

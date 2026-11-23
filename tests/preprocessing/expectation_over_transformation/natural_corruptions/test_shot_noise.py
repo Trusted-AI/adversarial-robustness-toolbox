@@ -37,6 +37,7 @@ def fix_get_mnist_subset(get_mnist_dataset):
 def test_eot_shot_noise_pytorch(art_warning, fix_get_mnist_subset):
     try:
         import torch
+
         from art.preprocessing.expectation_over_transformation.natural_corruptions.shot_noise.pytorch import (
             EoTShotNoisePyTorch,
         )

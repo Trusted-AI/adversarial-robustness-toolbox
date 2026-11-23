@@ -22,25 +22,25 @@ for adversarial training for defence against larger perturbations.
 | Paper link: https://link.springer.com/chapter/10.1007/978-3-031-20065-6_18
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
-from collections import OrderedDict
 import logging
 import os
 import time
+from collections import OrderedDict
 from typing import TYPE_CHECKING
 
-import six
 import numpy as np
+import six
 from tqdm.auto import trange
 
 from art import config
+from art.attacks.attack import EvasionAttack
+from art.config import ART_NUMPY_DTYPE
+from art.data_generators import DataGenerator
 from art.defences.trainer.adversarial_trainer_oaat import AdversarialTrainerOAAT
 from art.estimators.classification.pytorch import PyTorchClassifier
-from art.data_generators import DataGenerator
-from art.attacks.attack import EvasionAttack
 from art.utils import check_and_transform_label_format, random_sphere
-from art.config import ART_NUMPY_DTYPE
 
 if TYPE_CHECKING:
     import torch
@@ -493,8 +493,8 @@ class AdversarialTrainerOAATPyTorch(AdversarialTrainerOAAT):
         :return: Tuple containing batch data loss, batch data accuracy and number of samples in the batch
         """
         import torch
-        from torch import nn
         import torch.nn.functional as F
+        from torch import nn
 
         if self._classifier.optimizer is None:
             raise ValueError("Optimizer of classifier is currently None, but is required for adversarial training.")
@@ -625,8 +625,8 @@ class AdversarialTrainerOAATPyTorch(AdversarialTrainerOAAT):
         return train_loss, train_acc, train_n
 
     def _weight_perturbation(
-        self, x_batch: "torch.Tensor", x_batch_pert: "torch.Tensor", y_batch: "torch.Tensor"
-    ) -> dict[str, "torch.Tensor"]:
+        self, x_batch: torch.Tensor, x_batch_pert: torch.Tensor, y_batch: torch.Tensor
+    ) -> dict[str, torch.Tensor]:
         """
         Calculate wight perturbation for a batch of data.
         See class documentation for more information on the exact procedure.
@@ -637,8 +637,8 @@ class AdversarialTrainerOAATPyTorch(AdversarialTrainerOAAT):
         :return: dict containing names of classifier model's layers as keys and parameters as values
         """
         import torch
-        from torch import nn
         import torch.nn.functional as F
+        from torch import nn
 
         w_perturb = OrderedDict()
         params_dict, _ = self._calculate_model_params(self._classifier)
@@ -673,7 +673,7 @@ class AdversarialTrainerOAATPyTorch(AdversarialTrainerOAAT):
     @staticmethod
     def _calculate_model_params(
         p_classifier: PyTorchClassifier,
-    ) -> tuple[dict[str, dict[str, "torch.Tensor"]], "torch.Tensor"]:
+    ) -> tuple[dict[str, dict[str, torch.Tensor]], torch.Tensor]:
         """
         Calculates a given model's different layers' parameters' shape and norm, and model parameter norm.
 
@@ -684,7 +684,7 @@ class AdversarialTrainerOAATPyTorch(AdversarialTrainerOAAT):
         """
         import torch
 
-        params_dict: dict[str, dict[str, "torch.Tensor"]] = OrderedDict()
+        params_dict: dict[str, dict[str, torch.Tensor]] = OrderedDict()
         list_params = []
         for name, param in p_classifier.model.state_dict().items():
             if len(param.size()) <= 1:
@@ -702,7 +702,7 @@ class AdversarialTrainerOAATPyTorch(AdversarialTrainerOAAT):
         return params_dict, model_all_params_norm
 
     def _modify_classifier(
-        self, p_classifier: PyTorchClassifier, list_keys: list[str], w_perturb: dict[str, "torch.Tensor"], op: str
+        self, p_classifier: PyTorchClassifier, list_keys: list[str], w_perturb: dict[str, torch.Tensor], op: str
     ) -> None:
         """
         Modify the model's weight parameters according to the weight perturbations.
@@ -728,9 +728,9 @@ class AdversarialTrainerOAATPyTorch(AdversarialTrainerOAAT):
     @staticmethod
     def get_layer_activations(  # type: ignore
         p_classifier: PyTorchClassifier,
-        x: "torch.Tensor",
+        x: torch.Tensor,
         layers: list[int | str],
-    ) -> tuple[dict[str, "torch.Tensor"], list[str]]:
+    ) -> tuple[dict[str, torch.Tensor], list[str]]:
         """
         Return the output of the specified layers for input `x`. `layers` is a list of either layer indices (between 0
         and `nb_layers - 1`) or layers' name. The number of layers can be determined by counting the results returned by
@@ -782,9 +782,9 @@ class AdversarialTrainerOAATPyTorch(AdversarialTrainerOAAT):
 
     @staticmethod
     def normalize_concatenate_activations(
-        activations_dict: dict[str, "torch.Tensor"],
+        activations_dict: dict[str, torch.Tensor],
         list_layer_names: list[str],
-    ) -> "torch.Tensor":
+    ) -> torch.Tensor:
         """
         Takes a dictionary `activations_dict' of activation values of different layers for an input batch and Returns
         a tensor where all activation values are normalised layer-wise and flattened to a vector for
@@ -814,10 +814,10 @@ class AdversarialTrainerOAATPyTorch(AdversarialTrainerOAAT):
     @staticmethod
     def calculate_lpips_distance(  # type: ignore
         p_classifier: PyTorchClassifier,
-        input_1: "torch.Tensor",
-        input_2: "torch.Tensor",
+        input_1: torch.Tensor,
+        input_2: torch.Tensor,
         layers: list[int | str],
-    ) -> "torch.Tensor":
+    ) -> torch.Tensor:
         """
         Return the LPIPS distance between input_1 and input_2. `layers` is a list of either layer indices (between 0 and
         `nb_layers - 1`) or layers' name. The number of layers can be determined by counting the results returned by
@@ -848,7 +848,7 @@ class AdversarialTrainerOAATPyTorch(AdversarialTrainerOAAT):
         return lpips_distance
 
     def update_learning_rate(
-        self, optimizer: "torch.optim.optimizer.Optimizer", epoch: int, nb_epochs: int, lr_schedule: str = "step"
+        self, optimizer: torch.optim.optimizer.Optimizer, epoch: int, nb_epochs: int, lr_schedule: str = "step"
     ) -> None:
         """
         adjust learning rate of the optimizer.
@@ -891,8 +891,8 @@ class AdversarialTrainerOAATPyTorch(AdversarialTrainerOAAT):
         self,
         x: np.ndarray,
         y: np.ndarray,
-        eps: int | float | np.ndarray,
-        eps_step: int | float | np.ndarray,
+        eps: float | np.ndarray,
+        eps_step: float | np.ndarray,
         max_iter: int,
         training_mode: bool,
     ) -> np.ndarray:
@@ -924,14 +924,14 @@ class AdversarialTrainerOAATPyTorch(AdversarialTrainerOAAT):
 
     def _one_step_adv_example(
         self,
-        x: "torch.Tensor",
-        x_init: "torch.Tensor",
-        y: "torch.Tensor",
-        eps: int | float | np.ndarray,
-        eps_step: int | float | np.ndarray,
+        x: torch.Tensor,
+        x_init: torch.Tensor,
+        y: torch.Tensor,
+        eps: float | np.ndarray,
+        eps_step: float | np.ndarray,
         random_init: bool,
         training_mode: bool,
-    ) -> "torch.Tensor":
+    ) -> torch.Tensor:
         """
         Compute adversarial examples for one iteration.
 
@@ -986,8 +986,8 @@ class AdversarialTrainerOAATPyTorch(AdversarialTrainerOAAT):
         return x_adv
 
     def _compute_perturbation(
-        self, x: "torch.Tensor", x_init: "torch.Tensor", y: "torch.Tensor", training_mode: bool = False
-    ) -> "torch.Tensor":
+        self, x: torch.Tensor, x_init: torch.Tensor, y: torch.Tensor, training_mode: bool = False
+    ) -> torch.Tensor:
         """
         Compute perturbations.
 
@@ -1116,8 +1116,8 @@ class AdversarialTrainerOAATPyTorch(AdversarialTrainerOAAT):
         return grad
 
     def _apply_perturbation(
-        self, x: "torch.Tensor", perturbation: "torch.Tensor", eps_step: int | float | np.ndarray
-    ) -> "torch.Tensor":
+        self, x: torch.Tensor, perturbation: torch.Tensor, eps_step: float | np.ndarray
+    ) -> torch.Tensor:
         """
         Apply perturbation on examples.
 
@@ -1141,9 +1141,7 @@ class AdversarialTrainerOAATPyTorch(AdversarialTrainerOAAT):
 
         return x
 
-    def _projection(
-        self, values: "torch.Tensor", eps: int | float | np.ndarray, norm_p: int | float | str
-    ) -> "torch.Tensor":
+    def _projection(self, values: torch.Tensor, eps: float | np.ndarray, norm_p: float | str) -> torch.Tensor:
         """
         Project `values` on the L_p norm ball of size `eps`.
 

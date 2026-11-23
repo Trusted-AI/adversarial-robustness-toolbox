@@ -19,18 +19,17 @@
 This module implements the abstract estimator `KerasEstimator` for Keras models.
 """
 
-from __future__ import absolute_import, division, print_function, unicode_literals, annotations
+from __future__ import annotations
 
 import logging
-
 from typing import TYPE_CHECKING
 
 import numpy as np
 
 from art.estimators.estimator import (
     BaseEstimator,
-    NeuralNetworkMixin,
     LossGradientsMixin,
+    NeuralNetworkMixin,
 )
 
 logger = logging.getLogger(__name__)
@@ -86,7 +85,7 @@ class KerasEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
 
     def clone_for_refitting(
         self,
-    ) -> "KERAS_ESTIMATOR_TYPE":
+    ) -> KERAS_ESTIMATOR_TYPE:
         """
         Create a copy of the estimator that can be refit from scratch. Will inherit same architecture, optimizer and
         initialization as cloned model, but without weights.

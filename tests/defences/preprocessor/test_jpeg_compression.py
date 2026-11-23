@@ -15,7 +15,6 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
 
@@ -145,7 +144,7 @@ def test_check_params(art_warning):
         with pytest.raises(ValueError):
             _ = JpegCompression(clip_values=(0, 1, 2))
 
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             _ = JpegCompression(clip_values=(0, 1), verbose="False")
 
     except ARTTestException as e:
