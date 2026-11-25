@@ -797,10 +797,14 @@ class CarliniLInfMethod(EvasionAttack):
                         delta_i,
                     )
 
-                    if (
-                        np.argmax(self.estimator.predict(x_adv_batch), axis=1) != np.argmax(y_batch, axis=1)
-                        and delta_i < delta_i_best
-                    ):
+                    # Targeted: success means predicting the target class; untargeted: leaving the original class
+                    y_pred_adv = np.argmax(self.estimator.predict(x_adv_batch), axis=1)
+                    if self.targeted:
+                        attack_success = y_pred_adv == np.argmax(y_batch, axis=1)
+                    else:
+                        attack_success = y_pred_adv != np.argmax(y_batch, axis=1)
+
+                    if attack_success and delta_i < delta_i_best:
                         x_adv[sample_id] = x_adv_batch
                         delta_i_best = delta_i
                         sample_done = False
