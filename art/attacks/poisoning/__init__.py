@@ -37,3 +37,5 @@ from art.attacks.poisoning.hidden_trigger_backdoor.hidden_trigger_backdoor_pytor
 )
 from art.attacks.poisoning.poisoning_attack_svm import PoisoningAttackSVM
 from art.attacks.poisoning.sleeper_agent_attack import SleeperAgentAttack
+from art.attacks.poisoning.dynamic_backdoor_gan import DynamicBackdoorGAN
+
