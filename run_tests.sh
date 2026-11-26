@@ -93,7 +93,6 @@ else
                           "tests/attacks/test_copycat_cnn.py" \
                           "tests/attacks/test_decision_tree_attack.py" \
                           "tests/attacks/test_deepfool.py" \
-                          "tests/attacks/test_elastic_net.py" \
                           "tests/attacks/test_feature_collision.py" \
                           "tests/attacks/test_functionally_equivalent_extraction.py" \
                           "tests/attacks/test_graphite.py" \
@@ -116,6 +115,10 @@ else
                           "tests/attacks/test_wasserstein.py" \
                           "tests/attacks/test_targeted_universal_perturbation.py" \
                           "tests/attacks/test_simba.py" )
+
+    # test_elastic_net.py alone takes ~57 min (two Keras Iris tests at ~25 min each), so it
+    # runs as its own CI Legacy matrix job instead of serializing behind the other attacks_1 files.
+    declare -a attacks_3=("tests/attacks/test_elastic_net.py" )
 
     declare -a estimators=("tests/estimators/classification/test_blackbox.py" \
                            "tests/estimators/classification/test_catboost.py" \
