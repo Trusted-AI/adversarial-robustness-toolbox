@@ -3,13 +3,13 @@
 ## Expectation over Transformation (EoT)
 
 [expectation_over_transformation_classification_rotation.ipynb](expectation_over_transformation_classification_rotation.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/expectation_over_transformation_classification_rotation.ipynb)]
-show how to use Expectation over Transformation (EoT) sampling to make adversarial examples robust against rotation for image classification.
+shows how to use Expectation over Transformation (EoT) sampling to make adversarial examples robust against rotation for image classification.
 
 
 ## Video Action Recognition
 
 [adversarial_action_recognition.ipynb](adversarial_action_recognition.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/adversarial_action_recognition.ipynb)]
-shows how to create an adversarial attack on a video action recognition classification task with ART. Experiments in this notebook show how to modify a video sample by employing a Fast Gradient Method attack so that the modified video sample get mis-classified.
+shows how to create an adversarial attack on a video action recognition classification task with ART. Experiments in this notebook show how to modify a video sample by employing a Fast Gradient Method attack so that the modified video sample gets mis-classified.
 
 <p align="center">
   <img src="../utils/data/images/basketball.gif?raw=true" width="200" title="benign_basketball_sample">
@@ -46,7 +46,7 @@ dataset.
 ## TensorFlow v2
 
 [art-for-tensorflow-v2-callable.ipynb](art-for-tensorflow-v2-callable.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/art-for-tensorflow-v2-callable.ipynb)]
-show how to use ART with TensorFlow v2 in eager execution mode with a model in form of a callable class or python 
+shows how to use ART with TensorFlow v2 in eager execution mode with a model in form of a callable class or python 
 function.
 
 [art-for-tensorflow-v2-keras.ipynb](art-for-tensorflow-v2-keras.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/art-for-tensorflow-v2-keras.ipynb)]
@@ -80,7 +80,7 @@ predictions.
 
 [attack_decision_tree.ipynb](attack_decision_tree.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/attack_decision_tree.ipynb)]
 shows how to compute adversarial examples on decision trees ([Papernot et al., 2016](https://arxiv.org/abs/1605.07277)).
-It traversing the structure of a decision tree classifier to create adversarial examples can be computed without 
+It traverses the structure of a decision tree classifier to create adversarial examples can be computed without 
 explicit gradients.
 
 [attack_defence_imagenet.ipynb](attack_defence_imagenet.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/attack_defence_imagenet.ipynb)]
@@ -113,7 +113,7 @@ shows how to launch Composite Adversarial Attack (CAA) on Pytorch-based model ([
 CAA composites the perturbations in Lp-ball and semantic space (i.e., hue, saturation, rotation, brightness, and contrast),
 and is able to optimize the attack sequence and each attack component, thereby enhancing the efficiency and efficacy of adversarial examples.
 
-[overload-attack.ipynb](overload-attack.ipynb) [[on nbviewer](https://nbviewer.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/overload-attack.ipynb)]  exploits for latency attacks on objection detection using the YOLOv5 model.
+[overload-attack.ipynb](overload-attack.ipynb) [[on nbviewer](https://nbviewer.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/overload-attack.ipynb)]  exploits for latency attacks on object detection using the YOLOv5 model.
 
 ## Metrics
 
@@ -125,7 +125,7 @@ trained on the nursery dataset.
 
 [classifier_blackbox.ipynb](classifier_blackbox.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/classifier_blackbox.ipynb)] demonstrates BlackBoxClassifier, the most general and
 versatile classifier of ART requiring only a single predict function definition without any additional assumptions or 
-requirements. The notebook shows how use BlackBoxClassifier to attack a remote, deployed model (in this case on IBM
+requirements. The notebook shows how to use BlackBoxClassifier to attack a remote, deployed model (in this case on IBM
 Watson Machine Learning, https://cloud.ibm.com) using the HopSkiJump attack.
 
 [classifier_blackbox_lookup_table.ipynb](classifier_blackbox_lookup_table.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/classifier_blackbox_lookup_table.ipynb)]
@@ -250,7 +250,7 @@ demonstrates a defense against poisoning attacks via partitioning the data into 
 demonstrates a defense against poisoning attacks using the DP-InstaHide training method which uses data augmentation and additive noise.
 
 [poisoning_defense_neural_cleanse.ipynb](poisoning_defense_neural_cleanse.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/poisoning_defense_neural_cleanse.ipynb)]
-demonstrates a defense against poisoning attacks that generation the suspected backdoor and applies runtime mitigation methods on the classifier.
+demonstrates a defense against poisoning attacks that generates the suspected backdoor and applies runtime mitigation methods on the classifier.
 
 [poisoning_defence_strip.ipynb](poisoning_defence_strip.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/poisoning_defence_strip.ipynb)]
 demonstrates a defense against input-agnostic backdoor attacks that filters suspicious inputs at runtime.
@@ -259,10 +259,10 @@ demonstrates a defense against input-agnostic backdoor attacks that filters susp
 demonstrates the gradient matching poisoning attack (a.k.a. Witches' Brew) that adds noise to align the training gradient to a specific direction that can poison the target model.
 
 [poisoning_attack_feature_collision.ipynb](poisoning_attack_feature_collision.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/poisoning_attack_feature_collision.ipynb)]
-demonstrates working Poison Frog (Feature Collision) poisoning attack implemented in Keras Framework on CIFAR10 dataset as per the ([paper](https://arxiv.org/pdf/1804.00792.pdf)). This is a targeted clean label attack, which do not require the attacker to have any control over the labeling of training data and control the behavior of the classifier on a specific test instance without degrading overall classifier performance.
+demonstrates working Poison Frog (Feature Collision) poisoning attack implemented in Keras Framework on CIFAR10 dataset as per the ([paper](https://arxiv.org/pdf/1804.00792.pdf)). This is a targeted clean label attack, which does not require the attacker to have any control over the labeling of training data and control the behavior of the classifier on a specific test instance without degrading overall classifier performance.
 
 [poisoning_attack_feature_collision-pytorch.ipynb](poisoning_attack_feature_collision-pytorch.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/poisoning_attack_feature_collision-pytorch.ipynb)]
-demonstrates working Poison Frog (Feature Collision) poisoning attack implemented in PyTorch Framework on CIFAR10 dataset as per the ([paper](https://arxiv.org/pdf/1804.00792.pdf)). This is a targeted clean label attack, which do not require the attacker to have any control over the labeling of training data and control the behavior of the classifier on a specific test instance without degrading overall classifier performance.
+demonstrates working Poison Frog (Feature Collision) poisoning attack implemented in PyTorch Framework on CIFAR10 dataset as per the ([paper](https://arxiv.org/pdf/1804.00792.pdf)). This is a targeted clean label attack, which does not require the attacker to have any control over the labeling of training data and control the behavior of the classifier on a specific test instance without degrading overall classifier performance.
 
 [poisoning_attack_sleeper_agent_pytorch.ipynb](poisoning_attack_sleeper_agent_pytorch.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/poisoning_attack_sleeper_agent_pytorch.ipynb)]
 demonstrates working Sleeper Agent poisoning attack implemented in PyTorch Framework on CIFAR10 dataset as per the ([paper](https://arxiv.org/pdf/2106.08970.pdf)). A new hidden trigger attack, Sleeper Agent,
@@ -291,7 +291,7 @@ demonstrates using DeepZ to compute certified robustness for neural networks.
 ## Certified Training
 
 [certified_adversarial_training.ipynb](certified_adversarial_training.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/certified_adversarial_training.ipynb)]
-Demonstrates training a neural network for certified robustness using bound propagation techniques.
+demonstrates training a neural network for certified robustness using bound propagation techniques.
 
 <p align="center">
   <img src="../utils/data/images/cert_training.png?raw=true" width="200" title="certified training">
@@ -304,7 +304,7 @@ demonstrates using interval bound propagation for certification of neural networ
 </p>
 
 [smoothed_vision_transformers.ipynb](smoothed_vision_transformers.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/smoothed_vision_transformers.ipynb)]
-Demonstrates training a neural network using smoothed vision transformers for certified performance against patch attacks.
+demonstrates training a neural network using smoothed vision transformers for certified performance against patch attacks.
 
 ## MNIST
 
@@ -320,4 +320,4 @@ shows how to use ART with the Hugging Face API for image classification tasks.
 shows how to use ART to perform evasion attacks on Hugging Face image classification models and defend them using adversarial training.
 
 [hugging_face_poisoning.ipynb](hugging_face_poisoning.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/hugging_face_poisoning.ipynb)]
-shows how to use ART to perform poison Hugging Face image classification models and defend them using poisoning defenses.
+shows how to use ART to perform poisoning attacks on Hugging Face image classification models and defend them using poisoning defenses.
