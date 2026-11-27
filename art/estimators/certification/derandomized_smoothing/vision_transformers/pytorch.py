@@ -168,7 +168,7 @@ class PyTorchVisionTransformer(VisionTransformer):
         x_no_cl = torch.reshape(x_no_cl, shape=(shape[0], -1, shape[-1]))
         return torch.cat((cls_token, x_no_cl), dim=1)
 
-    def forward_features(self, x: torch.Tensor, attn_mask: torch.Tensor | None = None) -> torch.Tensor:
+    def forward_features(self, x: torch.Tensor, attn_mask: torch.Tensor | None = None, **kwargs) -> torch.Tensor:
         """
         The forward pass of the ViT.
 

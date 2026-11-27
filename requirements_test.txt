@@ -34,8 +34,8 @@ torchvision==0.28.0+cpu
 torchaudio==2.11.1+cpu
 
 # PyTorch image transformers
-timm==1.0.19
-huggingface_hub==0.34.6
+timm==1.0.31
+huggingface_hub==2.4.0
 
 # YOLO dependencies
 ultralytics==8.4.194

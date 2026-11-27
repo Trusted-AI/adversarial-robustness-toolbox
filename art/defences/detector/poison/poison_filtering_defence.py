@@ -22,19 +22,15 @@ This module implements the abstract base class for all poison filtering defences
 from __future__ import annotations
 
 import abc
-import sys
 from typing import TYPE_CHECKING, Any, ClassVar
 
 import numpy as np
-
-# Ensure compatibility with Python 2 and 3 when using ABCMeta
-ABC = abc.ABC
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_TYPE
 
 
-class PoisonFilteringDefence(ABC):
+class PoisonFilteringDefence(abc.ABC):
     """
     Base class for all poison filtering defences.
     """
